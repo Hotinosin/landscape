@@ -11,10 +11,10 @@ interface Props {
 withDefaults(defineProps<Props>(), { ip_status: () => [] });
 </script>
 <template>
-  <n-flex justify="center" align="center" style="width: 168px" :size="[0, 0]">
+  <n-flex justify="start" align="center" style="width: 168px" :size="[0, 0]">
     <n-icon
       v-for="enable in ip_status"
-      :color="enable ? themeVars.successColor : ''"
+      :color="enable ? themeVars.primaryColor : ''"
       size="14"
     >
       <DotMark />

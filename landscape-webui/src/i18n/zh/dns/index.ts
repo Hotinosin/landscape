@@ -2,6 +2,8 @@ export default {
   rule_edit: {
     title: "规则编辑",
     priority: "优先级",
+    priority_help:
+      "数值越小优先级越高，规则按数值从小到大匹配，命中后停止。例如 1 高于 1000。",
     remark: "备注",
     filter_result: "是否过滤结果",
     flow_action: "流量动作",
@@ -154,5 +156,6 @@ export default {
   select_upstream: {
     redirect_flow_id: "重定向的流 ID",
     default_ali: "阿里",
+    create: "+ 新增 DNS 上游",
   },
 };

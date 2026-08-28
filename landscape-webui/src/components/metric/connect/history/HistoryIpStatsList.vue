@@ -41,7 +41,13 @@ const columns = computed(() => [
     render: (row: IpHistoryStat) => {
       return h(
         "div",
-        { style: { display: "flex", alignItems: "center", gap: "12px" } },
+        {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--app-space-section)",
+          },
+        },
         [
           h("div", { style: { display: "flex", flexDirection: "column" } }, [
             h(

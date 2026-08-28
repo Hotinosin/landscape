@@ -118,8 +118,8 @@ onMounted(async () => {
 }
 
 .anchor-card {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
+  box-shadow: 0 4px 16px var(--app-shadow-color);
+  border-radius: var(--app-radius-panel, 8px);
 }
 
 /* 响应式：在窄屏下隐藏目录，主内容自动占满 */
@@ -133,6 +133,6 @@ onMounted(async () => {
 }
 
 :deep(.n-anchor-link) {
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
 }
 </style>

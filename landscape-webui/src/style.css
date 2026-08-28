@@ -4,10 +4,11 @@
     "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-mono:
     "v-mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-
   font-family: var(--font-sans);
+  font-size: var(--app-font-size-body, 14px);
   width: 100%;
   height: 100%;
+  background: var(--app-canvas-color);
 }
 
 body {
@@ -18,12 +19,110 @@ body {
   height: 100%;
 
   overflow: hidden;
+  background: inherit;
 }
 
 #app {
   width: 100%;
   height: 100%;
   display: flex;
+  background: inherit;
+}
+
+.standard-content-page {
+  flex: 1;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.n-alert {
+  border-radius: var(--app-radius-control);
+}
+
+.standard-list-toolbar {
+  margin-bottom: var(--app-space-section, 12px);
+}
+
+.standard-data-table {
+  overflow: hidden;
+  border-radius: var(--app-radius-surface);
+  box-shadow: 0 1px 4px var(--app-shadow-color);
+}
+
+.standard-data-table .n-data-table-th,
+.standard-data-table .n-data-table-td {
+  padding: var(--app-space-section) var(--app-space-lg);
+  text-align: left !important;
+  border-right: 0 !important;
+  border-left: 0 !important;
+}
+
+.standard-data-table .n-data-table-th {
+  font-weight: 600;
+  background: var(--app-surface-interactive-color);
+  border-top: 0 !important;
+}
+
+.standard-data-table .n-data-table-td {
+  border-bottom: 1px solid var(--app-border-subtle-color) !important;
+  transition:
+    box-shadow var(--app-motion-normal) ease,
+    background-color var(--app-motion-normal) ease,
+    color var(--app-motion-normal) ease !important;
+}
+
+.standard-data-table .n-data-table-tr:last-child .n-data-table-td {
+  border-bottom: 0 !important;
+}
+
+.standard-data-table .n-data-table-tr:hover .n-data-table-td {
+  background: var(--app-interactive-hover-color);
+}
+
+.standard-data-table .n-data-table-empty {
+  height: var(--app-state-empty-min-height, 88px);
+  padding: 0;
+  color: var(--app-text-muted-color);
+  background: var(--app-surface-color);
+}
+
+.standard-data-table .n-data-table-base-table,
+.standard-data-table .n-data-table-base-table-body {
+  background: var(--app-surface-color);
+}
+
+.standard-page-state {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  color: var(--app-text-muted-color);
+  background: var(--app-surface-color);
+  border-radius: var(--app-radius-surface, 6px);
+}
+
+.standard-page-state--compact {
+  min-height: var(--app-state-empty-min-height, 88px);
+}
+
+.standard-page-state .n-result {
+  padding: var(--app-space-page, var(--app-space-page));
+}
+
+/* Keep page surfaces and overlay containers in sync during theme changes. */
+.n-config-provider,
+.n-layout,
+.n-card,
+.n-alert,
+.n-modal,
+.n-dialog,
+.n-popover,
+.n-tooltip {
+  transition:
+    background-color var(--app-motion-normal, 180ms) ease,
+    border-color var(--app-motion-normal, 180ms) ease,
+    color var(--app-motion-normal, 180ms) ease;
 }
 
 .n-drawer {

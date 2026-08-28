@@ -32,7 +32,7 @@ const emit = defineEmits(["search:tuple", "search:src", "search:dst"]);
 </script>
 
 <template>
-  <n-virtual-list class="list" :item-size="40" :items="props.connect_metrics">
+  <n-virtual-list class="list" :item-size="56" :items="props.connect_metrics">
     <template #default="{ item, index }">
       <ConnectItemInfo
         @show:chart="show_chart_drawer"

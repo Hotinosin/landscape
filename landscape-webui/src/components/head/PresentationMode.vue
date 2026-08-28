@@ -12,7 +12,7 @@ const { t } = useI18n();
       <n-button
         v-if="frontEndStore.presentation_mode"
         text
-        style="font-size: 24px"
+        style="font-size: var(--app-icon-size-large)"
         @click="
           frontEndStore.presentation_mode = !frontEndStore.presentation_mode
         "
@@ -24,7 +24,7 @@ const { t } = useI18n();
       <n-button
         v-else
         text
-        style="font-size: 24px"
+        style="font-size: var(--app-icon-size-large)"
         @click="
           frontEndStore.presentation_mode = !frontEndStore.presentation_mode
         "

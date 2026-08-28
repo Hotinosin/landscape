@@ -56,9 +56,9 @@ const viewMode = computed({
 .pulse-dot {
   width: 8px;
   height: 8px;
-  background-color: #00d2ff;
+  background-color: var(--app-sampling-color);
   border-radius: 50%;
-  box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7);
+  box-shadow: 0 0 0 0 var(--app-sampling-glow-color);
   animation: pulse 1.5s infinite;
   margin-right: 4px;
 }
@@ -66,15 +66,15 @@ const viewMode = computed({
 @keyframes pulse {
   0% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7);
+    box-shadow: 0 0 0 0 var(--app-sampling-glow-color);
   }
   70% {
     transform: scale(1);
-    box-shadow: 0 0 0 6px rgba(0, 210, 255, 0);
+    box-shadow: 0 0 0 6px transparent;
   }
   100% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 210, 255, 0);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 </style>

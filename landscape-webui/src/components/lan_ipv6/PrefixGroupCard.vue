@@ -305,7 +305,7 @@ function openEditor(kind: ServiceKind) {
   width: 100%;
   box-sizing: border-box;
   padding: 0;
-  border-radius: 12px;
+  border-radius: var(--app-radius-large, 12px);
   background: color-mix(
     in srgb,
     var(--n-color) 82%,
@@ -317,34 +317,34 @@ function openEditor(kind: ServiceKind) {
   margin-top: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--app-space-sm);
 }
 
 .group-summary.compact {
   margin-top: 0;
   display: grid;
   grid-template-columns: minmax(220px, 1.2fr) repeat(3, minmax(0, 1fr)) auto;
-  gap: 8px;
+  gap: var(--app-space-sm);
   align-items: stretch;
 }
 
 .summary-parent {
   border: 1px solid var(--n-border-color);
-  border-radius: 10px;
+  border-radius: var(--app-radius-panel);
   background: color-mix(in srgb, var(--n-color) 88%, var(--n-hover-color) 12%);
-  padding: 10px 12px;
+  padding: 10px var(--app-space-section);
   min-width: 0;
 }
 
 .summary-parent-main {
   display: flex;
-  gap: 8px;
+  gap: var(--app-space-sm);
   align-items: center;
   flex-wrap: wrap;
 }
 
 .summary-parent-hint {
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
   color: var(--n-text-color-3);
   margin-top: 6px;
 }
@@ -353,10 +353,10 @@ function openEditor(kind: ServiceKind) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: var(--app-space-section);
+  padding: 10px var(--app-space-section);
   border: 1px solid var(--n-border-color);
-  border-radius: 10px;
+  border-radius: var(--app-radius-panel);
   background: color-mix(
     in srgb,
     var(--n-color) 90%,
@@ -397,20 +397,20 @@ function openEditor(kind: ServiceKind) {
 .summary-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--app-space-sm);
 }
 
 .summary-kind {
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--app-font-size-label);
 }
 
 .summary-state {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
+  border-radius: var(--app-radius-pill);
   padding: 1px 8px;
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
   line-height: 18px;
 }
 
@@ -430,12 +430,12 @@ function openEditor(kind: ServiceKind) {
 }
 
 .summary-text {
-  font-size: 13px;
+  font-size: var(--app-font-size-label);
   margin-top: 2px;
 }
 
 .summary-detail {
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
   color: var(--n-text-color-3);
   margin-top: 2px;
 }

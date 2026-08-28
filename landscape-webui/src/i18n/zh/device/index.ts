@@ -4,6 +4,7 @@ export default {
   add_title: "添加设备绑定",
 
   name: "展示名称",
+  actions: "操作",
   name_placeholder: "例如: 我的手机",
   name_required: "请输入展示名称",
 

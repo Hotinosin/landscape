@@ -17,8 +17,8 @@ export async function get_dns_upstream(id: string): Promise<DnsUpstreamConfig> {
 
 export async function push_dns_upstream(
   rule: DnsUpstreamConfig,
-): Promise<void> {
-  await addDnsUpstream(rule);
+): Promise<DnsUpstreamConfig> {
+  return addDnsUpstream(rule);
 }
 
 export async function delete_dns_upstream(id: string): Promise<void> {

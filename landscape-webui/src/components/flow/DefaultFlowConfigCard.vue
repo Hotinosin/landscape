@@ -13,6 +13,10 @@ const show_dns_rule = ref(false);
 const show_ip_rule = ref(false);
 const show_route_trace = ref(false);
 
+withDefaults(defineProps<{ display_style?: "card" | "list" }>(), {
+  display_style: "card",
+});
+
 async function create_flow() {
   emit("create-flow");
 }
@@ -24,7 +28,8 @@ async function clear_route_cache() {
 
 <template>
   <n-card
-    style="min-height: 224px"
+    :class="{ 'default-flow-card--list': display_style === 'list' }"
+    :style="display_style === 'card' ? 'min-height: 224px' : undefined"
     size="small"
     :title="t('flow.default_card.title')"
     :hoverable="true"
@@ -71,3 +76,20 @@ async function clear_route_cache() {
     <RouteTraceDrawer v-model:show="show_route_trace" />
   </n-card>
 </template>
+
+<style scoped>
+.default-flow-card--list :deep(.n-card-header),
+.default-flow-card--list :deep(.n-card__content) {
+  padding: 10px var(--app-space-section);
+}
+
+.default-flow-card--list :deep(.n-empty) {
+  flex-direction: row;
+  justify-content: space-between;
+  gap: var(--app-space-lg);
+}
+
+.default-flow-card--list :deep(.n-empty__icon) {
+  margin: 0;
+}
+</style>

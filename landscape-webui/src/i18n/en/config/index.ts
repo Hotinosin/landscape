@@ -26,7 +26,13 @@ export default {
 
   language: "Language",
   theme: "Theme",
-  theme_placeholder: "Light mode is under development",
+  theme_placeholder: "Select an appearance theme",
+  display_style: "Display Style",
+  display_style_placeholder: "Select a content display style",
+  display_style_card: "Cards",
+  display_style_list: "List",
+  display_style_tip:
+    "Cards emphasize individual details; lists use shared columns for scanning and comparison.",
   timezone: "System Timezone",
   timezone_placeholder: "Select or search, e.g.: Asia/Shanghai",
 
@@ -118,6 +124,7 @@ export default {
   english: "English",
   dark_mode: "Dark Mode",
   light_mode: "Light Mode",
+  system_mode: "Use System Setting",
   welcome: "Welcome, {username}",
   console_download_failed: "Failed to download config",
 };

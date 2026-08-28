@@ -108,13 +108,13 @@ const uptime = computed(() => {
       </n-flex>
     </n-flex>
 
-    <n-divider style="margin: 12px 0" />
+    <n-divider style="margin: var(--app-space-section) 0" />
 
     <!-- Version and Runtime Info -->
     <n-flex vertical :size="8">
       <!-- Landscape Router Version -->
       <n-flex justify="space-between" align="center">
-        <n-text depth="3" style="font-size: 12px">{{
+        <n-text depth="3" style="font-size: var(--app-font-size-caption)">{{
           t("sysinfo.landscape_router")
         }}</n-text>
         <n-tooltip v-if="isVersionMismatch" trigger="hover" placement="top">
@@ -134,7 +134,13 @@ const uptime = computed(() => {
               {{ t("sysinfo.backend") }}: {{ sysinfo.landscape_version }}
             </div>
             <div>{{ t("sysinfo.frontend") }}: {{ ui_version }}</div>
-            <div style="margin-top: 8px; opacity: 0.8; font-size: 12px">
+            <div
+              style="
+                margin-top: 8px;
+                opacity: 0.8;
+                font-size: var(--app-font-size-caption);
+              "
+            >
               {{ t("sysinfo.check_browser_cache") }}
             </div>
           </div>
@@ -146,7 +152,7 @@ const uptime = computed(() => {
 
       <!-- Uptime -->
       <n-flex justify="space-between" align="center">
-        <n-text depth="3" style="font-size: 12px">{{
+        <n-text depth="3" style="font-size: var(--app-font-size-caption)">{{
           t("sysinfo.uptime")
         }}</n-text>
         <n-flex align="center" :size="6">
@@ -175,24 +181,24 @@ const uptime = computed(() => {
 
 <style scoped>
 .info-label {
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
   line-height: 1.2;
 }
 
 .info-value {
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
   font-weight: 500;
   line-height: 1.4;
   word-break: break-all;
 }
 
 .info-value.large {
-  font-size: 18px;
+  font-size: var(--app-font-size-heading);
   font-weight: 600;
 }
 
 .info-value.uptime {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
 }
 </style>

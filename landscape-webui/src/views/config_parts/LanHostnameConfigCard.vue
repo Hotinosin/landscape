@@ -36,7 +36,7 @@ async function handleSaveLanHostname() {
         {{ t("config.save_lan_hostname") }}
       </n-button>
     </template>
-    <n-form label-placement="left" label-width="140">
+    <n-form label-placement="left" label-width="160">
       <n-form-item :label="t('config.lan_hostname_enable')">
         <n-switch v-model:value="lanHostnameStore.enabled" />
       </n-form-item>

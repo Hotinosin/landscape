@@ -8,8 +8,10 @@ import type {
   DHCPv6OfferInfo,
 } from "@landscape-router/types/api/schemas";
 import { onMounted, ref } from "vue";
+import type { DataTableColumns } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import DHCPv6AssignedTable from "@/components/dhcp_v6/DHCPv6AssignedTable.vue";
+import { Renew } from "@vicons/carbon";
 
 const { t } = useI18n();
 
@@ -20,6 +22,12 @@ onMounted(async () => {
 const loading = ref(false);
 const infos = ref<{ label: string; value: IPv6NAInfo | null }[]>([]);
 const dhcpv6_infos = ref<{ label: string; value: DHCPv6OfferInfo }[]>([]);
+const emptyColumns: DataTableColumns<Record<string, never>> = [
+  { title: "IPv6", key: "ip" },
+  { title: "Mac", key: "mac" },
+  { title: t("common.time"), key: "active" },
+  { title: t("common.status"), key: "status" },
+];
 
 async function get_info() {
   try {
@@ -52,15 +60,18 @@ async function get_info() {
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1">
+  <n-flex vertical class="standard-content-page">
     <n-alert type="info">
       {{ t("common.list_no_auto_refresh") }}
       <n-tag :bordered="false" type="warning">STALE</n-tag>
     </n-alert>
-    <n-flex>
-      <n-button :loading="loading" @click="get_info">{{
-        t("common.refresh")
-      }}</n-button>
+    <n-flex class="standard-list-toolbar">
+      <n-button :loading="loading" secondary @click="get_info">
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
+      </n-button>
     </n-flex>
     <n-flex v-if="infos.length > 0">
       <LanIPv6ShowItem
@@ -70,7 +81,12 @@ async function get_info() {
         :iface_name="data.label"
       />
     </n-flex>
-    <n-empty style="flex: 1" v-else></n-empty>
+    <StandardDataTable
+      v-else
+      :columns="emptyColumns"
+      :data="[]"
+      :loading="loading"
+    />
 
     <!-- DHCPv6 Assigned -->
     <template v-if="dhcpv6_infos.length > 0">

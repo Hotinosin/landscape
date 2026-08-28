@@ -463,12 +463,15 @@ async function saveRule() {
                     </n-form-item-gi>
 
                     <n-form-item-gi :label="t('gateway.domains')">
-                      <n-flex vertical style="width: 100%; gap: 8px">
+                      <n-flex
+                        vertical
+                        style="width: 100%; gap: var(--app-space-sm)"
+                      >
                         <n-flex
                           v-for="(domain, index) in domainItems"
                           :key="index"
                           align="center"
-                          style="gap: 8px"
+                          style="gap: var(--app-space-sm)"
                         >
                           <n-input
                             :value="domain"
@@ -505,7 +508,7 @@ async function saveRule() {
               </n-card>
 
               <n-card class="editor-panel" embedded :bordered="false">
-                <n-flex vertical style="gap: 12px">
+                <n-flex vertical style="gap: var(--app-space-section)">
                   <div class="section-title">
                     {{
                       rule.match_rule.t === "host"
@@ -516,12 +519,15 @@ async function saveRule() {
 
                   <n-grid :cols="3" :x-gap="12">
                     <n-form-item-gi :label="t('gateway.targets')" :span="3">
-                      <n-flex vertical style="width: 100%; gap: 8px">
+                      <n-flex
+                        vertical
+                        style="width: 100%; gap: var(--app-space-sm)"
+                      >
                         <n-flex
                           v-for="(target, index) in rule.upstream.targets"
                           :key="index"
                           align="center"
-                          style="gap: 8px"
+                          style="gap: var(--app-space-sm)"
                         >
                           <n-input
                             v-model:value="target.address"
@@ -641,13 +647,16 @@ async function saveRule() {
                         :label="t('gateway.request_headers')"
                         :span="3"
                       >
-                        <n-flex vertical style="width: 100%; gap: 8px">
+                        <n-flex
+                          vertical
+                          style="width: 100%; gap: var(--app-space-sm)"
+                        >
                           <n-flex
                             v-for="(header, index) in rule.upstream
                               .request_headers ?? []"
                             :key="index"
                             align="center"
-                            style="gap: 8px"
+                            style="gap: var(--app-space-sm)"
                           >
                             <n-input
                               v-model:value="header.name"
@@ -767,7 +776,7 @@ async function saveRule() {
 
             <div v-if="rule.match_rule.t === 'host'" class="editor-main">
               <n-card class="editor-panel" embedded :bordered="false">
-                <n-flex vertical style="gap: 12px">
+                <n-flex vertical style="gap: var(--app-space-section)">
                   <n-flex justify="space-between" align="center">
                     <div class="section-title">
                       {{ t("gateway.path_groups") }}
@@ -812,19 +821,16 @@ async function saveRule() {
                                 }}
                               </n-tag>
                             </n-flex>
-                            <n-text depth="3" style="font-size: 12px">
+                            <n-text
+                              depth="3"
+                              style="font-size: var(--app-font-size-caption)"
+                            >
                               {{ upstreamSummary(group.upstream) }}
                             </n-text>
                           </n-flex>
 
                           <n-flex size="small">
-                            <n-button
-                              size="small"
-                              secondary
-                              @click="openPathGroupModal(index)"
-                            >
-                              {{ t("common.edit") }}
-                            </n-button>
+                            <EditButton @click="openPathGroupModal(index)" />
                             <n-button
                               size="small"
                               secondary
@@ -892,12 +898,12 @@ async function saveRule() {
           <n-divider style="margin: 4px 0; grid-column: span 2" />
 
           <n-form-item-gi :label="t('gateway.targets')" :span="2">
-            <n-flex vertical style="width: 100%; gap: 8px">
+            <n-flex vertical style="width: 100%; gap: var(--app-space-sm)">
               <n-flex
                 v-for="(target, index) in pathGroupDraft.upstream.targets"
                 :key="index"
                 align="center"
-                style="gap: 8px"
+                style="gap: var(--app-space-sm)"
               >
                 <n-input
                   v-model:value="target.address"
@@ -987,13 +993,13 @@ async function saveRule() {
           </n-form-item-gi>
 
           <n-form-item-gi :label="t('gateway.request_headers')" :span="2">
-            <n-flex vertical style="width: 100%; gap: 8px">
+            <n-flex vertical style="width: 100%; gap: var(--app-space-sm)">
               <n-flex
                 v-for="(header, index) in pathGroupDraft.upstream
                   .request_headers ?? []"
                 :key="index"
                 align="center"
-                style="gap: 8px"
+                style="gap: var(--app-space-sm)"
               >
                 <n-input
                   v-model:value="header.name"
@@ -1116,14 +1122,14 @@ async function saveRule() {
 .editor-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--app-space-lg);
   padding-right: 6px;
 }
 
 .editor-columns {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: 16px;
+  gap: var(--app-space-lg);
   align-items: start;
 }
 
@@ -1136,15 +1142,15 @@ async function saveRule() {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--app-space-lg);
 }
 
 .editor-panel {
-  border-radius: 14px;
+  border-radius: var(--app-radius-large);
 }
 
 .path-group-card {
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--app-backdrop-surface-color);
 }
 
 .path-group-scrollbar {
@@ -1152,7 +1158,7 @@ async function saveRule() {
 }
 
 .section-title {
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
   font-weight: 600;
 }
 

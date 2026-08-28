@@ -2,7 +2,7 @@
 import { HelpFilled } from "@vicons/carbon";
 </script>
 <template>
-  <n-flex :size="[5, 0]" justify="center" align="center">
+  <n-flex :size="[5, 0]" justify="start" align="center">
     <slot></slot>
     <n-popover trigger="hover">
       <template #trigger>

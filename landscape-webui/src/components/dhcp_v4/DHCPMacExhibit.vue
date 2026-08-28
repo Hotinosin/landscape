@@ -33,7 +33,7 @@ const show_other_macs = computed(() => {
 });
 </script>
 <template>
-  <n-flex justify="center" v-if="show_other_macs.length > 0" :size="[5, 0]">
+  <n-flex justify="start" v-if="show_other_macs.length > 0" :size="[5, 0]">
     {{ frontEndStore.MASK_INFO(show_mac) }}
     <n-popover trigger="hover">
       <template #trigger>
@@ -52,7 +52,7 @@ const show_other_macs = computed(() => {
       </n-flex>
     </n-popover>
   </n-flex>
-  <n-flex justify="center" v-else>
+  <n-flex justify="start" v-else>
     {{ frontEndStore.MASK_INFO(show_mac) }}
   </n-flex>
 </template>

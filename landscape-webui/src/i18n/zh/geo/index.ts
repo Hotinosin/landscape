@@ -24,6 +24,8 @@ export default {
   },
   geo_site: {
     title: "编辑 Geo Site",
+    all_tags: "全部标签",
+    search_tags: "搜索标签名称…",
     domain_list: "域名列表",
     domain_placeholder: "域名",
     add_domain: "添加域名",
@@ -59,6 +61,15 @@ export default {
     export_clipboard: "导出规则至剪贴板",
     import_clipboard: "从剪贴板导入规则",
     confirm_import: "确定从剪贴板导入吗?",
+    import_success: "导入成功",
+    import_failed: "导入失败，请检查剪贴板内容",
+  },
+  database: {
+    geosite_source: "GeoSite（域名）",
+    geoip_source: "GeoIP（IP 网段）",
+    geosite_data: "GeoSite 数据",
+    geoip_data: "GeoIP 数据",
+    config_title: "Geo 数据源配置",
   },
   item_card: {
     source_type: "来源类型",

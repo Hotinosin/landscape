@@ -835,7 +835,10 @@ function cancelEmptyDraftAction() {
           <n-grid cols="1 l:3" responsive="screen" :x-gap="12" :y-gap="12">
             <n-gi>
               <n-flex vertical :size="6">
-                <n-text depth="3" style="font-size: 12px">
+                <n-text
+                  depth="3"
+                  style="font-size: var(--app-font-size-caption)"
+                >
                   {{ t("lan_ipv6.prefix_group_editor_kind") }}
                 </n-text>
                 <n-grid cols="1" :x-gap="8" :y-gap="8">
@@ -863,7 +866,10 @@ function cancelEmptyDraftAction() {
                         class="kind-switch-extra"
                         @click.stop
                       >
-                        <n-text depth="3" style="font-size: 12px">
+                        <n-text
+                          depth="3"
+                          style="font-size: var(--app-font-size-caption)"
+                        >
                           {{ t("lan_ipv6.source_pool_len") }}
                         </n-text>
                         <n-input-number
@@ -967,8 +973,8 @@ function cancelEmptyDraftAction() {
 <style scoped>
 .kind-switch {
   border: 1px solid var(--n-border-color);
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: var(--app-radius-panel);
+  padding: var(--app-space-section);
   cursor: pointer;
   background: color-mix(
     in srgb,
@@ -1018,7 +1024,7 @@ function cancelEmptyDraftAction() {
 }
 
 .kind-switch-count {
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
   color: var(--n-text-color-3);
   margin-top: 4px;
 }

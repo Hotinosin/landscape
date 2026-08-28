@@ -134,14 +134,8 @@ async function force_refresh() {
             </template>
             {{ t("geo.item_card.force_refresh_confirm") }}
           </n-popconfirm>
-          <n-button
-            size="small"
-            type="warning"
-            secondary
-            @click="show_edit_modal = true"
-          >
-            {{ t("common.edit") }}
-          </n-button>
+
+          <EditButton @click="show_edit_modal = true" />
 
           <n-popconfirm @positive-click="del()">
             <template #trigger>

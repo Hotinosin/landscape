@@ -59,28 +59,40 @@ onUnmounted(() => {
     <n-card
       size="small"
       :bordered="false"
-      style="margin-bottom: 12px; background-color: #f9f9f910"
+      style="margin-bottom: 12px; background-color: var(--app-surface-color)"
     >
       <n-flex align="center" justify="space-between">
         <ConnectViewSwitcher />
 
         <n-flex align="center" size="large">
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ t("metric.connect.stats.total_active_ifaces") }}:</span
             >
             <span style="font-weight: bold">{{ ifaceRows.length }}</span>
           </n-flex>
           <n-divider vertical />
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ t("metric.connect.stats.total_active_conns") }}:</span
             >
             <span style="font-weight: bold">{{ totalStats.activeConns }}</span>
           </n-flex>
           <n-divider vertical />
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ t("metric.connect.stats.total_egress") }}:</span
             >
             <span :style="{ fontWeight: 'bold', color: themeVars.infoColor }">{{
@@ -89,7 +101,11 @@ onUnmounted(() => {
           </n-flex>
           <n-divider vertical />
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ t("metric.connect.stats.total_ingress") }}:</span
             >
             <span
@@ -113,19 +129,23 @@ onUnmounted(() => {
         <n-card
           size="small"
           :bordered="false"
-          style="background-color: #f9f9f910"
+          style="background-color: var(--app-surface-color)"
         >
           <n-flex align="center" justify="space-between">
             <n-flex vertical size="small">
               <n-flex align="center" size="small">
-                <span style="font-size: 18px; font-weight: 700">{{
-                  ifaceName(item.ifindex)
-                }}</span>
+                <span
+                  style="
+                    font-size: var(--app-font-size-heading);
+                    font-weight: 700;
+                  "
+                  >{{ ifaceName(item.ifindex) }}</span
+                >
                 <n-tag size="small" :bordered="false">
                   {{ t("metric.connect.col.ifindex") }} {{ item.ifindex }}
                 </n-tag>
               </n-flex>
-              <span style="color: #888">
+              <span style="color: var(--app-text-muted-color)">
                 {{ t("metric.connect.col.active_conns") }}:
                 {{ item.stats.active_conns }}
               </span>
@@ -142,12 +162,20 @@ onUnmounted(() => {
                   <ArrowUp />
                 </n-icon>
                 <n-flex vertical :size="[-4, 0]">
-                  <span style="font-size: 15px; font-weight: 700">{{
-                    formatRate(item.stats.egress_bps)
-                  }}</span>
-                  <span style="font-size: 11px; color: #888">{{
-                    formatPackets(item.stats.egress_pps)
-                  }}</span>
+                  <span
+                    style="
+                      font-size: var(--app-font-size-subtitle);
+                      font-weight: 700;
+                    "
+                    >{{ formatRate(item.stats.egress_bps) }}</span
+                  >
+                  <span
+                    style="
+                      font-size: var(--app-font-size-detail);
+                      color: var(--app-text-muted-color);
+                    "
+                    >{{ formatPackets(item.stats.egress_pps) }}</span
+                  >
                 </n-flex>
               </n-flex>
 
@@ -161,12 +189,20 @@ onUnmounted(() => {
                   <ArrowDown />
                 </n-icon>
                 <n-flex vertical :size="[-4, 0]">
-                  <span style="font-size: 15px; font-weight: 700">{{
-                    formatRate(item.stats.ingress_bps)
-                  }}</span>
-                  <span style="font-size: 11px; color: #888">{{
-                    formatPackets(item.stats.ingress_pps)
-                  }}</span>
+                  <span
+                    style="
+                      font-size: var(--app-font-size-subtitle);
+                      font-weight: 700;
+                    "
+                    >{{ formatRate(item.stats.ingress_bps) }}</span
+                  >
+                  <span
+                    style="
+                      font-size: var(--app-font-size-detail);
+                      color: var(--app-text-muted-color);
+                    "
+                    >{{ formatPackets(item.stats.ingress_pps) }}</span
+                  >
                 </n-flex>
               </n-flex>
             </n-flex>

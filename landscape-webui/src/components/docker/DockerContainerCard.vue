@@ -9,7 +9,6 @@ import {
 import {
   DockerContainerSummary,
   DockerBtnShow,
-  LAND_REDIRECT_ID_KEY,
 } from "@/lib/docker";
 import { useDockerStore } from "@/stores/status_docker";
 import { useFrontEndStore } from "@/stores/front_end_config";
@@ -85,21 +84,6 @@ async function remove() {
   }
 }
 
-const tags = computed(() => {
-  let other = [];
-  let ld_tag = [];
-  if (props.container.Labels !== undefined && props.container.Labels.size > 0) {
-    for (const tags of props.container.Labels) {
-      if (tags[0] === LAND_REDIRECT_ID_KEY) {
-        ld_tag.push(tags);
-      } else {
-        other.push(tags);
-      }
-    }
-  }
-
-  return [ld_tag, other];
-});
 </script>
 <template>
   <n-card class="docker-container-exhibit-card" size="small">
@@ -181,34 +165,6 @@ const tags = computed(() => {
 
     <!-- {{ props.container }} -->
 
-    <template #action>
-      <n-flex justify="space-between">
-        <n-flex>
-          <span v-if="tags[0].length == 0"> {{ "" }}</span>
-          <n-tag v-else v-for="tag in tags[0]" :bordered="false">
-            {{ `${tag[0]}` }}
-          </n-tag>
-        </n-flex>
-
-        <n-flex>
-          <n-button text v-if="tags[1].length == 0">
-            {{ t("docker.docker_container.no_other_tags") }}
-          </n-button>
-          <n-tooltip v-else trigger="hover">
-            <template #trigger>
-              <n-button text>
-                {{ t("docker.docker_container.other_tags") }}
-              </n-button>
-            </template>
-            <n-flex>
-              <n-tag v-for="tag in tags[1]" :bordered="false">
-                {{ `${tag[0]}: ${tag[1]}` }}
-              </n-tag>
-            </n-flex>
-          </n-tooltip>
-        </n-flex>
-      </n-flex>
-    </template>
   </n-card>
 </template>
 <style scoped>

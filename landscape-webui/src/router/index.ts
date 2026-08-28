@@ -6,7 +6,6 @@ import Flow from "@/views/Flow.vue";
 import Docker from "@/views/Docker.vue";
 import Firewall from "@/views/Firewall.vue";
 import GeoDomain from "@/views/GeoDomain.vue";
-import GeoIp from "@/views/GeoIp.vue";
 import Config from "@/views/Config.vue";
 import About from "@/views/About.vue";
 
@@ -23,6 +22,7 @@ import DdnsJobs from "@/views/domain/DdnsJobs.vue";
 import DnsProviderProfiles from "@/views/domain/DnsProviderProfiles.vue";
 import Gateway from "@/views/Gateway.vue";
 import NotFound from "@/views/error/NotFound.vue";
+import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
 
 import service_status_route from "./service_status";
 import metric_route from "./metric";
@@ -77,8 +77,7 @@ const inner_zone: Array<RouteRecordRaw> = [
   },
   {
     path: "/geo/ip",
-    name: "routes.geo-ip",
-    component: GeoIp,
+    redirect: "/geo/domain",
   },
   {
     path: "/config",
@@ -142,5 +141,11 @@ const routes: Array<RouteRecordRaw> = [
 ];
 
 const router = createRouter({ history: createWebHistory(), routes });
+
+router.beforeEach((to) => {
+  if (to.path !== "/login" && !localStorage.getItem(LANDSCAPE_TOKEN_KEY)) {
+    return { path: "/login", state: { redirect: to.fullPath } };
+  }
+});
 
 export default router;

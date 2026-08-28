@@ -85,14 +85,7 @@ async function del() {
 
       <template #header-extra>
         <n-flex size="small">
-          <n-button
-            secondary
-            size="small"
-            type="warning"
-            @click.stop="openEditModal()"
-          >
-            {{ t("common.edit") }}
-          </n-button>
+          <EditButton @click.stop="openEditModal()" />
           <n-popconfirm @positive-click="del()">
             <template #trigger>
               <n-button secondary size="small" type="error" @click.stop>
@@ -124,7 +117,7 @@ async function del() {
         </div>
       </div>
 
-      <n-divider style="margin: 8px 0 12px 0" />
+      <n-divider style="margin: 8px 0 var(--app-space-section) 0" />
 
       <div class="ports-container">
         <div class="section-label">
@@ -162,7 +155,7 @@ async function del() {
       </div>
 
       <div class="card-footer">
-        <n-text depth="3" style="font-size: 12px">
+        <n-text depth="3" style="font-size: var(--app-font-size-caption)">
           {{ t("common.updated_at") }}
           <n-time
             :time="rule.update_at"
@@ -191,7 +184,7 @@ async function del() {
 
 .mapping-card {
   flex: 1;
-  border-radius: 4px;
+  border-radius: var(--app-radius-indicator);
   transition: all 0.2s ease-in-out;
   border: 1px solid transparent;
   cursor: pointer;
@@ -208,7 +201,7 @@ async function del() {
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
   color: var(--n-text-color-3);
   margin-bottom: 2px;
 }
@@ -217,12 +210,12 @@ async function del() {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: var(--app-space-xs);
   min-height: 24px;
 }
 
 .stat-value {
-  font-size: 18px;
+  font-size: var(--app-font-size-heading);
   font-weight: 500;
   line-height: 1.2;
   font-family: var(--font-mono);
@@ -237,7 +230,7 @@ async function del() {
 
 .stat-tags {
   display: flex;
-  gap: 4px;
+  gap: var(--app-space-2xs);
 }
 
 .ports-container {
@@ -246,7 +239,7 @@ async function del() {
 }
 
 .section-label {
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
   color: var(--n-text-color-3);
   margin-bottom: 8px;
 }
@@ -254,19 +247,19 @@ async function del() {
 .ports-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
-  gap: 8px;
+  gap: var(--app-space-sm);
   padding: 4px 2px;
 }
 
 .port-box {
-  background-color: rgba(128, 128, 128, 0.08);
-  border: 1px solid rgba(128, 128, 128, 0.15);
-  border-radius: 4px;
+  background-color: var(--app-surface-muted-color);
+  border: 1px solid var(--app-border-muted-color);
+  border-radius: var(--app-radius-indicator);
   padding: 6px 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: var(--app-font-size-label);
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease,
@@ -278,15 +271,15 @@ async function del() {
 
 .port-box:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px var(--app-shadow-color);
   border-color: var(--n-primary-color);
   z-index: 1;
 }
 
 .port-box-all {
   grid-column: 1 / -1;
-  background-color: rgba(0, 128, 0, 0.08);
-  border-color: rgba(0, 128, 0, 0.25);
+  background-color: var(--app-status-success-surface-color);
+  border-color: var(--app-status-success-border-color);
 }
 
 .port-box-all:hover {
@@ -296,7 +289,7 @@ async function del() {
 .all-ports-label {
   color: var(--n-success-color);
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
   user-select: none;
 }
 
@@ -314,12 +307,12 @@ async function del() {
 }
 
 :global(.n-config-provider--dark) .port-box {
-  background-color: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--app-surface-subtle-color);
+  border-color: var(--app-border-muted-color);
 }
 
 :global(.n-config-provider--dark) .port-box:hover {
   border-color: var(--n-primary-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px var(--app-shadow-strong-color);
 }
 </style>

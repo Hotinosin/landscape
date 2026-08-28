@@ -69,6 +69,8 @@ export default {
     filter_total: "Filtered Total",
     filter_egress: "Filtered Egress",
     filter_ingress: "Filtered Ingress",
+    egress: "Egress",
+    ingress: "Ingress",
     filter_egress_pkts: "Filtered Egress Pkts",
     filter_ingress_pkts: "Filtered Ingress Pkts",
     last_summary_time: "Last summary time",

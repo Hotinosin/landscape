@@ -18,7 +18,7 @@ import { storeToRefs } from "pinia";
 import "@xterm/xterm/css/xterm.css";
 
 // Constants
-const HEADER_COLOR = "rgb(72, 72, 78)";
+const HEADER_COLOR = "var(--app-terminal-header-color)";
 const HANDLE_SIZE = 8;
 
 // Store
@@ -355,7 +355,10 @@ function onAfterLeave() {
         <n-flex justify="space-between" align="center" style="width: 100%">
           <n-flex align="center" size="small">
             <n-icon :component="TerminalIcon" />
-            <span style="font-weight: 600; font-size: 13px">Web Shell</span>
+            <span
+              style="font-weight: 600; font-size: var(--app-font-size-label)"
+              >Web Shell</span
+            >
             <n-divider vertical style="margin: 0 4px" />
             <n-tag
               :type="isConnected ? 'success' : 'error'"
@@ -493,7 +496,9 @@ function onAfterLeave() {
       <n-flex justify="space-between" align="center" style="width: 100%">
         <n-flex align="center" size="small">
           <n-icon :component="TerminalIcon" />
-          <span style="font-weight: 600; font-size: 13px">Web Shell</span>
+          <span style="font-weight: 600; font-size: var(--app-font-size-label)"
+            >Web Shell</span
+          >
           <n-divider vertical style="margin: 0 4px" />
           <n-tag
             :type="isConnected ? 'success' : 'error'"
@@ -632,13 +637,13 @@ function onAfterLeave() {
 .float-btn {
   width: 64px;
   height: 64px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px var(--app-shadow-color);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .float-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 12px 28px var(--app-shadow-strong-color);
 }
 
 .breathing-btn {
@@ -647,7 +652,7 @@ function onAfterLeave() {
 
 .terminal-container {
   flex: 1;
-  background-color: #000;
+  background-color: var(--app-terminal-background-color);
   overflow: hidden;
 }
 
@@ -658,9 +663,9 @@ function onAfterLeave() {
   display: flex;
   align-items: center;
   padding: 0 8px;
-  background-color: rgb(72, 72, 78) !important;
-  border-bottom: 1px solid rgb(60, 60, 66) !important;
-  color: #fff;
+  background-color: var(--app-terminal-header-color) !important;
+  border-bottom: 1px solid var(--app-terminal-border-color) !important;
+  color: var(--app-text-inverse-color);
   flex-shrink: 0;
 }
 
@@ -669,14 +674,14 @@ function onAfterLeave() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgb(72, 72, 78);
+  background-color: var(--app-terminal-header-color);
   transition: background-color 0.2s;
 }
 
 .resize-handle::after {
   content: "";
-  background-color: rgb(120, 120, 126);
-  border-radius: 2px;
+  background-color: var(--app-terminal-handle-color);
+  border-radius: var(--app-radius-hairline);
 }
 
 .resize-handle[style*="ew-resize"]::after {
@@ -696,11 +701,11 @@ function onAfterLeave() {
   0%,
   100% {
     transform: translateX(-50%) scale(1);
-    box-shadow: 0 0 0 0 rgba(240, 160, 32, 0.7);
+    box-shadow: 0 0 0 0 var(--app-status-warning-color);
   }
   50% {
     transform: translateX(-50%) scale(1.1);
-    box-shadow: 0 0 30px 10px rgba(240, 160, 32, 0);
+    box-shadow: 0 0 30px 10px transparent;
   }
 }
 </style>

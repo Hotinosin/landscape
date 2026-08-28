@@ -13,12 +13,24 @@ import {
   get_service_status_tag_type,
 } from "@/lib/services";
 import type { HttpUpstreamRuleConfig } from "@landscape-router/types/api/schemas";
-import { Settings } from "@vicons/carbon";
+import { Add, Settings } from "@vicons/carbon";
 import { useMessage } from "naive-ui";
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import type { DataTableColumns } from "naive-ui";
+import { computed, h, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { usePageRequest } from "@/composables/usePageRequest";
+import { useFrontEndStore } from "@/stores/front_end_config";
+import GatewayRuleListRow from "@/components/gateway/GatewayRuleListRow.vue";
 
-const rules = ref<HttpUpstreamRuleConfig[]>([]);
+const {
+  data: rules,
+  error: rulesError,
+  loading: rulesLoading,
+  state: rulesState,
+  refresh: refresh_rules,
+} = usePageRequest(get_gateway_rules, {
+  initialData: [] as HttpUpstreamRuleConfig[],
+});
 const status = ref<GatewayStatus>();
 const gatewayEnabled = ref(false);
 const httpPort = ref<number | null>(80);
@@ -31,9 +43,30 @@ const show_settings = ref(false);
 let status_poll_timer: ReturnType<typeof setInterval> | null = null;
 const { t } = useI18n();
 const message = useMessage();
+const frontEndStore = useFrontEndStore();
 
-async function refresh_rules() {
-  rules.value = await get_gateway_rules();
+const columns = computed<DataTableColumns<HttpUpstreamRuleConfig>>(() =>
+  [
+    ["gateway.list_status_name", "name"],
+    ["gateway.match_type", "type"],
+    ["gateway.domains", "domains"],
+    ["gateway.upstream", "upstream"],
+    ["gateway.path_groups", "paths"],
+    ["common.actions", "actions"],
+  ].map(([title, cell]) => ({
+    title: t(title),
+    key: cell,
+    render: (rule) =>
+      h(GatewayRuleListRow, {
+        rule,
+        cell: cell as "name" | "type" | "domains" | "upstream" | "paths" | "actions",
+        ...(cell === "actions" ? { onRefresh: refreshAll } : {}),
+      }),
+  })),
+);
+
+function rowKey(rule: HttpUpstreamRuleConfig) {
+  return rule.id ?? rule.name;
 }
 
 async function refresh_config() {
@@ -160,12 +193,19 @@ watch(
 );
 </script>
 <template>
-  <n-flex vertical style="flex: 1">
-    <n-flex align="center" justify="space-between">
+  <n-flex vertical class="standard-content-page">
+    <n-flex
+      align="center"
+      justify="space-between"
+      class="standard-list-toolbar"
+    >
       <n-flex>
         <n-button
+          type="primary"
           :disabled="status?.supported === false"
           @click="show_edit_modal = true"
+          ><template #icon
+            ><n-icon><Add /></n-icon></template
           >{{ t("common.create") }}</n-button
         >
       </n-flex>
@@ -173,7 +213,7 @@ watch(
         <n-tag :type="gateway_status_tag_type(status)" size="small">
           {{ gateway_status_label(status) }}
         </n-tag>
-        <n-text depth="3" style="font-size: 13px">
+        <n-text depth="3" style="font-size: var(--app-font-size-label)">
           HTTP: {{ status.http_port }} | HTTPS: {{ status.https_port }} |
           {{ t("gateway.rule_count") }}: {{ status.rule_count }}
         </n-text>
@@ -257,13 +297,28 @@ watch(
         </n-popover>
       </n-flex>
     </n-flex>
-    <n-flex>
+    <StandardDataTable
+      v-if="frontEndStore.display_style === 'list'"
+      :columns="columns"
+      :data="rules"
+      :loading="rulesLoading"
+      :error="rulesError"
+      :empty-text="t('gateway.no_rules')"
+      :row-key="rowKey"
+      @retry="refreshAll"
+    />
+    <StandardPageState
+      v-else
+      :state="rulesState"
+      :empty-text="t('gateway.no_rules')"
+      @retry="refreshAll"
+    >
       <n-grid x-gap="12" y-gap="10" cols="1 600:2 1200:3 1600:3">
         <n-grid-item v-for="rule in rules" :key="rule.id">
           <GatewayRuleCard @refresh="refreshAll" :rule="rule" />
         </n-grid-item>
       </n-grid>
-    </n-flex>
+    </StandardPageState>
 
     <GatewayRuleEditModal
       @refresh="refreshAll"

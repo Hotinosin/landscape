@@ -29,14 +29,17 @@ import {
   type DataTableColumns,
 } from "naive-ui";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import EditButton from "@/components/common/EditButton.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import { useI18n } from "vue-i18n";
+import { Add, Renew } from "@vicons/carbon";
+import DnsProviderQuickCreateModal from "@/components/domain/DnsProviderQuickCreateModal.vue";
+import { usePageRequest } from "@/composables/usePageRequest";
 
 const { t } = useI18n();
 const message = useMessage();
 const frontEndStore = useFrontEndStore();
-const items = ref<DdnsJob[]>([]);
 const runtimeMap = ref<Map<string, DdnsJobRuntime>>(new Map());
 const providerProfiles = ref<DnsProviderProfile[]>([]);
 const ifaceOptions = ref<{ label: string; value: string }[]>([]);
@@ -51,8 +54,8 @@ type SourceInputItem =
       wan_pd_id: string;
       family: "ipv6";
     };
-const loading = ref(false);
 const showModal = ref(false);
+const showProviderCreateModal = ref(false);
 const showDetailDrawer = ref(false);
 const saving = ref(false);
 const syncingIds = ref<Set<string>>(new Set());
@@ -114,9 +117,17 @@ const rules = {
   },
 };
 
-const providerOptions = computed(() =>
-  providerProfiles.value.map((item) => ({ label: item.name, value: item.id! })),
-);
+const CREATE_PROVIDER_OPTION = "__create_dns_provider__";
+const providerOptions = computed(() => [
+  ...providerProfiles.value.map((item) => ({
+    label: item.name,
+    value: item.id!,
+  })),
+  {
+    label: `+ ${t("common.create")} ${t("dns_provider.provider_profile")}`,
+    value: CREATE_PROVIDER_OPTION,
+  },
+]);
 const selectedProviderProfile = computed(
   () =>
     providerProfiles.value.find(
@@ -186,9 +197,8 @@ function resetForm(item?: DdnsJob) {
   recordInputs.value = item?.records?.map((record) => record.name) ?? ["@"];
 }
 
-async function refresh() {
-  loading.value = true;
-  try {
+const listRequest = usePageRequest(
+  async () => {
     const [jobs, runtimeStatuses, profiles, wanCandidates, prefixInfos] =
       await Promise.all([
         get_ddns_jobs(),
@@ -197,26 +207,38 @@ async function refresh() {
         get_wan_candidates(),
         get_current_ip_prefix_info(),
       ]);
-    items.value = jobs;
-    runtimeMap.value = new Map(
-      runtimeStatuses.map((item) => [item.job_id, item]),
-    );
-    providerProfiles.value = profiles;
-    ifaceOptions.value = wanCandidates.map((name: string) => ({
-      label: name,
-      value: name,
-    }));
-    wanPdOptions.value = Array.from(prefixInfos.entries()).map(
-      ([key, value]) => ({
-        label: key,
-        value: key,
-        disabled: value === null,
-      }),
-    );
-  } finally {
-    loading.value = false;
-  }
-}
+    return { jobs, runtimeStatuses, profiles, wanCandidates, prefixInfos };
+  },
+  {
+    initialData: {
+      jobs: [] as DdnsJob[],
+      runtimeStatuses: [] as DdnsJobRuntime[],
+      profiles: [] as DnsProviderProfile[],
+      wanCandidates: [] as string[],
+      prefixInfos: new Map(),
+    },
+    onSuccess: ({ runtimeStatuses, profiles, wanCandidates, prefixInfos }) => {
+      runtimeMap.value = new Map(
+        runtimeStatuses.map((item) => [item.job_id, item]),
+      );
+      providerProfiles.value = profiles;
+      ifaceOptions.value = wanCandidates.map((name: string) => ({
+        label: name,
+        value: name,
+      }));
+      wanPdOptions.value = Array.from(prefixInfos.entries()).map(
+        ([key, value]) => ({
+          label: key,
+          value: key,
+          disabled: value === null,
+        }),
+      );
+    },
+  },
+);
+const items = computed(() => listRequest.data.value.jobs);
+const loading = listRequest.loading;
+const refresh = listRequest.refresh;
 
 function providerName(id: string) {
   return providerProfiles.value.find((item) => item.id === id)?.name ?? id;
@@ -440,9 +462,25 @@ function updateSourceFamily(index: number, value: IpFamily) {
 }
 
 function updateProviderProfile(value: string) {
+  if (value === CREATE_PROVIDER_OPTION) {
+    showProviderCreateModal.value = true;
+    return;
+  }
   form.value.provider_profile_id = value;
   if (!useProfileDefaultTtl.value && form.value.ttl == null) {
     form.value.ttl = selectedProviderDefaultTtl.value;
+  }
+}
+
+async function handleProviderCreated(created?: DnsProviderProfile) {
+  const profiles = await get_dns_provider_profiles();
+  providerProfiles.value = profiles;
+  const createdProfile =
+    (created?.id && profiles.find((item) => item.id === created.id)) ||
+    profiles.find((item) => item.name === created?.name) ||
+    profiles[profiles.length - 1];
+  if (createdProfile?.id) {
+    updateProviderProfile(createdProfile.id);
   }
 }
 
@@ -524,31 +562,31 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
   {
     title: t("ddns.job_name"),
     key: "name",
-    minWidth: 120,
+    width: 120,
     render: (row) => frontEndStore.MASK_INFO(row.name),
   },
   {
     title: t("ddns.zone_name"),
     key: "zone_name",
-    minWidth: 160,
+    width: 140,
     render: (row) => frontEndStore.MASK_INFO(row.zone_name),
   },
   {
     title: t("ddns.records"),
     key: "records",
-    minWidth: 220,
+    width: 170,
     render: (row) => recordsSummary(row) || "-",
   },
   {
     title: t("ddns.source"),
     key: "source",
-    minWidth: 140,
+    width: 120,
     render: (row) => sourceTags(row),
   },
   {
     title: t("dns_provider.provider_profile"),
     key: "provider_profile_id",
-    minWidth: 140,
+    width: 130,
     render: (row) =>
       frontEndStore.MASK_INFO(providerName(row.provider_profile_id)),
   },
@@ -575,13 +613,13 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
   {
     title: t("cert.cert_status_message"),
     key: "status_message",
-    minWidth: 220,
+    width: 170,
     render: (row) => formatRuntimeSummary(getJobRuntime(row)),
   },
   {
     title: t("common.actions"),
     key: "actions",
-    width: 360,
+    width: 300,
     render: (row) => [
       h(
         NButton,
@@ -605,19 +643,13 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
         },
         () => t("ddns.sync_now"),
       ),
-      h(
-        NButton,
-        {
-          size: "small",
-          secondary: true,
-          style: "margin-left: 8px",
-          onClick: () => {
-            resetForm(row);
-            showModal.value = true;
-          },
+      h(EditButton, {
+        style: "margin-left: 8px",
+        onClick: () => {
+          resetForm(row);
+          showModal.value = true;
         },
-        () => t("common.edit"),
-      ),
+      }),
       h(
         NPopconfirm,
         { onPositiveClick: () => remove(row.id!) },
@@ -658,25 +690,32 @@ onMounted(async () => {
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1">
-    <n-flex justify="space-between">
+  <n-flex vertical class="standard-content-page">
+    <n-flex justify="space-between" class="standard-list-toolbar">
       <n-button
+        type="primary"
         @click="
           resetForm();
           showModal = true;
         "
+        ><template #icon
+          ><n-icon><Add /></n-icon></template
         >{{ t("common.create") }}</n-button
       >
-      <n-button :loading="loading" @click="refresh">{{
-        t("common.refresh")
-      }}</n-button>
+      <n-button :loading="loading" secondary @click="refresh">
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
+      </n-button>
     </n-flex>
 
-    <n-data-table
+    <StandardDataTable
       :columns="columns"
       :data="items"
-      :bordered="false"
-      :single-line="false"
+      :loading="loading"
+      :error="listRequest.error.value"
+      @retry="listRequest.retry"
     />
 
     <n-drawer
@@ -895,6 +934,10 @@ onMounted(async () => {
         </n-flex>
       </template>
     </ConfigModal>
+    <DnsProviderQuickCreateModal
+      v-model:show="showProviderCreateModal"
+      @created="handleProviderCreated"
+    />
   </n-flex>
 </template>
 
@@ -904,8 +947,8 @@ onMounted(async () => {
 }
 
 .ddns-form-hint {
-  color: rgba(128, 128, 128, 0.9);
-  font-size: 12px;
+  color: var(--app-text-muted-color);
+  font-size: var(--app-font-size-caption);
 }
 
 .ddns-detail-table {
@@ -916,7 +959,7 @@ onMounted(async () => {
 .ddns-detail-table th,
 .ddns-detail-table td {
   padding: 8px 10px;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.18);
+  border-bottom: 1px solid var(--app-border-muted-color);
   text-align: left;
   vertical-align: top;
 }

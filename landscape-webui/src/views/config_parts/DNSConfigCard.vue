@@ -28,7 +28,7 @@ async function handleSaveDns() {
         {{ t("config.save_dns") }}
       </n-button>
     </template>
-    <n-form label-placement="left" label-width="120">
+    <n-form label-placement="left" label-width="160">
       <n-form-item :label="t('config.cache_capacity')">
         <n-input-number
           v-model:value="dnsStore.cacheCapacity"

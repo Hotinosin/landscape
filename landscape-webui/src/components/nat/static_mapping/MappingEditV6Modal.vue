@@ -296,7 +296,7 @@ const isIndeterminate = computed(() => {
           </n-form-item-gi>
 
           <n-form-item-gi :span="2" :label="t('nat.mapping.port_config_label')">
-            <n-flex vertical style="width: 100%; gap: 8px">
+            <n-flex vertical style="width: 100%; gap: var(--app-space-sm)">
               <n-radio-group v-model:value="portMode">
                 <n-radio-button value="ports">
                   {{ t("nat.mapping.port_mode_specific") }}

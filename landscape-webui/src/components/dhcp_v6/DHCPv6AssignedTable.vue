@@ -1,5 +1,7 @@
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed, h } from "vue";
+import type { DataTableColumns } from "naive-ui";
+import { NCountdown, NTime } from "naive-ui";
 import type { DHCPv6OfferInfo } from "@landscape-router/types/api/schemas";
 import type {
   DHCPv6AddressItem,
@@ -9,6 +11,7 @@ import { useFrontEndStore } from "@/stores/front_end_config";
 import { usePreferenceStore } from "@/stores/preference";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import { useI18n } from "vue-i18n";
+import StandardDataTable from "@/components/common/StandardDataTable.vue";
 
 const { t } = useI18n();
 const prefStore = usePreferenceStore();
@@ -55,112 +58,128 @@ const show_prefixes = computed(() => {
     real_remaining: remaining_ms(item),
   }));
 });
+
+type AddressRow = (typeof show_addresses.value)[number];
+type PrefixRow = (typeof show_prefixes.value)[number];
+
+const addressColumns = computed<DataTableColumns<AddressRow>>(() => [
+  {
+    title: t("dhcp_v6.hostname"),
+    key: "hostname",
+    render: (item) =>
+      item.mac_str
+        ? enrolledDeviceStore.GET_NAME_WITH_FALLBACK(
+            item.mac_str,
+            item.hostname,
+          )
+        : (item.hostname ?? "-"),
+  },
+  {
+    title: t("dhcp_v6.mac"),
+    key: "mac",
+    render: (item) =>
+      item.mac_str ? frontEndStore.MASK_INFO(item.mac_str) : "-",
+  },
+  {
+    title: t("dhcp_v6.ipv6_address"),
+    key: "ip",
+    render: (item) => frontEndStore.MASK_INFO(item.ip),
+  },
+  {
+    title: t("dhcp_v6.request_time"),
+    key: "real_active_time",
+    render: (item) =>
+      h(NTime, {
+        time: item.real_active_time,
+        timeZone: prefStore.timezone,
+      }),
+  },
+  {
+    title: t("dhcp_v6.remaining_lease"),
+    key: "real_remaining",
+    render: (item) =>
+      item.is_static
+        ? t("dhcp_v6.static_allocation")
+        : h(NCountdown, { duration: item.real_remaining, active: true }),
+  },
+]);
+
+const prefixColumns = computed<DataTableColumns<PrefixRow>>(() => [
+  {
+    title: t("dhcp_v6.duid"),
+    key: "duid",
+    render: (item) => (item.duid ? `${item.duid.substring(0, 16)}...` : "-"),
+  },
+  {
+    title: t("dhcp_v6.delegated_prefix"),
+    key: "prefix",
+    render: (item) => frontEndStore.MASK_INFO(item.prefix),
+  },
+  {
+    title: t("dhcp_v6.prefix_length"),
+    key: "prefix_len",
+    render: (item) => `/${item.prefix_len}`,
+  },
+  {
+    title: t("dhcp_v6.request_time"),
+    key: "real_active_time",
+    render: (item) =>
+      h(NTime, {
+        time: item.real_active_time,
+        timeZone: prefStore.timezone,
+      }),
+  },
+  {
+    title: t("dhcp_v6.remaining_lease"),
+    key: "real_remaining",
+    render: (item) =>
+      h(NCountdown, { duration: item.real_remaining, active: true }),
+  },
+]);
 </script>
 
 <template>
   <n-card size="small" :title="iface_name">
     <!-- IA_NA Addresses -->
     <template v-if="show_addresses.length > 0">
-      <n-divider title-placement="left" style="margin: 4px 0">
+      <n-divider title-placement="left" class="section-divider">
         {{ t("dhcp_v6.ia_na_title") }}
       </n-divider>
-      <n-table :bordered="true" size="small" striped>
-        <thead>
-          <tr>
-            <th style="text-align: center">{{ t("dhcp_v6.hostname") }}</th>
-            <th style="text-align: center">{{ t("dhcp_v6.mac") }}</th>
-            <th style="text-align: center">{{ t("dhcp_v6.ipv6_address") }}</th>
-            <th style="text-align: center">{{ t("dhcp_v6.request_time") }}</th>
-            <th style="text-align: center">
-              {{ t("dhcp_v6.remaining_lease") }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(item, idx) in show_addresses" :key="idx">
-            <td style="text-align: center">
-              {{
-                item.mac_str
-                  ? enrolledDeviceStore.GET_NAME_WITH_FALLBACK(
-                      item.mac_str,
-                      item.hostname,
-                    )
-                  : (item.hostname ?? "-")
-              }}
-            </td>
-            <td style="text-align: center">
-              {{ item.mac_str ? frontEndStore.MASK_INFO(item.mac_str) : "-" }}
-            </td>
-            <td style="text-align: center">
-              {{ frontEndStore.MASK_INFO(item.ip) }}
-            </td>
-            <td style="text-align: center">
-              <n-time
-                :time="item.real_active_time"
-                :time-zone="prefStore.timezone"
-              />
-            </td>
-            <td style="text-align: center">
-              <n-flex justify="center" v-if="item.is_static">
-                {{ t("dhcp_v6.static_allocation") }}
-              </n-flex>
-              <n-countdown
-                v-else
-                :duration="item.real_remaining"
-                :active="true"
-              />
-            </td>
-          </tr>
-        </tbody>
-      </n-table>
+      <StandardDataTable
+        :columns="addressColumns"
+        :data="show_addresses"
+        size="small"
+        :row-key="(row) => `${row.ip}-${row.real_active_time}`"
+      />
     </template>
 
     <!-- IA_PD Prefixes -->
     <template v-if="show_prefixes.length > 0">
-      <n-divider title-placement="left" style="margin: 4px 0">
+      <n-divider title-placement="left" class="section-divider">
         {{ t("dhcp_v6.ia_pd_title") }}
       </n-divider>
-      <n-table :bordered="true" size="small" striped>
-        <thead>
-          <tr>
-            <th style="text-align: center">{{ t("dhcp_v6.duid") }}</th>
-            <th style="text-align: center">
-              {{ t("dhcp_v6.delegated_prefix") }}
-            </th>
-            <th style="text-align: center">{{ t("dhcp_v6.prefix_length") }}</th>
-            <th style="text-align: center">{{ t("dhcp_v6.request_time") }}</th>
-            <th style="text-align: center">
-              {{ t("dhcp_v6.remaining_lease") }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(item, idx) in show_prefixes" :key="idx">
-            <td style="text-align: center">
-              {{ item.duid ? item.duid.substring(0, 16) + "..." : "-" }}
-            </td>
-            <td style="text-align: center">
-              {{ frontEndStore.MASK_INFO(item.prefix) }}
-            </td>
-            <td style="text-align: center">/{{ item.prefix_len }}</td>
-            <td style="text-align: center">
-              <n-time
-                :time="item.real_active_time"
-                :time-zone="prefStore.timezone"
-              />
-            </td>
-            <td style="text-align: center">
-              <n-countdown :duration="item.real_remaining" :active="true" />
-            </td>
-          </tr>
-        </tbody>
-      </n-table>
+      <StandardDataTable
+        :columns="prefixColumns"
+        :data="show_prefixes"
+        size="small"
+        :row-key="(row) => `${row.duid}-${row.prefix}`"
+      />
     </template>
 
     <n-empty
       v-if="show_addresses.length === 0 && show_prefixes.length === 0"
       :description="t('dhcp_v6.no_records')"
-      style="padding: 20px 0"
+      class="empty-state"
     />
   </n-card>
 </template>
+
+<style scoped>
+.section-divider {
+  margin: var(--app-space-2xs) 0;
+}
+
+.empty-state {
+  padding: var(--app-space-xl) 0;
+}
+</style>

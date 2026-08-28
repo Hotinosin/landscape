@@ -215,7 +215,7 @@ function miniMapNodeColor(node: any) {
     return changeColor(themeVars.value.infoColor, { alpha: 0.88 });
   }
 
-  return changeColor(themeVars.value.successColor, { alpha: 0.84 });
+  return changeColor(themeVars.value.primaryColor, { alpha: 0.84 });
 }
 
 function miniMapNodeStrokeColor() {
@@ -428,7 +428,7 @@ onPaneClick(() => {
   width: 100%;
   height: 100%;
   min-height: 550px;
-  border-radius: 20px;
+  border-radius: var(--app-radius-large);
   background:
     radial-gradient(
       circle at top left,
@@ -452,13 +452,13 @@ onPaneClick(() => {
   border: none;
   box-shadow: none;
   padding: 0;
-  transition: opacity 0.18s ease;
+  transition: opacity var(--app-motion-normal, 180ms) ease;
 }
 
 .topology-flow :deep(.vue-flow__edge-path) {
   stroke-width: 2;
   stroke: var(--topology-flow-edge);
-  transition: opacity 0.18s ease;
+  transition: opacity var(--app-motion-normal, 180ms) ease;
 }
 
 .topology-flow :deep(.vue-flow__edge.is-dimmed .vue-flow__edge-path) {
@@ -472,9 +472,14 @@ onPaneClick(() => {
 .topology-flow :deep(.topology-minimap) {
   background: var(--topology-flow-minimap-bg);
   border: 1px solid var(--topology-flow-minimap-border);
-  border-radius: 16px;
+  border-radius: var(--app-radius-large);
   box-shadow: var(--topology-flow-minimap-shadow);
   overflow: hidden;
+  line-height: 0;
+}
+
+.topology-flow :deep(.topology-minimap > svg) {
+  display: block;
 }
 
 .topology-flow :deep(.vue-flow__panel.bottom.left) {

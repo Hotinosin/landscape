@@ -20,12 +20,21 @@ import {
 } from "naive-ui";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
+import { Add, Renew } from "@vicons/carbon";
+import { usePageRequest } from "@/composables/usePageRequest";
+import EditButton from "@/components/common/EditButton.vue";
 
 const { t } = useI18n();
 const message = useMessage();
 const frontEndStore = useFrontEndStore();
-const items = ref<DnsProviderProfile[]>([]);
-const loading = ref(false);
+const {
+  data: items,
+  error: listError,
+  loading,
+  refresh,
+} = usePageRequest(get_dns_provider_profiles, {
+  initialData: [] as DnsProviderProfile[],
+});
 const showModal = ref(false);
 const saving = ref(false);
 const validating = ref(false);
@@ -170,15 +179,6 @@ function resetForm(item?: DnsProviderProfile) {
   providerType.value = getProviderType(form.value.provider_config);
 }
 
-async function refresh() {
-  loading.value = true;
-  try {
-    items.value = await get_dns_provider_profiles();
-  } finally {
-    loading.value = false;
-  }
-}
-
 async function save() {
   await formRef.value?.validate();
   saving.value = true;
@@ -294,19 +294,13 @@ const columns = computed<DataTableColumns<DnsProviderProfile>>(() => [
         },
         () => t("cert.action_verify"),
       ),
-      h(
-        NButton,
-        {
-          size: "small",
-          secondary: true,
-          style: "margin-left: 8px",
-          onClick: () => {
-            resetForm(row);
-            showModal.value = true;
-          },
+      h(EditButton, {
+        style: "margin-left: 8px",
+        onClick: () => {
+          resetForm(row);
+          showModal.value = true;
         },
-        () => t("common.edit"),
-      ),
+      }),
       h(
         NPopconfirm,
         { onPositiveClick: () => remove(row.id!) },
@@ -333,21 +327,33 @@ onMounted(refresh);
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1">
-    <n-flex justify="space-between">
+  <n-flex vertical class="standard-content-page">
+    <n-flex justify="space-between" class="standard-list-toolbar">
       <n-button
+        type="primary"
         @click="
           resetForm();
           showModal = true;
         "
+        ><template #icon
+          ><n-icon><Add /></n-icon></template
         >{{ t("common.create") }}</n-button
       >
-      <n-button :loading="loading" @click="refresh">{{
-        t("common.refresh")
-      }}</n-button>
+      <n-button :loading="loading" secondary @click="refresh">
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
+      </n-button>
     </n-flex>
 
-    <n-data-table :columns="columns" :data="items" :bordered="false" />
+    <StandardDataTable
+      :columns="columns"
+      :data="items"
+      :loading="loading"
+      :error="listError"
+      @retry="refresh"
+    />
 
     <n-modal
       v-model:show="showModal"
@@ -361,9 +367,27 @@ onMounted(refresh);
         :rules="rules"
         label-placement="left"
         label-width="auto"
+        autocomplete="off"
       >
+        <div class="autofill-decoys" aria-hidden="true">
+          <input name="username" autocomplete="username" tabindex="-1" />
+          <input
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            tabindex="-1"
+          />
+        </div>
         <n-form-item :label="t('dns_provider.profile_name')" path="name">
-          <n-input v-model:value="form.name" />
+          <n-input
+            v-model:value="form.name"
+            :input-props="{
+              name: 'dns-provider-profile-name',
+              autocomplete: 'one-time-code',
+              'data-1p-ignore': 'true',
+              'data-lpignore': 'true',
+            }"
+          />
         </n-form-item>
         <n-form-item :label="t('dns_provider.provider')">
           <n-select
@@ -384,6 +408,12 @@ onMounted(refresh);
             ><n-input
               v-model:value="form.provider_config.cloudflare.api_token"
               type="password"
+              :input-props="{
+                name: 'cloudflare-api-token',
+                autocomplete: 'one-time-code',
+                'data-1p-ignore': 'true',
+                'data-lpignore': 'true',
+              }"
               show-password-on="click"
           /></n-form-item>
         </template>
@@ -395,12 +425,23 @@ onMounted(refresh);
           "
         >
           <n-form-item label="Access Key ID"
-            ><n-input v-model:value="form.provider_config.aliyun.access_key_id"
+            ><n-input
+              v-model:value="form.provider_config.aliyun.access_key_id"
+              :input-props="{
+                name: 'aliyun-access-key-id',
+                autocomplete: 'one-time-code',
+                'data-1p-ignore': 'true',
+              }"
           /></n-form-item>
           <n-form-item label="Access Key Secret"
             ><n-input
               v-model:value="form.provider_config.aliyun.access_key_secret"
               type="password"
+              :input-props="{
+                name: 'aliyun-access-key-secret',
+                autocomplete: 'one-time-code',
+                'data-1p-ignore': 'true',
+              }"
               show-password-on="click"
           /></n-form-item>
         </template>
@@ -412,12 +453,23 @@ onMounted(refresh);
           "
         >
           <n-form-item label="Secret ID"
-            ><n-input v-model:value="form.provider_config.tencent.secret_id"
+            ><n-input
+              v-model:value="form.provider_config.tencent.secret_id"
+              :input-props="{
+                name: 'tencent-secret-id',
+                autocomplete: 'one-time-code',
+                'data-1p-ignore': 'true',
+              }"
           /></n-form-item>
           <n-form-item label="Secret Key"
             ><n-input
               v-model:value="form.provider_config.tencent.secret_key"
               type="password"
+              :input-props="{
+                name: 'tencent-secret-key',
+                autocomplete: 'one-time-code',
+                'data-1p-ignore': 'true',
+              }"
               show-password-on="click"
           /></n-form-item>
         </template>
@@ -429,12 +481,23 @@ onMounted(refresh);
           "
         >
           <n-form-item label="Access Key ID"
-            ><n-input v-model:value="form.provider_config.aws.access_key_id"
+            ><n-input
+              v-model:value="form.provider_config.aws.access_key_id"
+              :input-props="{
+                name: 'aws-access-key-id',
+                autocomplete: 'one-time-code',
+                'data-1p-ignore': 'true',
+              }"
           /></n-form-item>
           <n-form-item label="Secret Access Key"
             ><n-input
               v-model:value="form.provider_config.aws.secret_access_key"
               type="password"
+              :input-props="{
+                name: 'aws-secret-access-key',
+                autocomplete: 'one-time-code',
+                'data-1p-ignore': 'true',
+              }"
               show-password-on="click"
           /></n-form-item>
           <n-form-item label="Region"
@@ -501,3 +564,15 @@ onMounted(refresh);
     </n-modal>
   </n-flex>
 </template>
+
+<style scoped>
+.autofill-decoys {
+  position: fixed;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+</style>

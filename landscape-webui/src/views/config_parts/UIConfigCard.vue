@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { usePreferenceStore } from "@/stores/preference";
+import { useFrontEndStore } from "@/stores/front_end_config";
 import { useMessage } from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { HelpCircleOutline } from "@vicons/ionicons5";
 
 const prefStore = usePreferenceStore();
+const frontEndStore = useFrontEndStore();
 const message = useMessage();
 const { t } = useI18n();
 
@@ -13,10 +17,16 @@ const languageOptions = [
   { label: "English", value: "en" },
 ];
 
-const themeOptions = [
-  { label: t("config.dark_mode"), value: "dark" },
+const themeOptions = computed(() => [
+  { label: t("config.system_mode"), value: "system" },
   { label: t("config.light_mode"), value: "light" },
-];
+  { label: t("config.dark_mode"), value: "dark" },
+]);
+
+const displayStyleOptions = computed(() => [
+  { label: t("config.display_style_card"), value: "card" },
+  { label: t("config.display_style_list"), value: "list" },
+]);
 
 const timezoneOptions = (Intl as any)
   .supportedValuesOf("timeZone")
@@ -47,32 +57,56 @@ async function handleSave() {
       </n-button>
     </template>
 
-    <n-form label-placement="left" label-width="120">
+    <n-form label-placement="left" label-width="160">
       <n-form-item :label="t('config.language')">
         <n-select
+          class="preference-control"
           v-model:value="prefStore.language"
           :options="languageOptions"
-          style="max-width: 300px"
         />
       </n-form-item>
       <n-form-item :label="t('config.theme')">
         <n-select
+          class="preference-control"
           v-model:value="prefStore.theme"
           :options="themeOptions"
-          disabled
           :placeholder="t('config.theme_placeholder')"
-          style="max-width: 300px"
         />
+      </n-form-item>
+      <n-form-item :label="t('config.display_style')">
+        <n-flex align="center" :wrap="false" size="small">
+          <n-select
+            class="preference-control"
+            v-model:value="frontEndStore.display_style"
+            :options="displayStyleOptions"
+            :placeholder="t('config.display_style_placeholder')"
+          />
+          <n-tooltip trigger="hover">
+            <template #trigger>
+              <n-icon size="16" style="cursor: help"
+                ><HelpCircleOutline
+              /></n-icon>
+            </template>
+            {{ t("config.display_style_tip") }}
+          </n-tooltip>
+        </n-flex>
       </n-form-item>
       <n-form-item :label="t('config.timezone')">
         <n-select
+          class="preference-control"
           v-model:value="prefStore.timezone"
           filterable
           :options="timezoneOptions"
           :placeholder="t('config.timezone_placeholder')"
-          style="max-width: 400px"
         />
       </n-form-item>
     </n-form>
   </n-card>
 </template>
+
+<style scoped>
+.preference-control {
+  width: 300px;
+  max-width: 100%;
+}
+</style>

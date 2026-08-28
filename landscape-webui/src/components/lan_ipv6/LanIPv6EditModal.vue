@@ -493,7 +493,7 @@ function replace_group_sources(
 .mode-settings-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  gap: 16px 24px;
+  gap: var(--app-space-lg) 24px;
   align-items: start;
 }
 
@@ -510,7 +510,7 @@ function replace_group_sources(
 @media (max-width: 900px) {
   .mode-settings-grid {
     grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
+    gap: var(--app-space-section);
   }
 }
 </style>

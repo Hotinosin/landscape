@@ -1,4 +1,6 @@
 export default {
+  load_failed: "Failed to load",
+  retry: "Retry",
   private_mode: "Private Mode",
   create: "Create",
   details: "Details",
@@ -6,6 +8,7 @@ export default {
   delete: "Delete",
   confirm_delete: "Confirm deletion?",
   no_remark: "No remark",
+  no_data: "No data",
   not_configured: "N/A",
   starting: "Starting",
   running: "Running",
@@ -17,6 +20,7 @@ export default {
   create_bridge_device: "Create Bridge Device",
   add_bridge: "Add Bridge",
   refresh: "Refresh",
+  config: "Configure",
   force_refresh: "Force Refresh",
   force_refresh_confirm:
     "Force refresh? This will clear all keys and re-download.",
@@ -79,7 +83,9 @@ export default {
   day_full: "day",
   day_full_plural: "days",
   size: "Size",
+  count: "Count",
   name: "Name",
+  interface: "Interface",
   tags: "Tags",
   unknown: "Unknown",
   unnamed: "Unnamed",

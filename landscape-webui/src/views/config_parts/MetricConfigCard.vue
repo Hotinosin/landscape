@@ -34,7 +34,7 @@ async function handleSaveMetric() {
         {{ t("config.save_metric") }}
       </n-button>
     </template>
-    <n-form label-placement="left" label-width="120">
+    <n-form label-placement="left" label-width="160">
       <n-form-item :label="t('config.metric_mode')">
         <n-select
           v-model:value="metricStore.mode"

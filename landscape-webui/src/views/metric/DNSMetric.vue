@@ -509,7 +509,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div style="width: 100%; padding: 12px">
+  <div style="width: 100%; padding: var(--app-space-section)">
     <div
       style="
         display: flex;
@@ -529,7 +529,7 @@ onMounted(() => {
               style="
                 vertical-align: middle;
                 cursor: help;
-                color: rgba(0, 0, 0, 0.35);
+                color: var(--app-text-muted-color);
               "
             >
               <HelpCircleOutline />
@@ -562,7 +562,7 @@ onMounted(() => {
           clearable
           :shortcuts="shortcuts"
           :placeholder="t('metric.dns.time_range')"
-          style="width: 320px"
+          style="width: 400px"
           :time-picker-props="{ timeZone: prefStore.timezone }"
         />
         <n-tooltip trigger="hover">
@@ -656,7 +656,7 @@ onMounted(() => {
           clearable
           :shortcuts="shortcuts"
           :placeholder="t('metric.dns.time_range')"
-          style="width: 320px"
+          style="width: 400px"
           :time-picker-props="{ timeZone: prefStore.timezone }"
         />
         <n-tooltip trigger="hover">
@@ -720,6 +720,6 @@ onMounted(() => {
 
 <style scoped>
 .dns-history-table :deep(.n-data-table-wrapper) {
-  border-radius: 8px;
+  border-radius: var(--app-radius-panel, 8px);
 }
 </style>

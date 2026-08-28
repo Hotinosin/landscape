@@ -2,6 +2,7 @@ import type { AxiosInstance } from "axios";
 import router from "@/router";
 import i18n from "@/i18n";
 import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
+import { useHistoryRouteStore } from "@/stores/history_route";
 
 function formatApiErrorTemplate(
   template: string,
@@ -46,6 +47,7 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
         const { error_id, message, args } = error.response.data;
         if (code === 401) {
           localStorage.removeItem(LANDSCAPE_TOKEN_KEY);
+          useHistoryRouteStore().resetRoutes();
 
           const currentPath = router.currentRoute.value.fullPath;
           router.push({

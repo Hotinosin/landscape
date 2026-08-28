@@ -25,7 +25,13 @@ export default {
 
   language: "语言设定",
   theme: "外观主题",
-  theme_placeholder: "浅色模式适配中，暂不可用",
+  theme_placeholder: "请选择外观主题",
+  display_style: "展示样式",
+  display_style_placeholder: "请选择内容展示样式",
+  display_style_card: "卡片",
+  display_style_list: "列表",
+  display_style_tip:
+    "卡片适合逐项查看详情；列表使用统一表头，适合批量浏览和横向比较。",
   timezone: "系统时区",
   timezone_placeholder: "请选择或搜索，例如: Asia/Shanghai",
 
@@ -108,6 +114,7 @@ export default {
   english: "English",
   dark_mode: "深色模式",
   light_mode: "浅色模式",
+  system_mode: "跟随系统",
   welcome: "欢迎, {username}",
   console_download_failed: "下载配置失败",
 };

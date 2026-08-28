@@ -61,33 +61,31 @@ watch(
 
 function logout() {
   localStorage.removeItem(LANDSCAPE_TOKEN_KEY);
+  historyStore.resetRoutes();
   frontEndStore.INSERT_USERNAME("");
   router.push("/login");
 }
 
 // Dynamic content style for Split Mode
-const DOCK_SAFE_MARGIN = 8; // Safe distance from dock edge
+const MAIN_CONTENT_GUTTER = 15;
 
 const contentStyle = computed(() => {
   const baseStyle: any = {
-    top: "40px",
-    left: "25px",
+    top: `${40 + MAIN_CONTENT_GUTTER}px`,
+    left: `${MAIN_CONTENT_GUTTER}px`,
+    right: "0px",
+    bottom: `${MAIN_CONTENT_GUTTER}px`,
     display: "flex",
-    paddingRight: "15px",
+    paddingRight: `${MAIN_CONTENT_GUTTER}px`,
     transition: "all 0.3s ease",
   };
 
   if (ptyStore.viewMode === "dock" && ptyStore.isOpen) {
     if (ptyStore.dockPosition === "bottom") {
-      baseStyle.bottom = `${ptyStore.dockSize + DOCK_SAFE_MARGIN}px`;
-      baseStyle.right = "0px";
+      baseStyle.bottom = `${ptyStore.dockSize + MAIN_CONTENT_GUTTER}px`;
     } else if (ptyStore.dockPosition === "right") {
-      baseStyle.bottom = "0px";
-      baseStyle.right = `${ptyStore.dockSize + DOCK_SAFE_MARGIN}px`;
+      baseStyle.right = `${ptyStore.dockSize}px`;
     }
-  } else {
-    baseStyle.bottom = "0px";
-    baseStyle.right = "0px";
   }
 
   return baseStyle;
@@ -100,7 +98,7 @@ const contentStyle = computed(() => {
       <LandscapeSiderBar />
       <n-layout>
         <n-layout-header
-          style="height: 30px; padding: 0 10px; display: flex"
+          style="height: 40px; padding: 0 10px; display: flex"
           bordered
         >
           <n-flex

@@ -106,7 +106,7 @@ defineExpose({ refresh: loadSummary });
     <template #header>
       <n-flex align="center" :size="4">
         <span>DNS</span>
-        <n-text depth="3" style="font-size: 10px">{{
+        <n-text depth="3" style="font-size: var(--app-font-size-micro)">{{
           t("metric.dns.dash.recent_5m")
         }}</n-text>
       </n-flex>
@@ -247,7 +247,7 @@ defineExpose({ refresh: loadSummary });
       <!-- Latency Section -->
       <n-flex vertical :size="8">
         <n-flex align="center" :size="4">
-          <n-text depth="3" style="font-size: 11px">
+          <n-text depth="3" style="font-size: var(--app-font-size-detail)">
             {{ t("metric.dns.dash.query_latency") }} (ms)
           </n-text>
           <n-tooltip trigger="hover" :width="280">
@@ -269,12 +269,15 @@ defineExpose({ refresh: loadSummary });
           >
             <n-text
               depth="3"
-              style="font-size: 10px; text-transform: uppercase"
+              style="
+                font-size: var(--app-font-size-micro);
+                text-transform: uppercase;
+              "
               >{{ stat.label }}</n-text
             >
             <n-text
               strong
-              style="font-size: 14px"
+              style="font-size: var(--app-font-size-body)"
               :style="{ color: stat.color }"
             >
               <n-number-animation
@@ -295,6 +298,6 @@ defineExpose({ refresh: loadSummary });
 
 <style scoped>
 .no-data-text {
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
 }
 </style>
