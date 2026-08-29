@@ -14,7 +14,11 @@ const { t } = useI18n();
 const frontEndStore = useFrontEndStore();
 
 const egressFlowId = computed(() =>
-  props.mark.action.t === "redirect" ? props.mark.flow_id : props.flowId,
+  props.mark.action.t === "direct"
+    ? 0
+    : props.mark.action.t === "redirect"
+      ? props.mark.flow_id
+      : props.flowId,
 );
 const target = computed(
   () =>

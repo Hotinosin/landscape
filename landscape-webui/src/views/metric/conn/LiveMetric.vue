@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, onUnmounted } from "vue";
+import { ref, computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { useMetricStore } from "@/stores/status_metric";
@@ -190,12 +190,7 @@ onMounted(async () => {
   if (flowId !== null) liveFilter.flow_id = flowId;
   if (ifindex !== null) liveFilter.ifindex = ifindex;
 
-  metricStore.SET_ENABLE("live", true);
   await metricStore.UPDATE_INFO();
-
-  onUnmounted(() => {
-    metricStore.SET_ENABLE("live", false);
-  });
 });
 </script>
 

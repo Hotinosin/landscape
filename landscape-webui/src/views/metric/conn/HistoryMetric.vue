@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, watch } from "vue";
+import { ref, computed, reactive, onMounted, onUnmounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { ConnectFilter } from "@/lib/metric.rs";
@@ -238,6 +238,9 @@ watch([queryLimit, sortKey, sortOrder], () => {
 
 // Debounced query: trigger 800ms after typing stops.
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+onUnmounted(() => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+});
 watch(
   historyFilter,
   () => {

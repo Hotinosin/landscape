@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { get_sysinfo } from "@/api/sys";
 import { LandscapeSystemInfo } from "@/lib/sys";
-import { onMounted, ref, computed } from "vue";
+import { onMounted, onUnmounted, ref, computed } from "vue";
 import { useThemeVars } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { InformationFilled, WarningAltFilled } from "@vicons/carbon";
@@ -23,9 +23,11 @@ const sysinfo = ref<LandscapeSystemInfo>({
 
 const now = ref<number>(new Date().getTime());
 
-setInterval(() => {
+const clockTimer = setInterval(() => {
   now.value = new Date().getTime();
 }, 1000);
+
+onUnmounted(() => clearInterval(clockTimer));
 
 onMounted(async () => {
   sysinfo.value = await get_sysinfo();

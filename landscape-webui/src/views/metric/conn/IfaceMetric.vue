@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from "vue";
+import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useThemeVars } from "naive-ui";
 import { ArrowDown, ArrowUp } from "@vicons/carbon";
@@ -45,12 +45,7 @@ function ifaceName(ifindex: number) {
 }
 
 onMounted(async () => {
-  metricStore.SET_ENABLE("iface", true);
   await Promise.all([ifaceNodeStore.UPDATE_INFO(), metricStore.UPDATE_INFO()]);
-});
-
-onUnmounted(() => {
-  metricStore.SET_ENABLE("iface", false);
 });
 </script>
 

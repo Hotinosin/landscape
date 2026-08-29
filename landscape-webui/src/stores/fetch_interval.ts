@@ -39,7 +39,10 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
   // SOCK
   const dockerImgTask = useDockerImgTask();
 
+  let refresh_running = false;
   const interval_function = async () => {
+    if (refresh_running) return;
+    refresh_running = true;
     if (start_count_down_callback.value !== undefined) {
       start_count_down_callback.value();
     }
@@ -73,29 +76,35 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
       } else {
         error_message.value = `An unknown error occurred: ${error}`;
       }
+    } finally {
+      refresh_running = false;
     }
   };
 
   const error_message = ref<string | undefined>(undefined);
   const enable_interval = ref<boolean>(true);
   const interval_time = ref<number>(3000);
-  const interval_timer = ref<any>(undefined);
+  let interval_timer: ReturnType<typeof setInterval> | undefined;
+  let visibility_listener_attached = false;
 
   const start_count_down_callback = ref<any>();
 
   function set_interval() {
     // 如果已经存在计时器，先清理掉
-    if (interval_timer.value !== undefined) {
+    if (interval_timer !== undefined) {
       clean_interval();
     }
     // 立即执行一次函数，然后设置新的计时器
     interval_function();
-    interval_timer.value = setInterval(interval_function, interval_time.value);
+    interval_timer = setInterval(
+      () => void interval_function(),
+      interval_time.value,
+    );
   }
 
   function clean_interval() {
-    clearInterval(interval_timer.value);
-    interval_timer.value = undefined;
+    if (interval_timer !== undefined) clearInterval(interval_timer);
+    interval_timer = undefined;
   }
 
   watch(enable_interval, (new_value, _) => {
@@ -108,7 +117,7 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
 
   const visibilityChangeHandler = () => {
     if (document.hidden) {
-      if (interval_timer.value != undefined) {
+      if (interval_timer != undefined) {
         clean_interval();
       }
     } else {
@@ -120,14 +129,20 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
 
   function destroy() {
     clean_interval();
-    document.removeEventListener("visibilitychange", visibilityChangeHandler);
+    if (visibility_listener_attached) {
+      document.removeEventListener("visibilitychange", visibilityChangeHandler);
+      visibility_listener_attached = false;
+    }
+    start_count_down_callback.value = undefined;
   }
 
-  document.addEventListener("visibilitychange", visibilityChangeHandler);
-
   function IMMEDIATELY_EXECUTE() {
-    set_interval();
-    enable_interval.value = true;
+    if (!visibility_listener_attached) {
+      document.addEventListener("visibilitychange", visibilityChangeHandler);
+      visibility_listener_attached = true;
+    }
+    if (enable_interval.value) set_interval();
+    else enable_interval.value = true;
   }
 
   async function SETTING_CALLBACK(call_back: any) {

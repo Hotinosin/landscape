@@ -1,27 +1,8 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
-
-import Landscape from "@/views/Landscape.vue";
-import MainLayout from "@/views/MainLayout.vue";
-import Flow from "@/views/Flow.vue";
-import Docker from "@/views/Docker.vue";
-import Firewall from "@/views/Firewall.vue";
-import GeoDomain from "@/views/GeoDomain.vue";
-import Config from "@/views/Config.vue";
-import About from "@/views/About.vue";
-
-import Login from "@/views/Login.vue";
-import StaticNatMappingV4 from "@/views/StaticNatMappingV4.vue";
-import StaticNatMappingV6 from "@/views/StaticNatMappingV6.vue";
-import EnrolledDevice from "@/views/EnrolledDevice.vue";
-
-import DnsRedirect from "@/views/dns/DnsRedirect.vue";
-import DnsUpstream from "@/views/dns/DnsUpstream.vue";
-import CertAccounts from "@/views/cert/CertAccounts.vue";
-import CertOrders from "@/views/cert/CertOrders.vue";
-import DdnsJobs from "@/views/domain/DdnsJobs.vue";
-import DnsProviderProfiles from "@/views/domain/DnsProviderProfiles.vue";
-import Gateway from "@/views/Gateway.vue";
-import NotFound from "@/views/error/NotFound.vue";
+import {
+  createRouter,
+  createWebHistory,
+  type RouteRecordRaw,
+} from "vue-router";
 import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
 
 import service_status_route from "./service_status";
@@ -31,49 +12,49 @@ const inner_zone: Array<RouteRecordRaw> = [
   {
     path: "/",
     name: "routes.dashboard",
-    component: Landscape,
+    component: () => import("@/views/Landscape.vue"),
   },
   {
     path: "/dns/redirect",
     name: "routes.dns-redirect",
-    component: DnsRedirect,
+    component: () => import("@/views/dns/DnsRedirect.vue"),
   },
   ...service_status_route,
   {
     path: "/dns/upstream",
     name: "routes.dns-upstream",
-    component: DnsUpstream,
+    component: () => import("@/views/dns/DnsUpstream.vue"),
   },
   {
     path: "/firewall-nat/nat/v4",
     name: "routes.nat-v4",
-    component: StaticNatMappingV4,
+    component: () => import("@/views/StaticNatMappingV4.vue"),
   },
   {
     path: "/firewall-nat/nat/v6",
     name: "routes.nat-v6",
-    component: StaticNatMappingV6,
+    component: () => import("@/views/StaticNatMappingV6.vue"),
   },
   {
     path: "/flow",
     name: "routes.flow",
-    component: Flow,
+    component: () => import("@/views/Flow.vue"),
   },
   {
     path: "/docker",
     name: "routes.docker",
-    component: Docker,
+    component: () => import("@/views/Docker.vue"),
   },
   {
     path: "/firewall-nat/firewall",
     name: "routes.firewall",
-    component: Firewall,
+    component: () => import("@/views/Firewall.vue"),
   },
   ...metric_route,
   {
     path: "/geo/domain",
     name: "routes.geo-domain",
-    component: GeoDomain,
+    component: () => import("@/views/GeoDomain.vue"),
   },
   {
     path: "/geo/ip",
@@ -82,47 +63,47 @@ const inner_zone: Array<RouteRecordRaw> = [
   {
     path: "/config",
     name: "routes.config",
-    component: Config,
+    component: () => import("@/views/Config.vue"),
   },
   {
     path: "/mac-binding",
     name: "routes.mac-binding",
-    component: EnrolledDevice,
+    component: () => import("@/views/EnrolledDevice.vue"),
   },
   {
     path: "/domains/dns-providers",
     name: "routes.dns-provider-profiles",
-    component: DnsProviderProfiles,
+    component: () => import("@/views/domain/DnsProviderProfiles.vue"),
   },
   {
     path: "/domains/ddns",
     name: "routes.ddns",
-    component: DdnsJobs,
+    component: () => import("@/views/domain/DdnsJobs.vue"),
   },
   {
     path: "/domains/cert-accounts",
     name: "routes.cert-accounts",
-    component: CertAccounts,
+    component: () => import("@/views/cert/CertAccounts.vue"),
   },
   {
     path: "/domains/certs",
     name: "routes.certs",
-    component: CertOrders,
+    component: () => import("@/views/cert/CertOrders.vue"),
   },
   {
     path: "/gateway",
     name: "routes.gateway",
-    component: Gateway,
+    component: () => import("@/views/Gateway.vue"),
   },
   {
     path: "/about",
     name: "routes.about",
-    component: About,
+    component: () => import("@/views/About.vue"),
   },
   {
     path: "/:pathMatch(.*)*",
     name: "NotFound",
-    component: NotFound,
+    component: () => import("@/views/error/NotFound.vue"),
   },
 ];
 
@@ -130,13 +111,13 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/",
     name: "MainLayout",
-    component: MainLayout,
+    component: () => import("@/views/MainLayout.vue"),
     children: [...inner_zone],
   },
   {
     path: "/login",
     name: "Login",
-    component: Login,
+    component: () => import("@/views/Login.vue"),
   },
 ];
 

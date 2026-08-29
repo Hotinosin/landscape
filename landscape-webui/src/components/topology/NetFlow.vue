@@ -4,7 +4,7 @@ import { MiniMap } from "@vue-flow/minimap";
 import { useElementSize } from "@vueuse/core";
 import { useMessage, useThemeVars } from "naive-ui";
 import { changeColor } from "seemly";
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { add_controller } from "@/api/network";
@@ -309,12 +309,7 @@ watch(selectedIface, (value) => {
 
 onMounted(() => {
   ifaceNodeStore.UPDATE_INFO();
-  metricStore.SET_ENABLE("iface", true);
   metricStore.UPDATE_INFO();
-});
-
-onUnmounted(() => {
-  metricStore.SET_ENABLE("iface", false);
 });
 
 onNodeClick(({ node }) => {

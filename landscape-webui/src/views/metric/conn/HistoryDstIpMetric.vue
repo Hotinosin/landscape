@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useMetricStore } from "@/stores/status_metric";
@@ -113,6 +113,9 @@ watch([queryLimit, flowId, customTimeRange], () => {
 
 // Debounced query
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+onUnmounted(() => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+});
 watch(ipSearch, () => {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {

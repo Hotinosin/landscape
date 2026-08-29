@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useMetricStore } from "@/stores/status_metric";
 import { formatRate } from "@/lib/util";
@@ -87,12 +87,7 @@ onMounted(async () => {
   if (route.query.flow_id)
     flowFilter.value = parseInt(route.query.flow_id as string);
 
-  metricStore.SET_ENABLE("src", true);
   await metricStore.UPDATE_INFO();
-
-  onUnmounted(() => {
-    metricStore.SET_ENABLE("src", false);
-  });
 });
 </script>
 

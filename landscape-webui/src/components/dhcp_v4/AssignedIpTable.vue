@@ -2,7 +2,7 @@
 import type { ArpScanInfo, DHCPv4OfferInfo } from "@/api/service_dhcp_v4";
 import type { DHCPv4OfferInfoItem } from "@landscape-router/types/api/schemas";
 import type { DataTableColumns } from "naive-ui";
-import { computed, h, ref } from "vue";
+import { computed, h, onUnmounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
@@ -103,6 +103,9 @@ const not_current_round_ips = computed(() => {
 });
 
 let refreshTimer: number | null = null;
+onUnmounted(() => {
+  if (refreshTimer) clearTimeout(refreshTimer);
+});
 async function finish() {
   if (refreshTimer) {
     clearTimeout(refreshTimer);
