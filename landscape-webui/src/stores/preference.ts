@@ -9,8 +9,11 @@ import {
 import i18n from "@/i18n";
 import {
   cacheThemePreference,
+  cacheAccentColor,
   normalizeThemePreference,
+  readCachedAccentColor,
   readCachedThemePreference,
+  type AccentColor,
   type ThemePreference,
 } from "@/themes";
 
@@ -25,6 +28,7 @@ export const usePreferenceStore = defineStore("preference", () => {
   const language = ref<string | undefined>(undefined);
   const timezone = ref<string | undefined>(undefined);
   const theme = ref<ThemePreference>(readCachedThemePreference());
+  const accent = ref<AccentColor>(readCachedAccentColor());
   const expectedHash = ref<string>("");
 
   async function loadPreference() {
@@ -84,11 +88,13 @@ export const usePreferenceStore = defineStore("preference", () => {
   });
 
   watch(theme, (value) => cacheThemePreference(value), { immediate: true });
+  watch(accent, (value) => cacheAccentColor(value), { immediate: true });
 
   return {
     language,
     timezone,
     theme,
+    accent,
     expectedHash,
     loadPreference,
     loadPreferenceForEdit,

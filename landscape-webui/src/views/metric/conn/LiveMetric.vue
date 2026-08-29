@@ -4,13 +4,19 @@ import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { useMetricStore } from "@/stores/status_metric";
 import { useFrontEndStore } from "@/stores/front_end_config";
-import { ConnectFilter } from "@/lib/metric.rs";
+import {
+  ConnectFilter,
+  queryNumber,
+  queryString,
+  summarizeConnections,
+} from "@/lib/metric.rs";
 import { formatRate, formatPackets } from "@/lib/util";
 import { useThemeVars } from "naive-ui";
 import ConnectVirtualList from "@/components/metric/connect/live/ConnectVirtualList.vue";
 import FlowSelect from "@/components/flow/FlowSelect.vue";
 import ConnectViewSwitcher from "@/components/metric/connect/ConnectViewSwitcher.vue";
 import { ArrowDown, ArrowUp, ArrowsVertical } from "@vicons/carbon";
+import type { ConnectRealtimeStatus } from "@landscape-router/types/api/schemas";
 
 const metricStore = useMetricStore();
 const frontEndStore = useFrontEndStore();
@@ -67,45 +73,17 @@ const sortIcon = (key: "time" | "port" | "ingress" | "egress") =>
     : sortOrder.value === "asc"
       ? ArrowUp
       : ArrowDown;
-const handleSearchTuple = (conn: any) => {
+const handleSearchTuple = (conn: ConnectRealtimeStatus) => {
   liveFilter.src_ip = conn.src_ip;
   liveFilter.dst_ip = conn.dst_ip;
   liveFilter.port_start = conn.src_port;
   liveFilter.port_end = conn.dst_port;
 };
 
-function queryString(value: unknown) {
-  const raw = Array.isArray(value) ? value[0] : value;
-  return typeof raw === "string" && raw.length > 0 ? raw : undefined;
-}
-
-function queryNumber(value: unknown) {
-  const raw = queryString(value);
-  if (raw === undefined) return null;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
 // System-wide summary
-const systemStats = computed(() => {
-  const stats = {
-    ingressBps: 0,
-    egressBps: 0,
-    ingressPps: 0,
-    egressPps: 0,
-    count: 0,
-  };
-  if (metricStore.firewall_info) {
-    metricStore.firewall_info.forEach((item) => {
-      stats.ingressBps += item.ingress_bps || 0;
-      stats.egressBps += item.egress_bps || 0;
-      stats.ingressPps += item.ingress_pps || 0;
-      stats.egressPps += item.egress_pps || 0;
-      stats.count++;
-    });
-  }
-  return stats;
-});
+const systemStats = computed(() =>
+  summarizeConnections(metricStore.firewall_info),
+);
 
 // Calculate filtered and sorted connection metrics
 const filteredConnectMetrics = computed(() => {
@@ -154,25 +132,9 @@ const filteredConnectMetrics = computed(() => {
 });
 
 // Filtered data summary
-const totalStats = computed(() => {
-  const stats = {
-    ingressBps: 0,
-    egressBps: 0,
-    ingressPps: 0,
-    egressPps: 0,
-    count: 0,
-  };
-  if (filteredConnectMetrics.value) {
-    filteredConnectMetrics.value.forEach((item) => {
-      stats.ingressBps += item.ingress_bps || 0;
-      stats.egressBps += item.egress_bps || 0;
-      stats.ingressPps += item.ingress_pps || 0;
-      stats.egressPps += item.egress_pps || 0;
-      stats.count++;
-    });
-  }
-  return stats;
-});
+const totalStats = computed(() =>
+  summarizeConnections(filteredConnectMetrics.value),
+);
 
 onMounted(async () => {
   // Initialize filters from route query

@@ -19,6 +19,24 @@ import { useRouteWanConfigStore } from "./status_route_wan";
 
 import useDockerImgTask from "@/stores/docker_img_task";
 
+export async function runRefreshTasks(
+  tasks: Array<() => Promise<unknown>>,
+): Promise<string | undefined> {
+  const results = await Promise.allSettled(
+    tasks.map((task) => Promise.resolve().then(task)),
+  );
+  const failures = results.filter(
+    (result): result is PromiseRejectedResult => result.status === "rejected",
+  );
+  return failures.length
+    ? failures
+        .map(({ reason }) =>
+          reason instanceof Error ? reason.message : String(reason),
+        )
+        .join("; ")
+    : undefined;
+}
+
 export const useFetchIntervalStore = defineStore("fetch_interval", () => {
   const sysinfo = useSysInfo();
   const ifaceNodeStore = useIfaceNodeStore();
@@ -47,35 +65,24 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
       start_count_down_callback.value();
     }
     try {
-      await sysinfo.UPDATE_INFO();
-      await dockerStore.UPDATE_INFO();
-      await dnsStore.UPDATE_INFO();
-      await ifaceNodeStore.UPDATE_INFO();
-      await ipConfigStore.UPDATE_INFO();
-      await natConfigStore.UPDATE_INFO();
-      await ipv6PDStore.UPDATE_INFO();
-      await lanIpv6Store.UPDATE_INFO();
-      await firewallConfigStore.UPDATE_INFO();
-      await wifiConfigStore.UPDATE_INFO();
-      await dhcpv4ConfigStore.UPDATE_INFO();
-      await metricStore.UPDATE_INFO();
-      await mssclampConfigStore.UPDATE_INFO();
-
-      await routeLanConfigStore.UPDATE_INFO();
-      await routeWanConfigStore.UPDATE_INFO();
-
+      error_message.value = await runRefreshTasks([
+        () => sysinfo.UPDATE_INFO(),
+        () => dockerStore.UPDATE_INFO(),
+        () => dnsStore.UPDATE_INFO(),
+        () => ifaceNodeStore.UPDATE_INFO(),
+        () => ipConfigStore.UPDATE_INFO(),
+        () => natConfigStore.UPDATE_INFO(),
+        () => ipv6PDStore.UPDATE_INFO(),
+        () => lanIpv6Store.UPDATE_INFO(),
+        () => firewallConfigStore.UPDATE_INFO(),
+        () => wifiConfigStore.UPDATE_INFO(),
+        () => dhcpv4ConfigStore.UPDATE_INFO(),
+        () => metricStore.UPDATE_INFO(),
+        () => mssclampConfigStore.UPDATE_INFO(),
+        () => routeLanConfigStore.UPDATE_INFO(),
+        () => routeWanConfigStore.UPDATE_INFO(),
+      ]);
       dockerImgTask.CONNECT();
-    } catch (error) {
-      // console.log("1111");
-      enable_interval.value = false;
-      if (interval_timer != undefined) {
-        clean_interval();
-      }
-      if (error instanceof Error) {
-        error_message.value = error.message;
-      } else {
-        error_message.value = `An unknown error occurred: ${error}`;
-      }
     } finally {
       refresh_running = false;
     }
@@ -87,7 +94,7 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
   let interval_timer: ReturnType<typeof setInterval> | undefined;
   let visibility_listener_attached = false;
 
-  const start_count_down_callback = ref<any>();
+  const start_count_down_callback = ref<(() => void) | undefined>();
 
   function set_interval() {
     // 如果已经存在计时器，先清理掉
@@ -145,7 +152,7 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
     else enable_interval.value = true;
   }
 
-  async function SETTING_CALLBACK(call_back: any) {
+  function SETTING_CALLBACK(call_back: () => void) {
     start_count_down_callback.value = call_back;
   }
   return {

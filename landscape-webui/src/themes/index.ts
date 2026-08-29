@@ -5,10 +5,12 @@ import {
 } from "naive-ui";
 
 export const THEME_STORAGE_KEY = "landscape-theme";
+export const ACCENT_STORAGE_KEY = "landscape-accent";
 const THEME_CACHE_VERSION = 2;
 
 export type ThemePreference = "system" | ThemeName;
 export type ThemeName = "light" | "dark";
+export type AccentColor = "blue" | "green" | "red" | "purple";
 
 interface ThemeCache {
   version: typeof THEME_CACHE_VERSION;
@@ -197,7 +199,7 @@ export const themeRegistry: Record<ThemeName, LandscapeTheme> = {
     statusInfoColor: "#3b8ff5",
     statusSuccessSurfaceColor: "rgba(24, 160, 88, 0.08)",
     statusSuccessBorderColor: "rgba(24, 160, 88, 0.25)",
-    accentPurpleColor: "#8b5cf6",
+    accentPurpleColor: "#665cf6",
     backdropSurfaceColor: "rgba(255, 255, 255, 0.72)",
     terminalBackgroundColor: "#000000",
     terminalHeaderColor: "rgb(72, 72, 78)",
@@ -266,7 +268,7 @@ export const themeRegistry: Record<ThemeName, LandscapeTheme> = {
     statusInfoColor: "#78c7ee",
     statusSuccessSurfaceColor: "rgba(99, 226, 183, 0.08)",
     statusSuccessBorderColor: "rgba(99, 226, 183, 0.25)",
-    accentPurpleColor: "#a78bfa",
+    accentPurpleColor: "#958cff",
     backdropSurfaceColor: "rgba(24, 24, 28, 0.72)",
     terminalBackgroundColor: "#000000",
     terminalHeaderColor: "rgb(72, 72, 78)",
@@ -305,6 +307,128 @@ export const themeRegistry: Record<ThemeName, LandscapeTheme> = {
     motionNormal: "180ms",
   }),
 };
+
+const accentPalettes: Record<
+  ThemeName,
+  Record<
+    AccentColor,
+    Pick<
+      ThemeTokens,
+      | "brandColor"
+      | "brandHoverColor"
+      | "brandActiveColor"
+      | "samplingColor"
+      | "samplingGlowColor"
+      | "statusInfoColor"
+    >
+  >
+> = {
+  light: {
+    blue: {
+      brandColor: "#3b8ff5",
+      brandHoverColor: "#62a6f8",
+      brandActiveColor: "#2376d8",
+      samplingColor: "#00aee8",
+      samplingGlowColor: "rgba(0, 174, 232, 0.7)",
+      statusInfoColor: "#3b8ff5",
+    },
+    green: {
+      brandColor: "#18a058",
+      brandHoverColor: "#36ad6a",
+      brandActiveColor: "#0c7a43",
+      samplingColor: "#18a058",
+      samplingGlowColor: "rgba(24, 160, 88, 0.7)",
+      statusInfoColor: "#18a058",
+    },
+    red: {
+      brandColor: "#d03050",
+      brandHoverColor: "#de576d",
+      brandActiveColor: "#ab1f3f",
+      samplingColor: "#d03050",
+      samplingGlowColor: "rgba(208, 48, 80, 0.7)",
+      statusInfoColor: "#d03050",
+    },
+    purple: {
+      brandColor: "#665cf6",
+      brandHoverColor: "#8178fa",
+      brandActiveColor: "#5147d9",
+      samplingColor: "#665cf6",
+      samplingGlowColor: "rgba(102, 92, 246, 0.7)",
+      statusInfoColor: "#665cf6",
+    },
+  },
+  dark: {
+    blue: {
+      brandColor: "#78c7ee",
+      brandHoverColor: "#94d4f2",
+      brandActiveColor: "#5aadd8",
+      samplingColor: "#00d2ff",
+      samplingGlowColor: "rgba(0, 210, 255, 0.7)",
+      statusInfoColor: "#78c7ee",
+    },
+    green: {
+      brandColor: "#63e2b7",
+      brandHoverColor: "#7fe7c4",
+      brandActiveColor: "#42c99a",
+      samplingColor: "#63e2b7",
+      samplingGlowColor: "rgba(99, 226, 183, 0.7)",
+      statusInfoColor: "#63e2b7",
+    },
+    red: {
+      brandColor: "#e88080",
+      brandHoverColor: "#ef9a9a",
+      brandActiveColor: "#d45d5d",
+      samplingColor: "#e88080",
+      samplingGlowColor: "rgba(232, 128, 128, 0.7)",
+      statusInfoColor: "#e88080",
+    },
+    purple: {
+      brandColor: "#958cff",
+      brandHoverColor: "#afa8ff",
+      brandActiveColor: "#786ef0",
+      samplingColor: "#958cff",
+      samplingGlowColor: "rgba(149, 140, 255, 0.7)",
+      statusInfoColor: "#958cff",
+    },
+  },
+};
+
+export function normalizeAccentColor(value?: string | null): AccentColor {
+  return value === "green" || value === "red" || value === "purple"
+    ? value
+    : "blue";
+}
+
+export function applyAccentColor(
+  theme: LandscapeTheme,
+  accent: AccentColor,
+): LandscapeTheme {
+  return createTheme(theme.name, theme.naiveTheme, {
+    ...theme.tokens,
+    ...accentPalettes[theme.name][accent],
+  });
+}
+
+export function readCachedAccentColor(): AccentColor {
+  if (typeof window === "undefined") return "blue";
+  return normalizeAccentColor(window.localStorage.getItem(ACCENT_STORAGE_KEY));
+}
+
+export function cacheAccentColor(value?: string): AccentColor {
+  const accent = normalizeAccentColor(value);
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(ACCENT_STORAGE_KEY, accent);
+  }
+  return accent;
+}
+
+export function readAccentColorFromStorageEvent(
+  event: StorageEvent,
+): AccentColor | undefined {
+  return event.key === ACCENT_STORAGE_KEY
+    ? normalizeAccentColor(event.newValue)
+    : undefined;
+}
 
 export function normalizeThemePreference(
   value?: string | null,
@@ -366,9 +490,13 @@ export function resolveThemeName(
   return normalized;
 }
 
-export function applyThemeToDocument(theme: LandscapeTheme) {
+export function applyThemeToDocument(
+  theme: LandscapeTheme,
+  accent?: AccentColor,
+) {
   const root = document.documentElement;
   root.dataset.theme = theme.name;
+  if (accent) root.dataset.accent = accent;
   root.style.colorScheme = theme.tokens.colorScheme;
 
   for (const [name, value] of Object.entries(theme.tokens)) {
@@ -378,5 +506,9 @@ export function applyThemeToDocument(theme: LandscapeTheme) {
       (letter) => `-${letter.toLowerCase()}`,
     );
     root.style.setProperty(`--app-${cssName}`, value);
+  }
+
+  for (const [name, palette] of Object.entries(accentPalettes[theme.name])) {
+    root.style.setProperty(`--app-accent-${name}-color`, palette.brandColor);
   }
 }

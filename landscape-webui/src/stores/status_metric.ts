@@ -18,9 +18,11 @@ import type {
   ConnectGlobalStats,
 } from "@landscape-router/types/api/schemas";
 
+export type FlowIpRealtimeStat = IpRealtimeStat & { flow_id?: number };
+
 export const useMetricStore = defineStore("dns_metric", () => {
   const metric_status = ref<ServiceStatus>({ t: ServiceStatusType.Stop });
-  const firewall_info = ref<ConnectRealtimeStatus[]>();
+  const firewall_info = ref<ConnectRealtimeStatus[]>([]);
   const src_ip_stats = ref<IpRealtimeStat[]>([]);
   const dst_ip_stats = ref<IpRealtimeStat[]>([]);
   const iface_stats = ref<IfaceRealtimeStat[]>([]);
@@ -34,13 +36,17 @@ export const useMetricStore = defineStore("dns_metric", () => {
   });
 
   async function UPDATE_INFO() {
-    metric_status.value = await get_metric_status();
-    await Promise.all([
+    const results = await Promise.allSettled([
+      get_metric_status().then((res) => (metric_status.value = res)),
       get_connects_info().then((res) => (firewall_info.value = res)),
       get_src_ip_stats().then((res) => (src_ip_stats.value = res)),
       get_dst_ip_stats().then((res) => (dst_ip_stats.value = res)),
       get_iface_stats().then((res) => (iface_stats.value = res)),
     ]);
+    const failure = results.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (failure) throw failure.reason;
   }
 
   async function UPDATE_GLOBAL_HISTORY_STATS(force_refresh = false) {

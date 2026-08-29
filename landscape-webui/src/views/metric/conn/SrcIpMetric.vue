@@ -7,6 +7,8 @@ import { useThemeVars } from "naive-ui";
 import IpStatsList from "@/components/metric/connect/live/IpStatsList.vue";
 import ConnectViewSwitcher from "@/components/metric/connect/ConnectViewSwitcher.vue";
 import FlowSelect from "@/components/flow/FlowSelect.vue";
+import type { FlowIpRealtimeStat } from "@/stores/status_metric";
+import { summarizeConnections } from "@/lib/metric.rs";
 
 const metricStore = useMetricStore();
 const themeVars = useThemeVars();
@@ -23,7 +25,7 @@ const stats = computed(() => {
 
   // 如果有过滤（特别是 Flow 过滤），我们需要从原始连接数据中进行实时聚合
   const connections = metricStore.firewall_info || [];
-  const aggregatedMap = new Map<string, any>();
+  const aggregatedMap = new Map<string, FlowIpRealtimeStat>();
 
   connections.forEach((conn) => {
     // 应用过滤器
@@ -50,7 +52,7 @@ const stats = computed(() => {
       });
     }
 
-    const item = aggregatedMap.get(key);
+    const item = aggregatedMap.get(key)!;
     item.stats.active_conns += 1;
     item.stats.ingress_bps += conn.ingress_bps || 0;
     item.stats.egress_bps += conn.egress_bps || 0;
@@ -62,25 +64,9 @@ const stats = computed(() => {
 });
 
 // 系统全局汇总
-const systemStats = computed(() => {
-  const stats = {
-    ingressBps: 0,
-    egressBps: 0,
-    ingressPps: 0,
-    egressPps: 0,
-    count: 0,
-  };
-  if (metricStore.firewall_info) {
-    metricStore.firewall_info.forEach((item) => {
-      stats.ingressBps += item.ingress_bps || 0;
-      stats.egressBps += item.egress_bps || 0;
-      stats.ingressPps += item.ingress_pps || 0;
-      stats.egressPps += item.egress_pps || 0;
-      stats.count++;
-    });
-  }
-  return stats;
-});
+const systemStats = computed(() =>
+  summarizeConnections(metricStore.firewall_info),
+);
 
 onMounted(async () => {
   if (route.query.ip) ipFilter.value = route.query.ip as string;

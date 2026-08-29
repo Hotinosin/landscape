@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, defineAsyncComponent, ref, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useHistoryRouteStore } from "@/stores/history_route";
 
@@ -12,8 +12,11 @@ import { usePtyStore } from "@/stores/pty";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import IntervalFetch from "@/components/head/IntervalFetch.vue";
 import LanguageSetting from "@/components/head/LanguageSetting.vue";
-import GlobalTerminal from "@/components/GlobalTerminal.vue";
 import LandscapeSiderBar from "@/views/LandscapeSiderBar.vue";
+
+const GlobalTerminal = defineAsyncComponent(
+  () => import("@/components/GlobalTerminal.vue"),
+);
 
 const router = useRouter();
 const route = useRoute();
@@ -49,6 +52,7 @@ function handleTagClose(path: string) {
 
 const frontEndStore = useFrontEndStore();
 const ptyStore = usePtyStore();
+const terminalLoaded = ref(false);
 const enrolledDeviceStore = useEnrolledDeviceStore();
 
 watch(
@@ -64,6 +68,11 @@ function logout() {
   historyStore.resetRoutes();
   frontEndStore.INSERT_USERNAME("");
   router.push("/login");
+}
+
+function toggleTerminal() {
+  terminalLoaded.value = true;
+  ptyStore.toggleOpen();
 }
 
 // Dynamic content style for Split Mode
@@ -155,7 +164,7 @@ const contentStyle = computed(() => {
                   quaternary
                   circle
                   size="small"
-                  @click="ptyStore.toggleOpen"
+                  @click="toggleTerminal"
                   title="WebShell"
                 >
                   <template #icon>
@@ -181,7 +190,7 @@ const contentStyle = computed(() => {
           </n-flex>
         </n-layout-header>
 
-        <GlobalTerminal />
+        <GlobalTerminal v-if="terminalLoaded" />
 
         <n-layout
           :native-scrollbar="false"

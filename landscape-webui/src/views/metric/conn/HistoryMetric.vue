@@ -1,23 +1,35 @@
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, onUnmounted, watch } from "vue";
+import {
+  ref,
+  computed,
+  defineAsyncComponent,
+  reactive,
+  onMounted,
+  onUnmounted,
+  watch,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
-import { ConnectFilter } from "@/lib/metric.rs";
+import { ConnectFilter, queryNumber, queryString } from "@/lib/metric.rs";
 import { get_connect_history } from "@/api/metric";
 import { formatSize, formatCount } from "@/lib/util";
 import { useThemeVars } from "naive-ui";
 import { useMetricStore } from "@/stores/status_metric";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import HistoryItemInfo from "@/components/metric/connect/history/HistoryItemInfo.vue";
-import ConnectChartDrawer from "@/components/metric/connect/ConnectChartDrawer.vue";
 import FlowSelect from "@/components/flow/FlowSelect.vue";
 import type {
   ConnectKey,
   ConnectGlobalStats,
+  ConnectHistoryStatus,
 } from "@landscape-router/types/api/schemas";
 import { usePreferenceStore } from "@/stores/preference";
 import { ArrowDown, ArrowUp, ArrowsVertical, Renew } from "@vicons/carbon";
 import ConnectViewSwitcher from "@/components/metric/connect/ConnectViewSwitcher.vue";
+
+const ConnectChartDrawer = defineAsyncComponent(
+  () => import("@/components/metric/connect/ConnectChartDrawer.vue"),
+);
 
 const prefStore = usePreferenceStore();
 const metricStore = useMetricStore();
@@ -28,7 +40,7 @@ const themeVars = useThemeVars();
 const frontEndStore = useFrontEndStore();
 
 // 1. Declare all base reactive states.
-const historicalData = ref<any[]>([]);
+const historicalData = ref<ConnectHistoryStatus[]>([]);
 const timeRange = ref<number | string | null>(300); // default 5 minutes (300s)
 const queryLimit = ref<number | null>(100); // default limit: 100
 const historyFilter = reactive(new ConnectFilter());
@@ -63,7 +75,7 @@ const loading = ref(false);
 const useCustomTimeRange = ref(false);
 const customTimeRange = ref<[number, number] | null>(null);
 
-const showChartDrawer = (history: any) => {
+const showChartDrawer = (history: ConnectHistoryStatus) => {
   showChartKey.value = history.key;
   showChartTitle.value = `${frontEndStore.MASK_INFO(history.src_ip)}:${frontEndStore.MASK_PORT(history.src_port)} => ${frontEndStore.MASK_INFO(history.dst_ip)}:${frontEndStore.MASK_PORT(history.dst_port)}`;
   showChartCreateTimeMs.value = history.create_time_ms;
@@ -167,25 +179,13 @@ const sortIcon = (key: "time" | "port" | "ingress" | "egress" | "duration") =>
       ? ArrowUp
       : ArrowDown;
 
-const handleSearchTuple = (history: any) => {
+const handleSearchTuple = (history: ConnectHistoryStatus) => {
   historyFilter.src_ip = history.src_ip;
   historyFilter.dst_ip = history.dst_ip;
   historyFilter.port_start = history.src_port;
   historyFilter.port_end = history.dst_port;
   historyFilter.ifindex = history.ifindex;
 };
-
-function queryString(value: unknown) {
-  const raw = Array.isArray(value) ? value[0] : value;
-  return typeof raw === "string" && raw.length > 0 ? raw : undefined;
-}
-
-function queryNumber(value: unknown) {
-  const raw = queryString(value);
-  if (raw === undefined) return null;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : null;
-}
 
 // 4. Computed values
 const filteredHistory = computed(() => {
@@ -601,6 +601,7 @@ onMounted(() => {
       </template>
     </n-virtual-list>
     <ConnectChartDrawer
+      v-if="showChart"
       v-model:show="showChart"
       :conn="showChartKey"
       :title="showChartTitle"

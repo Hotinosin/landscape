@@ -227,6 +227,7 @@ watch(
     if (isOpen && mode === "dock") setTimeout(mountTerminal, 50);
     else if (!isOpen && mode === "dock") cleanupTerminal();
   },
+  { immediate: true },
 );
 
 // --- Drag Handlers ---

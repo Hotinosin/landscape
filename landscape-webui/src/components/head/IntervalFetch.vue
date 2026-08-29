@@ -3,7 +3,7 @@ import { onMounted, onUnmounted, ref } from "vue";
 
 import { CountdownInst, CountdownProps } from "naive-ui";
 import { SpinnerIos20Regular } from "@vicons/fluent";
-import { PauseFilled, Renew } from "@vicons/carbon";
+import { PauseFilled, WarningAlt } from "@vicons/carbon";
 import { useI18n } from "vue-i18n";
 
 import { useFetchIntervalStore } from "@/stores/fetch_interval";
@@ -37,8 +37,6 @@ const renderCountdown: CountdownProps["render"] = ({
     )}:${String(seconds).padStart(2, "0")}`;
   } else if (minutes !== 0) {
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  } else if (minutes !== 0) {
-    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   } else if (seconds != 0) {
     return `${String(seconds).padStart(2, "0")}`;
   } else {
@@ -60,6 +58,14 @@ function confirmChangeImterval() {
 
 <template>
   <n-flex style="max-height: 24px; overflow: hidden" align="center">
+    <n-tooltip v-if="fetchIntervalStore.error_message">
+      <template #trigger>
+        <n-icon size="18" color="var(--app-status-warning-color)">
+          <WarningAlt />
+        </n-icon>
+      </template>
+      {{ fetchIntervalStore.error_message }}
+    </n-tooltip>
     <n-popover @update:show="handleUpdateShow" trigger="hover">
       <template #trigger>
         <n-switch

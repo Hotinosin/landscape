@@ -2,9 +2,12 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   applyThemeToDocument,
+  applyAccentColor,
+  cacheAccentColor,
   cacheThemePreference,
   normalizeThemePreference,
   readCachedThemePreference,
+  readCachedAccentColor,
   resolveThemeName,
   themeRegistry,
 } from ".";
@@ -21,6 +24,19 @@ describe("theme behavior", () => {
   it("persists and restores the startup theme cache", () => {
     cacheThemePreference("light");
     expect(readCachedThemePreference()).toBe("light");
+  });
+
+  it("persists accent color and adapts it to light and dark themes", () => {
+    cacheAccentColor("purple");
+    expect(readCachedAccentColor()).toBe("purple");
+
+    const light = applyAccentColor(themeRegistry.light, "purple");
+    const dark = applyAccentColor(themeRegistry.dark, "purple");
+    expect(light.tokens.brandColor).toBe("#665cf6");
+    expect(dark.tokens.brandColor).toBe("#958cff");
+    expect(light.tokens.statusSuccessColor).toBe(
+      themeRegistry.light.tokens.statusSuccessColor,
+    );
   });
 
   it("keeps the cached theme when legacy server config has no theme", () => {
