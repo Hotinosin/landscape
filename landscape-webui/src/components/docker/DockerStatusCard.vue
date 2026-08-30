@@ -15,6 +15,9 @@ const dockerStatus = useDockerStore();
 const themeVars = ref(useThemeVars());
 const show_image_drawer = ref(false);
 const { t } = useI18n();
+withDefaults(defineProps<{ display_style?: "card" | "list" }>(), {
+  display_style: "card",
+});
 
 const is_down = computed(() => {
   return (
@@ -31,7 +34,38 @@ async function stop() {
 }
 </script>
 <template>
-  <n-card content-style="display: flex;">
+  <n-flex
+    v-if="display_style === 'list'"
+    justify="space-between"
+    align="center"
+    class="docker-list-toolbar"
+  >
+    <n-flex align="center" size="small">
+      <n-icon
+        :color="get_service_status_color(dockerStatus.docker_status, themeVars)"
+        size="16"
+        ><DotMark
+      /></n-icon>
+      <n-text strong>Docker</n-text>
+    </n-flex>
+    <n-flex size="small">
+      <n-button size="small" @click="show_image_drawer = true">{{
+        t("common.image")
+      }}</n-button>
+      <n-button v-if="is_down" size="small" type="primary" @click="start">{{
+        t("common.open")
+      }}</n-button>
+      <n-popconfirm v-else @positive-click="stop"
+        ><template #trigger
+          ><n-button size="small">{{
+            t("common.close_listener")
+          }}</n-button></template
+        >{{ t("common.confirm_stop") }}</n-popconfirm
+      >
+    </n-flex>
+    <DockerImageDrawer v-model:show="show_image_drawer" />
+  </n-flex>
+  <n-card v-else content-style="display: flex;">
     <template #header>
       <n-icon
         :color="get_service_status_color(dockerStatus.docker_status, themeVars)"
@@ -73,3 +107,9 @@ async function stop() {
     <DockerImageDrawer v-model:show="show_image_drawer" />
   </n-card>
 </template>
+<style scoped>
+.docker-list-toolbar {
+  width: 100%;
+  margin-bottom: 12px;
+}
+</style>

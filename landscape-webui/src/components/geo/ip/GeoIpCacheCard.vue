@@ -54,6 +54,6 @@ const show_detail_modal = ref(false);
 }
 
 .box:hover {
-  border-color: #4fa3ff; /* 你想要的亮色 */
+  border-color: var(--app-brand-color);
 }
 </style>

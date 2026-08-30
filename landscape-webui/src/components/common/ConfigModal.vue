@@ -15,11 +15,13 @@ const props = withDefaults(
     maxHeight?: string;
     closable?: boolean;
     switchDisabled?: boolean;
+    showSwitch?: boolean;
   }>(),
   {
     width: "600px",
     closable: true,
     switchDisabled: false,
+    showSwitch: true,
   },
 );
 
@@ -71,7 +73,11 @@ function closeModal() {
       <template #header>
         <div :style="headerStyle">
           <span>{{ title }}</span>
-          <n-switch v-model:value="enabled" :disabled="switchDisabled">
+          <n-switch
+            v-if="showSwitch"
+            v-model:value="enabled"
+            :disabled="switchDisabled"
+          >
             <template #checked>{{ t("common.enable") }}</template>
             <template #unchecked>{{ t("common.disable") }}</template>
           </n-switch>

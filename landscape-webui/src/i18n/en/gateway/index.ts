@@ -2,6 +2,7 @@ export default {
   runtime_title: "Gateway Runtime",
   edit_title: "Gateway Rule",
   name: "Rule Name",
+  list_status_name: "Status / Rule Name",
   name_required: "Rule name is required",
   enabled: "Enabled",
   enabled_desc:

@@ -1,15 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, onUnmounted } from "vue";
+import { ref, computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { useMetricStore } from "@/stores/status_metric";
 import { useFrontEndStore } from "@/stores/front_end_config";
-import { ConnectFilter } from "@/lib/metric.rs";
+import {
+  ConnectFilter,
+  queryNumber,
+  queryString,
+  summarizeConnections,
+} from "@/lib/metric.rs";
 import { formatRate, formatPackets } from "@/lib/util";
 import { useThemeVars } from "naive-ui";
 import ConnectVirtualList from "@/components/metric/connect/live/ConnectVirtualList.vue";
 import FlowSelect from "@/components/flow/FlowSelect.vue";
 import ConnectViewSwitcher from "@/components/metric/connect/ConnectViewSwitcher.vue";
+import { ArrowDown, ArrowUp, ArrowsVertical } from "@vicons/carbon";
+import type { ConnectRealtimeStatus } from "@landscape-router/types/api/schemas";
 
 const metricStore = useMetricStore();
 const frontEndStore = useFrontEndStore();
@@ -60,45 +67,23 @@ const toggleSort = (key: "time" | "port" | "ingress" | "egress") => {
     frontEndStore.conn_sort_order = "desc";
   }
 };
-const handleSearchTuple = (conn: any) => {
+const sortIcon = (key: "time" | "port" | "ingress" | "egress") =>
+  sortKey.value !== key
+    ? ArrowsVertical
+    : sortOrder.value === "asc"
+      ? ArrowUp
+      : ArrowDown;
+const handleSearchTuple = (conn: ConnectRealtimeStatus) => {
   liveFilter.src_ip = conn.src_ip;
   liveFilter.dst_ip = conn.dst_ip;
   liveFilter.port_start = conn.src_port;
   liveFilter.port_end = conn.dst_port;
 };
 
-function queryString(value: unknown) {
-  const raw = Array.isArray(value) ? value[0] : value;
-  return typeof raw === "string" && raw.length > 0 ? raw : undefined;
-}
-
-function queryNumber(value: unknown) {
-  const raw = queryString(value);
-  if (raw === undefined) return null;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
 // System-wide summary
-const systemStats = computed(() => {
-  const stats = {
-    ingressBps: 0,
-    egressBps: 0,
-    ingressPps: 0,
-    egressPps: 0,
-    count: 0,
-  };
-  if (metricStore.firewall_info) {
-    metricStore.firewall_info.forEach((item) => {
-      stats.ingressBps += item.ingress_bps || 0;
-      stats.egressBps += item.egress_bps || 0;
-      stats.ingressPps += item.ingress_pps || 0;
-      stats.egressPps += item.egress_pps || 0;
-      stats.count++;
-    });
-  }
-  return stats;
-});
+const systemStats = computed(() =>
+  summarizeConnections(metricStore.firewall_info),
+);
 
 // Calculate filtered and sorted connection metrics
 const filteredConnectMetrics = computed(() => {
@@ -147,25 +132,9 @@ const filteredConnectMetrics = computed(() => {
 });
 
 // Filtered data summary
-const totalStats = computed(() => {
-  const stats = {
-    ingressBps: 0,
-    egressBps: 0,
-    ingressPps: 0,
-    egressPps: 0,
-    count: 0,
-  };
-  if (filteredConnectMetrics.value) {
-    filteredConnectMetrics.value.forEach((item) => {
-      stats.ingressBps += item.ingress_bps || 0;
-      stats.egressBps += item.egress_bps || 0;
-      stats.ingressPps += item.ingress_pps || 0;
-      stats.egressPps += item.egress_pps || 0;
-      stats.count++;
-    });
-  }
-  return stats;
-});
+const totalStats = computed(() =>
+  summarizeConnections(filteredConnectMetrics.value),
+);
 
 onMounted(async () => {
   // Initialize filters from route query
@@ -183,36 +152,39 @@ onMounted(async () => {
   if (flowId !== null) liveFilter.flow_id = flowId;
   if (ifindex !== null) liveFilter.ifindex = ifindex;
 
-  metricStore.SET_ENABLE("live", true);
   await metricStore.UPDATE_INFO();
-
-  onUnmounted(() => {
-    metricStore.SET_ENABLE("live", false);
-  });
 });
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1; overflow: hidden">
+  <n-flex vertical :size="0" style="flex: 1; overflow: hidden">
     <!-- System-wide active connection stats -->
     <n-card
       size="small"
       :bordered="false"
-      style="margin-bottom: 12px; background-color: #f9f9f910"
+      style="margin-bottom: 12px; background-color: var(--app-surface-color)"
     >
       <n-flex align="center" justify="space-between">
         <ConnectViewSwitcher />
 
         <n-flex align="center" size="large">
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ $t("metric.connect.stats.total_active_conns") }}:</span
             >
             <span style="font-weight: bold">{{ systemStats.count }}</span>
           </n-flex>
           <n-divider vertical />
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ $t("metric.connect.stats.total_egress") }}:</span
             >
             <span :style="{ fontWeight: 'bold', color: themeVars.infoColor }">{{
@@ -221,7 +193,11 @@ onMounted(async () => {
           </n-flex>
           <n-divider vertical />
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ $t("metric.connect.stats.total_ingress") }}:</span
             >
             <span
@@ -293,38 +269,6 @@ onMounted(async () => {
           $t("metric.connect.reset")
         }}</n-button>
       </n-button-group>
-      <n-divider vertical />
-
-      <n-button-group>
-        <n-button
-          :type="sortKey === 'time' ? 'primary' : 'default'"
-          @click="toggleSort('time')"
-        >
-          {{ $t("metric.connect.filter.time") }}
-          {{ sortKey === "time" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-        <n-button
-          :type="sortKey === 'port' ? 'primary' : 'default'"
-          @click="toggleSort('port')"
-        >
-          {{ $t("metric.connect.filter.port") }}
-          {{ sortKey === "port" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-        <n-button
-          :type="sortKey === 'egress' ? 'primary' : 'default'"
-          @click="toggleSort('egress')"
-        >
-          {{ $t("metric.connect.stats.filter_egress") }}
-          {{ sortKey === "egress" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-        <n-button
-          :type="sortKey === 'ingress' ? 'primary' : 'default'"
-          @click="toggleSort('ingress')"
-        >
-          {{ $t("metric.connect.stats.filter_ingress") }}
-          {{ sortKey === "ingress" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-      </n-button-group>
     </n-flex>
 
     <n-grid x-gap="12" :cols="5" style="margin-bottom: 12px">
@@ -332,7 +276,7 @@ onMounted(async () => {
         <n-card
           size="small"
           :bordered="false"
-          style="background-color: #f9f9f910; height: 100%"
+          style="background-color: var(--app-surface-color); height: 100%"
         >
           <n-statistic
             :label="$t('metric.connect.stats.filter_total')"
@@ -344,7 +288,7 @@ onMounted(async () => {
         <n-card
           size="small"
           :bordered="false"
-          style="background-color: #f9f9f910; height: 100%"
+          style="background-color: var(--app-surface-color); height: 100%"
         >
           <n-statistic :label="$t('metric.connect.stats.total_egress')">
             <span :style="{ color: themeVars.infoColor, fontWeight: 'bold' }">
@@ -357,7 +301,7 @@ onMounted(async () => {
         <n-card
           size="small"
           :bordered="false"
-          style="background-color: #f9f9f910; height: 100%"
+          style="background-color: var(--app-surface-color); height: 100%"
         >
           <n-statistic :label="$t('metric.connect.stats.total_ingress')">
             <span
@@ -372,10 +316,10 @@ onMounted(async () => {
         <n-card
           size="small"
           :bordered="false"
-          style="background-color: #f9f9f910; height: 100%"
+          style="background-color: var(--app-surface-color); height: 100%"
         >
           <n-statistic :label="$t('metric.connect.stats.filter_ingress_pkts')">
-            <span style="color: #888">
+            <span style="color: var(--app-text-muted-color)">
               {{ formatPackets(totalStats.ingressPps) }}
             </span>
           </n-statistic>
@@ -385,16 +329,45 @@ onMounted(async () => {
         <n-card
           size="small"
           :bordered="false"
-          style="background-color: #f9f9f910; height: 100%"
+          style="background-color: var(--app-surface-color); height: 100%"
         >
           <n-statistic :label="$t('metric.connect.stats.filter_egress_pkts')">
-            <span style="color: #888">
+            <span style="color: var(--app-text-muted-color)">
               {{ formatPackets(totalStats.egressPps) }}
             </span>
           </n-statistic>
         </n-card>
       </n-gi>
     </n-grid>
+
+    <div class="connect-list-header">
+      <div class="sortable-column" :class="{ active: sortKey === 'time' }">
+        <span>{{ $t("metric.connect.filter.time") }}</span
+        ><n-button text class="sort-trigger" @click="toggleSort('time')"
+          ><n-icon size="18" :component="sortIcon('time')"
+        /></n-button>
+      </div>
+      <span></span>
+      <div class="sortable-column" :class="{ active: sortKey === 'port' }">
+        <span>{{ $t("metric.connect.filter.port") }}</span
+        ><n-button text class="sort-trigger" @click="toggleSort('port')"
+          ><n-icon size="18" :component="sortIcon('port')"
+        /></n-button>
+      </div>
+      <div class="sortable-column" :class="{ active: sortKey === 'egress' }">
+        <span>{{ $t("metric.connect.stats.egress") }}</span
+        ><n-button text class="sort-trigger" @click="toggleSort('egress')"
+          ><n-icon size="18" :component="sortIcon('egress')"
+        /></n-button>
+      </div>
+      <div class="sortable-column" :class="{ active: sortKey === 'ingress' }">
+        <span>{{ $t("metric.connect.stats.ingress") }}</span
+        ><n-button text class="sort-trigger" @click="toggleSort('ingress')"
+          ><n-icon size="18" :component="sortIcon('ingress')"
+        /></n-button>
+      </div>
+      <span></span>
+    </div>
 
     <ConnectVirtualList
       v-if="filteredConnectMetrics"
@@ -405,3 +378,42 @@ onMounted(async () => {
     />
   </n-flex>
 </template>
+
+<style scoped>
+.connect-list-header {
+  display: grid;
+  grid-template-columns: 220px 270px minmax(240px, 1fr) 120px 128px 28px;
+  column-gap: var(--app-space-sm);
+  align-items: center;
+  min-height: 42px;
+  padding: 0 14px;
+  background: var(--app-surface-interactive-color);
+  border-bottom: 1px solid var(--app-border-subtle-color);
+  box-sizing: border-box;
+}
+
+.sortable-column {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--app-space-2xs);
+  color: var(--app-text-secondary-color);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sortable-column.active {
+  color: var(--app-brand-color);
+}
+
+.sort-trigger {
+  color: var(--app-text-muted-color);
+}
+.sortable-column.active .sort-trigger {
+  color: var(--app-brand-color);
+}
+
+.sortable-column:nth-child(5) {
+  padding-left: 8px;
+}
+</style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useMetricStore } from "@/stores/status_metric";
 import { formatRate } from "@/lib/util";
@@ -7,6 +7,8 @@ import { useThemeVars } from "naive-ui";
 import IpStatsList from "@/components/metric/connect/live/IpStatsList.vue";
 import ConnectViewSwitcher from "@/components/metric/connect/ConnectViewSwitcher.vue";
 import FlowSelect from "@/components/flow/FlowSelect.vue";
+import type { FlowIpRealtimeStat } from "@/stores/status_metric";
+import { summarizeConnections } from "@/lib/metric.rs";
 
 const metricStore = useMetricStore();
 const themeVars = useThemeVars();
@@ -21,7 +23,7 @@ const stats = computed(() => {
   }
 
   const connections = metricStore.firewall_info || [];
-  const aggregatedMap = new Map<string, any>();
+  const aggregatedMap = new Map<string, FlowIpRealtimeStat>();
 
   connections.forEach((conn) => {
     if (
@@ -46,7 +48,7 @@ const stats = computed(() => {
       });
     }
 
-    const item = aggregatedMap.get(key);
+    const item = aggregatedMap.get(key)!;
     item.stats.active_conns += 1;
     item.stats.ingress_bps += conn.ingress_bps || 0;
     item.stats.egress_bps += conn.egress_bps || 0;
@@ -58,37 +60,16 @@ const stats = computed(() => {
 });
 
 // 系统全局汇总
-const systemStats = computed(() => {
-  const stats = {
-    ingressBps: 0,
-    egressBps: 0,
-    ingressPps: 0,
-    egressPps: 0,
-    count: 0,
-  };
-  if (metricStore.firewall_info) {
-    metricStore.firewall_info.forEach((item) => {
-      stats.ingressBps += item.ingress_bps || 0;
-      stats.egressBps += item.egress_bps || 0;
-      stats.ingressPps += item.ingress_pps || 0;
-      stats.egressPps += item.egress_pps || 0;
-      stats.count++;
-    });
-  }
-  return stats;
-});
+const systemStats = computed(() =>
+  summarizeConnections(metricStore.firewall_info),
+);
 
 onMounted(async () => {
   if (route.query.ip) ipFilter.value = route.query.ip as string;
   if (route.query.flow_id)
     flowFilter.value = parseInt(route.query.flow_id as string);
 
-  metricStore.SET_ENABLE("dst", true);
   await metricStore.UPDATE_INFO();
-
-  onUnmounted(() => {
-    metricStore.SET_ENABLE("dst", false);
-  });
 });
 </script>
 
@@ -98,21 +79,29 @@ onMounted(async () => {
     <n-card
       size="small"
       :bordered="false"
-      style="margin-bottom: 12px; background-color: #f9f9f910"
+      style="margin-bottom: 12px; background-color: var(--app-surface-color)"
     >
       <n-flex align="center" justify="space-between">
         <ConnectViewSwitcher />
 
         <n-flex align="center" size="large">
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ $t("metric.connect.stats.total_active_conns") }}:</span
             >
             <span style="font-weight: bold">{{ systemStats.count }}</span>
           </n-flex>
           <n-divider vertical />
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ $t("metric.connect.stats.total_egress") }}:</span
             >
             <span :style="{ fontWeight: 'bold', color: themeVars.infoColor }">{{
@@ -121,7 +110,11 @@ onMounted(async () => {
           </n-flex>
           <n-divider vertical />
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ $t("metric.connect.stats.total_ingress") }}:</span
             >
             <span

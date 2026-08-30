@@ -1,0 +1,51 @@
+import { config } from "@vue/test-utils";
+
+config.global.mocks = {
+  $t: (key: string) => key,
+};
+
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+globalThis.ResizeObserver = ResizeObserverStub;
+
+class MemoryStorage implements Storage {
+  private values = new Map<string, string>();
+
+  get length() {
+    return this.values.size;
+  }
+
+  clear() {
+    this.values.clear();
+  }
+
+  getItem(key: string) {
+    return this.values.get(key) ?? null;
+  }
+
+  key(index: number) {
+    return [...this.values.keys()][index] ?? null;
+  }
+
+  removeItem(key: string) {
+    this.values.delete(key);
+  }
+
+  setItem(key: string, value: string) {
+    this.values.set(key, String(value));
+  }
+}
+
+const memoryStorage = new MemoryStorage();
+Object.defineProperty(globalThis, "localStorage", {
+  configurable: true,
+  value: memoryStorage,
+});
+Object.defineProperty(window, "localStorage", {
+  configurable: true,
+  value: memoryStorage,
+});

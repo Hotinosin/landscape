@@ -56,7 +56,7 @@ async function handle_upload(options: UploadCustomRequestOptions) {
                 <ArchiveIcon />
               </n-icon>
             </div>
-            <n-text style="font-size: 16px">
+            <n-text style="font-size: var(--app-font-size-title)">
               {{ t("geo.upload.drag_prompt") }}
             </n-text>
             <n-p depth="3" style="margin: 8px 0 0 0">

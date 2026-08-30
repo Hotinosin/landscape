@@ -4,6 +4,7 @@ export default {
   add_title: "Add Device Binding",
 
   name: "Display Name",
+  actions: "Actions",
   name_placeholder: "e.g. My phone",
   name_required: "Please enter a display name",
 

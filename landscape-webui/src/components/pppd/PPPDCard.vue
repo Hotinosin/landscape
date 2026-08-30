@@ -47,13 +47,7 @@ async function del() {
       </n-descriptions>
       <template #header-extra>
         <n-flex>
-          <n-button
-            type="warning"
-            secondary
-            @click="show_create_pppd_modal = true"
-          >
-            {{ t("common.edit") }}
-          </n-button>
+          <EditButton @click="show_create_pppd_modal = true" />
           <n-popconfirm @positive-click="del()">
             <template #trigger>
               <n-button type="error" secondary @click="">

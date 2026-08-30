@@ -106,7 +106,14 @@ function update_ia_pd_field(field: string, value: number | null) {
 <template>
   <n-card style="flex: 3; min-width: 0" size="small" :bordered="false">
     <template #header>
-      <div style="display: flex; align-items: center; gap: 12px; flex: 1">
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: var(--app-space-section);
+          flex: 1;
+        "
+      >
         <span>{{ t("lan_ipv6.dhcpv6_server") }}</span>
         <n-switch
           style="margin-left: auto"

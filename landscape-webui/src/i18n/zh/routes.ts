@@ -11,6 +11,7 @@ export default {
   "nat-v6": "IPv6 静态映射",
   flow: "分流策略",
   docker: "Docker 管理",
+  plugins: "插件",
   firewall: "防火墙",
   geo: "Geo 数据库",
   "geo-domain": "GeoSite 数据",

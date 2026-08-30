@@ -163,7 +163,7 @@ async function saveConfig() {
                   "
                 >
                   <template #trigger>
-                    <n-icon color="#d03050" :size="20">
+                    <n-icon color="var(--app-status-danger-color)" :size="20">
                       <WarningAlt />
                     </n-icon>
                   </template>

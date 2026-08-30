@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useMetricStore } from "@/stores/status_metric";
@@ -113,6 +113,9 @@ watch([queryLimit, flowId, customTimeRange], () => {
 
 // Debounced query
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+onUnmounted(() => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+});
 watch(ipSearch, () => {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
@@ -138,14 +141,18 @@ onMounted(() => {
     <n-card
       size="small"
       :bordered="false"
-      style="margin-bottom: 12px; background-color: #f9f9f910"
+      style="margin-bottom: 12px; background-color: var(--app-surface-color)"
     >
       <n-flex align="center" justify="space-between">
         <ConnectViewSwitcher />
 
         <n-flex align="center" size="large" v-if="globalStats">
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ $t("metric.connect.stats.total_history_conns") }}:</span
             >
             <span style="font-weight: bold">{{
@@ -154,7 +161,11 @@ onMounted(() => {
           </n-flex>
           <n-divider vertical />
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ $t("metric.connect.stats.total_history_egress") }}:</span
             >
             <span :style="{ fontWeight: 'bold', color: themeVars.infoColor }">{{
@@ -163,7 +174,11 @@ onMounted(() => {
           </n-flex>
           <n-divider vertical />
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ $t("metric.connect.stats.total_history_ingress") }}:</span
             >
             <span

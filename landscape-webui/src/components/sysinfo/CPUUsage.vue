@@ -35,14 +35,14 @@ const globalTemp = computed(() => sysinfo.router_status.global_cpu_temp);
 const getUsageColor = (usage: number) => {
   if (usage >= 80) return themeVars.value.errorColor;
   if (usage >= 50) return themeVars.value.warningColor;
-  return themeVars.value.successColor;
+  return themeVars.value.primaryColor;
 };
 
 // Helper to get color based on temperature (Celsius)
 const getTempColor = (temp: number) => {
   if (temp >= 80) return themeVars.value.errorColor;
   if (temp >= 60) return themeVars.value.warningColor;
-  return themeVars.value.successColor;
+  return themeVars.value.primaryColor;
 };
 
 // Dynamic sizing based on CPU count
@@ -101,7 +101,7 @@ const getCpuIndex = (name: string, index: number) => {
 
     <!-- CPU Model -->
     <n-flex v-if="cpuModel" style="margin-bottom: 12px">
-      <n-text depth="3" style="font-size: 12px">
+      <n-text depth="3" style="font-size: var(--app-font-size-caption)">
         <n-ellipsis :tooltip="{ width: 300 }">{{ cpuModel }}</n-ellipsis>
       </n-text>
     </n-flex>
@@ -167,7 +167,7 @@ const getCpuIndex = (name: string, index: number) => {
       </n-flex>
     </n-flex>
 
-    <n-divider style="margin: 0 0 12px 0" />
+    <n-divider style="margin: 0 0 var(--app-space-section) 0" />
 
     <!-- CPU Cores Visualization -->
     <div class="cpu-cores-wrapper">
@@ -252,9 +252,9 @@ const getCpuIndex = (name: string, index: number) => {
 }
 
 .cpu-core-box {
-  background-color: rgba(128, 128, 128, 0.08);
-  border: 1px solid rgba(128, 128, 128, 0.15);
-  border-radius: 4px;
+  background-color: var(--app-surface-muted-color);
+  border: 1px solid var(--app-border-muted-color);
+  border-radius: var(--app-radius-indicator);
   position: relative;
   display: flex;
   align-items: flex-end;
@@ -268,8 +268,8 @@ const getCpuIndex = (name: string, index: number) => {
 
 .cpu-core-box:hover {
   transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-color: rgba(128, 128, 128, 0.3);
+  box-shadow: 0 4px 12px var(--app-shadow-color);
+  border-color: var(--app-border-default-color);
   z-index: 10;
 }
 
@@ -301,19 +301,19 @@ const getCpuIndex = (name: string, index: number) => {
   opacity: 0.7;
   font-size: inherit;
   line-height: 1.2;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 2px var(--app-text-inverse-color);
 }
 
 .cpu-usage {
   font-size: 0.85em;
   opacity: 0.6;
   line-height: 1.2;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 2px var(--app-text-inverse-color);
 }
 
 /* Mode-specific adjustments */
 .mode-large {
-  border-radius: 6px;
+  border-radius: var(--app-radius-control, 6px);
 }
 
 .mode-large .cpu-core-fill {
@@ -321,15 +321,15 @@ const getCpuIndex = (name: string, index: number) => {
 }
 
 .mode-large .cpu-index {
-  font-size: 13px;
+  font-size: var(--app-font-size-label);
 }
 
 .mode-medium .cpu-index {
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
 }
 
 .mode-small {
-  border-radius: 3px;
+  border-radius: var(--app-radius-indicator);
 }
 
 .mode-small .cpu-core-fill {
@@ -337,7 +337,7 @@ const getCpuIndex = (name: string, index: number) => {
 }
 
 .mode-compact {
-  border-radius: 2px;
+  border-radius: var(--app-radius-hairline);
 }
 
 .mode-compact .cpu-core-fill {
@@ -346,17 +346,17 @@ const getCpuIndex = (name: string, index: number) => {
 
 /* Dark mode support */
 :global(.n-config-provider--dark) .cpu-core-box {
-  background-color: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--app-surface-subtle-color);
+  border-color: var(--app-border-muted-color);
 }
 
 :global(.n-config-provider--dark) .cpu-core-box:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-color: var(--app-border-default-color);
+  box-shadow: 0 4px 12px var(--app-shadow-strong-color);
 }
 
 :global(.n-config-provider--dark) .cpu-index,
 :global(.n-config-provider--dark) .cpu-usage {
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 2px var(--app-shadow-strong-color);
 }
 </style>

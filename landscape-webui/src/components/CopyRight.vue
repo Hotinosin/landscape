@@ -33,6 +33,7 @@ const { t } = useI18n();
             <n-icon>
               <Book />
             </n-icon>
+            <span>{{ t("about.documentation") }}</span>
           </n-button>
         </template>
         {{ t("about.documentation") }}
@@ -49,6 +50,7 @@ const { t } = useI18n();
             <n-icon>
               <Api />
             </n-icon>
+            <span>API</span>
           </n-button>
         </template>
         {{ t("about.api_docs") }}
@@ -59,6 +61,7 @@ const { t } = useI18n();
             <n-icon>
               <Information />
             </n-icon>
+            <span>{{ t("routes.about") }}</span>
           </n-button>
         </template>
         {{ t("about.title") }}

@@ -2,6 +2,7 @@ export default {
   runtime_title: "网关运行配置",
   edit_title: "网关规则",
   name: "规则名称",
+  list_status_name: "状态 / 规则名称",
   name_required: "规则名称不能为空",
   enabled: "启用",
   enabled_desc: "控制网关在重启后是否启动",

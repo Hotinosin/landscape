@@ -547,8 +547,8 @@ const node_style = computed(() => ({
   width: var(--topology-node-width);
   box-sizing: border-box;
   transition:
-    opacity 0.18s ease,
-    filter 0.18s ease;
+    opacity var(--app-motion-normal, 180ms) ease,
+    filter var(--app-motion-normal, 180ms) ease;
 }
 
 .topology-node.is-dimmed {
@@ -568,7 +568,7 @@ const node_style = computed(() => ({
   display: flex;
   width: var(--topology-node-width);
   flex-direction: column;
-  gap: 8px;
+  gap: var(--app-space-sm);
   box-sizing: border-box;
 }
 
@@ -581,8 +581,8 @@ const node_style = computed(() => ({
 .topology-node__card {
   width: var(--topology-node-width);
   min-height: 78px;
-  padding: 10px 12px;
-  border-radius: 16px;
+  padding: 10px var(--app-space-section);
+  border-radius: var(--app-radius-large);
   border: 1px solid var(--topology-node-border);
   background: linear-gradient(
     180deg,
@@ -607,21 +607,21 @@ const node_style = computed(() => ({
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--app-space-md);
 }
 
 .topology-node__header-actions {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--app-space-xs);
 }
 
 .topology-node__title {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: var(--app-space-sm);
+  font-size: var(--app-font-size-body);
   font-weight: 600;
   color: var(--topology-node-text);
 }
@@ -630,7 +630,7 @@ const node_style = computed(() => ({
   width: 9px;
   height: 9px;
   flex: none;
-  border-radius: 999px;
+  border-radius: var(--app-radius-pill);
   box-shadow: 0 0 0 4px var(--topology-node-carrier-ring);
 }
 
@@ -638,13 +638,13 @@ const node_style = computed(() => ({
   display: flex;
   margin-top: 8px;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--app-space-xs);
 }
 
 .topology-node__metric {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: var(--app-space-xs);
   margin-top: 8px;
   color: var(--topology-node-text);
   font-variant-numeric: tabular-nums;
@@ -653,12 +653,12 @@ const node_style = computed(() => ({
 .topology-node__metric-row {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--app-space-2xs);
   min-width: 0;
   padding: 4px 6px;
-  border-radius: 8px;
+  border-radius: var(--app-radius-panel, 8px);
   background: var(--topology-node-service-bg);
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
   font-weight: 650;
   line-height: 1.1;
   white-space: nowrap;
@@ -679,14 +679,14 @@ const node_style = computed(() => ({
 .topology-node__metric-pps {
   overflow: hidden;
   color: var(--topology-node-muted);
-  font-size: 10px;
+  font-size: var(--app-font-size-micro);
   text-overflow: ellipsis;
 }
 
 .topology-node__services {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--app-space-xs);
   width: var(--topology-node-width);
   box-sizing: border-box;
 }
@@ -695,18 +695,18 @@ const node_style = computed(() => ({
   display: inline-flex;
   align-items: center;
   padding: 3px 7px;
-  border-radius: 999px;
+  border-radius: var(--app-radius-pill);
   border: 1px solid var(--topology-node-service-border);
   background: var(--topology-node-service-bg);
   color: var(--topology-node-service-text);
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
   transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    transform 0.18s ease;
+    background-color var(--app-motion-normal, 180ms) ease,
+    border-color var(--app-motion-normal, 180ms) ease,
+    transform var(--app-motion-normal, 180ms) ease;
 }
 
 .topology-node__service-pill:hover {

@@ -39,7 +39,12 @@ async function change_mode() {
     @positive-click="change_mode()"
   >
     <template #trigger>
-      <n-button text :focusable="false" style="font-size: 16px" @click="">
+      <n-button
+        text
+        :focusable="false"
+        style="font-size: var(--app-font-size-title)"
+        @click=""
+      >
         <n-icon>
           <Wifi v-if="show_switch.wifi"></Wifi>
           <SpatialAudioOutlined v-else></SpatialAudioOutlined>

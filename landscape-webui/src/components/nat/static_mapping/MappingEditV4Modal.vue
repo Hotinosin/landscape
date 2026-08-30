@@ -381,12 +381,12 @@ const mappingPortsRule = {
             path="mapping_pair_ports"
             :rule="mappingPortsRule"
           >
-            <n-flex vertical style="width: 100%; gap: 8px">
+            <n-flex vertical style="width: 100%; gap: var(--app-space-sm)">
               <template
                 v-for="(pair, index) in rule.mapping_pair_ports"
                 :key="index"
               >
-                <n-flex align="center" style="gap: 8px">
+                <n-flex align="center" style="gap: var(--app-space-sm)">
                   <n-form-item
                     style="flex: 1; margin-bottom: 0"
                     :show-label="false"
@@ -407,7 +407,7 @@ const mappingPortsRule = {
                       style="width: 100%"
                     />
                   </n-form-item>
-                  <span style="color: #999">&rarr;</span>
+                  <span style="color: var(--app-text-muted-color)">&rarr;</span>
                   <n-form-item
                     style="flex: 1; margin-bottom: 0"
                     :show-label="false"

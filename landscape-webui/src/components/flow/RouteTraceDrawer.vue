@@ -419,7 +419,7 @@ function actionTagType(
             <n-text
               v-if="selectMode && (srcIpv4 || srcMac)"
               depth="3"
-              style="font-size: 12px"
+              style="font-size: var(--app-font-size-caption)"
             >
               IPv4:
               {{
@@ -568,7 +568,11 @@ function actionTagType(
         <!-- Verdict results -->
         <template v-if="verdictResult">
           <n-flex align="center" justify="space-between">
-            <n-text v-if="resolvedDomain" depth="3" style="font-size: 12px">
+            <n-text
+              v-if="resolvedDomain"
+              depth="3"
+              style="font-size: var(--app-font-size-caption)"
+            >
               {{
                 t("flow.trace.domain_resolved_count", {
                   domain: resolvedDomain,
@@ -608,7 +612,10 @@ function actionTagType(
                     >
                       {{ formatAction(v.ip_rule_match.mark as any) }}
                     </n-tag>
-                    <n-text depth="3" style="font-size: 12px">
+                    <n-text
+                      depth="3"
+                      style="font-size: var(--app-font-size-caption)"
+                    >
                       {{
                         t("flow.trace.priority", {
                           priority: v.ip_rule_match.priority,
@@ -630,7 +637,10 @@ function actionTagType(
                     >
                       {{ formatAction(v.dns_rule_match.mark as any) }}
                     </n-tag>
-                    <n-text depth="3" style="font-size: 12px">
+                    <n-text
+                      depth="3"
+                      style="font-size: var(--app-font-size-caption)"
+                    >
                       {{
                         t("flow.trace.priority", {
                           priority: v.dns_rule_match.priority,

@@ -36,7 +36,7 @@ const swapData = computed(() => {
 const getUsageColor = (percentage: number) => {
   if (percentage >= 90) return themeVars.value.errorColor;
   if (percentage >= 70) return themeVars.value.warningColor;
-  return themeVars.value.successColor;
+  return themeVars.value.primaryColor;
 };
 </script>
 
@@ -55,7 +55,7 @@ const getUsageColor = (percentage: number) => {
     <!-- Memory Section -->
     <n-flex vertical :size="8">
       <n-flex justify="space-between" align="center">
-        <n-text depth="3" style="font-size: 13px">{{
+        <n-text depth="3" style="font-size: var(--app-font-size-label)">{{
           t("sysinfo.memory_usage")
         }}</n-text>
         <n-text
@@ -77,10 +77,10 @@ const getUsageColor = (percentage: number) => {
       </div>
 
       <n-flex justify="space-between">
-        <n-text depth="3" style="font-size: 12px">
+        <n-text depth="3" style="font-size: var(--app-font-size-caption)">
           {{ t("sysinfo.used") }}: {{ memData.used }} GB
         </n-text>
-        <n-text depth="3" style="font-size: 12px">
+        <n-text depth="3" style="font-size: var(--app-font-size-caption)">
           {{ t("sysinfo.total") }}: {{ memData.total }} GB
         </n-text>
       </n-flex>
@@ -92,7 +92,7 @@ const getUsageColor = (percentage: number) => {
     <n-flex vertical :size="8">
       <n-flex justify="space-between" align="center">
         <n-flex align="center" :size="8">
-          <n-text depth="3" style="font-size: 13px">{{
+          <n-text depth="3" style="font-size: var(--app-font-size-label)">{{
             t("sysinfo.swap_usage")
           }}</n-text>
           <n-tag
@@ -129,11 +129,11 @@ const getUsageColor = (percentage: number) => {
       </div>
 
       <n-flex justify="space-between">
-        <n-text depth="3" style="font-size: 12px">
+        <n-text depth="3" style="font-size: var(--app-font-size-caption)">
           {{ t("sysinfo.used") }}:
           {{ swapData.enabled ? swapData.used + " GB" : "--" }}
         </n-text>
-        <n-text depth="3" style="font-size: 12px">
+        <n-text depth="3" style="font-size: var(--app-font-size-caption)">
           {{ t("sysinfo.total") }}:
           {{ swapData.enabled ? swapData.total + " GB" : "--" }}
         </n-text>
@@ -145,8 +145,8 @@ const getUsageColor = (percentage: number) => {
 <style scoped>
 .usage-bar-container {
   height: 12px;
-  background-color: rgba(128, 128, 128, 0.1);
-  border-radius: 6px;
+  background-color: var(--app-surface-muted-color);
+  border-radius: var(--app-radius-control, 6px);
   overflow: hidden;
   position: relative;
 }
@@ -157,7 +157,7 @@ const getUsageColor = (percentage: number) => {
 
 .usage-bar-fill {
   height: 100%;
-  border-radius: 6px;
+  border-radius: var(--app-radius-control, 6px);
   transition:
     width 0.3s ease,
     background-color 0.3s ease;
@@ -166,6 +166,6 @@ const getUsageColor = (percentage: number) => {
 
 /* Dark mode support */
 :global(.n-config-provider--dark) .usage-bar-container {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--app-surface-muted-color);
 }
 </style>

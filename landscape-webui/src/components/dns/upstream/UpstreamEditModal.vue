@@ -21,7 +21,10 @@ const props = defineProps<Props>();
 const message = useMessage();
 const { t } = useI18n();
 
-const emit = defineEmits(["refresh"]);
+const emit = defineEmits<{
+  refresh: [];
+  saved: [rule: DnsUpstreamConfig];
+}>();
 
 const show = defineModel<boolean>("show", { required: true });
 
@@ -116,9 +119,9 @@ async function saveRule() {
       }
 
       commit_spin.value = true;
-      await push_dns_upstream(rule.value);
-      console.log("submit success");
+      const savedRule = await push_dns_upstream(rule.value);
       show.value = false;
+      emit("saved", savedRule);
       emit("refresh");
     } finally {
       commit_spin.value = false;

@@ -16,8 +16,11 @@ import type {
   WeightedFlowTarget,
 } from "@landscape-router/types/api/schemas";
 import { useFrontEndStore } from "@/stores/front_end_config";
+import DnsRulePanel from "@/components/dns/DnsRulePanel.vue";
+import WanIpRulePanel from "@/components/flow/wan/WanIpRulePanel.vue";
 interface Props {
   rule_id?: string;
+  default_flow?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -35,6 +38,7 @@ const rule_json = ref("");
 const rule = ref<FlowConfig>();
 
 const commit_spin = ref(false);
+const activeTab = ref<"flow" | "dns" | "target_ip">("flow");
 const isModified = computed(() => {
   return JSON.stringify(rule.value) !== rule_json.value;
 });
@@ -51,7 +55,11 @@ const rule_enabled = computed({
 });
 
 async function enter() {
-  if (props.rule_id) {
+  if (props.default_flow) {
+    rule.value = flow_config_default();
+    rule.value.flow_id = 0;
+    activeTab.value = "dns";
+  } else if (props.rule_id) {
     rule.value = await getFlowRule(props.rule_id);
   } else {
     rule.value = flow_config_default();
@@ -141,65 +149,91 @@ function normalizeFlowTargets(
     v-model:enabled="rule_enabled"
     :title="t('flow.edit.title')"
     :switch-disabled="!rule"
-    width="600px"
+    :show-switch="!default_flow"
+    width="1000px"
     @after-enter="enter"
     @after-leave="exit"
   >
-    <!-- {{ rule }} -->
-    <n-form v-if="rule" style="flex: 1" ref="formRef" :model="rule" :cols="5">
-      <n-grid :cols="5" :x-gap="10">
-        <n-form-item-gi :label="t('flow.edit.flow_id_label')" :span="2">
-          <n-input-number
-            :min="1"
-            :max="255"
-            v-model:value="rule.flow_id"
-            clearable
-          />
-        </n-form-item-gi>
-        <n-form-item-gi :span="3" :label="t('flow.edit.name')">
-          <n-input
-            :type="frontEndStore.presentation_mode ? 'password' : 'text'"
-            v-model:value="rule.name"
-            :placeholder="t('flow.edit.name_placeholder')"
-          />
-        </n-form-item-gi>
-        <n-form-item-gi :span="5" :label="t('flow.edit.remark')">
-          <n-input
-            :type="frontEndStore.presentation_mode ? 'password' : 'text'"
-            v-model:value="rule.remark"
-          />
-        </n-form-item-gi>
-      </n-grid>
-      <n-form-item>
-        <template #label>
-          <Notice
-            >{{ t("flow.edit.entry_rules_title") }}
-            <template #msg>
-              {{ t("flow.edit.entry_rules_desc_1") }}<br />
-              {{ t("flow.edit.entry_rules_desc_2") }}<br />
-              {{ t("flow.edit.entry_rules_desc_3") }}
+    <n-tabs v-model:value="activeTab" type="line" animated>
+      <n-tab-pane
+        v-if="!default_flow"
+        name="flow"
+        :tab="t('flow.edit.tab_flow')"
+      >
+        <n-form
+          v-if="rule"
+          style="flex: 1"
+          ref="formRef"
+          :model="rule"
+          :cols="5"
+        >
+          <n-grid :cols="5" :x-gap="10">
+            <n-form-item-gi :label="t('flow.edit.flow_id_label')" :span="2">
+              <n-input-number
+                :min="1"
+                :max="255"
+                v-model:value="rule.flow_id"
+                clearable
+              />
+            </n-form-item-gi>
+            <n-form-item-gi :span="3" :label="t('flow.edit.name')">
+              <n-input
+                :type="frontEndStore.presentation_mode ? 'password' : 'text'"
+                v-model:value="rule.name"
+                :placeholder="t('flow.edit.name_placeholder')"
+              />
+            </n-form-item-gi>
+            <n-form-item-gi :span="5" :label="t('flow.edit.remark')">
+              <n-input
+                :type="frontEndStore.presentation_mode ? 'password' : 'text'"
+                v-model:value="rule.remark"
+              />
+            </n-form-item-gi>
+          </n-grid>
+          <n-form-item>
+            <template #label>
+              <Notice
+                >{{ t("flow.edit.entry_rules_title") }}
+                <template #msg>
+                  {{ t("flow.edit.entry_rules_desc_1") }}<br />
+                  {{ t("flow.edit.entry_rules_desc_2") }}<br />
+                  {{ t("flow.edit.entry_rules_desc_3") }}
+                </template>
+              </Notice>
             </template>
-          </Notice>
-        </template>
-        <FlowMatchRule v-model:match_rules="rule.flow_match_rules">
-        </FlowMatchRule>
-      </n-form-item>
-      <n-form-item label="">
-        <template #label>
-          <Notice>
-            {{ t("flow.edit.target_rules_title") }}
-            <template #msg>
-              {{ t("flow.edit.target_rules_desc_1") }}<br />
-              {{ t("flow.edit.target_rules_desc_2") }}
+            <FlowMatchRule v-model:match_rules="rule.flow_match_rules">
+            </FlowMatchRule>
+          </n-form-item>
+          <n-form-item label="">
+            <template #label>
+              <Notice>
+                {{ t("flow.edit.target_rules_title") }}
+                <template #msg>
+                  {{ t("flow.edit.target_rules_desc_1") }}<br />
+                  {{ t("flow.edit.target_rules_desc_2") }}
+                </template>
+              </Notice>
             </template>
-          </Notice>
-        </template>
 
-        <FlowTargetRule v-model:target_rules="rule.flow_targets">
-        </FlowTargetRule>
-      </n-form-item>
-    </n-form>
-    <template #footer>
+            <FlowTargetRule v-model:target_rules="rule.flow_targets">
+            </FlowTargetRule>
+          </n-form-item>
+        </n-form>
+      </n-tab-pane>
+      <n-tab-pane name="dns" :tab="t('flow.edit.tab_dns')">
+        <DnsRulePanel
+          :flow_id="rule?.flow_id ?? 0"
+          @changed="emit('refresh')"
+        />
+      </n-tab-pane>
+      <n-tab-pane name="target_ip" :tab="t('flow.edit.tab_target_ip')">
+        <WanIpRulePanel
+          :flow_id="rule?.flow_id ?? 0"
+          @changed="emit('refresh')"
+        />
+      </n-tab-pane>
+    </n-tabs>
+    <template v-if="activeTab === 'flow'" #footer>
       <n-flex justify="space-between">
         <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
         <n-button

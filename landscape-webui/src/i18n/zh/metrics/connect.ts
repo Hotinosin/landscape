@@ -68,6 +68,8 @@ export default {
     filter_total: "过滤结果总数",
     filter_egress: "过滤结果总上行",
     filter_ingress: "过滤结果总下行",
+    egress: "上行",
+    ingress: "下行",
     filter_egress_pkts: "过滤结果总出站",
     filter_ingress_pkts: "过滤结果总入站",
     last_summary_time: "最后汇总时间",

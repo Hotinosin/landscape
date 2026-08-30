@@ -1,14 +1,13 @@
 import { defineStore } from "pinia";
 import { ref, watch } from "vue";
-import { Terminal } from "@xterm/xterm";
-import { SerializeAddon } from "@xterm/addon-serialize";
-import { FitAddon } from "@xterm/addon-fit";
+import type { Terminal } from "@xterm/xterm";
+import type { SerializeAddon } from "@xterm/addon-serialize";
+import type { FitAddon } from "@xterm/addon-fit";
 import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
 import type {
   LandscapePtyConfig,
   PtyOutMessage,
 } from "@landscape-router/types/api/schemas";
-import "@xterm/xterm/css/xterm.css";
 
 export const usePtyStore = defineStore("pty", () => {
   // The "Master" terminal holds the state but never renders to DOM
@@ -81,8 +80,13 @@ export const usePtyStore = defineStore("pty", () => {
       : `token=${encodeURIComponent(token)}`;
   }
 
-  function initMasterTerminal() {
+  async function initMasterTerminal() {
     if (masterTerminal.value) return;
+
+    const [{ Terminal }, { SerializeAddon }] = await Promise.all([
+      import("@xterm/xterm"),
+      import("@xterm/addon-serialize"),
+    ]);
 
     // Headless terminal to keep state
     const term = new Terminal({
@@ -151,14 +155,14 @@ export const usePtyStore = defineStore("pty", () => {
     }
   }
 
-  function connect() {
+  async function connect() {
     if (
       isConnected.value ||
       (socket.value && socket.value.readyState === WebSocket.OPEN)
     )
       return;
 
-    initMasterTerminal();
+    await initMasterTerminal();
 
     const url = `wss://${window.location.hostname}:${window.location.port}/api/ws/pty/sessions?${objToQuery(config.value)}`;
     const ws = new WebSocket(url);

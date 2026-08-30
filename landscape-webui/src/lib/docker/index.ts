@@ -1,4 +1,3 @@
-import { KeyValuePair } from "@/lib/common";
 import { useThemeVars } from "naive-ui";
 
 export const LAND_REDIRECT_ID_KEY = "ld_flow_edge";
@@ -8,26 +7,17 @@ export class DockerContainerSummary {
   Names: string[] | undefined;
   State: DockerContainerStatus | undefined;
   Image: string | undefined;
-  Labels: Map<string, string> | undefined;
 
   constructor(obj?: {
     Created?: number;
     Names?: string[];
     State?: DockerContainerStatus;
     Image?: string;
-    Labels?: any | undefined;
   }) {
     this.Created = obj?.Created;
     this.Names = obj?.Names;
     this.State = obj?.State;
     this.Image = obj?.Image;
-    if (obj?.Labels !== undefined) {
-      let map = new Map<string, string>();
-      for (const [key, value] of Object.entries(obj?.Labels)) {
-        map.set(key, value as string);
-      }
-      this.Labels = map;
-    }
   }
 
   get_color() {
@@ -35,12 +25,6 @@ export class DockerContainerSummary {
     return this.State === DockerContainerStatus.running
       ? themeVars.value.successColor
       : "";
-  }
-
-  get_redirect_id(): string | undefined {
-    if (this.Labels) {
-      return this.Labels.get(LAND_REDIRECT_ID_KEY);
-    }
   }
 }
 

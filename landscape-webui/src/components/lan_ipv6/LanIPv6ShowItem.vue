@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, h } from "vue";
+import type { DataTableColumns } from "naive-ui";
+import { NTag, NTime } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
 import { HelpFilled, Time } from "@vicons/carbon";
 import type { IPv6NAInfo } from "@landscape-router/types/api/schemas";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { usePreferenceStore } from "@/stores/preference";
+import StandardDataTable from "@/components/common/StandardDataTable.vue";
 const prefStore = usePreferenceStore();
 const { t } = useI18n();
 
@@ -54,6 +57,35 @@ const info = computed(() => {
   }
   return result;
 });
+
+const columns = computed<DataTableColumns<TableItem>>(() => [
+  {
+    title: "IPv6",
+    key: "ip",
+    render: (row) => frontEndStore.MASK_INFO(row.ip),
+  },
+  {
+    title: "Mac",
+    key: "mac",
+    render: (row) => frontEndStore.MASK_INFO(row.mac),
+  },
+  {
+    title: t("common.time"),
+    key: "active",
+    render: (row) =>
+      h(NTime, { time: row.active, timeZone: prefStore.timezone }),
+  },
+  {
+    title: t("common.status"),
+    key: "stale",
+    render: (row) =>
+      h(
+        NTag,
+        { bordered: false, type: row.stale ? "success" : "warning" },
+        { default: () => (row.stale ? "ACTIVE" : "STALE") },
+      ),
+  },
+]);
 </script>
 
 <template>
@@ -67,37 +99,13 @@ const info = computed(() => {
       {{ props.iface_name }}
     </template>
     <!-- {{ config }} -->
-    <n-table v-if="info.length > 0" :bordered="true" size="small" striped>
-      <thead>
-        <tr>
-          <th>IPv6</th>
-          <th>Mac</th>
-          <th>{{ t("common.time") }}</th>
-          <th>{{ t("common.status") }}</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr v-for="value in info">
-          <td>
-            {{ frontEndStore.MASK_INFO(value.ip) }}
-          </td>
-          <td>{{ frontEndStore.MASK_INFO(value.mac) }}</td>
-          <td>
-            <n-time
-              :time="value.active"
-              :time-zone="prefStore.timezone"
-            ></n-time>
-          </td>
-          <td>
-            <n-tag v-if="value.stale" :bordered="false" type="success">
-              ACTIVE
-            </n-tag>
-            <n-tag v-else :bordered="false" type="warning"> STALE </n-tag>
-          </td>
-        </tr>
-      </tbody>
-    </n-table>
+    <StandardDataTable
+      v-if="info.length > 0"
+      :columns="columns"
+      :data="info"
+      size="small"
+      :row-key="(row) => row.ip"
+    />
     <n-flex
       align="center"
       justify="center"

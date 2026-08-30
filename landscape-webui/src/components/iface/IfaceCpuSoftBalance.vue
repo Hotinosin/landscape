@@ -268,13 +268,13 @@ function setRpsToZero() {
 
 .core-selection-section h4 {
   margin-bottom: 12px;
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
   font-weight: 600;
 }
 
 .selection-summary {
   margin-top: 8px;
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
 }
 
 /* 标签样式优化 */

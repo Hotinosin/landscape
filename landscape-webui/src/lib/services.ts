@@ -24,7 +24,7 @@ export function get_service_status_color(
 
   switch (status.t) {
     case ServiceStatusType.Running:
-      return themeVars.successColor;
+      return themeVars.primaryColor;
     case ServiceStatusType.Staring:
     case ServiceStatusType.Stopping:
       return themeVars.warningColor;

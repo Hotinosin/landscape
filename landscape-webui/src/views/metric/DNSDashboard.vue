@@ -202,9 +202,12 @@ defineExpose({ refresh: loadSummary });
                 "
                 :precision="1"
               />
-              <n-text v-else depth="3" style="font-size: 14px">{{
-                t("metric.dns.dash.no_data")
-              }}</n-text>
+              <n-text
+                v-else
+                depth="3"
+                style="font-size: var(--app-font-size-body)"
+                >{{ t("metric.dns.dash.no_data") }}</n-text
+              >
             </n-statistic>
             <div class="hit-breakdown">
               <div class="breakdown-item">
@@ -432,8 +435,8 @@ defineExpose({ refresh: loadSummary });
 }
 
 .metric-card {
-  background: rgba(128, 128, 128, 0.06);
-  border-radius: 8px;
+  background: var(--app-surface-subtle-color);
+  border-radius: var(--app-radius-panel, 8px);
   height: 100%;
 }
 
@@ -453,9 +456,9 @@ defineExpose({ refresh: loadSummary });
   display: flex;
   justify-content: space-between;
   margin-top: 8px;
-  background: rgba(128, 128, 128, 0.05);
+  background: var(--app-surface-subtle-color);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--app-radius-indicator);
 }
 
 .breakdown-item {
@@ -465,31 +468,31 @@ defineExpose({ refresh: loadSummary });
 }
 
 .breakdown-item .label {
-  font-size: 10px;
-  color: #888;
+  font-size: var(--app-font-size-micro);
+  color: var(--app-text-muted-color);
   line-height: 1;
 }
 
 .breakdown-item .val {
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
   font-weight: 600;
-  color: #2080f0;
+  color: var(--app-brand-color);
 }
 
 .breakdown-item .val.none {
-  color: #666;
+  color: var(--app-text-muted-color);
   font-weight: 400;
 }
 
 .breakdown-item .val.error {
-  color: #e88080;
+  color: var(--app-status-danger-color);
   font-weight: 700;
 }
 
 .suffix {
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
   margin-left: 4px;
-  color: #888;
+  color: var(--app-text-muted-color);
 }
 
 .list-card {
@@ -502,11 +505,11 @@ defineExpose({ refresh: loadSummary });
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 0 0 12px 0 !important; /* Zero horizontal padding, managed by inner wrapper */
+  padding: 0 0 var(--app-space-section) 0 !important; /* Zero horizontal padding, managed by inner wrapper */
 }
 
 :deep(.list-card.n-card > .n-card-header) {
-  padding: 12px 16px !important;
+  padding: var(--app-space-section) 16px !important;
 }
 
 .card-content-wrapper {
@@ -532,24 +535,24 @@ defineExpose({ refresh: loadSummary });
 }
 
 .domain-text {
-  font-size: 13px;
+  font-size: var(--app-font-size-label);
   font-weight: 600;
 }
 
 .domain-text.danger {
-  color: #e88080;
+  color: var(--app-status-danger-color);
 }
 
 .count-text {
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
   font-family: var(--font-mono);
-  background: rgba(128, 128, 128, 0.1);
+  background: var(--app-surface-muted-color);
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: var(--app-radius-indicator);
 }
 
 .item-meta {
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
   margin-top: -2px;
 }
 
@@ -558,8 +561,8 @@ defineExpose({ refresh: loadSummary });
 }
 
 :deep(.n-statistic .n-statistic-label) {
-  font-size: 12px;
-  color: #888;
+  font-size: var(--app-font-size-caption);
+  color: var(--app-text-muted-color);
   margin-bottom: 4px;
 }
 
@@ -579,26 +582,26 @@ defineExpose({ refresh: loadSummary });
 }
 
 :deep(.n-card-header__title) {
-  font-size: 15px !important;
+  font-size: var(--app-font-size-subtitle) !important;
   font-weight: 600 !important;
 }
 
 .card-title {
-  font-size: 15px;
+  font-size: var(--app-font-size-subtitle);
   font-weight: 600;
   line-height: 1.2;
 }
 
 .card-subtitle {
-  font-size: 11px;
-  color: #888;
+  font-size: var(--app-font-size-detail);
+  color: var(--app-text-muted-color);
   font-weight: 400;
   font-style: italic;
 }
 
 /* Latency Card Styles */
 .latency-card {
-  background: rgba(128, 128, 128, 0.06);
+  background: var(--app-surface-subtle-color);
 }
 
 .latency-header {
@@ -609,21 +612,21 @@ defineExpose({ refresh: loadSummary });
 }
 
 .latency-title {
-  font-size: 12px;
-  color: #888;
+  font-size: var(--app-font-size-caption);
+  color: var(--app-text-muted-color);
   font-weight: 500;
 }
 
 .latency-unit {
-  font-size: 10px;
-  color: #999;
+  font-size: var(--app-font-size-micro);
+  color: var(--app-text-muted-color);
   font-style: italic;
 }
 
 .latency-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
+  gap: var(--app-space-sm);
 }
 
 .latency-stat {
@@ -631,13 +634,13 @@ defineExpose({ refresh: loadSummary });
   flex-direction: column;
   align-items: center;
   padding: 6px 4px;
-  background: rgba(128, 128, 128, 0.05);
-  border-radius: 6px;
+  background: var(--app-surface-subtle-color);
+  border-radius: var(--app-radius-control, 6px);
 }
 
 .latency-label {
-  font-size: 10px;
-  color: #888;
+  font-size: var(--app-font-size-micro);
+  color: var(--app-text-muted-color);
   margin-bottom: 4px;
   font-weight: 600;
   text-transform: uppercase;
@@ -645,7 +648,7 @@ defineExpose({ refresh: loadSummary });
 }
 
 .latency-value {
-  font-size: 16px;
+  font-size: var(--app-font-size-title);
   font-weight: 700;
   line-height: 1;
 }

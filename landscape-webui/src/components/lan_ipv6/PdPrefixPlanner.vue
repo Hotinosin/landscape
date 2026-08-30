@@ -186,7 +186,7 @@ function plannerPalette() {
     info: themeVars.value.infoColor,
     warning: themeVars.value.warningColor,
     primary: themeVars.value.primaryColor,
-    pd: "#8b5cf6",
+    pd: themeValue("--app-accent-purple-color", themeVars.value.primaryColor),
     defaultFill: themeVars.value.cardColor,
     embedded: themeVars.value.actionColor,
     blocked: themeValue("--n-action-color", themeVars.value.actionColor),
@@ -360,7 +360,9 @@ function drawUnits() {
       const labels = plannerUnitLabels(unit, props.selectedKind);
       if (labels) {
         ctx.fillStyle =
-          unit.selected || unit.currentGroupId ? "#fff" : palette.text;
+          unit.selected || unit.currentGroupId
+            ? themeValue("--app-text-inverse-color", palette.text)
+            : palette.text;
         ctx.fillText(labels, x + cellSize.value / 2, y + cellSize.value / 2);
       } else if (unit.kind === "blocked" && cellSize.value >= 14) {
         ctx.fillStyle = palette.mutedText;
@@ -529,14 +531,14 @@ onBeforeUnmount(() => {
         align="center"
         :size="8"
       >
-        <n-text depth="3" style="font-size: 12px">
+        <n-text depth="3" style="font-size: var(--app-font-size-caption)">
           {{ t("lan_ipv6.planner_snapshot_prefix_len") }}
         </n-text>
         <n-text strong>/{{ planner.parentPrefixLen ?? "-" }}</n-text>
         <n-text
           v-if="planner.actualPrefixLen !== undefined"
           depth="3"
-          style="font-size: 12px"
+          style="font-size: var(--app-font-size-caption)"
         >
           {{ t("lan_ipv6.planner_actual_prefix") }} /{{
             planner.actualPrefixLen
@@ -611,9 +613,9 @@ onBeforeUnmount(() => {
 .planner-canvas-wrap {
   overflow: auto;
   border: 1px solid var(--n-border-color);
-  border-radius: 12px;
+  border-radius: var(--app-radius-large, 12px);
   background: var(--n-color);
-  padding: 12px;
+  padding: var(--app-space-section);
 }
 
 .planner-canvas {
@@ -624,8 +626,8 @@ onBeforeUnmount(() => {
 .planner-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  font-size: 12px;
+  gap: var(--app-space-section);
+  font-size: var(--app-font-size-caption);
 }
 
 .planner-occupants {
@@ -635,13 +637,13 @@ onBeforeUnmount(() => {
 .planner-legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--app-space-xs);
 }
 
 .swatch {
   width: 12px;
   height: 12px;
-  border-radius: 3px;
+  border-radius: var(--app-radius-indicator);
   border: 1px solid var(--n-border-color);
   display: inline-block;
 }

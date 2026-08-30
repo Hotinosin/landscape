@@ -4,6 +4,37 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (() => {
+        const cached = localStorage.getItem("landscape-theme");
+        let preference = "system";
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            preference =
+              parsed?.version === 2 &&
+              ["system", "light", "dark"].includes(parsed.preference)
+                ? parsed.preference
+                : "system";
+          } catch {
+            preference = ["system", "light", "dark"].includes(cached)
+              ? cached
+              : "system";
+          }
+        }
+        const resolved =
+          preference === "system"
+            ? matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light"
+            : preference === "light"
+              ? "light"
+              : "dark";
+        const root = document.documentElement;
+        root.dataset.theme = resolved;
+        root.style.colorScheme = resolved;
+      })();
+    </script>
     <title>Landscape UI</title>
   </head>
   <body>

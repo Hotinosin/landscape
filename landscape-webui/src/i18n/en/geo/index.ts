@@ -25,6 +25,12 @@ export default {
   },
   geo_site: {
     title: "Edit Geo Site Source",
+    all_tags: "All Tags",
+    search_tags: "Search tag names…",
+    lookup_placeholder: "Enter a domain to find matching GeoSite groups…",
+    lookup_action: "Search",
+    lookup_results: "Lookup Results ({count} groups)",
+    lookup_empty: "No matching GeoSite groups",
     domain_list: "Domain List",
     domain_placeholder: "Domain",
     add_domain: "Add Domain",
@@ -60,6 +66,15 @@ export default {
     export_clipboard: "Export Rules to Clipboard",
     import_clipboard: "Import Rules from Clipboard",
     confirm_import: "Confirm import from clipboard?",
+    import_success: "Imported successfully",
+    import_failed: "Import failed. Check the clipboard content.",
+  },
+  database: {
+    geosite_source: "GeoSite (Domains)",
+    geoip_source: "GeoIP (IP Ranges)",
+    geosite_data: "GeoSite Data",
+    geoip_data: "GeoIP Data",
+    config_title: "Geo Data Source Configuration",
   },
   item_card: {
     source_type: "Source Type",

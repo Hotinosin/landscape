@@ -644,7 +644,7 @@ async function handleDeleteBridge() {
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--topology-panel-border);
-  border-radius: 22px;
+  border-radius: var(--app-radius-large);
   background: linear-gradient(
     180deg,
     var(--topology-panel-bg),
@@ -665,19 +665,19 @@ async function handleDeleteBridge() {
 .topology-detail__header-main {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--app-space-md);
 }
 
 .topology-detail__title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--app-space-section);
 }
 
 .topology-detail__title {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--app-font-size-display);
   line-height: 1.1;
 }
 
@@ -695,7 +695,7 @@ async function handleDeleteBridge() {
   flex: none;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: var(--app-space-md);
 }
 
 .topology-detail__rail-button {
@@ -705,16 +705,16 @@ async function handleDeleteBridge() {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--app-space-2xs);
   border: 1px solid var(--topology-panel-card-border);
-  border-radius: 14px;
+  border-radius: var(--app-radius-large);
   background: var(--topology-panel-bg);
   color: var(--topology-panel-text);
   cursor: pointer;
   transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    transform 0.18s ease;
+    background-color var(--app-motion-normal, 180ms) ease,
+    border-color var(--app-motion-normal, 180ms) ease,
+    transform var(--app-motion-normal, 180ms) ease;
 }
 
 .topology-detail__rail-button:hover {
@@ -756,7 +756,7 @@ async function handleDeleteBridge() {
 }
 
 .topology-detail__rail-label {
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
   line-height: 1;
   font-weight: 600;
 }
@@ -783,18 +783,18 @@ async function handleDeleteBridge() {
 .topology-detail__controller-box {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--app-space-md);
   padding-top: 4px;
 }
 
 @media (max-width: 960px) {
   .topology-detail-shell {
     flex-direction: column;
-    gap: 10px;
+    gap: var(--app-space-md);
   }
 
   .topology-detail {
-    border-radius: 20px 20px 0 0;
+    border-radius: var(--app-radius-large) var(--app-radius-large) 0 0;
   }
 
   .topology-detail__rail-shell {

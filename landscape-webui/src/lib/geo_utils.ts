@@ -69,7 +69,7 @@ export const renderGeoSelectLabel = (option: SelectOption) => {
           style: {
             marginRight: "8px",
             fontSize: "12px",
-            color: "#666",
+            color: "var(--app-text-muted-color)",
             maxWidth: "80px", // Limit width of the tag
             flexShrink: 0, // Prevent tag from shrinking too much
           },

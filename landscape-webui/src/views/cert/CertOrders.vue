@@ -19,9 +19,15 @@ import {
 } from "naive-ui";
 import CertOrderEditModal from "@/components/cert/order/CertOrderEditModal.vue";
 import CertInfoModal from "@/components/cert/order/CertInfoModal.vue";
+import EditButton from "@/components/common/EditButton.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
+import { Add } from "@vicons/carbon";
+import { usePageRequest } from "@/composables/usePageRequest";
 
-const items = ref<CertConfig[]>([]);
+const certRequest = usePageRequest(get_certs, {
+  initialData: [] as CertConfig[],
+});
+const items = certRequest.data;
 const { t } = useI18n();
 const frontEndStore = useFrontEndStore();
 const show_edit_modal = ref(false);
@@ -47,7 +53,7 @@ async function refresh() {
   refresh_promise = (async () => {
     do {
       refresh_queued = false;
-      items.value = await get_certs();
+      await certRequest.refresh();
     } while (refresh_queued);
   })();
 
@@ -306,17 +312,7 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
       );
 
       // Edit: always
-      btns.push(
-        h(
-          NButton,
-          {
-            size: "small",
-            secondary: true,
-            onClick: () => open_edit(id),
-          },
-          () => t("common.edit"),
-        ),
-      );
+      btns.push(h(EditButton, { onClick: () => open_edit(id) }));
 
       // Issue: pending | invalid | expired | revoked (ACME only)
       if (
@@ -433,20 +429,24 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1">
-    <n-flex>
-      <n-button @click="open_edit(null)">
+  <n-flex vertical class="standard-content-page">
+    <n-flex class="standard-list-toolbar">
+      <n-button type="primary" @click="open_edit(null)">
+        <template #icon
+          ><n-icon><Add /></n-icon
+        ></template>
         {{ t("common.create") }}
       </n-button>
     </n-flex>
 
-    <n-data-table
+    <StandardDataTable
       :columns="columns"
       :data="items"
-      :bordered="true"
-      :single-line="false"
+      :loading="certRequest.loading.value"
+      :error="certRequest.error.value"
       size="small"
       :scroll-x="960"
+      @retry="refresh"
     />
 
     <CertOrderEditModal
