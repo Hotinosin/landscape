@@ -30,6 +30,7 @@
     "vue-router": "^5.2.0"
   },
   "devDependencies": {
+    "@scalar/api-reference": "1.63.0",
     "@types/node": "^26.1.2",
     "@vicons/carbon": "^0.13.0",
     "@vicons/fa": "^0.13.0",
