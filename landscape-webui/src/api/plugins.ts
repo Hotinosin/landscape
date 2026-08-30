@@ -10,7 +10,13 @@ export interface PluginInfo {
   host_interface: string;
   controller_socket: string;
   ui_path: string;
+  network: {
+    namespace?: string;
+    peer_interface: string;
+    tproxy_port: number;
+  };
   interface_ready: boolean;
+  tproxy_ready: boolean;
   controller_ready: boolean;
 }
 

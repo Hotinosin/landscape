@@ -4,7 +4,12 @@ import { Add, Launch, TrashCan } from "@vicons/carbon";
 import type { DataTableColumns, UploadCustomRequestOptions } from "naive-ui";
 import { useMessage } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import { importPlugin, listPlugins, removePlugin, type PluginInfo } from "@/api/plugins";
+import {
+  importPlugin,
+  listPlugins,
+  removePlugin,
+  type PluginInfo,
+} from "@/api/plugins";
 import { syncPluginSessionCookie } from "@/lib/common";
 
 const { t } = useI18n();
@@ -19,32 +24,66 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
   {
     title: t("plugin.data_plane"),
     key: "interface_ready",
-    render: (row) => h("span", { class: row.interface_ready ? "status-ready" : "status-offline" },
-      row.interface_ready ? t("plugin.ready") : t("plugin.offline")),
+    render: (row) =>
+      h(
+        "span",
+        { class: row.interface_ready ? "status-ready" : "status-offline" },
+        row.interface_ready ? t("plugin.ready") : t("plugin.offline"),
+      ),
+  },
+  {
+    title: t("plugin.tproxy"),
+    key: "tproxy_ready",
+    render: (row) =>
+      h(
+        "span",
+        { class: row.tproxy_ready ? "status-ready" : "status-offline" },
+        row.tproxy_ready ? t("plugin.ready") : t("plugin.offline"),
+      ),
   },
   {
     title: t("plugin.control_plane"),
     key: "controller_ready",
-    render: (row) => h("span", { class: row.controller_ready ? "status-ready" : "status-offline" },
-      row.controller_ready ? t("plugin.ready") : t("plugin.offline")),
+    render: (row) =>
+      h(
+        "span",
+        { class: row.controller_ready ? "status-ready" : "status-offline" },
+        row.controller_ready ? t("plugin.ready") : t("plugin.offline"),
+      ),
   },
   {
     title: t("common.actions"),
     key: "actions",
-    render: (row) => h("div", { class: "plugin-actions" }, [
-      h("button", { class: "plugin-action", disabled: !row.controller_ready, onClick: () => openPlugin(row) }, [
-        h(Launch), t("plugin.open_panel"),
+    render: (row) =>
+      h("div", { class: "plugin-actions" }, [
+        h(
+          "button",
+          {
+            class: "plugin-action",
+            disabled: !row.controller_ready,
+            onClick: () => openPlugin(row),
+          },
+          [h(Launch), t("plugin.open_panel")],
+        ),
+        h(
+          "button",
+          {
+            class: "plugin-action plugin-action--danger",
+            onClick: () => deletePlugin(row),
+          },
+          [h(TrashCan), t("common.delete")],
+        ),
       ]),
-      h("button", { class: "plugin-action plugin-action--danger", onClick: () => deletePlugin(row) }, [
-        h(TrashCan), t("common.delete"),
-      ]),
-    ]),
   },
 ]);
 
 async function refresh() {
   loading.value = true;
-  try { plugins.value = await listPlugins(); } finally { loading.value = false; }
+  try {
+    plugins.value = await listPlugins();
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function upload({ file, onFinish, onError }: UploadCustomRequestOptions) {
@@ -97,10 +136,20 @@ onMounted(() => {
   <n-tabs v-model:value="activeTab" type="line" animated class="plugin-tabs">
     <n-tab-pane name="manage" :tab="t('plugin.manage')">
       <n-flex vertical class="standard-content-page">
-        <n-flex align="center" justify="space-between" class="standard-list-toolbar">
-          <n-upload accept="application/json,.json" :show-file-list="false" :custom-request="upload">
+        <n-flex
+          align="center"
+          justify="space-between"
+          class="standard-list-toolbar"
+        >
+          <n-upload
+            accept="application/json,.json"
+            :show-file-list="false"
+            :custom-request="upload"
+          >
             <n-button type="primary">
-              <template #icon><n-icon><Add /></n-icon></template>
+              <template #icon
+                ><n-icon><Add /></n-icon
+              ></template>
               {{ t("plugin.import") }}
             </n-button>
           </n-upload>
@@ -122,20 +171,55 @@ onMounted(() => {
       :tab="plugin.name"
       display-directive="show:lazy"
     >
-      <iframe class="plugin-panel-frame" :src="panelUrl(plugin)" :title="plugin.name" />
+      <iframe
+        class="plugin-panel-frame"
+        :src="panelUrl(plugin)"
+        :title="plugin.name"
+      />
     </n-tab-pane>
   </n-tabs>
 </template>
 
 <style scoped>
-.status-ready { color: var(--app-status-success-color); }
-.status-offline { color: var(--app-text-muted-color); }
-.plugin-actions { display: flex; gap: var(--app-space-sm); }
-.plugin-action { display: inline-flex; align-items: center; gap: var(--app-space-xs); color: var(--app-brand-color); background: none; border: 0; cursor: pointer; }
-.plugin-action svg { width: 16px; }
-.plugin-action:disabled { color: var(--app-text-muted-color); cursor: not-allowed; }
-.plugin-action--danger { color: var(--app-status-danger-color); }
-.plugin-tabs { height: 100%; }
-.plugin-tabs :deep(.n-tab-pane) { height: 100%; }
-.plugin-panel-frame { width: 100%; height: 100%; border: 0; background: var(--app-surface-color); }
+.status-ready {
+  color: var(--app-status-success-color);
+}
+.status-offline {
+  color: var(--app-text-muted-color);
+}
+.plugin-actions {
+  display: flex;
+  gap: var(--app-space-sm);
+}
+.plugin-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--app-space-xs);
+  color: var(--app-brand-color);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.plugin-action svg {
+  width: 16px;
+}
+.plugin-action:disabled {
+  color: var(--app-text-muted-color);
+  cursor: not-allowed;
+}
+.plugin-action--danger {
+  color: var(--app-status-danger-color);
+}
+.plugin-tabs {
+  height: 100%;
+}
+.plugin-tabs :deep(.n-tab-pane) {
+  height: 100%;
+}
+.plugin-panel-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--app-surface-color);
+}
 </style>

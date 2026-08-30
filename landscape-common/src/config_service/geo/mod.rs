@@ -31,6 +31,10 @@ pub enum GeoError {
     #[api_error(id = "geo_site.file_read_error", status = 400)]
     SiteFileReadError,
 
+    #[error("invalid GeoSite lookup domain '{0}'")]
+    #[api_error(id = "geo_site.invalid_lookup_domain", status = 400)]
+    SiteInvalidLookupDomain(String),
+
     #[error("Geo IP '{0}' not found")]
     #[api_error(id = "geo_ip.not_found", status = 404)]
     IpNotFound(ConfigId),
@@ -153,6 +157,13 @@ pub struct GeoDomainConfig {
     pub values: Vec<GeoSiteFileConfig>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+pub struct GeoSiteLookupResult {
+    pub key: GeoFileCacheKey,
+    pub values: Vec<GeoSiteFileConfig>,
+}
+
 impl LandscapeStoreTrait for GeoDomainConfig {
     type K = GeoFileCacheKey;
     fn get_store_key(&self) -> GeoFileCacheKey {
@@ -222,6 +233,12 @@ pub struct QueryGeoKey {
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct QueryGeoDomainConfig {
     pub name: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+pub struct QueryGeoSiteDomain {
+    pub domain: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

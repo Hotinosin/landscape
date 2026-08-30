@@ -4,5 +4,10 @@
   "name": "Mihomo",
   "host_interface": "land-mihomo",
   "controller_socket": "/run/landscape/plugins/mihomo/controller.sock",
-  "ui_path": "/ui/"
+  "ui_path": "/ui/",
+  "network": {
+    "namespace": "land-mihomo",
+    "peer_interface": "plugin0",
+    "tproxy_port": 12345
+  }
 }

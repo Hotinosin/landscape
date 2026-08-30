@@ -2,6 +2,7 @@ export default {
   name: "插件名称",
   interface: "虚拟接口",
   data_plane: "数据面",
+  tproxy: "TProxy",
   control_plane: "控制面",
   ready: "可用",
   offline: "未就绪",

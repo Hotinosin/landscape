@@ -110,6 +110,7 @@ impl Modify for SecurityAddon {
         landscape_common::config_service::geo::GeoFileCacheKey,
         landscape_common::config_service::geo::QueryGeoKey,
         landscape_common::config_service::geo::GeoDomainConfig,
+        landscape_common::config_service::geo::GeoSiteLookupResult,
         landscape_common::config_service::geo::GeoIpConfig,
         // Auth types
         landscape_common::auth::LoginResult,

@@ -3,6 +3,7 @@ export default {
   "geo_site.cache_not_found": "找不到 GeoSite 缓存 (key: {0})",
   "geo_site.file_not_found": "上传中未找到 GeoSite 文件",
   "geo_site.file_read_error": "GeoSite 文件读取错误",
+  "geo_site.invalid_lookup_domain": "请输入有效的域名：{0}",
   "geo_ip.not_found": "找不到 GeoIP 配置 (ID: {0})",
   "geo_ip.cache_not_found": "找不到 GeoIP 缓存 (key: {0})",
   "geo_ip.file_not_found": "上传中未找到 GeoIP 文件",
