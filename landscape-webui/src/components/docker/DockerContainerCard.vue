@@ -6,10 +6,7 @@ import {
   start_container,
   stop_container,
 } from "@/api/docker";
-import {
-  DockerContainerSummary,
-  DockerBtnShow,
-} from "@/lib/docker";
+import { DockerContainerSummary, DockerBtnShow } from "@/lib/docker";
 import { useDockerStore } from "@/stores/status_docker";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { mask_string } from "@/lib/common";
@@ -83,7 +80,6 @@ async function remove() {
     }
   }
 }
-
 </script>
 <template>
   <n-card class="docker-container-exhibit-card" size="small">
@@ -164,7 +160,6 @@ async function remove() {
     </n-descriptions>
 
     <!-- {{ props.container }} -->
-
   </n-card>
 </template>
 <style scoped>

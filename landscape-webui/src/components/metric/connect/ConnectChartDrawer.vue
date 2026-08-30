@@ -25,7 +25,6 @@ const show = defineModel("show");
 const title = computed(() => {
   return frontEndStore.MASK_INFO(props.title);
 });
-
 </script>
 
 <template>

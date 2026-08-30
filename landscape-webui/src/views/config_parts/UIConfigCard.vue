@@ -81,13 +81,19 @@ async function handleSave() {
             :options="themeOptions"
             :placeholder="t('config.theme_placeholder')"
           />
-          <div class="accent-picker" role="radiogroup" :aria-label="t('config.accent_color')">
+          <div
+            class="accent-picker"
+            role="radiogroup"
+            :aria-label="t('config.accent_color')"
+          >
             <span>{{ t("config.accent_color") }}</span>
             <n-tooltip v-for="option in accentOptions" :key="option.value">
               <template #trigger>
                 <button
                   class="accent-swatch"
-                  :style="{ '--swatch-color': `var(--app-accent-${option.value}-color)` }"
+                  :style="{
+                    '--swatch-color': `var(--app-accent-${option.value}-color)`,
+                  }"
                   type="button"
                   role="radio"
                   :aria-checked="prefStore.accent === option.value"

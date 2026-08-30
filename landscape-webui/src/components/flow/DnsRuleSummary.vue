@@ -57,11 +57,7 @@ const upstreamLabel = computed(() => {
       <n-text strong>{{ rule.name || t("common.unnamed") }}</n-text>
     </n-flex>
     <n-flex align="center" size="small">
-      <n-tag
-        v-for="source in matchLabels"
-        :key="source"
-        :bordered="false"
-      >
+      <n-tag v-for="source in matchLabels" :key="source" :bordered="false">
         {{ source }}
       </n-tag>
       <n-text depth="3">{{ t("flow.list.uses_dns") }}</n-text>

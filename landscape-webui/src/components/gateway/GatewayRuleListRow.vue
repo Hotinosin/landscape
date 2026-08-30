@@ -16,7 +16,8 @@ const showEdit = ref(false);
 
 const matchType = computed(() => {
   if (props.rule.match_rule.t === "host") return t("gateway.type_host");
-  if (props.rule.match_rule.t === "sni_proxy") return t("gateway.type_sni_proxy");
+  if (props.rule.match_rule.t === "sni_proxy")
+    return t("gateway.type_sni_proxy");
   return t("gateway.type_legacy_path_prefix");
 });
 const upstream = computed(() => {

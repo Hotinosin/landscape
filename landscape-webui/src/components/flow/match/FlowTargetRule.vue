@@ -30,8 +30,10 @@ async function refresh_wan_ifaces() {
     listPlugins(),
   ]);
   iface_wans.value = ifaces.status === "fulfilled" ? ifaces.value : [];
-  docker_containers.value = containers.status === "fulfilled" ? containers.value : [];
-  plugins.value = importedPlugins.status === "fulfilled" ? importedPlugins.value : [];
+  docker_containers.value =
+    containers.status === "fulfilled" ? containers.value : [];
+  plugins.value =
+    importedPlugins.status === "fulfilled" ? importedPlugins.value : [];
 }
 
 const iface_wan_options = computed(() =>

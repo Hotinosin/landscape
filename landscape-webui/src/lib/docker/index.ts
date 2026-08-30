@@ -26,7 +26,6 @@ export class DockerContainerSummary {
       ? themeVars.value.successColor
       : "";
   }
-
 }
 
 export class DockerImageSummary {

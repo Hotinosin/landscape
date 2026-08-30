@@ -312,9 +312,7 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
       );
 
       // Edit: always
-      btns.push(
-        h(EditButton, { onClick: () => open_edit(id) }),
-      );
+      btns.push(h(EditButton, { onClick: () => open_edit(id) }));
 
       // Issue: pending | invalid | expired | revoked (ACME only)
       if (

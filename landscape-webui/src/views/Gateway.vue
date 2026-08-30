@@ -59,7 +59,8 @@ const columns = computed<DataTableColumns<HttpUpstreamRuleConfig>>(() =>
     render: (rule) =>
       h(GatewayRuleListRow, {
         rule,
-        cell: cell as "name" | "type" | "domains" | "upstream" | "paths" | "actions",
+        cell: cell as
+          "name" | "type" | "domains" | "upstream" | "paths" | "actions",
         ...(cell === "actions" ? { onRefresh: refreshAll } : {}),
       }),
   })),

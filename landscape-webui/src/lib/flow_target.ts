@@ -10,6 +10,6 @@ export function isPluginTarget(target: DisplayFlowTarget) {
 
 export function flowTargetName(target: DisplayFlowTarget) {
   return target.t === "netns"
-    ? target.container_name?.replace(/^plugin:/, "") ?? ""
-    : target.name ?? "";
+    ? (target.container_name?.replace(/^plugin:/, "") ?? "")
+    : (target.name ?? "");
 }
