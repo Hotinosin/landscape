@@ -590,8 +590,8 @@ async fn run_system(
         .nest("/docker", docker_router)
         .nest("/metrics", metrics_router)
         .nest("/gateway", gateway_router)
-        .nest("/plugins", plugins::api_router(plugin_manager.clone()))
         .with_state(landscape_app_status.clone())
+        .nest("/plugins", plugins::api_router(plugin_manager.clone()))
         .nest("/system", system_combined)
         .route_layer(axum::middleware::from_fn_with_state(auth_share.clone(), auth::auth_handler));
 
