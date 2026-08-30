@@ -41,6 +41,10 @@ pub mod utils;
 pub mod wan_service;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const BUILD_VERSION: &str = match option_env!("LANDSCAPE_BUILD_VERSION") {
+    Some(version) => version,
+    None => VERSION,
+};
 
 /// Home Path
 pub const LANDSCAPE_CONFIG_DIR_NAME: &str = ".landscape-router";

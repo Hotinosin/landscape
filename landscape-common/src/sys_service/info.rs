@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sysinfo::System;
 use tokio::sync::watch;
 
-use crate::VERSION;
+use crate::BUILD_VERSION;
 
 pub static LAND_SYS_BASE_INFO: Lazy<LandscapeSystemInfo> = Lazy::new(LandscapeSystemInfo::new);
 
@@ -52,7 +52,7 @@ impl LandscapeSystemInfo {
         let system_name = System::name();
         let kernel_version = System::kernel_version();
         let os_version = System::os_version();
-        let landscape_version = VERSION.to_string();
+        let landscape_version = BUILD_VERSION.to_string();
 
         LandscapeSystemInfo {
             start_at,

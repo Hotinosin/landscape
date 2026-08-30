@@ -60,7 +60,7 @@ use landscape_common::{
     database::error::DbError,
     event::hub::EventHub,
     wan_service::ipv6_pd::IAPrefixMap,
-    VERSION,
+    BUILD_VERSION,
 };
 use landscape_common::{config::InitConfig, lan_service::lan_dhcpv4::config::DHCPv4ServiceConfig};
 use landscape_core::{lan_hostname::LanHostnameRegistry, time::start_time_sync_service};
@@ -896,7 +896,7 @@ Landscape Router is licensed under the GPL-3.0 License
 Github: https://github.com/ThisSeanZhang/landscape
 Doc   : https://landscape.whileaway.dev
 "#,
-        version = VERSION
+        version = BUILD_VERSION
     );
     let config_str = config.to_string_summary();
     info!("{}{}", banner, config_str);
