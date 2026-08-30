@@ -4,7 +4,7 @@ import { useMessage } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { change_password } from "@/api/auth";
 import { useRouter } from "vue-router";
-import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
+import { clearLandscapeSession } from "@/lib/common";
 import { useHistoryRouteStore } from "@/stores/history_route";
 
 const { t } = useI18n();
@@ -56,7 +56,7 @@ async function handleSubmit() {
       confirm_password: "",
     };
     // Force re-login
-    localStorage.removeItem(LANDSCAPE_TOKEN_KEY);
+    clearLandscapeSession();
     historyStore.resetRoutes();
     router.push("/login");
   } catch (e: any) {

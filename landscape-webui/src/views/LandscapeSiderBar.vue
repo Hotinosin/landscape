@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Gateway,
+  Plug,
 } from "@vicons/carbon";
 import { Wall } from "@vicons/tabler";
 import { Docker } from "@vicons/fa";
@@ -189,6 +190,11 @@ const menuOptions = computed<MenuOption[]>(() => [
     label: t("routes.docker"),
     key: "docker",
     icon: renderIcon(Docker),
+  },
+  {
+    label: t("routes.plugins"),
+    key: "plugins",
+    icon: renderIcon(Plug),
   },
   {
     label: t("routes.metric-group"),

@@ -6,7 +6,7 @@ import { useRouter } from "vue-router";
 import { useMessage } from "naive-ui";
 
 import CopyRight from "@/components/CopyRight.vue";
-import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
+import { clearLandscapeSession, LANDSCAPE_TOKEN_KEY } from "@/lib/common";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { usePreferenceStore } from "@/stores/preference";
 import { useI18n } from "vue-i18n";
@@ -20,7 +20,7 @@ const preferenceStore = usePreferenceStore();
 const message = useMessage();
 
 async function login() {
-  localStorage.removeItem(LANDSCAPE_TOKEN_KEY);
+  clearLandscapeSession();
   let result = await do_login(login_info.value);
   if (result.success) {
     localStorage.setItem(LANDSCAPE_TOKEN_KEY, result.token);

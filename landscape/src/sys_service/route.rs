@@ -430,12 +430,12 @@ impl IpRouteService {
     pub async fn remove_all_wan_docker(&self) {
         {
             let mut lock = self.ipv4_wan_ifaces.write().await;
-            lock.retain(|_, value| !value.is_docker);
+            lock.retain(|name, value| !value.is_docker || name.starts_with("plugin:"));
         }
 
         {
             let mut lock = self.ipv6_wan_ifaces.write().await;
-            lock.retain(|_, value| !value.is_docker);
+            lock.retain(|name, value| !value.is_docker || name.starts_with("plugin:"));
         }
     }
 

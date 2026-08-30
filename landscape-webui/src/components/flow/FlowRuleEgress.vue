@@ -2,8 +2,10 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { Docker, NetworkWired } from "@vicons/fa";
+import { Plug } from "@vicons/carbon";
 import type { FlowConfig, FlowMark } from "@landscape-router/types/api/schemas";
 import { useFrontEndStore } from "@/stores/front_end_config";
+import { flowTargetName, isPluginTarget } from "@/lib/flow_target";
 
 const props = defineProps<{
   mark: FlowMark;
@@ -36,11 +38,7 @@ const actionLabel = computed(() => {
 });
 const targetLabel = computed(() => {
   if (!target.value) return "";
-  return frontEndStore.MASK_INFO(
-    target.value.t === "netns"
-      ? target.value.container_name
-      : target.value.name,
-  );
+  return frontEndStore.MASK_INFO(flowTargetName(target.value));
 });
 </script>
 
@@ -51,7 +49,15 @@ const targetLabel = computed(() => {
     <n-text v-if="target" depth="3">→</n-text>
     <n-tag v-if="target" :bordered="false">
       <template #icon>
-        <n-icon :component="target.t === 'netns' ? Docker : NetworkWired" />
+        <n-icon
+          :component="
+            isPluginTarget(target)
+              ? Plug
+              : target.t === 'netns'
+                ? Docker
+                : NetworkWired
+          "
+        />
       </template>
       {{ targetLabel }}
     </n-tag>

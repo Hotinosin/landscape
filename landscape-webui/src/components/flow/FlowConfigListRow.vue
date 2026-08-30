@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { Docker, NetworkWired } from "@vicons/fa";
+import { Plug } from "@vicons/carbon";
 import type { FlowConfig } from "@landscape-router/types/api/schemas";
 import {
   addFlowRule,
@@ -13,6 +14,7 @@ import FlowEntryRuleExhibit from "@/components/flow/FlowEntryRuleExhibit.vue";
 import DnsRuleSummary from "@/components/flow/DnsRuleSummary.vue";
 import TargetIpRuleSummary from "@/components/flow/TargetIpRuleSummary.vue";
 import type { DnsUpstreamConfig } from "@landscape-router/types/api/schemas";
+import { flowTargetName, isPluginTarget } from "@/lib/flow_target";
 
 const props = defineProps<{
   config: FlowConfig;
@@ -118,17 +120,19 @@ function flowEnableRailStyle({ checked }: { checked: boolean }) {
         size="small"
         :bordered="false"
       >
-        {{
-          target.target.t === "netns"
-            ? frontEndStore.MASK_INFO(target.target.container_name)
-            : frontEndStore.MASK_INFO(target.target.name)
-        }}
+        {{ frontEndStore.MASK_INFO(flowTargetName(target.target)) }}
         <span v-if="(target.weight ?? 1) !== 1">
           ×{{ target.weight ?? 1 }}
         </span>
         <template #icon>
           <n-icon
-            :component="target.target.t === 'netns' ? Docker : NetworkWired"
+            :component="
+              isPluginTarget(target.target)
+                ? Plug
+                : target.target.t === 'netns'
+                  ? Docker
+                  : NetworkWired
+            "
           />
         </template>
       </n-tag>

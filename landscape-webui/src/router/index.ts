@@ -46,6 +46,11 @@ const inner_zone: Array<RouteRecordRaw> = [
     component: () => import("@/views/Docker.vue"),
   },
   {
+    path: "/plugins",
+    name: "routes.plugins",
+    component: () => import("@/views/Plugins.vue"),
+  },
+  {
     path: "/firewall-nat/firewall",
     name: "routes.firewall",
     component: () => import("@/views/Firewall.vue"),

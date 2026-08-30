@@ -6,7 +6,7 @@ import { useHistoryRouteStore } from "@/stores/history_route";
 import { useI18n } from "vue-i18n";
 import { useThemeVars } from "naive-ui";
 import { Logout, Pin, PinFilled, Terminal } from "@vicons/carbon";
-import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
+import { clearLandscapeSession } from "@/lib/common";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { usePtyStore } from "@/stores/pty";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
@@ -64,7 +64,7 @@ watch(
 );
 
 function logout() {
-  localStorage.removeItem(LANDSCAPE_TOKEN_KEY);
+  clearLandscapeSession();
   historyStore.resetRoutes();
   frontEndStore.INSERT_USERNAME("");
   router.push("/login");

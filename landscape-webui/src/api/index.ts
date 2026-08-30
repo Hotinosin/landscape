@@ -1,7 +1,11 @@
 import type { AxiosInstance } from "axios";
 import router from "@/router";
 import i18n from "@/i18n";
-import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
+import {
+  clearLandscapeSession,
+  LANDSCAPE_TOKEN_KEY,
+  syncPluginSessionCookie,
+} from "@/lib/common";
 import { useHistoryRouteStore } from "@/stores/history_route";
 
 function formatApiErrorTemplate(
@@ -38,6 +42,7 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
       const newToken = response.headers["x-refresh-token"];
       if (newToken) {
         localStorage.setItem(LANDSCAPE_TOKEN_KEY, newToken);
+        syncPluginSessionCookie();
       }
       return response.data;
     },
@@ -46,7 +51,7 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
         const code = error.response.status;
         const { error_id, message, args } = error.response.data;
         if (code === 401) {
-          localStorage.removeItem(LANDSCAPE_TOKEN_KEY);
+          clearLandscapeSession();
           useHistoryRouteStore().resetRoutes();
 
           const currentPath = router.currentRoute.value.fullPath;

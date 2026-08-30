@@ -8,6 +8,8 @@ import { delFlowRule } from "@landscape-router/types/api/flow-rules/flow-rules";
 import FlowEntryRuleExhibit from "@/components/flow/FlowEntryRuleExhibit.vue";
 
 import { Docker, NetworkWired } from "@vicons/fa";
+import { Plug } from "@vicons/carbon";
+import { flowTargetName, isPluginTarget } from "@/lib/flow_target";
 
 const frontEndStore = useFrontEndStore();
 const { t } = useI18n();
@@ -164,15 +166,17 @@ const show_remark = computed(
     </n-flex>
     <template #action>
       <n-tag v-for="each in config.flow_targets" :bordered="false">
-        {{
-          each.target.t === "netns"
-            ? frontEndStore.MASK_INFO(each.target.container_name)
-            : frontEndStore.MASK_INFO(each.target.name)
-        }}
+        {{ frontEndStore.MASK_INFO(flowTargetName(each.target)) }}
         <span v-if="(each.weight ?? 1) !== 1"> ×{{ each.weight ?? 1 }}</span>
         <template #icon>
           <n-icon
-            :component="each.target.t === 'netns' ? Docker : NetworkWired"
+            :component="
+              isPluginTarget(each.target)
+                ? Plug
+                : each.target.t === 'netns'
+                  ? Docker
+                  : NetworkWired
+            "
           />
         </template>
       </n-tag>

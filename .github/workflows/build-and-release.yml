@@ -1,11 +1,13 @@
 name: build and release
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - '*'
     branches:
       - 'build'
+      - 'main'
 
 env:
   sccache_version: 'v0.12.0'

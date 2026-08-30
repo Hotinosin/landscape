@@ -32,6 +32,9 @@ clap = { workspace = true }
 axum = { workspace = true }
 axum-extra = { workspace = true, features = ["typed-header"] }
 axum-server = { workspace = true, features = ["tls-rustls"] }
+hyper = { workspace = true }
+hyper-util = { workspace = true }
+http-body-util = { workspace = true }
 headers = { workspace = true }
 
 homedir = { workspace = true }
