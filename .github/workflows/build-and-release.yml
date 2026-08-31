@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - 'webui-upstream'
-      - 'feature/core-extensions'
+      - 'webui-extensions'
       - 'feature/landscape-extensions'
 
 permissions:
@@ -61,6 +61,7 @@ jobs:
           restore-keys: ${{ runner.os }}-${{ matrix.settings.target }}-
 
       - name: Build binaries
+        if: github.ref_name == 'feature/landscape-extensions'
         run: |
             if [ "${{ matrix.settings.bindgen }}" = "true" ]; then
               cargo install --force --locked bindgen-cli
@@ -87,6 +88,7 @@ jobs:
           path: landscape-types/openapi.json
 
       - name: Upload binary
+        if: github.ref_name == 'feature/landscape-extensions'
         uses: actions/upload-artifact@v7
         with:
           name: landscape-webserver-${{ matrix.settings.target }}
@@ -351,14 +353,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Download binary
+      - name: Download frontend
         uses: actions/download-artifact@v8
         with:
-          pattern: landscape-*
+          name: landscape-frontend-none-all
+          path: output
+
+      - name: Download binary
+        if: github.ref_name == 'feature/landscape-extensions'
+        uses: actions/download-artifact@v8
+        with:
+          pattern: landscape-webserver-*
           path: output
           merge-multiple: true
 
       - name: Download OpenAPI spec
+        if: github.ref_name == 'feature/landscape-extensions'
         uses: actions/download-artifact@v8
         with:
           name: openapi-spec
@@ -373,7 +383,7 @@ jobs:
         run: |
           case "${GITHUB_REF_NAME}" in
             webui-upstream) VARIANT=webui ;;
-            feature/core-extensions) VARIANT=core ;;
+            webui-extensions) VARIANT=webui-extensions ;;
             feature/landscape-extensions) VARIANT=extensions ;;
             *) echo "Unsupported release branch: ${GITHUB_REF_NAME}" >&2; exit 1 ;;
           esac
