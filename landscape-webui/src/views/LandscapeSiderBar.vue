@@ -18,7 +18,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Gateway,
-  Plug,
   Terminal,
   Firewall as Wall,
   ContainerServices as Docker,
@@ -191,11 +190,6 @@ const menuOptions = computed<MenuOption[]>(() => [
     label: t("routes.docker"),
     key: "docker",
     icon: renderIcon(Docker),
-  },
-  {
-    label: t("routes.plugins"),
-    key: "plugins",
-    icon: renderIcon(Plug),
   },
   {
     label: t("routes.metric-group"),

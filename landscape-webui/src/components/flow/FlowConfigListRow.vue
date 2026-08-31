@@ -4,7 +4,6 @@ import { useI18n } from "vue-i18n";
 import {
   ContainerServices as Docker,
   Network3 as NetworkWired,
-  Plug,
 } from "@vicons/carbon";
 import type { FlowConfig } from "@landscape-router/types/api/schemas";
 import {
@@ -17,7 +16,7 @@ import FlowEntryRuleExhibit from "@/components/flow/FlowEntryRuleExhibit.vue";
 import DnsRuleSummary from "@/components/flow/DnsRuleSummary.vue";
 import TargetIpRuleSummary from "@/components/flow/TargetIpRuleSummary.vue";
 import type { DnsUpstreamConfig } from "@landscape-router/types/api/schemas";
-import { flowTargetName, isPluginTarget } from "@/lib/flow_target";
+import { flowTargetName } from "@/lib/flow_target";
 
 const props = defineProps<{
   config: FlowConfig;
@@ -130,11 +129,7 @@ function flowEnableRailStyle({ checked }: { checked: boolean }) {
         <template #icon>
           <n-icon
             :component="
-              isPluginTarget(target.target)
-                ? Plug
-                : target.target.t === 'netns'
-                  ? Docker
-                  : NetworkWired
+              target.target.t === 'netns' ? Docker : NetworkWired
             "
           />
         </template>

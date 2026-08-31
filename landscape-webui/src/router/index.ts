@@ -46,11 +46,6 @@ const inner_zone: Array<RouteRecordRaw> = [
     component: () => import("@/views/Docker.vue"),
   },
   {
-    path: "/plugins",
-    name: "routes.plugins",
-    component: () => import("@/views/Plugins.vue"),
-  },
-  {
     path: "/webshell",
     name: "routes.webshell",
     component: () => import("@/views/WebShell.vue"),

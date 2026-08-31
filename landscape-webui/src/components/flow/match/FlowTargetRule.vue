@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { get_docker_container_summarys } from "@/api/docker";
 import { get_wan_candidates } from "@/api/iface";
-import { listPlugins, type PluginInfo } from "@/api/plugins";
 import type {
   FlowTarget,
   WeightedFlowTarget,
@@ -17,42 +16,32 @@ const target_rules = defineModel<WeightedFlowTarget[]>("target_rules", {
 
 const iface_wans = ref<string[]>([]);
 const docker_containers = ref<any[]>([]);
-const plugins = ref<PluginInfo[]>([]);
 
 onMounted(async () => {
   await refresh_wan_ifaces();
 });
 
 async function refresh_wan_ifaces() {
-  const [ifaces, containers, importedPlugins] = await Promise.allSettled([
+  const [ifaces, containers] = await Promise.allSettled([
     get_wan_candidates(),
     get_docker_container_summarys(),
-    listPlugins(),
   ]);
   iface_wans.value = ifaces.status === "fulfilled" ? ifaces.value : [];
   docker_containers.value =
     containers.status === "fulfilled" ? containers.value : [];
-  plugins.value =
-    importedPlugins.status === "fulfilled" ? importedPlugins.value : [];
 }
 
 const iface_wan_options = computed(() =>
   iface_wans.value.map((name) => ({ label: name, value: name })),
 );
 
-const docker_options = computed(() => [
-  ...docker_containers.value.map((e) => {
+const docker_options = computed(() =>
+  docker_containers.value.map((e) => {
     let name = e.Names[0] ?? "";
     if (name.startsWith("/")) name = name.slice(1);
     return { label: name, value: name };
   }),
-  ...plugins.value
-    .filter((plugin) => plugin.interface_ready)
-    .map((plugin) => ({
-      label: `${plugin.name} (${t("routes.plugins")})`,
-      value: `plugin:${plugin.id}`,
-    })),
-]);
+);
 
 enum FlowTargetEnum {
   Interface = "interface",
