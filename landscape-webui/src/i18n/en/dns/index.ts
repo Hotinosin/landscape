@@ -2,6 +2,8 @@ export default {
   rule_edit: {
     title: "Rule Editor",
     priority: "Priority",
+    priority_help:
+      "Lower numbers have higher priority. Rules are evaluated from low to high and stop at the first match; 1 is higher than 1000.",
     remark: "Remark",
     filter_result: "Filter result",
     flow_action: "Flow action",
@@ -161,5 +163,6 @@ export default {
   select_upstream: {
     redirect_flow_id: "Redirect Flow ID",
     default_ali: "Aliyun",
+    create: "+ Add DNS upstream",
   },
 };

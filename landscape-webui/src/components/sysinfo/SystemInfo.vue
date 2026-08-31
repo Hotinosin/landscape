@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { get_sysinfo } from "@/api/sys";
 import { LandscapeSystemInfo } from "@/lib/sys";
-import { onMounted, ref, computed } from "vue";
+import { onMounted, onUnmounted, ref, computed } from "vue";
 import { useThemeVars } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { InformationFilled, WarningAltFilled } from "@vicons/carbon";
 
 import { usePreferenceStore } from "@/stores/preference";
+import { overviewCardStyles } from "@/components/overviewCardStyle";
 const { t } = useI18n({ useScope: "global" });
 const themeVars = useThemeVars();
 const prefStore = usePreferenceStore();
@@ -23,9 +24,11 @@ const sysinfo = ref<LandscapeSystemInfo>({
 
 const now = ref<number>(new Date().getTime());
 
-setInterval(() => {
+const clockTimer = setInterval(() => {
   now.value = new Date().getTime();
 }, 1000);
+
+onUnmounted(() => clearInterval(clockTimer));
 
 onMounted(async () => {
   sysinfo.value = await get_sysinfo();
@@ -61,7 +64,12 @@ const uptime = computed(() => {
 </script>
 
 <template>
-  <n-card content-style="display: flex; flex-direction: column; height: 100%;">
+  <n-card
+    class="overview-card"
+    :style="overviewCardStyles.card"
+    :header-style="overviewCardStyles.header"
+    :content-style="overviewCardStyles.content"
+  >
     <!-- Header -->
     <template #header>
       <n-flex align="center" justify="space-between">
@@ -73,7 +81,12 @@ const uptime = computed(() => {
     </template>
 
     <!-- Main Info Section -->
-    <n-flex vertical :size="12">
+    <n-flex
+      vertical
+      :size="12"
+      class="overview-card__primary"
+      :style="overviewCardStyles.primary"
+    >
       <!-- Hostname - Featured -->
       <n-flex vertical :size="4">
         <n-text depth="3" class="info-label">{{
@@ -108,13 +121,21 @@ const uptime = computed(() => {
       </n-flex>
     </n-flex>
 
-    <n-divider style="margin: 12px 0" />
+    <n-divider
+      class="overview-card__divider"
+      :style="overviewCardStyles.divider"
+    />
 
     <!-- Version and Runtime Info -->
-    <n-flex vertical :size="8">
+    <n-flex
+      vertical
+      :size="8"
+      class="overview-card__secondary"
+      :style="overviewCardStyles.secondary"
+    >
       <!-- Landscape Router Version -->
       <n-flex justify="space-between" align="center">
-        <n-text depth="3" style="font-size: 12px">{{
+        <n-text depth="3" style="font-size: var(--app-font-size-caption)">{{
           t("sysinfo.landscape_router")
         }}</n-text>
         <n-tooltip v-if="isVersionMismatch" trigger="hover" placement="top">
@@ -134,7 +155,13 @@ const uptime = computed(() => {
               {{ t("sysinfo.backend") }}: {{ sysinfo.landscape_version }}
             </div>
             <div>{{ t("sysinfo.frontend") }}: {{ ui_version }}</div>
-            <div style="margin-top: 8px; opacity: 0.8; font-size: 12px">
+            <div
+              style="
+                margin-top: 8px;
+                opacity: 0.8;
+                font-size: var(--app-font-size-caption);
+              "
+            >
               {{ t("sysinfo.check_browser_cache") }}
             </div>
           </div>
@@ -146,7 +173,7 @@ const uptime = computed(() => {
 
       <!-- Uptime -->
       <n-flex justify="space-between" align="center">
-        <n-text depth="3" style="font-size: 12px">{{
+        <n-text depth="3" style="font-size: var(--app-font-size-caption)">{{
           t("sysinfo.uptime")
         }}</n-text>
         <n-flex align="center" :size="6">
@@ -175,24 +202,24 @@ const uptime = computed(() => {
 
 <style scoped>
 .info-label {
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
   line-height: 1.2;
 }
 
 .info-value {
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
   font-weight: 500;
   line-height: 1.4;
   word-break: break-all;
 }
 
 .info-value.large {
-  font-size: 18px;
+  font-size: var(--app-font-size-heading);
   font-weight: 600;
 }
 
 .info-value.uptime {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
 }
 </style>

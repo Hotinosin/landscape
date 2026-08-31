@@ -1,81 +1,241 @@
 <script setup lang="ts">
-import { refresh_geo_cache_key, search_geo_site_cache } from "@/api/geo/site";
-import { sortGeoKeys } from "@/lib/geo_utils";
-import type { QueryGeoKey } from "@landscape-router/types/api/schemas";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { Settings } from "@vicons/carbon";
+import type {
+  GeoFileCacheKey,
+  QueryGeoKey,
+} from "@landscape-router/types/api/schemas";
+import {
+  get_geo_site_cache_detail,
+  search_geo_site_cache,
+} from "@/api/geo/site";
+import {
+  get_geo_ip_cache_detail,
+  search_geo_ip_cache,
+} from "@/api/geo/ip";
+import { sortGeoKeys } from "@/lib/geo_utils";
+import GeoDatabaseDrawer from "@/components/geo/GeoDatabaseDrawer.vue";
 
-const rules = ref<any>([]);
+type Source = "site" | "ip";
 const { t } = useI18n();
+const source = ref<Source>("site");
+const rules = ref<GeoFileCacheKey[]>([]);
+const selected = ref<GeoFileCacheKey | null>(null);
+const detail = ref<any>(null);
+const search = ref("");
+const showConfig = ref(false);
+const filter: QueryGeoKey = { name: null, key: null };
 
-onMounted(async () => {
-  await refresh();
+const sourceOptions = computed(() => [
+  { label: t("geo.database.geosite_source"), value: "site" },
+  { label: t("geo.database.geoip_source"), value: "ip" },
+]);
+const visibleKeys = computed(() => {
+  const value = search.value.trim().toLowerCase();
+  return value
+    ? rules.value.filter((item) =>
+        `${item.key} ${item.name}`.toLowerCase().includes(value),
+      )
+    : rules.value;
 });
+const values = computed<any[]>(() => detail.value?.values ?? []);
 
-const filter = ref<QueryGeoKey>({
-  name: null,
-  key: null,
+async function load() {
+  const result =
+    source.value === "site"
+      ? await search_geo_site_cache(filter)
+      : await search_geo_ip_cache(filter);
+  rules.value = sortGeoKeys(result, "");
+  if (rules.value.length) await selectKey(rules.value[0]);
+  else {
+    selected.value = null;
+    detail.value = null;
+  }
+}
+async function selectKey(item: GeoFileCacheKey) {
+  selected.value = item;
+  detail.value =
+    source.value === "site"
+      ? await get_geo_site_cache_detail(item)
+      : await get_geo_ip_cache_detail(item);
+}
+watch(source, async () => {
+  selected.value = null;
+  detail.value = null;
+  search.value = "";
+  await load();
 });
-
-async function refresh() {
-  const result = await search_geo_site_cache(filter.value);
-  rules.value = sortGeoKeys(result, filter.value.key || "");
-}
-
-const loading = ref(false);
-async function refresh_cache() {
-  (async () => {
-    loading.value = true;
-    try {
-      await refresh_geo_cache_key();
-      await refresh();
-    } finally {
-      loading.value = false;
-    }
-  })();
-}
-
-const show_geo_drawer_modal = ref(false);
+onMounted(load);
 </script>
+
 <template>
-  <n-flex style="flex: 1; overflow: hidden; margin-bottom: 10px" vertical>
-    <n-flex style="width: 100%" :wrap="false">
-      <!-- {{ filter }} -->
-      <n-button @click="show_geo_drawer_modal = true">
-        {{ t("common.domain_rule_source_config") }}
+  <n-flex class="geo-page" vertical :size="12">
+    <div class="geo-toolbar">
+      <n-select
+        v-model:value="source"
+        :options="sourceOptions"
+        class="geo-source-select"
+      />
+      <n-button secondary @click="showConfig = true">
+        <template #icon
+          ><n-icon><Settings /></n-icon></template
+        >{{ t("common.config") }}
       </n-button>
-      <n-popconfirm
-        :positive-button-props="{ loading: loading }"
-        @positive-click="refresh_cache"
-      >
-        <template #trigger>
-          <n-button>{{ t("common.force_refresh") }}</n-button>
-        </template>
-        {{ t("common.force_refresh_confirm") }}
-      </n-popconfirm>
-      <GeoSiteKeySelect
-        v-model:geo_key="filter.key"
-        v-model:geo_name="filter.name"
-        @refresh="refresh"
-      ></GeoSiteKeySelect>
-    </n-flex>
+    </div>
 
-    <!-- <n-grid x-gap="12" y-gap="10" cols="1 600:2 900:3 1200:4 1600:5">
-      <n-grid-item
-        v-for="rule in rules"
-        :key="rule.index"
-        style="display: flex"
-      >
-        <GeoSiteCacheCard :geo_site="rule"></GeoSiteCacheCard>
-      </n-grid-item>
-    </n-grid> -->
-
-    <n-virtual-list :item-size="52" :items="rules">
-      <template #default="{ item }">
-        <GeoSiteCacheCard :geo_site="item"></GeoSiteCacheCard>
-      </template>
-    </n-virtual-list>
-    <GeoSiteDrawer @refresh:keys="refresh" v-model:show="show_geo_drawer_modal">
-    </GeoSiteDrawer>
+    <div class="geo-browser">
+      <aside class="geo-panel">
+        <n-flex justify="space-between"
+          ><n-text strong>{{ source === "site" ? "GeoSite" : "GeoIP" }}</n-text
+          ><n-tag size="small" :bordered="false">{{
+            visibleKeys.length
+          }}</n-tag></n-flex
+        >
+        <n-input
+          v-model:value="search"
+          clearable
+          :placeholder="t('geo.geo_site.search_tags')"
+        />
+        <n-virtual-list
+          class="geo-list"
+          :item-size="42"
+          :items="visibleKeys"
+        >
+          <template #default="{ item }">
+            <button
+              class="geo-key"
+              :class="{
+                active:
+                  selected?.name === item.name && selected?.key === item.key,
+              }"
+              @click="selectKey(item)"
+            >
+              <span>{{ item.key }}</span
+              ><small>{{ item.name }}</small>
+            </button>
+          </template>
+        </n-virtual-list>
+      </aside>
+      <section class="geo-panel">
+        <n-flex justify="space-between"
+          ><n-text strong>{{ selected?.key || "—" }}</n-text
+          ><n-tag v-if="detail" size="small" :bordered="false">{{
+            values.length
+          }}</n-tag></n-flex
+        >
+        <n-virtual-list
+          v-if="detail"
+          class="geo-list"
+          :item-size="42"
+          :items="values"
+        >
+          <template #default="{ item }">
+            <div class="geo-value">
+              <span>{{
+                source === "site" ? item.value : `${item.ip}/${item.prefix}`
+              }}</span
+              ><n-tag v-if="source === 'site'" size="tiny" :bordered="false">{{
+                item.match_type
+              }}</n-tag>
+            </div>
+          </template>
+        </n-virtual-list>
+      </section>
+    </div>
+    <GeoDatabaseDrawer
+      v-model:show="showConfig"
+      :initial-tab="source"
+      @refresh="load"
+    />
   </n-flex>
 </template>
+
+<style scoped>
+.geo-page {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.geo-toolbar,
+.geo-browser {
+  display: grid;
+  gap: var(--app-space-section);
+}
+.geo-toolbar {
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  align-items: center;
+}
+.geo-toolbar > :last-child {
+  justify-self: end;
+}
+.geo-source-select {
+  width: 100%;
+}
+.geo-browser {
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+}
+.geo-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-section);
+  min-height: 0;
+  padding: 16px 16px 0;
+  border-radius: var(--app-radius-control, 6px);
+  background: var(--app-surface-color);
+  box-shadow: 0 1px 4px var(--app-shadow-color);
+}
+.geo-list {
+  min-height: 0;
+  height: 100%;
+  flex: 1;
+  border-radius: 0 0 6px 6px;
+}
+.geo-key {
+  width: 100%;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--app-space-sm);
+  padding: 8px var(--app-space-section);
+  border: 0;
+  border-radius: var(--app-radius-control, 6px);
+  color: var(--app-text-secondary-color);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+.geo-key:hover {
+  background: var(--app-interactive-hover-color);
+}
+.geo-key.active {
+  color: var(--app-text-inverse-color);
+  background: var(--app-brand-color);
+}
+.geo-key small {
+  color: inherit;
+  opacity: 0.72;
+}
+.geo-value {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--app-space-section);
+  margin-bottom: 4px;
+  border-radius: var(--app-radius-control, 6px);
+  background: var(--app-surface-subtle-color);
+}
+@media (max-width: 800px) {
+  .geo-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .geo-browser {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(220px, 38vh) minmax(320px, 1fr);
+  }
+}
+</style>

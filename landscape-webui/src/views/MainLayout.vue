@@ -5,14 +5,12 @@ import { useHistoryRouteStore } from "@/stores/history_route";
 
 import { useI18n } from "vue-i18n";
 import { useThemeVars } from "naive-ui";
-import { Logout, Pin, PinFilled, Terminal } from "@vicons/carbon";
-import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
+import { Logout, Pin, PinFilled } from "@vicons/carbon";
+import { clearLandscapeSession } from "@/lib/common";
 import { useFrontEndStore } from "@/stores/front_end_config";
-import { usePtyStore } from "@/stores/pty";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import IntervalFetch from "@/components/head/IntervalFetch.vue";
 import LanguageSetting from "@/components/head/LanguageSetting.vue";
-import GlobalTerminal from "@/components/GlobalTerminal.vue";
 import LandscapeSiderBar from "@/views/LandscapeSiderBar.vue";
 
 const router = useRouter();
@@ -48,7 +46,6 @@ function handleTagClose(path: string) {
 }
 
 const frontEndStore = useFrontEndStore();
-const ptyStore = usePtyStore();
 const enrolledDeviceStore = useEnrolledDeviceStore();
 
 watch(
@@ -60,35 +57,25 @@ watch(
 );
 
 function logout() {
-  localStorage.removeItem(LANDSCAPE_TOKEN_KEY);
+  clearLandscapeSession();
+  historyStore.resetRoutes();
   frontEndStore.INSERT_USERNAME("");
   router.push("/login");
 }
 
 // Dynamic content style for Split Mode
-const DOCK_SAFE_MARGIN = 8; // Safe distance from dock edge
+const MAIN_CONTENT_GUTTER = 15;
 
 const contentStyle = computed(() => {
   const baseStyle: any = {
-    top: "40px",
-    left: "25px",
+    top: `${40 + MAIN_CONTENT_GUTTER}px`,
+    left: `${MAIN_CONTENT_GUTTER}px`,
+    right: "0px",
+    bottom: `${MAIN_CONTENT_GUTTER}px`,
     display: "flex",
-    paddingRight: "15px",
+    paddingRight: `${MAIN_CONTENT_GUTTER}px`,
     transition: "all 0.3s ease",
   };
-
-  if (ptyStore.viewMode === "dock" && ptyStore.isOpen) {
-    if (ptyStore.dockPosition === "bottom") {
-      baseStyle.bottom = `${ptyStore.dockSize + DOCK_SAFE_MARGIN}px`;
-      baseStyle.right = "0px";
-    } else if (ptyStore.dockPosition === "right") {
-      baseStyle.bottom = "0px";
-      baseStyle.right = `${ptyStore.dockSize + DOCK_SAFE_MARGIN}px`;
-    }
-  } else {
-    baseStyle.bottom = "0px";
-    baseStyle.right = "0px";
-  }
 
   return baseStyle;
 });
@@ -100,7 +87,7 @@ const contentStyle = computed(() => {
       <LandscapeSiderBar />
       <n-layout>
         <n-layout-header
-          style="height: 30px; padding: 0 10px; display: flex"
+          style="height: 40px; padding: 0 10px; display: flex"
           bordered
         >
           <n-flex
@@ -125,7 +112,6 @@ const contentStyle = computed(() => {
                   style="
                     cursor: pointer;
                     padding: 0 8px;
-                    height: 23px;
                     display: flex;
                     align-items: center;
                   "
@@ -149,41 +135,24 @@ const contentStyle = computed(() => {
               </n-flex>
             </n-scrollbar>
 
-            <n-flex :size="[5, 0]">
+            <n-flex align="center" :size="[5, 0]">
               <LanguageSetting />
               <PresentationMode></PresentationMode>
-              <n-flex align="center">
-                <n-button
-                  quaternary
-                  circle
-                  size="small"
-                  @click="ptyStore.toggleOpen"
-                  title="WebShell"
-                >
-                  <template #icon>
-                    <n-icon><Terminal /></n-icon>
-                  </template>
-                </n-button>
-              </n-flex>
-              <n-flex align="center">
-                <n-button
-                  quaternary
-                  circle
-                  size="small"
-                  @click="logout"
-                  :title="t('common.logout')"
-                >
-                  <template #icon>
-                    <n-icon><Logout /></n-icon>
-                  </template>
-                </n-button>
-              </n-flex>
+              <n-button
+                quaternary
+                size="small"
+                style="font-size: var(--app-font-size-caption)"
+                @click="logout"
+              >
+                <template #icon>
+                  <n-icon><Logout /></n-icon>
+                </template>
+                {{ t("common.logout") }}
+              </n-button>
               <IntervalFetch />
             </n-flex>
           </n-flex>
         </n-layout-header>
-
-        <GlobalTerminal />
 
         <n-layout
           :native-scrollbar="false"

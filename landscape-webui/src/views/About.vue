@@ -384,7 +384,7 @@ onBeforeUnmount(() => {
 .section-label {
   display: block;
   margin-bottom: 8px;
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
   font-weight: 600;
   letter-spacing: 0;
 }
@@ -397,13 +397,13 @@ p {
 
 h1 {
   margin-bottom: 8px;
-  font-size: 30px;
+  font-size: var(--app-font-size-hero);
   line-height: 1.2;
   letter-spacing: 0;
 }
 
 h2 {
-  font-size: 20px;
+  font-size: var(--app-font-size-display);
   line-height: 1.3;
   letter-spacing: 0;
 }
@@ -415,7 +415,7 @@ h2 {
 
 .product-copy p {
   margin-bottom: 14px;
-  font-size: 15px;
+  font-size: var(--app-font-size-subtitle);
 }
 
 .product-actions {
@@ -436,13 +436,13 @@ h2 {
 
 .section-header p {
   margin-top: 6px;
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
 }
 
 .contributors-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
+  gap: var(--app-space-section);
 }
 
 .contributor-link {
@@ -463,7 +463,7 @@ a.contributor-link:focus-visible {
 }
 
 a.contributor-link:focus-visible {
-  border-radius: 6px;
+  border-radius: var(--app-radius-control, 6px);
   outline: 2px solid currentColor;
   outline-offset: 2px;
 }
@@ -479,7 +479,7 @@ a.contributor-link:focus-visible {
 .contributor-name {
   width: 100%;
   text-align: center;
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
   font-weight: 600;
 }
 
@@ -495,7 +495,7 @@ a.contributor-link:focus-visible {
   .product-section {
     align-items: flex-start;
     flex-direction: column;
-    gap: 20px;
+    gap: var(--app-space-xl);
   }
 
   .product-actions {
@@ -507,7 +507,7 @@ a.contributor-link:focus-visible {
   }
 
   h1 {
-    font-size: 26px;
+    font-size: var(--app-font-size-display-large);
   }
 }
 

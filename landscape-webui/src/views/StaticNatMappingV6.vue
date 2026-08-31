@@ -1,37 +1,79 @@
 <script lang="ts" setup>
 import { get_static_nat_mappings_v6 } from "@/api/static_nat_mapping";
 import type { StaticNatMappingV6Config } from "@landscape-router/types/api/schemas";
-import { ref, onMounted } from "vue";
+import { computed, h, ref, onMounted } from "vue";
+import type { DataTableColumns } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import { useFrontEndStore } from "@/stores/front_end_config";
+import StaticMappingV6ListRow from "@/components/nat/static_mapping/StaticMappingV6ListRow.vue";
+import { Add } from "@vicons/carbon";
+import { usePageRequest } from "@/composables/usePageRequest";
 
-const mapping_rules = ref<StaticNatMappingV6Config[]>([]);
+const {
+  data: mapping_rules,
+  error,
+  loading,
+  state,
+  refresh: refresh_rules,
+} = usePageRequest(get_static_nat_mappings_v6, {
+  initialData: [] as StaticNatMappingV6Config[],
+});
 const { t } = useI18n();
-
-async function refresh_rules() {
-  mapping_rules.value = await get_static_nat_mappings_v6();
+const frontEndStore = useFrontEndStore();
+const columns = computed<DataTableColumns<StaticNatMappingV6Config>>(() =>
+  [
+    [`${t("common.status")} / ${t("common.remark")}`, "status"],
+    [t("common.ipv6_target"), "target"],
+    [t("common.type"), "protocol"],
+    [t("common.port_mapping"), "ports"],
+    [t("common.actions"), "actions"],
+  ].map(([title, cell]) => ({
+    title,
+    key: cell,
+    align: "left" as const,
+    render: (rule: StaticNatMappingV6Config) =>
+      h(StaticMappingV6ListRow, {
+        rule,
+        cell: cell as any,
+        ...(cell === "actions" ? { onRefresh: refresh_rules } : {}),
+      }),
+  })),
+);
+function rowKey(row: StaticNatMappingV6Config) {
+  return row.id ?? row.remark ?? String(row.l4_protocols.join("-"));
 }
 
-onMounted(async () => {
-  await refresh_rules();
-});
+onMounted(refresh_rules);
 
 const show_edit_modal = ref(false);
 </script>
 <template>
-  <n-flex vertical style="flex: 1">
-    <n-flex>
-      <n-button @click="show_edit_modal = true">{{
-        t("common.create")
-      }}</n-button>
+  <n-flex vertical class="standard-content-page">
+    <n-flex class="standard-list-toolbar">
+      <n-button type="primary" @click="show_edit_modal = true">
+        <template #icon
+          ><n-icon><Add /></n-icon
+        ></template>
+        {{ t("common.create") }}
+      </n-button>
     </n-flex>
-    <n-flex>
+    <StandardDataTable
+      v-if="frontEndStore.display_style === 'list'"
+      :columns="columns"
+      :data="mapping_rules"
+      :loading="loading"
+      :error="error"
+      :row-key="rowKey"
+      @retry="refresh_rules"
+    />
+    <StandardPageState v-else :state="state" @retry="refresh_rules">
       <n-grid x-gap="12" y-gap="10" cols="1 600:2 1200:3 1600:3">
         <n-grid-item v-for="rule in mapping_rules" :key="rule.id">
           <StaticMappingV6Card @refresh="refresh_rules()" :rule="rule">
           </StaticMappingV6Card>
         </n-grid-item>
       </n-grid>
-    </n-flex>
+    </StandardPageState>
 
     <MappingEditV6Modal @refresh="refresh_rules" v-model:show="show_edit_modal">
     </MappingEditV6Modal>

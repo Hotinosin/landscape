@@ -126,7 +126,7 @@ defineExpose({
             })
           "
         />
-        <n-text depth="3" style="font-size: 12px">{{
+        <n-text depth="3" style="font-size: var(--app-font-size-caption)">{{
           t("network.iface_risk_guard.input_hint")
         }}</n-text>
       </n-flex>

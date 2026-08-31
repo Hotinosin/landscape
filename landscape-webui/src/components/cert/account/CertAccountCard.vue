@@ -12,9 +12,11 @@ import { useI18n } from "vue-i18n";
 
 type Props = {
   rule: CertAccountConfig;
+  display_style?: "card" | "list";
+  cell?: "name" | "provider" | "email" | "status" | "staging" | "actions";
 };
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), { display_style: "card" });
 const emit = defineEmits(["refresh"]);
 const { t } = useI18n();
 const frontEndStore = useFrontEndStore();
@@ -108,7 +110,64 @@ async function deactivate() {
 </script>
 
 <template>
-  <n-card size="small">
+  <template v-if="display_style === 'list' && cell === 'name'">
+    <n-text strong>{{ frontEndStore.MASK_INFO(rule.name) }}</n-text>
+  </template>
+  <template v-else-if="display_style === 'list' && cell === 'provider'">{{
+    provider_label(rule.provider_config)
+  }}</template>
+  <template v-else-if="display_style === 'list' && cell === 'email'">{{
+    frontEndStore.MASK_INFO(rule.email)
+  }}</template>
+  <template v-else-if="display_style === 'list' && cell === 'status'">
+    <n-tag size="small" :type="status_type(rule.status)">{{
+      status_label(rule.status)
+    }}</n-tag>
+  </template>
+  <template v-else-if="display_style === 'list' && cell === 'staging'">
+    <n-tag size="small" :type="rule.use_staging ? 'warning' : 'default'">{{
+      rule.use_staging ? t("common.enable") : t("common.disable")
+    }}</n-tag>
+  </template>
+  <template v-else-if="display_style === 'list'">
+    <n-flex size="small" :wrap="false">
+      <n-button
+        v-if="rule.status === 'unregistered' || rule.status === 'error'"
+        size="small"
+        type="primary"
+        secondary
+        :loading="register_spin"
+        @click="register()"
+        >{{ t("cert.action_register") }}</n-button
+      >
+      <n-button
+        v-if="rule.status === 'registered'"
+        size="small"
+        secondary
+        :loading="verify_spin"
+        @click="verify()"
+        >{{ t("cert.action_verify") }}</n-button
+      >
+      <n-popconfirm
+        v-if="rule.status === 'registered'"
+        @positive-click="deactivate()"
+        ><template #trigger
+          ><n-button size="small" secondary :loading="deactivate_spin">{{
+            t("cert.action_deactivate")
+          }}</n-button></template
+        >{{ t("cert.confirm_deactivate") }}</n-popconfirm
+      >
+      <EditButton @click="show_edit_modal = true" />
+      <n-popconfirm @positive-click="del()"
+        ><template #trigger
+          ><n-button size="small" type="error" secondary>{{
+            t("common.delete")
+          }}</n-button></template
+        >{{ t("common.confirm_delete") }}</n-popconfirm
+      >
+    </n-flex>
+  </template>
+  <n-card v-else-if="display_style === 'card'" size="small">
     <template #header>
       <n-ellipsis>{{ frontEndStore.MASK_INFO(rule.name) }}</n-ellipsis>
     </template>
@@ -179,14 +238,7 @@ async function deactivate() {
           </template>
           {{ t("cert.confirm_deactivate") }}
         </n-popconfirm>
-        <n-button
-          size="small"
-          type="warning"
-          secondary
-          @click="show_edit_modal = true"
-        >
-          {{ t("common.edit") }}
-        </n-button>
+        <EditButton @click="show_edit_modal = true" />
         <n-popconfirm @positive-click="del()">
           <template #trigger>
             <n-button size="small" type="error" secondary>
@@ -200,6 +252,7 @@ async function deactivate() {
   </n-card>
 
   <CertAccountEditModal
+    v-if="display_style === 'card' || cell === 'actions'"
     @refresh="emit('refresh')"
     :rule_id="rule.id ?? null"
     v-model:show="show_edit_modal"

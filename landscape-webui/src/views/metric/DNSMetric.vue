@@ -24,28 +24,32 @@ import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 const enrolledDeviceStore = useEnrolledDeviceStore();
 import { useFrontEndStore } from "@/stores/front_end_config";
 import type { DataTableColumns } from "naive-ui";
+import type { DataTableSortState, TagProps } from "naive-ui";
 import {
-  Refresh,
-  TrashOutline,
-  HelpCircleOutline,
-  TimeOutline,
+  Renew as Refresh,
+  TrashCan as TrashOutline,
+  Help as HelpCircleOutline,
+  Time as TimeOutline,
   Search,
-} from "@vicons/ionicons5";
+  SearchLocate,
+} from "@vicons/carbon";
 import { useDebounceFn } from "@vueuse/core";
 import DNSDashboard from "./DNSDashboard.vue";
 import FlowExhibit from "@/components/flow/FlowExhibit.vue";
 import CheckDomainDrawer from "@/components/dns/CheckDomainDrawer.vue";
-import { SearchLocate } from "@vicons/carbon";
 import { usePreferenceStore } from "@/stores/preference";
 import { getFlowRules } from "@landscape-router/types/api/flow-rules/flow-rules";
 import type {
   FlowConfig,
+  DnsOutcome,
+  DnsSortKey,
+  GetDnsHistoryParams,
   LandscapeDnsRecordType,
 } from "@landscape-router/types/api/schemas";
 const prefStore = usePreferenceStore();
 
 const activeTab = ref("dashboard");
-const dashboardRef = ref<any>(null);
+const dashboardRef = ref<{ refresh: () => void } | null>(null);
 const showCheckDomainDrawer = ref(false);
 const checkDomainName = ref("");
 const checkDomainFlowId = ref(0);
@@ -62,13 +66,13 @@ const searchParams = reactive({
   domain: "",
   src_ip: "",
   query_type: null as string | null,
-  status: null as string | null,
+  status: null as DnsOutcome | null,
   min_duration_ms: null as number | null,
   max_duration_ms: null as number | null,
   flow_id: null as number | null,
   timeRange: [Date.now() - DEFAULT_TIME_WINDOW, Date.now()] as
     [number, number] | null,
-  sort_key: "time",
+  sort_key: "time" as DnsSortKey,
   sort_order: "desc" as "asc" | "desc",
 });
 
@@ -121,13 +125,19 @@ const statusOptions = computed(() => [
 ]);
 
 const flows = ref<FlowConfig[]>([]);
+const selectedFlowId = computed({
+  get: () => searchParams.flow_id ?? -1,
+  set: (value: number | null) => {
+    searchParams.flow_id = value === -1 ? null : value;
+  },
+});
 const flowOptions = computed(() => {
   const opts = flows.value.map((f) => ({
     label: f.remark ? `${f.flow_id} - ${f.remark}` : `Flow ${f.flow_id}`,
     value: f.flow_id,
   }));
   return [
-    { label: t("metric.dns.all_flows") || "All Flows", value: null as any },
+    { label: t("metric.dns.all_flows") || "All Flows", value: -1 },
     ...opts,
   ];
 });
@@ -299,7 +309,10 @@ const columns = computed<DataTableColumns<DnsMetric>>(() => [
     key: "status",
     width: 110,
     render(row) {
-      const statusMap: Record<string, { type: any; label: string }> = {
+      const statusMap: Record<
+        string,
+        { type: TagProps["type"]; label: string }
+      > = {
         local: { type: "success", label: t("metric.dns.status_local") },
         block: { type: "warning", label: t("metric.dns.status_block") },
         hit: { type: "info", label: t("metric.dns.status_hit").split(" (")[0] },
@@ -357,7 +370,7 @@ const loadData = async (resetPage = false) => {
 
   loading.value = true;
   try {
-    const params: any = {
+    const params: GetDnsHistoryParams = {
       limit: pagination.pageSize,
       offset: (pagination.page - 1) * pagination.pageSize,
       sort_key: searchParams.sort_key,
@@ -434,12 +447,12 @@ watch(
   },
 );
 
-const handleSorterChange = (sorter: any) => {
+const handleSorterChange = (sorter: DataTableSortState | null) => {
   if (!sorter || !sorter.order) {
     searchParams.sort_key = "time";
     searchParams.sort_order = "desc";
   } else {
-    const keyMap: Record<string, string> = {
+    const keyMap: Record<string, DnsSortKey> = {
       report_time: "time",
       domain: "domain",
       duration_ms: "duration",
@@ -509,7 +522,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div style="width: 100%; padding: 12px">
+  <div style="width: 100%; padding: var(--app-space-section)">
     <div
       style="
         display: flex;
@@ -529,7 +542,7 @@ onMounted(() => {
               style="
                 vertical-align: middle;
                 cursor: help;
-                color: rgba(0, 0, 0, 0.35);
+                color: var(--app-text-muted-color);
               "
             >
               <HelpCircleOutline />
@@ -548,7 +561,7 @@ onMounted(() => {
     <div v-if="activeTab === 'dashboard'" style="margin-bottom: 10px">
       <n-space align="center" :size="[8, 8]" :wrap="false">
         <n-select
-          v-model:value="searchParams.flow_id"
+          v-model:value="selectedFlowId"
           size="small"
           :options="flowOptions"
           :placeholder="t('metric.dns.all_flows')"
@@ -562,7 +575,7 @@ onMounted(() => {
           clearable
           :shortcuts="shortcuts"
           :placeholder="t('metric.dns.time_range')"
-          style="width: 320px"
+          style="width: 400px"
           :time-picker-props="{ timeZone: prefStore.timezone }"
         />
         <n-tooltip trigger="hover">
@@ -601,7 +614,7 @@ onMounted(() => {
           style="width: 200px"
         />
         <n-select
-          v-model:value="searchParams.flow_id"
+          v-model:value="selectedFlowId"
           size="small"
           :options="flowOptions"
           :placeholder="t('metric.dns.all_flows')"
@@ -656,7 +669,7 @@ onMounted(() => {
           clearable
           :shortcuts="shortcuts"
           :placeholder="t('metric.dns.time_range')"
-          style="width: 320px"
+          style="width: 400px"
           :time-picker-props="{ timeZone: prefStore.timezone }"
         />
         <n-tooltip trigger="hover">
@@ -720,6 +733,6 @@ onMounted(() => {
 
 <style scoped>
 .dns-history-table :deep(.n-data-table-wrapper) {
-  border-radius: 8px;
+  border-radius: var(--app-radius-panel, 8px);
 }
 </style>

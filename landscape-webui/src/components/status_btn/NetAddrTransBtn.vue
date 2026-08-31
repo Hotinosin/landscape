@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ImportExportRound } from "@vicons/material";
+import { ArrowsHorizontal as ImportExportRound } from "@vicons/carbon";
 
 import StatusBtn from "@/components/status_btn/StatusBtn.vue";
 import { useNATConfigStore } from "@/stores/status_nats";

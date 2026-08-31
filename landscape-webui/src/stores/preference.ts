@@ -7,6 +7,15 @@ import {
   update_ui_config,
 } from "@/api/sys/config";
 import i18n from "@/i18n";
+import {
+  cacheThemePreference,
+  cacheAccentColor,
+  normalizeThemePreference,
+  readCachedAccentColor,
+  readCachedThemePreference,
+  type AccentColor,
+  type ThemePreference,
+} from "@/themes";
 
 function normalizeLanguage(lang?: string, fallback: string = "zh"): string {
   if (!lang) return fallback;
@@ -18,7 +27,8 @@ function normalizeLanguage(lang?: string, fallback: string = "zh"): string {
 export const usePreferenceStore = defineStore("preference", () => {
   const language = ref<string | undefined>(undefined);
   const timezone = ref<string | undefined>(undefined);
-  const theme = ref<string | undefined>(undefined);
+  const theme = ref<ThemePreference>(readCachedThemePreference());
+  const accent = ref<AccentColor>(readCachedAccentColor());
   const expectedHash = ref<string>("");
 
   async function loadPreference() {
@@ -30,7 +40,7 @@ export const usePreferenceStore = defineStore("preference", () => {
       );
       language.value = normalizeLanguage(config.language, currentLocale);
       timezone.value = config.timezone || "Asia/Shanghai";
-      theme.value = config.theme || "dark";
+      theme.value = normalizeThemePreference(config.theme, theme.value);
 
       applyPreference();
     } catch (error) {
@@ -44,7 +54,7 @@ export const usePreferenceStore = defineStore("preference", () => {
     const currentLocale = normalizeLanguage(i18n.global.locale.value as string);
     language.value = normalizeLanguage(ui.language, currentLocale);
     timezone.value = ui.timezone || "Asia/Shanghai";
-    theme.value = ui.theme || "dark";
+    theme.value = normalizeThemePreference(ui.theme, theme.value);
     expectedHash.value = hash;
   }
 
@@ -58,7 +68,7 @@ export const usePreferenceStore = defineStore("preference", () => {
     const new_ui: LandscapeUIConfig = {
       language: language.value === "zh" ? undefined : language.value,
       timezone: timezone.value === "Asia/Shanghai" ? undefined : timezone.value,
-      theme: theme.value === "dark" ? undefined : theme.value,
+      theme: theme.value,
     };
     await update_ui_config({
       new_ui,
@@ -77,10 +87,14 @@ export const usePreferenceStore = defineStore("preference", () => {
     }
   });
 
+  watch(theme, (value) => cacheThemePreference(value), { immediate: true });
+  watch(accent, (value) => cacheAccentColor(value), { immediate: true });
+
   return {
     language,
     timezone,
     theme,
+    accent,
     expectedHash,
     loadPreference,
     loadPreferenceForEdit,

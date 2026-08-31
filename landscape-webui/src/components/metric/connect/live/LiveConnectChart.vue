@@ -16,7 +16,7 @@ interface Props {
 
 const props = defineProps<Props>();
 const chartData = ref<ConnectMetricPoint[]>([]);
-const interval = ref<any>(null);
+const interval = ref<ReturnType<typeof setInterval>>();
 
 async function fetchData() {
   chartData.value = await get_connect_metric_info(props.conn);

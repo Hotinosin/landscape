@@ -1,10 +1,14 @@
 <script lang="ts" setup>
 import { getFlowRuleByFlowId } from "@landscape-router/types/api/flow-rules/flow-rules";
 import type { FlowConfig } from "@landscape-router/types/api/schemas";
-import { onMounted, ref, watch, watchEffect } from "vue";
-import { Docker, NetworkWired } from "@vicons/fa";
+import { onMounted, ref, watch } from "vue";
+import {
+  ContainerServices as Docker,
+  Network3 as NetworkWired,
+} from "@vicons/carbon";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
+import { flowTargetName } from "@/lib/flow_target";
 
 const frontEndStore = useFrontEndStore();
 const { t } = useI18n();
@@ -44,15 +48,13 @@ async function refresh() {
           v-for="each in config.flow_targets"
           :bordered="false"
         >
-          {{
-            each.target.t === "netns"
-              ? frontEndStore.MASK_INFO(each.target.container_name)
-              : frontEndStore.MASK_INFO(each.target.name)
-          }}
+          {{ frontEndStore.MASK_INFO(flowTargetName(each.target)) }}
           <span v-if="(each.weight ?? 1) !== 1"> ×{{ each.weight ?? 1 }}</span>
           <template #icon>
             <n-icon
-              :component="each.target.t === 'netns' ? Docker : NetworkWired"
+              :component="
+                each.target.t === 'netns' ? Docker : NetworkWired
+              "
             />
           </template>
         </n-tag>

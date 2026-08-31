@@ -16,7 +16,7 @@ const props = defineProps<Props>();
 </script>
 <template>
   <n-flex align="center" :size="[3, 0]" :wrap="false">
-    <n-icon :color="enable ? themeVars.successColor : ''" size="14">
+    <n-icon :color="enable ? themeVars.primaryColor : ''" size="14">
       <DotMark />
     </n-icon>
     <n-ellipsis>

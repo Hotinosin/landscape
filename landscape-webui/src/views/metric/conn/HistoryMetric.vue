@@ -1,23 +1,35 @@
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, watch } from "vue";
+import {
+  ref,
+  computed,
+  defineAsyncComponent,
+  reactive,
+  onMounted,
+  onUnmounted,
+  watch,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
-import { ConnectFilter } from "@/lib/metric.rs";
+import { ConnectFilter, queryNumber, queryString } from "@/lib/metric.rs";
 import { get_connect_history } from "@/api/metric";
 import { formatSize, formatCount } from "@/lib/util";
 import { useThemeVars } from "naive-ui";
 import { useMetricStore } from "@/stores/status_metric";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import HistoryItemInfo from "@/components/metric/connect/history/HistoryItemInfo.vue";
-import ConnectChartDrawer from "@/components/metric/connect/ConnectChartDrawer.vue";
 import FlowSelect from "@/components/flow/FlowSelect.vue";
 import type {
   ConnectKey,
   ConnectGlobalStats,
+  ConnectHistoryStatus,
 } from "@landscape-router/types/api/schemas";
 import { usePreferenceStore } from "@/stores/preference";
-import { Renew } from "@vicons/carbon";
+import { ArrowDown, ArrowUp, ArrowsVertical, Renew } from "@vicons/carbon";
 import ConnectViewSwitcher from "@/components/metric/connect/ConnectViewSwitcher.vue";
+
+const ConnectChartDrawer = defineAsyncComponent(
+  () => import("@/components/metric/connect/ConnectChartDrawer.vue"),
+);
 
 const prefStore = usePreferenceStore();
 const metricStore = useMetricStore();
@@ -28,7 +40,7 @@ const themeVars = useThemeVars();
 const frontEndStore = useFrontEndStore();
 
 // 1. Declare all base reactive states.
-const historicalData = ref<any[]>([]);
+const historicalData = ref<ConnectHistoryStatus[]>([]);
 const timeRange = ref<number | string | null>(300); // default 5 minutes (300s)
 const historyFilter = reactive(new ConnectFilter());
 // 与后端 sqlite 查询偏移上限保持一致,防止翻页超过 offset clamp 后重复展示同一页。
@@ -81,7 +93,7 @@ const loading = ref(false);
 const useCustomTimeRange = ref(false);
 const customTimeRange = ref<[number, number] | null>(null);
 
-const showChartDrawer = (history: any) => {
+const showChartDrawer = (history: ConnectHistoryStatus) => {
   showChartKey.value = history.key;
   showChartTitle.value = `${frontEndStore.MASK_INFO(history.src_ip)}:${frontEndStore.MASK_PORT(history.src_port)} => ${frontEndStore.MASK_INFO(history.dst_ip)}:${frontEndStore.MASK_PORT(history.dst_port)}`;
   showChartCreateTimeMs.value = history.create_time_ms;
@@ -185,25 +197,20 @@ const toggleSort = (
   }
 };
 
-const handleSearchTuple = (history: any) => {
+const sortIcon = (key: "time" | "port" | "ingress" | "egress" | "duration") =>
+  sortKey.value !== key
+    ? ArrowsVertical
+    : sortOrder.value === "asc"
+      ? ArrowUp
+      : ArrowDown;
+
+const handleSearchTuple = (history: ConnectHistoryStatus) => {
   historyFilter.src_ip = history.src_ip;
   historyFilter.dst_ip = history.dst_ip;
   historyFilter.port_start = history.src_port;
   historyFilter.port_end = history.dst_port;
   historyFilter.ifindex = history.ifindex;
 };
-
-function queryString(value: unknown) {
-  const raw = Array.isArray(value) ? value[0] : value;
-  return typeof raw === "string" && raw.length > 0 ? raw : undefined;
-}
-
-function queryNumber(value: unknown) {
-  const raw = queryString(value);
-  if (raw === undefined) return null;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : null;
-}
 
 // 4. Computed values
 const filteredHistory = computed(() => {
@@ -259,6 +266,9 @@ watch([sortKey, sortOrder], () => {
 
 // Debounced query: trigger 800ms after typing stops.
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+onUnmounted(() => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+});
 watch(
   historyFilter,
   () => {
@@ -295,19 +305,23 @@ onMounted(() => {
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1; overflow: hidden">
+  <n-flex vertical :size="0" style="flex: 1; overflow: hidden">
     <!-- History global summary -->
     <n-card
       size="small"
       :bordered="false"
-      style="margin-bottom: 12px; background-color: #f9f9f910"
+      style="margin-bottom: 12px; background-color: var(--app-surface-color)"
     >
       <n-flex align="center" justify="space-between">
         <ConnectViewSwitcher />
 
         <n-flex align="center" size="large" v-if="globalStats">
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ t("metric.connect.stats.total_history_conns") }}:</span
             >
             <span style="font-weight: bold">{{
@@ -316,7 +330,11 @@ onMounted(() => {
           </n-flex>
           <n-divider vertical />
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ t("metric.connect.stats.total_history_egress") }}:</span
             >
             <span :style="{ fontWeight: 'bold', color: themeVars.infoColor }">{{
@@ -325,7 +343,11 @@ onMounted(() => {
           </n-flex>
           <n-divider vertical />
           <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
+            <span
+              style="
+                color: var(--app-text-muted-color);
+                font-size: var(--app-font-size-label);
+              "
               >{{ t("metric.connect.stats.total_history_ingress") }}:</span
             >
             <span
@@ -363,6 +385,7 @@ onMounted(() => {
 
     <!-- Toolbar for history mode -->
     <n-flex
+      class="history-toolbar"
       align="center"
       :wrap="true"
       style="margin-bottom: 12px"
@@ -451,51 +474,6 @@ onMounted(() => {
           $t("metric.connect.stats.reset")
         }}</n-button>
       </n-button-group>
-
-      <n-divider vertical />
-
-      <n-button-group>
-        <n-button
-          :type="sortKey === 'time' ? 'primary' : 'default'"
-          :disabled="loading"
-          @click="toggleSort('time')"
-        >
-          {{ $t("metric.connect.filter.time") }}
-          {{ sortKey === "time" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-        <n-button
-          :type="sortKey === 'port' ? 'primary' : 'default'"
-          :disabled="loading"
-          @click="toggleSort('port')"
-        >
-          {{ $t("metric.connect.filter.port") }}
-          {{ sortKey === "port" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-        <n-button
-          :type="sortKey === 'egress' ? 'primary' : 'default'"
-          :disabled="loading"
-          @click="toggleSort('egress')"
-        >
-          {{ $t("metric.connect.col.total_egress") }}
-          {{ sortKey === "egress" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-        <n-button
-          :type="sortKey === 'ingress' ? 'primary' : 'default'"
-          :disabled="loading"
-          @click="toggleSort('ingress')"
-        >
-          {{ $t("metric.connect.col.total_ingress") }}
-          {{ sortKey === "ingress" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-        <n-button
-          :type="sortKey === 'duration' ? 'primary' : 'default'"
-          :disabled="loading"
-          @click="toggleSort('duration')"
-        >
-          {{ $t("metric.connect.filter.duration") }}
-          {{ sortKey === "duration" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-      </n-button-group>
     </n-flex>
 
     <n-grid x-gap="12" :cols="5" style="margin-bottom: 12px">
@@ -503,7 +481,7 @@ onMounted(() => {
         <n-card
           size="small"
           :bordered="false"
-          style="background-color: #f9f9f910; height: 100%"
+          style="background-color: var(--app-surface-color); height: 100%"
         >
           <n-statistic
             :label="$t('metric.connect.stats.filter_total')"
@@ -515,7 +493,7 @@ onMounted(() => {
         <n-card
           size="small"
           :bordered="false"
-          style="background-color: #f9f9f910; height: 100%"
+          style="background-color: var(--app-surface-color); height: 100%"
         >
           <n-statistic :label="$t('metric.connect.stats.total_egress')">
             <span :style="{ color: themeVars.infoColor, fontWeight: 'bold' }">
@@ -528,7 +506,7 @@ onMounted(() => {
         <n-card
           size="small"
           :bordered="false"
-          style="background-color: #f9f9f910; height: 100%"
+          style="background-color: var(--app-surface-color); height: 100%"
         >
           <n-statistic :label="$t('metric.connect.stats.total_ingress')">
             <span
@@ -543,10 +521,10 @@ onMounted(() => {
         <n-card
           size="small"
           :bordered="false"
-          style="background-color: #f9f9f910; height: 100%"
+          style="background-color: var(--app-surface-color); height: 100%"
         >
           <n-statistic :label="$t('metric.connect.stats.filter_ingress_pkts')">
-            <span style="color: #888">
+            <span style="color: var(--app-text-muted-color)">
               {{ formatCount(historyTotalStats.totalIngressPkts) }} pkt
             </span>
           </n-statistic>
@@ -556,10 +534,10 @@ onMounted(() => {
         <n-card
           size="small"
           :bordered="false"
-          style="background-color: #f9f9f910"
+          style="background-color: var(--app-surface-color)"
         >
           <n-statistic :label="$t('metric.connect.stats.filter_egress_pkts')">
-            <span style="color: #888">
+            <span style="color: var(--app-text-muted-color)">
               {{ formatCount(historyTotalStats.totalEgressPkts) }} pkt
             </span>
           </n-statistic>
@@ -567,7 +545,72 @@ onMounted(() => {
       </n-gi>
     </n-grid>
 
-    <n-virtual-list style="flex: 1" :item-size="40" :items="filteredHistory">
+    <div class="history-list-header">
+      <div class="history-time-header">
+        <div class="sortable-column" :class="{ active: sortKey === 'time' }">
+          <span>{{ $t("metric.connect.filter.time") }}</span>
+          <n-button
+            text
+            class="sort-trigger"
+            :disabled="loading"
+            @click="toggleSort('time')"
+          >
+            <n-icon size="18" :component="sortIcon('time')" />
+          </n-button>
+        </div>
+        <div
+          class="sortable-column secondary-sort"
+          :class="{ active: sortKey === 'duration' }"
+        >
+          <span>{{ $t("metric.connect.filter.duration") }}</span>
+          <n-button
+            text
+            class="sort-trigger"
+            :disabled="loading"
+            @click="toggleSort('duration')"
+          >
+            <n-icon size="18" :component="sortIcon('duration')" />
+          </n-button>
+        </div>
+      </div>
+      <span></span>
+      <div class="sortable-column" :class="{ active: sortKey === 'port' }">
+        <span>{{ $t("metric.connect.filter.port") }}</span>
+        <n-button
+          text
+          class="sort-trigger"
+          :disabled="loading"
+          @click="toggleSort('port')"
+        >
+          <n-icon size="18" :component="sortIcon('port')" />
+        </n-button>
+      </div>
+      <div class="sortable-column" :class="{ active: sortKey === 'egress' }">
+        <span>{{ $t("metric.connect.stats.egress") }}</span>
+        <n-button
+          text
+          class="sort-trigger"
+          :disabled="loading"
+          @click="toggleSort('egress')"
+        >
+          <n-icon size="18" :component="sortIcon('egress')" />
+        </n-button>
+      </div>
+      <div class="sortable-column" :class="{ active: sortKey === 'ingress' }">
+        <span>{{ $t("metric.connect.stats.ingress") }}</span>
+        <n-button
+          text
+          class="sort-trigger"
+          :disabled="loading"
+          @click="toggleSort('ingress')"
+        >
+          <n-icon size="18" :component="sortIcon('ingress')" />
+        </n-button>
+      </div>
+      <span></span>
+    </div>
+
+    <n-virtual-list style="flex: 1" :item-size="64" :items="filteredHistory">
       <template #default="{ item, index }">
         <HistoryItemInfo
           :history="item"
@@ -586,6 +629,7 @@ onMounted(() => {
       style="align-self: flex-end; margin-top: 12px"
     />
     <ConnectChartDrawer
+      v-if="showChart"
       v-model:show="showChart"
       :conn="showChartKey"
       :title="showChartTitle"
@@ -595,3 +639,57 @@ onMounted(() => {
     />
   </n-flex>
 </template>
+
+<style scoped>
+.history-toolbar {
+  row-gap: var(--app-space-sm);
+}
+
+.history-list-header {
+  display: grid;
+  grid-template-columns: 220px 250px minmax(320px, 1fr) 90px 98px 28px;
+  column-gap: var(--app-space-sm);
+  align-items: center;
+  min-height: 42px;
+  padding: 0 14px;
+  background: var(--app-surface-interactive-color);
+  border-bottom: 1px solid var(--app-border-subtle-color);
+  box-sizing: border-box;
+}
+
+.history-time-header,
+.sortable-column {
+  display: inline-flex;
+  align-items: center;
+}
+
+.history-time-header {
+  gap: var(--app-space-section);
+}
+
+.sortable-column {
+  gap: var(--app-space-2xs);
+  color: var(--app-text-secondary-color);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.secondary-sort {
+  color: var(--app-text-muted-color);
+  font-size: var(--app-font-size-caption);
+}
+
+.sortable-column.active,
+.sortable-column.active .sort-trigger {
+  color: var(--app-brand-color);
+}
+
+.sort-trigger {
+  color: var(--app-text-muted-color);
+}
+
+.sortable-column:nth-child(5) {
+  padding-left: 8px;
+}
+</style>

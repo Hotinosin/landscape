@@ -63,7 +63,7 @@ async function handleSaveMetric() {
       :model="metricStore"
       :rules="rules"
       label-placement="left"
-      label-width="120"
+      label-width="160"
     >
       <n-form-item :label="t('config.metric_mode')" path="mode">
         <n-select

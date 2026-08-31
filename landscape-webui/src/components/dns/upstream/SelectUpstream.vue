@@ -7,6 +7,8 @@ import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 
 const upstream_id = defineModel<string>("upstream_id", { required: true });
+const showCreate = ref(false);
+const createOption = "__create_dns_upstream__";
 
 onMounted(async () => {
   await search_upstreams();
@@ -14,28 +16,48 @@ onMounted(async () => {
 
 const all_upstream = ref<DnsUpstreamConfig[]>([]);
 const upstream_options = computed(() => {
-  return all_upstream.value
-    .filter((e) => e.id)
-    .map((e) => ({
-      value: e.id,
-      label: e.remark ? `${e.remark}` : e.id,
-    }));
+  return [
+    ...all_upstream.value
+      .filter((e) => e.id)
+      .map((e) => ({
+        value: e.id,
+        label: e.remark ? `${e.remark}` : e.id,
+      })),
+    { value: createOption, label: t("dns.select_upstream.create") },
+  ];
 });
 
-const flow_search_loading = ref(false);
 async function search_upstreams() {
   all_upstream.value = await get_dns_upstreams();
+}
+
+function selectUpstream(value: string) {
+  if (value === createOption) {
+    showCreate.value = true;
+    return;
+  }
+  upstream_id.value = value;
+}
+
+async function upstreamSaved(rule: DnsUpstreamConfig) {
+  await search_upstreams();
+  if (rule.id) upstream_id.value = rule.id;
 }
 </script>
 
 <template>
   <n-select
-    v-model:value="upstream_id"
+    :value="upstream_id"
     filterable
     :placeholder="t('dns.select_upstream.redirect_flow_id')"
     :options="upstream_options"
-    :loading="flow_search_loading"
     remote
     @search="search_upstreams"
+    @update:value="selectUpstream"
+  />
+  <UpstreamEditModal
+    v-model:show="showCreate"
+    :rule_id="null"
+    @saved="upstreamSaved"
   />
 </template>

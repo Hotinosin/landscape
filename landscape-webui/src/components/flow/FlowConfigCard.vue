@@ -3,12 +3,15 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { FlowConfig } from "@landscape-router/types/api/schemas";
 import FlowEditModal from "@/components/flow/FlowEditModal.vue";
-import DnsRuleDrawer from "@/components/dns/DnsRuleDrawer.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { delFlowRule } from "@landscape-router/types/api/flow-rules/flow-rules";
 import FlowEntryRuleExhibit from "@/components/flow/FlowEntryRuleExhibit.vue";
 
-import { Docker, NetworkWired } from "@vicons/fa";
+import {
+  ContainerServices as Docker,
+  Network3 as NetworkWired,
+} from "@vicons/carbon";
+import { flowTargetName } from "@/lib/flow_target";
 
 const frontEndStore = useFrontEndStore();
 const { t } = useI18n();
@@ -16,17 +19,17 @@ const { t } = useI18n();
 interface Props {
   config: FlowConfig;
   show_action?: boolean;
+  display_style?: "card" | "list";
 }
 
 const props = withDefaults(defineProps<Props>(), {
   show_action: true,
+  display_style: "card",
 });
 
 const emit = defineEmits(["refresh"]);
 
 const show_edit = ref(false);
-const show_dns_rule = ref(false);
-const show_ip_rule = ref(false);
 
 async function refresh() {
   emit("refresh");
@@ -58,7 +61,11 @@ const show_remark = computed(
 
 <template>
   <n-card
-    style="min-height: 224px"
+    :class="[
+      'flow-config-card',
+      { 'flow-config-card--list': display_style === 'list' },
+    ]"
+    :style="display_style === 'card' ? 'min-height: 224px' : undefined"
     content-style="display: flex"
     size="small"
     :hoverable="true"
@@ -72,15 +79,7 @@ const show_remark = computed(
 
     <template v-if="show_action" #header-extra>
       <n-flex>
-        <n-button secondary @click="show_edit = true" size="small">
-          {{ t("common.edit") }}
-        </n-button>
-        <n-button secondary @click="show_dns_rule = true" size="small">
-          DNS
-        </n-button>
-        <n-button secondary @click="show_ip_rule = true" size="small">
-          {{ t("flow.default_card.target_ip") }}
-        </n-button>
+        <EditButton @click="show_edit = true" />
         <n-popconfirm @positive-click="del">
           <template #trigger>
             <n-button type="error" secondary size="small">{{
@@ -153,7 +152,11 @@ const show_remark = computed(
       </n-empty>
     </n-flex>
     <n-flex v-else vertical>
-      <n-text v-if="show_remark" depth="3" style="font-size: 12px">
+      <n-text
+        v-if="show_remark"
+        depth="3"
+        style="font-size: var(--app-font-size-caption)"
+      >
         {{ frontEndStore.MASK_INFO(config.remark) }}
       </n-text>
       <n-flex>
@@ -165,15 +168,13 @@ const show_remark = computed(
     </n-flex>
     <template #action>
       <n-tag v-for="each in config.flow_targets" :bordered="false">
-        {{
-          each.target.t === "netns"
-            ? frontEndStore.MASK_INFO(each.target.container_name)
-            : frontEndStore.MASK_INFO(each.target.name)
-        }}
+        {{ frontEndStore.MASK_INFO(flowTargetName(each.target)) }}
         <span v-if="(each.weight ?? 1) !== 1"> ×{{ each.weight ?? 1 }}</span>
         <template #icon>
           <n-icon
-            :component="each.target.t === 'netns' ? Docker : NetworkWired"
+            :component="
+              each.target.t === 'netns' ? Docker : NetworkWired
+            "
           />
         </template>
       </n-tag>
@@ -186,11 +187,24 @@ const show_remark = computed(
       :rule_id="props.config.id"
     >
     </FlowEditModal>
-    <DnsRuleDrawer v-model:show="show_dns_rule" :flow_id="props.config.flow_id">
-    </DnsRuleDrawer>
-    <WanIpRuleDrawer
-      :flow_id="props.config.flow_id"
-      v-model:show="show_ip_rule"
-    />
   </n-card>
 </template>
+
+<style scoped>
+.flow-config-card--list :deep(.n-card-header) {
+  padding: 10px var(--app-space-section);
+}
+
+.flow-config-card--list :deep(.n-card__content) {
+  min-width: 220px;
+  padding: 8px var(--app-space-section);
+}
+
+.flow-config-card--list :deep(.n-card__action) {
+  padding: 8px var(--app-space-section);
+}
+
+.flow-config-card--list :deep(.n-card-header__extra) {
+  margin-left: auto;
+}
+</style>

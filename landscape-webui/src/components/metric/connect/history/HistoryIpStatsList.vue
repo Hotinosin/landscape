@@ -2,8 +2,8 @@
 import { h, computed } from "vue";
 import { formatSize, formatCount } from "@/lib/util";
 import { useThemeVars, NTooltip, NIcon, NButton } from "naive-ui";
-import { Search } from "@vicons/carbon";
-import { GlobeSearch24Regular } from "@vicons/fluent";
+import type { DataTableSortState } from "naive-ui";
+import { Search, SearchLocate as GlobeSearch24Regular } from "@vicons/carbon";
 import type {
   IpHistoryStat,
   ConnectSortKey,
@@ -41,7 +41,13 @@ const columns = computed(() => [
     render: (row: IpHistoryStat) => {
       return h(
         "div",
-        { style: { display: "flex", alignItems: "center", gap: "12px" } },
+        {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--app-space-section)",
+          },
+        },
         [
           h("div", { style: { display: "flex", flexDirection: "column" } }, [
             h(
@@ -216,7 +222,7 @@ const columns = computed(() => [
   },
 ]);
 
-const handleSort = (sorter: any) => {
+const handleSort = (sorter: DataTableSortState | null) => {
   if (sorter && sorter.order) {
     const key = sorter.columnKey as ConnectSortKey;
     const order = sorter.order === "ascend" ? "asc" : "desc";

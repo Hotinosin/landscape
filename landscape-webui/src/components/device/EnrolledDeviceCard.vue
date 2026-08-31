@@ -28,10 +28,13 @@ const displayName = computed(() => {
 type Props = {
   rule: EnrolledDevice;
   show_action?: boolean;
+  display_style?: "card" | "list";
+  cell?: "name" | "mac" | "iface" | "ipv4" | "ipv6" | "tags" | "actions";
 };
 
 const props = withDefaults(defineProps<Props>(), {
   show_action: true,
+  display_style: "card",
 });
 
 const show_edit_modal = ref(false);
@@ -68,12 +71,71 @@ async function del() {
 </script>
 
 <template>
-  <n-card size="small" hoverable>
+  <template v-if="display_style === 'list'">
+    <template v-if="cell === 'name'">
+      <n-flex vertical align="start" size="small">
+        <n-ellipsis style="max-width: 160px">{{ displayName }}</n-ellipsis>
+        <n-tag v-if="isValid === false" size="small" type="error" round>
+          {{ t("device.invalid_status") }}
+        </n-tag>
+      </n-flex>
+    </template>
+    <template v-else-if="cell === 'mac'">
+      <code>{{ frontEndStore.MASK_INFO(rule.mac) }}</code>
+    </template>
+    <template v-else-if="cell === 'iface'">
+      <n-tag
+        v-if="rule.iface_name"
+        size="small"
+        type="primary"
+        :bordered="false"
+      >
+        {{ rule.iface_name }}
+      </n-tag>
+      <n-text v-else depth="3">—</n-text>
+    </template>
+    <template v-else-if="cell === 'ipv4'">
+      <span v-if="rule.ipv4">{{ frontEndStore.MASK_INFO(rule.ipv4) }}</span>
+      <n-text v-else depth="3">—</n-text>
+    </template>
+    <template v-else-if="cell === 'ipv6'">
+      <n-ellipsis v-if="rule.ipv6" style="max-width: 220px">
+        {{ frontEndStore.MASK_INFO(rule.ipv6) }}
+      </n-ellipsis>
+      <n-text v-else depth="3">—</n-text>
+    </template>
+    <template v-else-if="cell === 'tags'">
+      <n-flex v-if="rule.tag?.length" size="small">
+        <n-tag
+          v-for="tag in rule.tag"
+          :key="tag"
+          size="tiny"
+          :bordered="false"
+          type="success"
+          round
+          >{{ tag }}</n-tag
+        >
+      </n-flex>
+      <n-text v-else depth="3">—</n-text>
+    </template>
+    <template v-else-if="cell === 'actions'">
+      <n-flex size="small" :wrap="false" justify="start">
+        <EditButton @click="show_edit_modal = true" />
+        <n-popconfirm @positive-click="del()">
+          <template #trigger>
+            <n-button size="small" secondary type="error">
+              {{ t("common.delete") }}
+            </n-button>
+          </template>
+          {{ t("device.delete_confirm") }}
+        </n-popconfirm>
+      </n-flex>
+    </template>
+  </template>
+
+  <n-card v-else size="small" hoverable>
     <template #header>
       <n-space align="center">
-        <n-avatar round size="small" color="#18a058">
-          {{ displayName.charAt(0).toUpperCase() }}
-        </n-avatar>
         <n-ellipsis style="max-width: 150px">
           {{ displayName }}
         </n-ellipsis>
@@ -177,6 +239,7 @@ async function del() {
   </n-card>
 
   <EnrolledDeviceEditModal
+    v-if="display_style !== 'list' || cell === 'actions'"
     :rule_id="rule.id ?? null"
     v-model:show="show_edit_modal"
   />
@@ -185,8 +248,8 @@ async function del() {
 <style scoped>
 code {
   font-family: var(--font-mono);
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--app-surface-subtle-color);
   padding: 2px 4px;
-  border-radius: 4px;
+  border-radius: var(--app-radius-indicator);
 }
 </style>

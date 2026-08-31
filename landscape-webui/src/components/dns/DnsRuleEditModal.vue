@@ -179,13 +179,21 @@ function add_by_quick_btn(match_type: DomainMatchTypeEnum | undefined) {
     v-model:show="show"
     v-model:enabled="rule_enabled"
     :title="t('dns.rule_edit.title')"
-    width="600px"
+    width="860px"
     @after-enter="enter"
   >
     <!-- {{ isModified }} -->
     <n-form style="flex: 1" ref="formRef" :model="rule" :cols="5">
       <n-grid x-gap="10" :cols="5">
-        <n-form-item-gi :label="t('dns.rule_edit.priority')" :span="2">
+        <n-form-item-gi :span="2">
+          <template #label>
+            <Notice>
+              {{ t("dns.rule_edit.priority") }}
+              <template #msg>
+                {{ t("dns.rule_edit.priority_help") }}
+              </template>
+            </Notice>
+          </template>
           <n-input-number v-model:value="rule.index" clearable />
         </n-form-item-gi>
 

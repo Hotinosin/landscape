@@ -1,7 +1,18 @@
 import type { AxiosInstance } from "axios";
 import router from "@/router";
 import i18n from "@/i18n";
-import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
+import {
+  clearLandscapeSession,
+  LANDSCAPE_TOKEN_KEY,
+} from "@/lib/common";
+import { useHistoryRouteStore } from "@/stores/history_route";
+
+export function isCurrentSessionUnauthorized(
+  requestAuthorization: unknown,
+  currentToken: string | null,
+): boolean {
+  return !currentToken || requestAuthorization === `Bearer ${currentToken}`;
+}
 
 function formatApiErrorTemplate(
   template: string,
@@ -44,8 +55,15 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
       if (error.response != undefined && error.response.status != undefined) {
         const code = error.response.status;
         const { error_id, message, args } = error.response.data;
-        if (code === 401) {
-          localStorage.removeItem(LANDSCAPE_TOKEN_KEY);
+        if (
+          code === 401 &&
+          isCurrentSessionUnauthorized(
+            error.config?.headers?.Authorization,
+            localStorage.getItem(LANDSCAPE_TOKEN_KEY),
+          )
+        ) {
+          clearLandscapeSession();
+          useHistoryRouteStore().resetRoutes();
 
           const currentPath = router.currentRoute.value.fullPath;
           router.push({

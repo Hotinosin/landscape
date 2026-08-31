@@ -1,24 +1,20 @@
-import { RouteRecordRaw } from "vue-router";
-
-import IPv6PD from "@/views/status/IPv6PD.vue";
-import DHCPv4Server from "@/views/status/DHCPv4Server.vue";
-import IPv6RA from "@/views/status/IPv6RA.vue";
+import type { RouteRecordRaw } from "vue-router";
 
 const service_status_route: Array<RouteRecordRaw> = [
   {
     path: "/network/ipv6-pd",
     name: "routes.ipv6-pd",
-    component: IPv6PD,
+    component: () => import("@/views/status/IPv6PD.vue"),
   },
   {
     path: "/network/dhcp-v4",
     name: "routes.dhcp-v4",
-    component: DHCPv4Server,
+    component: () => import("@/views/status/DHCPv4Server.vue"),
   },
   {
     path: "/network/ipv6-ra",
     name: "routes.ipv6-ra",
-    component: IPv6RA,
+    component: () => import("@/views/status/IPv6RA.vue"),
   },
 ];
 

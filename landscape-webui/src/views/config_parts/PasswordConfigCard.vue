@@ -4,11 +4,13 @@ import { useMessage } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { change_password } from "@/api/auth";
 import { useRouter } from "vue-router";
-import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
+import { clearLandscapeSession } from "@/lib/common";
+import { useHistoryRouteStore } from "@/stores/history_route";
 
 const { t } = useI18n();
 const message = useMessage();
 const router = useRouter();
+const historyStore = useHistoryRouteStore();
 const loading = ref(false);
 
 const form = ref({
@@ -54,7 +56,8 @@ async function handleSubmit() {
       confirm_password: "",
     };
     // Force re-login
-    localStorage.removeItem(LANDSCAPE_TOKEN_KEY);
+    clearLandscapeSession();
+    historyStore.resetRoutes();
     router.push("/login");
   } catch (e: any) {
     // Error toast handled by axios interceptor for API errors
@@ -69,7 +72,7 @@ async function handleSubmit() {
 
 <template>
   <n-card :title="t('config.password_title')" segmented id="password-config">
-    <n-form label-placement="left" label-width="140">
+    <n-form label-placement="left" label-width="160">
       <n-form-item :label="t('config.current_password')">
         <n-input
           type="password"

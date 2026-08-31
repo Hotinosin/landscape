@@ -12,8 +12,8 @@ import {
   ArrowRight,
   Search,
   Catalog,
+  SearchLocate as GlobeSearch24Regular,
 } from "@vicons/carbon";
-import { GlobeSearch24Regular } from "@vicons/fluent";
 import { mask_string } from "@/lib/common";
 import { formatRate, formatPackets } from "@/lib/util";
 import { useThemeVars } from "naive-ui";
@@ -79,32 +79,39 @@ const emit = defineEmits([
     class="box"
     :style="{
       backgroundColor:
-        (index ?? 0) % 2 === 1 ? themeVars.tableColor : 'transparent',
+        (index ?? 0) % 2 === 1
+          ? 'var(--app-surface-alternate-color)'
+          : 'var(--app-surface-color)',
     }"
   >
     <n-card
       size="small"
       :bordered="false"
       style="background: transparent"
-      content-style="padding: 4px 12px"
+      content-style="padding: 4px var(--app-space-section)"
     >
-      <n-flex align="center" justify="space-between">
-        <n-flex align="center">
-          <n-flex align="center" style="width: 200px">
+      <n-flex align="center" justify="space-between" :wrap="false">
+        <n-flex class="connect-row-main" align="center" :wrap="false">
+          <n-flex align="center" :wrap="false" style="flex: 0 0 220px">
             <n-tooltip trigger="hover">
               <template #trigger>
                 <div style="cursor: help">
                   <n-flex align="center" :wrap="false" size="small">
-                    <span style="color: #888; font-size: 12px">{{
-                      $t("metric.connect.filter.now")
-                    }}</span>
+                    <span
+                      class="metric-muted"
+                      style="font-size: var(--app-font-size-caption)"
+                      >{{ $t("metric.connect.filter.now") }}</span
+                    >
                     <n-time
                       :time="lastActiveTime(conn)"
                       format="HH:mm:ss"
                       :time-zone="prefStore.timezone"
                     />
                     <n-divider vertical />
-                    <span style="color: #888; font-size: 12px">
+                    <span
+                      class="metric-muted"
+                      style="font-size: var(--app-font-size-caption)"
+                    >
                       <DurationTime
                         :seconds="
                           Math.max(
@@ -127,8 +134,9 @@ const emit = defineEmits([
           </n-flex>
 
           <n-flex
+            :wrap="false"
             style="
-              width: 300px;
+              flex: 0 0 270px;
               font-variant-numeric: tabular-nums;
               font-family: var(--font-mono);
             "
@@ -162,12 +170,18 @@ const emit = defineEmits([
           </n-flex>
 
           <n-flex
+            class="connect-endpoints"
             align="center"
-            style="width: 800px; font-variant-numeric: tabular-nums"
+            :wrap="false"
+            style="font-variant-numeric: tabular-nums"
             size="small"
           >
             <div
-              style="display: inline-flex; align-items: center; gap: 4px"
+              style="
+                display: inline-flex;
+                align-items: center;
+                gap: var(--app-space-2xs);
+              "
               :style="{
                 flexDirection: conn.gress === 0 ? 'row-reverse' : 'row',
               }"
@@ -175,7 +189,9 @@ const emit = defineEmits([
               <span>{{
                 `${enrolledDeviceStore.GET_NAME_WITH_FALLBACK(conn.src_ip)}:${frontEndStore.MASK_PORT(conn.src_port)}`
               }}</span>
-              <n-icon size="14" color="#888"><ArrowRight /></n-icon>
+              <n-icon size="14" color="var(--app-text-muted-color)">
+                <ArrowRight />
+              </n-icon>
               <span>{{
                 `${enrolledDeviceStore.GET_NAME_WITH_FALLBACK(conn.dst_ip)}:${frontEndStore.MASK_PORT(conn.dst_port)}`
               }}</span>
@@ -234,13 +250,18 @@ const emit = defineEmits([
           </n-flex>
 
           <!-- 速率展示 -->
-          <n-flex align="center" :wrap="false" style="gap: 24px">
+          <n-flex
+            class="connect-rate"
+            align="center"
+            :wrap="false"
+            style="gap: var(--app-space-lg)"
+          >
             <!-- 出站 (Egress) -->
             <n-flex
               align="center"
               :wrap="false"
               size="small"
-              style="width: 100px"
+              style="width: 120px"
             >
               <n-icon
                 :color="themeVars.infoColor"
@@ -254,7 +275,7 @@ const emit = defineEmits([
               <n-flex vertical :size="[-4, 0]" style="flex: 1">
                 <span
                   style="
-                    font-size: 13px;
+                    font-size: var(--app-font-size-label);
                     font-weight: 600;
                     font-variant-numeric: tabular-nums;
                     line-height: 1.2;
@@ -265,8 +286,8 @@ const emit = defineEmits([
                 </span>
                 <span
                   style="
-                    font-size: 10px;
-                    color: #999;
+                    font-size: var(--app-font-size-micro);
+                    color: var(--app-text-muted-color);
                     font-variant-numeric: tabular-nums;
                     white-space: nowrap;
                   "
@@ -281,7 +302,7 @@ const emit = defineEmits([
               align="center"
               :wrap="false"
               size="small"
-              style="width: 100px"
+              style="width: 120px"
             >
               <n-icon
                 :color="themeVars.successColor"
@@ -295,7 +316,7 @@ const emit = defineEmits([
               <n-flex vertical :size="[-4, 0]" style="flex: 1">
                 <span
                   style="
-                    font-size: 13px;
+                    font-size: var(--app-font-size-label);
                     font-weight: 600;
                     font-variant-numeric: tabular-nums;
                     line-height: 1.2;
@@ -306,8 +327,8 @@ const emit = defineEmits([
                 </span>
                 <span
                   style="
-                    font-size: 10px;
-                    color: #999;
+                    font-size: var(--app-font-size-micro);
+                    color: var(--app-text-muted-color);
                     font-variant-numeric: tabular-nums;
                     white-space: nowrap;
                   "
@@ -325,7 +346,7 @@ const emit = defineEmits([
           <n-button
             :focusable="false"
             text
-            style="font-size: 16px"
+            style="font-size: var(--app-font-size-title)"
             @click="emit('show:chart', conn)"
           >
             <n-icon>
@@ -342,10 +363,38 @@ const emit = defineEmits([
 .box {
   border: 2px solid transparent;
   transition: border-color 0.25s ease;
-  margin-right: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .box:hover {
-  border-color: #4fa3ff; /* 你想要的亮色 */
+  border-color: var(--app-brand-color);
+}
+
+.metric-muted {
+  color: var(--app-text-muted-color);
+}
+
+.connect-row-main {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.connect-endpoints {
+  min-width: 240px;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.connect-endpoints > :first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.connect-rate {
+  flex: 0 0 256px;
 }
 </style>

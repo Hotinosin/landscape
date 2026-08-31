@@ -12,8 +12,8 @@ import {
   ArrowRight,
   Search,
   Flash,
+  SearchLocate as GlobeSearch24Regular,
 } from "@vicons/carbon";
-import { GlobeSearch24Regular } from "@vicons/fluent";
 import { mask_string } from "@/lib/common";
 import { formatSize, formatCount } from "@/lib/util";
 import { useThemeVars } from "naive-ui";
@@ -75,28 +75,33 @@ const emit = defineEmits([
     class="box"
     :style="{
       backgroundColor:
-        (index ?? 0) % 2 === 1 ? themeVars.tableColor : 'transparent',
+        (index ?? 0) % 2 === 1
+          ? 'var(--app-surface-alternate-color)'
+          : 'var(--app-surface-color)',
     }"
   >
     <n-card
       size="small"
       :bordered="false"
       style="background: transparent"
-      content-style="padding: 4px 12px"
+      content-style="padding: 4px var(--app-space-section)"
     >
-      <n-flex align="center" justify="space-between">
-        <n-flex align="center">
-          <n-flex align="center" style="width: 160px">
+      <n-flex align="center" justify="space-between" :wrap="false">
+        <n-flex class="history-row-main" align="center" :wrap="false">
+          <n-flex align="center" :wrap="false" style="flex: 0 0 220px">
             <n-flex vertical size="small">
               <n-time
                 :time="history.last_report_time"
                 format="yyyy-MM-dd HH:mm:ss"
                 :time-zone="prefStore.timezone"
               />
-              <div style="font-size: 10px; color: #888">
+              <div
+                class="metric-muted"
+                style="font-size: var(--app-font-size-micro)"
+              >
                 <n-tooltip trigger="hover">
                   <template #trigger>
-                    <span style="cursor: help; border-bottom: 1px dashed #888">
+                    <span class="duration-link" style="cursor: help">
                       {{ $t("metric.connect.filter.duration") }}
                       <DurationTime
                         :seconds="
@@ -121,8 +126,9 @@ const emit = defineEmits([
           </n-flex>
 
           <n-flex
+            :wrap="false"
             style="
-              width: 300px;
+              flex: 0 0 250px;
               font-variant-numeric: tabular-nums;
               font-family: var(--font-mono);
             "
@@ -147,12 +153,18 @@ const emit = defineEmits([
           </n-flex>
 
           <n-flex
+            class="history-endpoints"
             align="center"
-            style="width: 800px; font-variant-numeric: tabular-nums"
+            :wrap="false"
+            style="font-variant-numeric: tabular-nums"
             size="small"
           >
             <div
-              style="display: inline-flex; align-items: center; gap: 4px"
+              style="
+                display: inline-flex;
+                align-items: center;
+                gap: var(--app-space-2xs);
+              "
               :style="{
                 flexDirection: history.gress === 0 ? 'row-reverse' : 'row',
               }"
@@ -160,7 +172,9 @@ const emit = defineEmits([
               <span>{{
                 `${enrolledDeviceStore.GET_NAME_WITH_FALLBACK(history.src_ip)}:${frontEndStore.MASK_PORT(history.src_port)}`
               }}</span>
-              <n-icon size="14" color="#888"><ArrowRight /></n-icon>
+              <n-icon size="14" color="var(--app-text-muted-color)">
+                <ArrowRight />
+              </n-icon>
               <span>{{
                 `${enrolledDeviceStore.GET_NAME_WITH_FALLBACK(history.dst_ip)}:${frontEndStore.MASK_PORT(history.dst_port)}`
               }}</span>
@@ -190,7 +204,7 @@ const emit = defineEmits([
                   text
                   @click.stop="emit('search:tuple', history)"
                   style="
-                    font-size: 16px;
+                    font-size: var(--app-font-size-title);
                     color: themeVars.infoColor;
                     opacity: 0.7;
                   "
@@ -207,7 +221,7 @@ const emit = defineEmits([
                   text
                   @click.stop="goToLive(history)"
                   style="
-                    font-size: 16px;
+                    font-size: var(--app-font-size-title);
                     color: themeVars.successColor;
                     opacity: 0.7;
                   "
@@ -220,24 +234,39 @@ const emit = defineEmits([
           </n-flex>
 
           <!-- 累计总量展示 -->
-          <n-flex align="center" :wrap="false" style="gap: 24px">
+          <n-flex
+            class="history-volume"
+            align="center"
+            :wrap="false"
+            style="gap: var(--app-space-lg)"
+          >
             <!-- 累计上行 -->
             <n-flex
               align="center"
               :wrap="false"
               size="small"
-              style="width: 100px"
+              style="width: 90px"
             >
               <n-icon :color="themeVars.infoColor" size="20">
                 <ArrowUp />
               </n-icon>
               <n-flex vertical :size="[-4, 0]" style="flex: 1">
                 <span
-                  style="font-size: 13px; font-weight: 600; white-space: nowrap"
+                  style="
+                    font-size: var(--app-font-size-label);
+                    font-weight: 600;
+                    white-space: nowrap;
+                  "
                 >
                   {{ formatSize(history.total_egress_bytes) }}
                 </span>
-                <span style="font-size: 10px; color: #999; white-space: nowrap">
+                <span
+                  class="metric-muted"
+                  style="
+                    font-size: var(--app-font-size-micro);
+                    white-space: nowrap;
+                  "
+                >
                   {{ formatCount(history.total_egress_pkts) }} pkt
                 </span>
               </n-flex>
@@ -248,18 +277,28 @@ const emit = defineEmits([
               align="center"
               :wrap="false"
               size="small"
-              style="width: 100px"
+              style="width: 90px"
             >
               <n-icon :color="themeVars.successColor" size="20">
                 <ArrowDown />
               </n-icon>
               <n-flex vertical :size="[-4, 0]" style="flex: 1">
                 <span
-                  style="font-size: 13px; font-weight: 600; white-space: nowrap"
+                  style="
+                    font-size: var(--app-font-size-label);
+                    font-weight: 600;
+                    white-space: nowrap;
+                  "
                 >
                   {{ formatSize(history.total_ingress_bytes) }}
                 </span>
-                <span style="font-size: 10px; color: #999; white-space: nowrap">
+                <span
+                  class="metric-muted"
+                  style="
+                    font-size: var(--app-font-size-micro);
+                    white-space: nowrap;
+                  "
+                >
                   {{ formatCount(history.total_ingress_pkts) }} pkt
                 </span>
               </n-flex>
@@ -273,7 +312,7 @@ const emit = defineEmits([
           <n-button
             :focusable="false"
             text
-            style="font-size: 16px"
+            style="font-size: var(--app-font-size-title)"
             @click="emit('show:chart', history)"
           >
             <n-icon>
@@ -290,10 +329,42 @@ const emit = defineEmits([
 .box {
   border: 2px solid transparent;
   transition: border-color 0.25s ease;
-  margin-right: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .box:hover {
-  border-color: #4fa3ff; /* 你想要的亮色 */
+  border-color: var(--app-brand-color);
+}
+
+.metric-muted {
+  color: var(--app-text-muted-color);
+}
+
+.duration-link {
+  border-bottom: 1px dashed var(--app-text-muted-color);
+}
+
+.history-row-main {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.history-endpoints {
+  min-width: 320px;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.history-endpoints > :first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-volume {
+  flex: 0 0 196px;
 }
 </style>

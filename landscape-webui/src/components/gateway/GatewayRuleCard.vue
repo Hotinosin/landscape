@@ -92,15 +92,10 @@ function pathGroups(): HttpPathGroup[] {
 
       <template #header-extra>
         <n-flex size="small">
-          <n-button
+          <EditButton
             v-if="rule.match_rule.t !== 'legacy_path_prefix'"
-            secondary
-            size="small"
-            type="warning"
             @click.stop="openEditModal()"
-          >
-            {{ t("common.edit") }}
-          </n-button>
+          />
 
           <n-popconfirm @positive-click="del()">
             <template #trigger>
@@ -145,7 +140,7 @@ function pathGroups(): HttpPathGroup[] {
         </n-gi>
       </n-grid>
 
-      <n-divider style="margin: 8px 0 12px 0" />
+      <n-divider style="margin: 8px 0 var(--app-space-section) 0" />
 
       <div class="match-container">
         <div class="section-label">
@@ -166,7 +161,7 @@ function pathGroups(): HttpPathGroup[] {
       </div>
 
       <template v-if="rule.match_rule.t === 'host'">
-        <n-divider style="margin: 8px 0 12px 0" />
+        <n-divider style="margin: 8px 0 var(--app-space-section) 0" />
 
         <div class="match-container">
           <div class="section-label">
@@ -185,7 +180,10 @@ function pathGroups(): HttpPathGroup[] {
                   <n-tag size="small" :bordered="false">
                     {{ frontEndStore.MASK_INFO(group.prefix) }}
                   </n-tag>
-                  <n-text depth="3" style="font-size: 12px">
+                  <n-text
+                    depth="3"
+                    style="font-size: var(--app-font-size-caption)"
+                  >
                     {{
                       group.rewrite_mode === "strip_prefix"
                         ? t("gateway.rewrite_strip_prefix")
@@ -193,12 +191,19 @@ function pathGroups(): HttpPathGroup[] {
                     }}
                   </n-text>
                 </n-flex>
-                <n-text depth="3" style="font-size: 12px">
+                <n-text
+                  depth="3"
+                  style="font-size: var(--app-font-size-caption)"
+                >
                   {{ upstreamSummary(group.upstream) }}
                 </n-text>
               </n-flex>
             </n-flex>
-            <n-text v-else depth="3" style="font-size: 12px">
+            <n-text
+              v-else
+              depth="3"
+              style="font-size: var(--app-font-size-caption)"
+            >
               {{ t("gateway.no_path_groups") }}
             </n-text>
           </n-scrollbar>
@@ -206,7 +211,7 @@ function pathGroups(): HttpPathGroup[] {
       </template>
 
       <template v-else-if="rule.match_rule.t === 'legacy_path_prefix'">
-        <n-divider style="margin: 8px 0 12px 0" />
+        <n-divider style="margin: 8px 0 var(--app-space-section) 0" />
 
         <div class="match-container">
           <div class="section-label">{{ t("gateway.path_prefix") }}</div>
@@ -217,7 +222,7 @@ function pathGroups(): HttpPathGroup[] {
       </template>
 
       <div class="card-footer">
-        <n-text depth="3" style="font-size: 12px">
+        <n-text depth="3" style="font-size: var(--app-font-size-caption)">
           {{ t("common.updated_at") }}
           <n-time
             :time="rule.update_at"
@@ -245,7 +250,7 @@ function pathGroups(): HttpPathGroup[] {
 
 .gateway-card {
   flex: 1;
-  border-radius: 4px;
+  border-radius: var(--app-radius-indicator);
   transition: all 0.2s ease-in-out;
   border: 1px solid transparent;
   cursor: pointer;
@@ -262,7 +267,7 @@ function pathGroups(): HttpPathGroup[] {
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
   color: var(--n-text-color-3);
   margin-bottom: 2px;
 }
@@ -271,12 +276,12 @@ function pathGroups(): HttpPathGroup[] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: var(--app-space-xs);
   min-height: 24px;
 }
 
 .stat-value {
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
   font-weight: 500;
   line-height: 1.2;
   white-space: nowrap;
@@ -292,11 +297,11 @@ function pathGroups(): HttpPathGroup[] {
 .match-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--app-space-xs);
 }
 
 .section-label {
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
   color: var(--n-text-color-3);
 }
 

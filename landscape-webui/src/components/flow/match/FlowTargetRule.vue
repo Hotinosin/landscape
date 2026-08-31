@@ -22,8 +22,13 @@ onMounted(async () => {
 });
 
 async function refresh_wan_ifaces() {
-  iface_wans.value = await get_wan_candidates();
-  docker_containers.value = await get_docker_container_summarys();
+  const [ifaces, containers] = await Promise.allSettled([
+    get_wan_candidates(),
+    get_docker_container_summarys(),
+  ]);
+  iface_wans.value = ifaces.status === "fulfilled" ? ifaces.value : [];
+  docker_containers.value =
+    containers.status === "fulfilled" ? containers.value : [];
 }
 
 const iface_wan_options = computed(() =>
@@ -33,13 +38,8 @@ const iface_wan_options = computed(() =>
 const docker_options = computed(() =>
   docker_containers.value.map((e) => {
     let name = e.Names[0] ?? "";
-    if (name.startsWith("/")) {
-      name = name.slice(1);
-    }
-    return {
-      label: name,
-      value: name,
-    };
+    if (name.startsWith("/")) name = name.slice(1);
+    return { label: name, value: name };
   }),
 );
 
@@ -62,7 +62,7 @@ function target_type_option(): any[] {
       value: "interface",
     },
     {
-      label: t("flow.target_rule.type_docker"),
+      label: t("flow.target_rule.type_netns"),
       value: "netns",
     },
   ];

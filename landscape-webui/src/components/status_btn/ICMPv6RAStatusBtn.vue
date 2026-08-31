@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Ad } from "@vicons/tabler";
+import { Router as Ad } from "@vicons/carbon";
 
 import StatusBtn from "@/components/status_btn/StatusBtn.vue";
 import { useLanIPv6Store } from "@/stores/status_lan_ipv6";

@@ -10,7 +10,7 @@ import {
   NIcon,
   NTooltip,
 } from "naive-ui";
-import { Refresh, HelpCircleOutline } from "@vicons/ionicons5";
+import { Renew as Refresh, Help as HelpCircleOutline } from "@vicons/carbon";
 
 import {
   get_dns_lightweight_summary,
@@ -18,6 +18,7 @@ import {
 } from "@/api/metric/dns";
 import DnsRuleDrawer from "@/components/dns/DnsRuleDrawer.vue";
 import WanIpRuleDrawer from "@/components/flow/wan/WanIpRuleDrawer.vue";
+import { overviewCardStyles } from "@/components/overviewCardStyle";
 const themeVars = useThemeVars();
 const { t } = useI18n();
 
@@ -100,13 +101,15 @@ defineExpose({ refresh: loadSummary });
 <template>
   <n-card
     :loading="loading"
-    class="dns-status-card"
-    content-style="display: flex; flex-direction: column; height: 100%; padding-top: 26px;"
+    class="dns-status-card overview-card"
+    :style="overviewCardStyles.card"
+    :header-style="overviewCardStyles.header"
+    :content-style="overviewCardStyles.content"
   >
     <template #header>
       <n-flex align="center" :size="4">
         <span>DNS</span>
-        <n-text depth="3" style="font-size: 10px">{{
+        <n-text depth="3" style="font-size: var(--app-font-size-micro)">{{
           t("metric.dns.dash.recent_5m")
         }}</n-text>
       </n-flex>
@@ -140,7 +143,7 @@ defineExpose({ refresh: loadSummary });
     </template>
 
     <!-- DNS Metrics Content -->
-    <n-flex vertical :size="16">
+    <div class="overview-card__primary" :style="overviewCardStyles.primary">
       <n-grid :cols="3" :x-gap="12">
         <!-- Total Queries -->
         <n-gi>
@@ -241,60 +244,71 @@ defineExpose({ refresh: loadSummary });
           </n-statistic>
         </n-gi>
       </n-grid>
+    </div>
 
-      <n-divider style="margin: 0" />
+    <n-divider
+      class="overview-card__divider"
+      :style="overviewCardStyles.divider"
+    />
 
-      <!-- Latency Section -->
-      <n-flex vertical :size="8">
-        <n-flex align="center" :size="4">
-          <n-text depth="3" style="font-size: 11px">
-            {{ t("metric.dns.dash.query_latency") }} (ms)
-          </n-text>
-          <n-tooltip trigger="hover" :width="280">
-            <template #trigger>
-              <n-icon size="13" depth="3" style="cursor: help">
-                <HelpCircleOutline />
-              </n-icon>
-            </template>
-            {{ t("metric.dns.dash.latency_tip") }}
-          </n-tooltip>
-        </n-flex>
-        <n-flex justify="space-between">
-          <n-flex
-            vertical
-            align="center"
-            :size="2"
-            v-for="stat in latencyStats"
-            :key="stat.label"
+    <!-- Latency Section -->
+    <n-flex
+      vertical
+      :size="8"
+      class="overview-card__secondary"
+      :style="overviewCardStyles.secondary"
+    >
+      <n-flex align="center" :size="4">
+        <n-text depth="3" style="font-size: var(--app-font-size-detail)">
+          {{ t("metric.dns.dash.query_latency") }} (ms)
+        </n-text>
+        <n-tooltip trigger="hover" :width="280">
+          <template #trigger>
+            <n-icon size="13" depth="3" style="cursor: help">
+              <HelpCircleOutline />
+            </n-icon>
+          </template>
+          {{ t("metric.dns.dash.latency_tip") }}
+        </n-tooltip>
+      </n-flex>
+      <n-flex justify="space-between">
+        <n-flex
+          vertical
+          align="center"
+          :size="2"
+          v-for="stat in latencyStats"
+          :key="stat.label"
+        >
+          <n-text
+            depth="3"
+            style="
+              font-size: var(--app-font-size-micro);
+              text-transform: uppercase;
+            "
+            >{{ stat.label }}</n-text
           >
-            <n-text
-              depth="3"
-              style="font-size: 10px; text-transform: uppercase"
-              >{{ stat.label }}</n-text
-            >
-            <n-text
-              strong
-              style="font-size: 14px"
-              :style="{ color: stat.color }"
-            >
-              <n-number-animation
-                :from="0"
-                :to="stat.value || 0"
-                :precision="1"
-              />
-            </n-text>
-          </n-flex>
+          <n-text
+            strong
+            style="font-size: var(--app-font-size-body)"
+            :style="{ color: stat.color }"
+          >
+            <n-number-animation
+              :from="0"
+              :to="stat.value || 0"
+              :precision="1"
+            />
+          </n-text>
         </n-flex>
       </n-flex>
     </n-flex>
-
-    <DnsRuleDrawer v-model:show="show_rule_drawer" />
-    <WanIpRuleDrawer v-model:show="show_ip_rule" />
   </n-card>
+
+  <DnsRuleDrawer v-model:show="show_rule_drawer" />
+  <WanIpRuleDrawer v-model:show="show_ip_rule" />
 </template>
 
 <style scoped>
 .no-data-text {
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
 }
 </style>

@@ -2,13 +2,14 @@
 import { onMounted, onUnmounted, ref } from "vue";
 
 import { CountdownInst, CountdownProps } from "naive-ui";
-import { SpinnerIos20Regular } from "@vicons/fluent";
-import { PauseFilled, Renew } from "@vicons/carbon";
+import {
+  Renew as SpinnerIos20Regular,
+  PauseFilled,
+  WarningAlt,
+} from "@vicons/carbon";
 import { useI18n } from "vue-i18n";
 
 import { useFetchIntervalStore } from "@/stores/fetch_interval";
-
-// import { Spinner } from "@vicons/fa";
 
 const fetchIntervalStore = useFetchIntervalStore();
 const { t } = useI18n();
@@ -37,8 +38,6 @@ const renderCountdown: CountdownProps["render"] = ({
     )}:${String(seconds).padStart(2, "0")}`;
   } else if (minutes !== 0) {
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  } else if (minutes !== 0) {
-    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   } else if (seconds != 0) {
     return `${String(seconds).padStart(2, "0")}`;
   } else {
@@ -59,32 +58,49 @@ function confirmChangeImterval() {
 </script>
 
 <template>
-  <n-flex style="max-height: 24px; overflow: hidden" align="center">
+  <n-flex align="center">
+    <n-tooltip v-if="fetchIntervalStore.error_message">
+      <template #trigger>
+        <n-button quaternary circle size="small">
+          <template #icon>
+            <n-icon size="18" color="var(--app-status-warning-color)">
+              <WarningAlt />
+            </n-icon>
+          </template>
+        </n-button>
+      </template>
+      {{ fetchIntervalStore.error_message }}
+    </n-tooltip>
     <n-popover @update:show="handleUpdateShow" trigger="hover">
       <template #trigger>
-        <n-switch
-          :round="fetchIntervalStore.enable_interval"
-          v-model:value="fetchIntervalStore.enable_interval"
-        >
-          <template #checked-icon>
-            <n-icon class="element" size="20">
-              <SpinnerIos20Regular />
-            </n-icon>
-          </template>
-          <template #unchecked-icon>
-            <n-icon size="20">
-              <PauseFilled />
-            </n-icon>
-          </template>
-          <template #checked>
-            <n-countdown
-              :render="renderCountdown"
-              ref="countdownRef"
-              :duration="fetchIntervalStore.interval_time"
-              :active="fetchIntervalStore.enable_interval"
-            />
-          </template>
-        </n-switch>
+        <n-flex align="center" :size="6" :wrap="false">
+          <n-text class="realtime-label">{{
+            t("common.realtime_refresh")
+          }}</n-text>
+          <n-switch
+            :round="fetchIntervalStore.enable_interval"
+            v-model:value="fetchIntervalStore.enable_interval"
+          >
+            <template #checked-icon>
+              <n-icon class="element" size="20">
+                <SpinnerIos20Regular />
+              </n-icon>
+            </template>
+            <template #unchecked-icon>
+              <n-icon size="20">
+                <PauseFilled />
+              </n-icon>
+            </template>
+            <template #checked>
+              <n-countdown
+                :render="renderCountdown"
+                ref="countdownRef"
+                :duration="fetchIntervalStore.interval_time"
+                :active="fetchIntervalStore.enable_interval"
+              />
+            </template>
+          </n-switch>
+        </n-flex>
       </template>
 
       <n-input-group>
@@ -120,6 +136,11 @@ function confirmChangeImterval() {
 </template>
 
 <style scoped>
+.realtime-label {
+  font-size: var(--app-font-size-caption);
+  line-height: 1;
+}
+
 .element {
   animation: rotateAnimation 5s linear infinite;
   /* animation: rotateAnimation 5s cubic-bezier(0.25, 0.1, 0.25, 1) infinite; */

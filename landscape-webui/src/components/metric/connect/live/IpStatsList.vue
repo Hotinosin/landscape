@@ -2,9 +2,9 @@
 import { ref, computed, h } from "vue";
 import { formatRate, formatPackets } from "@/lib/util";
 import { useThemeVars, NTooltip, NIcon, NButton } from "naive-ui";
-import { Search } from "@vicons/carbon";
-import { GlobeSearch24Regular } from "@vicons/fluent";
-import type { IpRealtimeStat } from "@landscape-router/types/api/schemas";
+import { Search, SearchLocate as GlobeSearch24Regular } from "@vicons/carbon";
+import type { DataTableSortState } from "naive-ui";
+import type { FlowIpRealtimeStat } from "@/stores/status_metric";
 import FlowExhibit from "@/components/flow/FlowExhibit.vue";
 
 import { useI18n } from "vue-i18n";
@@ -16,7 +16,7 @@ const frontEndStore = useFrontEndStore();
 const enrolledDeviceStore = useEnrolledDeviceStore();
 
 const props = defineProps<{
-  stats: any[]; // 更通用的类型，支持带 flow_id
+  stats: FlowIpRealtimeStat[];
   title: string;
   ipLabel: string;
   showGeoLookup?: boolean;
@@ -27,7 +27,9 @@ const emit = defineEmits(["search:ip"]);
 
 const themeVars = useThemeVars();
 
-const sortKey = ref<string>("egress_bps");
+type SortKey = "ip" | keyof FlowIpRealtimeStat["stats"];
+
+const sortKey = ref<SortKey>("egress_bps");
 const sortOrder = ref<"asc" | "desc">("desc");
 
 const columns = computed(() => [
@@ -35,10 +37,16 @@ const columns = computed(() => [
     title: props.ipLabel,
     key: "ip",
     sorter: "default",
-    render: (row: any) => {
+    render: (row: FlowIpRealtimeStat) => {
       return h(
         "div",
-        { style: { display: "flex", alignItems: "center", gap: "12px" } },
+        {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--app-space-section)",
+          },
+        },
         [
           h("div", { style: { display: "flex", flexDirection: "column" } }, [
             h(
@@ -131,7 +139,7 @@ const columns = computed(() => [
   {
     title: t("metric.connect.col.flow"),
     key: "flow_id",
-    render: (row: any) => {
+    render: (row: FlowIpRealtimeStat) => {
       if (row.flow_id === undefined) return "-";
       if (row.flow_id === 0) {
         return h(
@@ -153,14 +161,16 @@ const columns = computed(() => [
   {
     title: t("metric.connect.col.active_conns"),
     key: "active_conns",
-    sorter: (a: any, b: any) => a.stats.active_conns - b.stats.active_conns,
-    render: (row: any) => row.stats.active_conns,
+    sorter: (a: FlowIpRealtimeStat, b: FlowIpRealtimeStat) =>
+      a.stats.active_conns - b.stats.active_conns,
+    render: (row: FlowIpRealtimeStat) => row.stats.active_conns,
   },
   {
     title: t("metric.connect.col.egress_rate"),
     key: "egress_bps",
-    sorter: (a: any, b: any) => a.stats.egress_bps - b.stats.egress_bps,
-    render: (row: any) => {
+    sorter: (a: FlowIpRealtimeStat, b: FlowIpRealtimeStat) =>
+      a.stats.egress_bps - b.stats.egress_bps,
+    render: (row: FlowIpRealtimeStat) => {
       return h(
         "span",
         {
@@ -173,8 +183,9 @@ const columns = computed(() => [
   {
     title: t("metric.connect.col.ingress_rate"),
     key: "ingress_bps",
-    sorter: (a: any, b: any) => a.stats.ingress_bps - b.stats.ingress_bps,
-    render: (row: any) => {
+    sorter: (a: FlowIpRealtimeStat, b: FlowIpRealtimeStat) =>
+      a.stats.ingress_bps - b.stats.ingress_bps,
+    render: (row: FlowIpRealtimeStat) => {
       return h(
         "span",
         {
@@ -187,34 +198,37 @@ const columns = computed(() => [
   {
     title: t("metric.connect.col.egress_pps"),
     key: "egress_pps",
-    sorter: (a: any, b: any) => a.stats.egress_pps - b.stats.egress_pps,
-    render: (row: any) => formatPackets(row.stats.egress_pps),
+    sorter: (a: FlowIpRealtimeStat, b: FlowIpRealtimeStat) =>
+      a.stats.egress_pps - b.stats.egress_pps,
+    render: (row: FlowIpRealtimeStat) => formatPackets(row.stats.egress_pps),
   },
   {
     title: t("metric.connect.col.ingress_pps"),
     key: "ingress_pps",
-    sorter: (a: any, b: any) => a.stats.ingress_pps - b.stats.ingress_pps,
-    render: (row: any) => formatPackets(row.stats.ingress_pps),
+    sorter: (a: FlowIpRealtimeStat, b: FlowIpRealtimeStat) =>
+      a.stats.ingress_pps - b.stats.ingress_pps,
+    render: (row: FlowIpRealtimeStat) => formatPackets(row.stats.ingress_pps),
   },
 ]);
 
-const handleSort = (sorter: any) => {
-  if (sorter) {
-    sortKey.value = sorter.columnKey;
+const handleSort = (sorter: DataTableSortState | null) => {
+  if (sorter && typeof sorter.columnKey === "string") {
+    sortKey.value = sorter.columnKey as SortKey;
     sortOrder.value = sorter.order === "ascend" ? "asc" : "desc";
   }
 };
 
 const processedData = computed(() => {
   const data = [...props.stats];
-  return data.sort((a: any, b: any) => {
+  return data.sort((a, b) => {
     let vA, vB;
     if (sortKey.value === "ip") {
       vA = a.ip;
       vB = b.ip;
     } else {
-      vA = a.stats[sortKey.value];
-      vB = b.stats[sortKey.value];
+      const key = sortKey.value;
+      vA = a.stats[key];
+      vB = b.stats[key];
     }
     const result = vA > vB ? 1 : vA < vB ? -1 : 0;
     return sortOrder.value === "asc" ? result : -result;

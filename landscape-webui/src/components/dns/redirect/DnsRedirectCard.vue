@@ -101,14 +101,7 @@ async function del() {
 
     <template #header-extra>
       <n-flex>
-        <n-button
-          size="small"
-          type="warning"
-          secondary
-          @click="show_edit_modal = true"
-        >
-          {{ t("common.edit") }}
-        </n-button>
+        <EditButton @click="show_edit_modal = true" />
 
         <n-popconfirm @positive-click="del()">
           <template #trigger>

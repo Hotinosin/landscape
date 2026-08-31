@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { IfaceZoneType } from "@landscape-router/types/api/schemas";
-import { Wall } from "@vicons/tabler";
+import { Firewall as Wall } from "@vicons/carbon";
 
 import StatusBtn from "@/components/status_btn/StatusBtn.vue";
 import { useFirewallConfigStore } from "@/stores/status_firewall";

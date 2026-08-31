@@ -4,13 +4,16 @@ import { useDockerStore } from "@/stores/status_docker";
 import useDockerImgTask from "@/stores/docker_img_task";
 import DockerAllContainer from "@/components/docker/DockerAllContainer.vue";
 import DockerStatusCard from "@/components/docker/DockerStatusCard.vue";
+import { useFrontEndStore } from "@/stores/front_end_config";
 
 const dockerStore = useDockerStore();
 const dockerImgTask = useDockerImgTask();
+const frontEndStore = useFrontEndStore();
 
-onMounted(() => {
+onMounted(async () => {
   dockerStore.SET_ACTIVE(true);
   dockerImgTask.SET_ACTIVE(true);
+  await dockerStore.UPDATE_INFO();
 });
 
 onBeforeUnmount(() => {
@@ -20,9 +23,11 @@ onBeforeUnmount(() => {
 });
 </script>
 <template>
-  <n-layout :native-scrollbar="false" content-style="padding: 10px;">
-    <n-flex style="flex: 1; padding-right: 15px" vertical>
-      <n-flex><DockerStatusCard></DockerStatusCard> </n-flex>
+  <n-layout :native-scrollbar="false">
+    <n-flex style="flex: 1" vertical>
+      <n-flex
+        ><DockerStatusCard :display_style="frontEndStore.display_style"
+      /></n-flex>
       <n-flex style="flex: 1">
         <DockerAllContainer></DockerAllContainer>
       </n-flex>

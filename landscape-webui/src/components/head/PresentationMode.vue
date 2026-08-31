@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useFrontEndStore } from "@/stores/front_end_config";
-import { IosEye, IosEyeOff } from "@vicons/ionicons4";
+import { View as IosEye, ViewOff as IosEyeOff } from "@vicons/carbon";
 import { useI18n } from "vue-i18n";
 
 const frontEndStore = useFrontEndStore();
@@ -10,28 +10,19 @@ const { t } = useI18n();
   <n-popover trigger="hover">
     <template #trigger>
       <n-button
-        v-if="frontEndStore.presentation_mode"
-        text
-        style="font-size: 24px"
+        quaternary
+        size="small"
+        style="font-size: var(--app-font-size-caption)"
         @click="
           frontEndStore.presentation_mode = !frontEndStore.presentation_mode
         "
       >
-        <n-icon>
-          <IosEyeOff />
-        </n-icon>
-      </n-button>
-      <n-button
-        v-else
-        text
-        style="font-size: 24px"
-        @click="
-          frontEndStore.presentation_mode = !frontEndStore.presentation_mode
-        "
-      >
-        <n-icon>
-          <IosEye />
-        </n-icon>
+        <template #icon>
+          <n-icon
+            :component="frontEndStore.presentation_mode ? IosEyeOff : IosEye"
+          />
+        </template>
+        {{ t("common.privacy_mode") }}
       </n-button>
     </template>
     <span>

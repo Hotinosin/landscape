@@ -9,7 +9,7 @@ import type {
   GeoFileCacheKey,
   GeoSiteSourceConfig,
 } from "@landscape-router/types/api/schemas";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
 const key = defineModel<string | null>("geo_key", {
@@ -64,6 +64,9 @@ const geo_name_options = computed(() => {
 });
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
+onUnmounted(() => {
+  if (searchTimer) clearTimeout(searchTimer);
+});
 function handleSearch(query: string) {
   if (searchTimer) clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {

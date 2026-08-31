@@ -4,25 +4,18 @@ import {
   get_dhcp_v4_assigned_ips,
 } from "@/api/service_dhcp_v4";
 import type { ArpScanInfo, DHCPv4OfferInfo } from "@/api/service_dhcp_v4";
-import { computed, onMounted, ref } from "vue";
+import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { Renew } from "@vicons/carbon";
+import { usePageRequest } from "@/composables/usePageRequest";
 const { t } = useI18n();
 
-onMounted(async () => {
-  await get_info();
-});
-
-const loading = ref(false);
-const infos = ref<{ label: string; value: DHCPv4OfferInfo | null }[]>([]);
-const arp_infos = ref<Map<string, ArpScanInfo[]>>(new Map());
-async function get_arp_info() {
-  arp_infos.value = await get_all_iface_arp_scan_info();
-}
-
-async function get_info() {
-  try {
-    loading.value = true;
-    let req_data = await get_dhcp_v4_assigned_ips();
+const request = usePageRequest(
+  async () => {
+    const [req_data, arp_infos] = await Promise.all([
+      get_dhcp_v4_assigned_ips(),
+      get_all_iface_arp_scan_info(),
+    ]);
     const result = [];
     for (const [label, value] of req_data) {
       result.push({
@@ -31,34 +24,45 @@ async function get_info() {
       });
     }
     result.sort((a, b) => a.label.localeCompare(b.label));
-    infos.value = result;
-  } finally {
-    loading.value = false;
-  }
-  await get_arp_info();
-}
+    return { infos: result, arp_infos };
+  },
+  {
+    initialData: {
+      infos: [] as { label: string; value: DHCPv4OfferInfo | null }[],
+      arp_infos: new Map<string, ArpScanInfo[]>(),
+    },
+    isEmpty: (data) => data.infos.length === 0,
+  },
+);
+const get_info = request.refresh;
+
+onMounted(get_info);
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1">
-    <n-flex>
-      <n-button :loading="loading" @click="get_info">{{
-        t("common.refresh")
-      }}</n-button>
+  <n-flex vertical class="standard-content-page">
+    <n-flex class="standard-list-toolbar">
+      <n-button :loading="request.refreshing.value" secondary @click="get_info">
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
+      </n-button>
     </n-flex>
     <!-- {{ infos }} -->
-    <n-flex v-if="infos.length > 0">
-      <AssignedIpTable
-        @refresh="get_info"
-        v-for="(data, index) in infos"
-        :key="index"
-        :iface_name="data.label"
-        :info="data.value"
-        :arp_info="arp_infos.get(data.label)"
-      ></AssignedIpTable>
-    </n-flex>
-    <n-empty style="flex: 1" v-else></n-empty
-  ></n-flex>
+    <StandardPageState :state="request.state.value" @retry="request.retry">
+      <n-flex vertical style="width: 100%">
+        <AssignedIpTable
+          @refresh="get_info"
+          v-for="(data, index) in request.data.value.infos"
+          :key="index"
+          :iface_name="data.label"
+          :info="data.value"
+          :arp_info="request.data.value.arp_infos.get(data.label)"
+        ></AssignedIpTable>
+      </n-flex>
+    </StandardPageState>
+  </n-flex>
 
   <!-- {{ infos }} -->
 </template>
