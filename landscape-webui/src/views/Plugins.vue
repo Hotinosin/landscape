@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, h, onMounted, ref } from "vue";
-import { Add, Launch, TrashCan } from "@vicons/carbon";
+import { Add, Launch, Renew, TrashCan } from "@vicons/carbon";
 import type { DataTableColumns, UploadCustomRequestOptions } from "naive-ui";
-import { useMessage } from "naive-ui";
+import { NButton, NIcon, NPopconfirm, useMessage } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import {
   importPlugin,
@@ -57,21 +57,34 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
     render: (row) =>
       h("div", { class: "plugin-actions" }, [
         h(
-          "button",
+          NButton,
           {
-            class: "plugin-action",
+            size: "small",
+            type: "primary",
+            secondary: true,
             disabled: !row.controller_ready,
             onClick: () => openPlugin(row),
           },
-          [h(Launch), t("plugin.open_panel")],
+          {
+            icon: () => h(NIcon, null, { default: () => h(Launch) }),
+            default: () => t("plugin.open_panel"),
+          },
         ),
         h(
-          "button",
+          NPopconfirm,
+          { onPositiveClick: () => deletePlugin(row) },
           {
-            class: "plugin-action plugin-action--danger",
-            onClick: () => deletePlugin(row),
+            trigger: () =>
+              h(
+                NButton,
+                { size: "small", type: "error", secondary: true },
+                {
+                  icon: () => h(NIcon, null, { default: () => h(TrashCan) }),
+                  default: () => t("common.delete"),
+                },
+              ),
+            default: () => t("common.confirm_delete"),
           },
-          [h(TrashCan), t("common.delete")],
         ),
       ]),
   },
@@ -139,9 +152,11 @@ onMounted(() => {
         <n-flex
           align="center"
           justify="space-between"
+          :wrap="false"
           class="standard-list-toolbar"
         >
           <n-upload
+            class="plugin-upload"
             accept="application/json,.json"
             :show-file-list="false"
             :custom-request="upload"
@@ -153,7 +168,12 @@ onMounted(() => {
               {{ t("plugin.import") }}
             </n-button>
           </n-upload>
-          <n-button @click="refresh">{{ t("common.refresh") }}</n-button>
+          <n-button :loading="loading" secondary @click="refresh">
+            <template #icon
+              ><n-icon><Renew /></n-icon
+            ></template>
+            {{ t("common.refresh") }}
+          </n-button>
         </n-flex>
 
         <StandardDataTable
@@ -191,24 +211,8 @@ onMounted(() => {
   display: flex;
   gap: var(--app-space-sm);
 }
-.plugin-action {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--app-space-xs);
-  color: var(--app-brand-color);
-  background: none;
-  border: 0;
-  cursor: pointer;
-}
-.plugin-action svg {
-  width: 16px;
-}
-.plugin-action:disabled {
-  color: var(--app-text-muted-color);
-  cursor: not-allowed;
-}
-.plugin-action--danger {
-  color: var(--app-status-danger-color);
+.plugin-upload {
+  width: auto;
 }
 .plugin-tabs {
   height: 100%;

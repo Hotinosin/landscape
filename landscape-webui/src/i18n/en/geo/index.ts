@@ -22,6 +22,9 @@ export default {
     ip_placeholder: "IP Address",
     prefix_placeholder: "Prefix",
     add_ip: "Add IP",
+    lookup_placeholder: "Enter an IP address to find matching GeoIP groups…",
+    lookup_results: "Lookup Results ({count} groups)",
+    lookup_empty: "No matching GeoIP groups",
   },
   geo_site: {
     title: "Edit Geo Site Source",

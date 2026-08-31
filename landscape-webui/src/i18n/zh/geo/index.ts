@@ -21,6 +21,9 @@ export default {
     ip_placeholder: "IP 地址",
     prefix_placeholder: "前缀",
     add_ip: "添加 IP",
+    lookup_placeholder: "输入 IP 地址，反查匹配的 GeoIP 分组…",
+    lookup_results: "查询结果（{count} 个分组）",
+    lookup_empty: "没有匹配的 GeoIP 分组",
   },
   geo_site: {
     title: "编辑 Geo Site",

@@ -12,6 +12,7 @@ import { Search, Settings } from "@vicons/carbon";
 import type {
   GeoFileCacheKey,
   GeoSiteFileConfig,
+  IpConfig,
   QueryGeoKey,
 } from "@landscape-router/types/api/schemas";
 import {
@@ -20,7 +21,12 @@ import {
   search_geo_site_cache,
   type GeoSiteLookupResult,
 } from "@/api/geo/site";
-import { get_geo_ip_cache_detail, search_geo_ip_cache } from "@/api/geo/ip";
+import {
+  get_geo_ip_cache_detail,
+  lookup_geo_ip_address,
+  search_geo_ip_cache,
+  type GeoIpLookupResult,
+} from "@/api/geo/ip";
 import { sortGeoKeys } from "@/lib/geo_utils";
 import GeoDatabaseDrawer from "@/components/geo/GeoDatabaseDrawer.vue";
 
@@ -34,7 +40,9 @@ const search = ref("");
 const showConfig = ref(false);
 const lookupInput = ref("");
 const lookupLoading = ref(false);
-const lookupResults = ref<GeoSiteLookupResult[]>([]);
+type GeoLookupResult = GeoSiteLookupResult | GeoIpLookupResult;
+type GeoLookupValue = GeoSiteFileConfig | IpConfig;
+const lookupResults = ref<GeoLookupResult[]>([]);
 const showLookupResults = ref(false);
 const highlightedValue = ref("");
 const keyList = ref<{ scrollTo: (options: { index: number }) => void } | null>(
@@ -61,8 +69,10 @@ const visibleKeys = computed(() => {
 const values = computed<any[]>(() => detail.value?.values ?? []);
 const lookupCount = computed(() => lookupResults.value.length);
 
-function valueKey(value: GeoSiteFileConfig) {
-  return `${value.match_type}:${value.value}`;
+function valueKey(value: GeoLookupValue) {
+  return "match_type" in value
+    ? `${value.match_type}:${value.value}`
+    : `${value.ip}/${value.prefix}`;
 }
 
 async function load() {
@@ -84,21 +94,21 @@ async function selectKey(item: GeoFileCacheKey) {
       ? await get_geo_site_cache_detail(item)
       : await get_geo_ip_cache_detail(item);
 }
-async function lookupDomain() {
-  const domain = lookupInput.value.trim();
-  if (!domain) return;
+async function lookup() {
+  const input = lookupInput.value.trim();
+  if (!input) return;
   lookupLoading.value = true;
   try {
-    lookupResults.value = await lookup_geo_site_domain(domain);
+    lookupResults.value =
+      source.value === "site"
+        ? await lookup_geo_site_domain(input)
+        : await lookup_geo_ip_address(input);
     showLookupResults.value = true;
   } finally {
     lookupLoading.value = false;
   }
 }
-async function jumpToMatch(
-  result: GeoSiteLookupResult,
-  value: GeoSiteFileConfig,
-) {
+async function jumpToMatch(result: GeoLookupResult, value: GeoLookupValue) {
   showLookupResults.value = false;
   search.value = "";
   await nextTick();
@@ -137,25 +147,30 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
         :options="sourceOptions"
         class="geo-source-select"
       />
-      <n-input-group v-if="source === 'site'" class="geo-lookup">
+      <n-input-group class="geo-lookup">
         <n-input
           v-model:value="lookupInput"
           clearable
-          :placeholder="t('geo.site.lookup_placeholder')"
-          @keyup.enter="lookupDomain"
+          :placeholder="
+            t(
+              source === 'site'
+                ? 'geo.geo_site.lookup_placeholder'
+                : 'geo.geo_ip.lookup_placeholder',
+            )
+          "
+          @keyup.enter="lookup"
         />
         <n-button
           type="primary"
           :loading="lookupLoading"
           :disabled="!lookupInput.trim()"
-          @click="lookupDomain"
+          @click="lookup"
         >
           <template #icon
             ><n-icon><Search /></n-icon></template
-          >{{ t("geo.site.lookup_action") }}
+          >{{ t("geo.geo_site.lookup_action") }}
         </n-button>
       </n-input-group>
-      <div v-else />
       <n-button secondary @click="showConfig = true">
         <template #icon
           ><n-icon><Settings /></n-icon></template
@@ -174,7 +189,7 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
         <n-input
           v-model:value="search"
           clearable
-          :placeholder="t('geo.site.search_tags')"
+          :placeholder="t('geo.geo_site.search_tags')"
         />
         <n-virtual-list
           ref="keyList"
@@ -236,11 +251,25 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
       v-model:show="showLookupResults"
       preset="card"
       class="geo-lookup-modal"
-      :title="t('geo.site.lookup_results', { count: lookupCount })"
+      style="width: min(720px, calc(100vw - 32px))"
+      :title="
+        t(
+          source === 'site'
+            ? 'geo.geo_site.lookup_results'
+            : 'geo.geo_ip.lookup_results',
+          { count: lookupCount },
+        )
+      "
     >
       <n-empty
         v-if="!lookupResults.length"
-        :description="t('geo.site.lookup_empty')"
+        :description="
+          t(
+            source === 'site'
+              ? 'geo.geo_site.lookup_empty'
+              : 'geo.geo_ip.lookup_empty',
+          )
+        "
       />
       <div v-else class="geo-lookup-results">
         <template
@@ -258,10 +287,17 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
               <small>{{ result.key.name }}</small>
             </span>
             <span class="geo-lookup-rule">
-              {{ value.value }}
-              <n-tag size="tiny" :bordered="false">{{
-                value.match_type
-              }}</n-tag>
+              {{
+                "match_type" in value
+                  ? value.value
+                  : `${value.ip}/${value.prefix}`
+              }}
+              <n-tag
+                v-if="'match_type' in value"
+                size="tiny"
+                :bordered="false"
+                >{{ value.match_type }}</n-tag
+              >
             </span>
           </button>
         </template>
@@ -357,9 +393,6 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
   color: var(--app-brand-color);
   background: var(--app-surface-interactive-color);
   box-shadow: inset 3px 0 var(--app-brand-color);
-}
-.geo-lookup-modal {
-  width: min(680px, calc(100vw - 32px));
 }
 .geo-lookup-results {
   display: flex;
