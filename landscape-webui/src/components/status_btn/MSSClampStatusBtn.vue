@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { IfaceZoneType } from "@landscape-router/types/api/schemas";
-import { Cut } from "@vicons/tabler";
+import { Cut } from "@vicons/carbon";
 
 import StatusBtn from "@/components/status_btn/StatusBtn.vue";
 import { useMSSClampConfigStore } from "@/stores/status_mss_clamp";

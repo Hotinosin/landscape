@@ -12,8 +12,8 @@ import {
   ArrowRight,
   Search,
   Catalog,
+  SearchLocate as GlobeSearch24Regular,
 } from "@vicons/carbon";
-import { GlobeSearch24Regular } from "@vicons/fluent";
 import { mask_string } from "@/lib/common";
 import { formatRate, formatPackets } from "@/lib/util";
 import { useThemeVars } from "naive-ui";

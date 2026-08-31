@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import { RouteLocationNormalized } from "vue-router";
 
+const MAX_VISITED_ROUTES = 6;
+
 export interface HistoryRoute {
   name: string;
   path: string;
@@ -21,15 +23,21 @@ export const useHistoryRouteStore = defineStore("history_route", {
       if (existing) {
         existing.name = (route.name as string) || "Home";
         existing.meta = route.meta;
-        return;
+      } else {
+        this.visitedRoutes.push({
+          name: (route.name as string) || "Home",
+          path: route.path,
+          meta: route.meta,
+          pinned: false,
+        });
       }
 
-      this.visitedRoutes.push({
-        name: (route.name as string) || "Home",
-        path: route.path,
-        meta: route.meta,
-        pinned: false,
-      });
+      while (this.visitedRoutes.length > MAX_VISITED_ROUTES) {
+        const index = this.visitedRoutes.findIndex(
+          (item) => !item.pinned && item.path !== route.path,
+        );
+        this.visitedRoutes.splice(index >= 0 ? index : 0, 1);
+      }
     },
     removeRoute(path: string) {
       const index = this.visitedRoutes.findIndex((r) => r.path === path);

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { Docker, NetworkWired } from "@vicons/fa";
-import { Plug } from "@vicons/carbon";
+import {
+  ContainerServices as Docker,
+  Network3 as NetworkWired,
+  Plug,
+} from "@vicons/carbon";
 import type { FlowConfig } from "@landscape-router/types/api/schemas";
 import {
   addFlowRule,

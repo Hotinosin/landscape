@@ -1,16 +1,24 @@
 <script setup lang="ts">
-import { ref, computed, watch, CSSProperties } from "vue";
+import {
+  ref,
+  computed,
+  watch,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  CSSProperties,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import {
   Terminal as TerminalIcon,
-  Expand,
-  Contract,
-  BrowsersOutline,
-  SwapHorizontalOutline,
-  PushOutline,
+  Maximize as Expand,
+  Minimize as Contract,
+  ApplicationWeb as BrowsersOutline,
+  ArrowsHorizontal as SwapHorizontalOutline,
+  OpenPanelBottom as PushOutline,
   Close,
-  SettingsOutline,
-} from "@vicons/ionicons5";
+  Settings as SettingsOutline,
+} from "@vicons/carbon";
 import { usePtyStore } from "@/stores/pty";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
@@ -20,6 +28,7 @@ import "@xterm/xterm/css/xterm.css";
 // Constants
 const HEADER_COLOR = "var(--app-terminal-header-color)";
 const HANDLE_SIZE = 8;
+const props = defineProps<{ page?: boolean }>();
 
 // Store
 const ptyStore = usePtyStore();
@@ -29,6 +38,7 @@ const { t } = useI18n();
 // Terminal instance
 const drawerContentRef = ref<HTMLDivElement | null>(null);
 const dockContentRef = ref<HTMLDivElement | null>(null);
+const pageContentRef = ref<HTMLDivElement | null>(null);
 let term: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
 
@@ -196,8 +206,9 @@ function remountTerminal() {
 
 function mountTerminal() {
   ptyStore.markRead();
-  const target =
-    ptyStore.viewMode === "float"
+  const target = props.page
+    ? pageContentRef.value
+    : ptyStore.viewMode === "float"
       ? drawerContentRef.value
       : dockContentRef.value;
 
@@ -299,12 +310,51 @@ function onAfterEnter() {
 function onAfterLeave() {
   if (ptyStore.viewMode === "float") cleanupTerminal();
 }
+
+onMounted(() => {
+  if (props.page) void nextTick(mountTerminal);
+});
+
+onUnmounted(cleanupTerminal);
 </script>
 
 <template>
+  <div v-if="page" class="terminal-page">
+    <n-flex class="dock-header" justify="space-between" align="center">
+      <n-flex align="center" size="small">
+        <n-icon :component="TerminalIcon" />
+        <strong>WebShell</strong>
+        <n-tag
+          :type="isConnected ? 'success' : 'error'"
+          size="small"
+          :bordered="false"
+        >
+          {{
+            isConnected ? t("terminal.connected") : t("terminal.disconnected")
+          }}
+        </n-tag>
+      </n-flex>
+      <n-flex size="small">
+        <n-button
+          secondary
+          type="error"
+          size="small"
+          :disabled="!isConnected"
+          @click="ptyStore.disconnect"
+        >
+          {{ t("terminal.disconnect") }}
+        </n-button>
+        <n-button secondary type="primary" size="small" @click="reconnect">
+          {{ t("terminal.reconnect") }}
+        </n-button>
+      </n-flex>
+    </n-flex>
+    <div ref="pageContentRef" class="terminal-container terminal-page__content" />
+  </div>
+
   <!-- Floating Button -->
   <div
-    v-if="isVisible"
+    v-if="!page && isVisible"
     class="float-btn-container"
     :style="containerStyle"
     @mousedown="onMouseDown"
@@ -331,7 +381,7 @@ function onAfterLeave() {
 
   <!-- Float Mode: Drawer -->
   <n-drawer
-    v-if="ptyStore.viewMode === 'float'"
+    v-if="!page && ptyStore.viewMode === 'float'"
     v-model:show="ptyStore.isOpen"
     :placement="drawerPlacement"
     :width="drawerPlacement === 'right' ? drawerSize : undefined"
@@ -484,7 +534,7 @@ function onAfterLeave() {
 
   <!-- Dock Mode: Split Panel -->
   <div
-    v-if="ptyStore.viewMode === 'dock' && ptyStore.isOpen"
+    v-if="!page && ptyStore.viewMode === 'dock' && ptyStore.isOpen"
     :style="dockContainerStyle"
   >
     <div
@@ -629,6 +679,21 @@ function onAfterLeave() {
 </template>
 
 <style scoped>
+.terminal-page {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--app-terminal-border-color);
+  border-radius: var(--app-radius-surface);
+}
+
+.terminal-page__content {
+  min-height: 0;
+}
+
 .float-btn-container {
   position: fixed;
   z-index: 2000;

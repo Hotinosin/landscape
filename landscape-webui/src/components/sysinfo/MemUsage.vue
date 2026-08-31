@@ -3,6 +3,7 @@ import { useI18n } from "vue-i18n";
 import { computed } from "vue";
 import { useThemeVars } from "naive-ui";
 import { useSysInfo } from "@/stores/systeminfo";
+import { overviewCardStyles } from "@/components/overviewCardStyle";
 
 const sysinfo = useSysInfo();
 const { t } = useI18n({ useScope: "global" });
@@ -42,7 +43,10 @@ const getUsageColor = (percentage: number) => {
 
 <template>
   <n-card
-    content-style="display: flex; flex-direction: column; height: 100%; padding-top: 22px;"
+    class="overview-card"
+    :style="overviewCardStyles.card"
+    :header-style="overviewCardStyles.header"
+    :content-style="overviewCardStyles.content"
   >
     <!-- Header -->
     <template #header>
@@ -53,7 +57,12 @@ const getUsageColor = (percentage: number) => {
     </template>
 
     <!-- Memory Section -->
-    <n-flex vertical :size="8">
+    <n-flex
+      vertical
+      :size="8"
+      class="overview-card__primary"
+      :style="overviewCardStyles.primary"
+    >
       <n-flex justify="space-between" align="center">
         <n-text depth="3" style="font-size: var(--app-font-size-label)">{{
           t("sysinfo.memory_usage")
@@ -86,10 +95,18 @@ const getUsageColor = (percentage: number) => {
       </n-flex>
     </n-flex>
 
-    <n-divider style="margin: 16px 0" />
+    <n-divider
+      class="overview-card__divider"
+      :style="overviewCardStyles.divider"
+    />
 
     <!-- Swap Section -->
-    <n-flex vertical :size="8">
+    <n-flex
+      vertical
+      :size="8"
+      class="overview-card__secondary"
+      :style="overviewCardStyles.secondary"
+    >
       <n-flex justify="space-between" align="center">
         <n-flex align="center" :size="8">
           <n-text depth="3" style="font-size: var(--app-font-size-label)">{{

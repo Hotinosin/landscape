@@ -19,10 +19,11 @@ import {
   ChevronRight,
   Gateway,
   Plug,
+  Terminal,
+  Firewall as Wall,
+  ContainerServices as Docker,
+  Globe as BookGlobe20Regular,
 } from "@vicons/carbon";
-import { Wall } from "@vicons/tabler";
-import { Docker } from "@vicons/fa";
-import { BookGlobe20Regular } from "@vicons/fluent";
 
 import CopyRight from "@/components/CopyRight.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
@@ -228,6 +229,11 @@ const menuOptions = computed<MenuOption[]>(() => [
     ],
   },
   {
+    label: t("routes.webshell"),
+    key: "webshell",
+    icon: renderIcon(Terminal),
+  },
+  {
     label: t("routes.config"),
     key: "config",
     icon: renderIcon(Settings),
@@ -267,7 +273,8 @@ const menuOptions = computed<MenuOption[]>(() => [
           @update:value="click_menu"
           :collapsed="collapsed"
           :collapsed-width="64"
-          :collapsed-icon-size="22"
+          :icon-size="18"
+          :collapsed-icon-size="18"
           :theme-overrides="menuThemeOverrides"
           :options="menuOptions"
         />

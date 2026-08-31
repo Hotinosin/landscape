@@ -56,23 +56,27 @@ const upstreamLabel = computed(() => {
       <n-text>{{ t("flow.list.priority", { priority: rule.index }) }}</n-text>
       <n-text strong>{{ rule.name || t("common.unnamed") }}</n-text>
     </n-flex>
-    <n-flex align="center" size="small">
-      <n-tag v-for="source in matchLabels" :key="source" :bordered="false">
-        {{ source }}
-      </n-tag>
-      <n-text depth="3">{{ t("flow.list.uses_dns") }}</n-text>
-      <n-tag
-        class="upstream-link"
-        type="info"
-        :bordered="false"
-        role="button"
-        tabindex="0"
-        @click="editUpstream"
-        @keydown.enter="editUpstream"
-      >
-        {{ upstreamLabel }}
-      </n-tag>
-      <n-text depth="3">{{ t("flow.list.request") }}</n-text>
+    <n-flex align="center" size="small" :wrap="false">
+      <n-flex vertical align="start" :size="4">
+        <n-tag v-for="source in matchLabels" :key="source" :bordered="false">
+          {{ source }}
+        </n-tag>
+      </n-flex>
+      <n-flex align="center" size="small" :wrap="false">
+        <n-text depth="3">{{ t("flow.list.uses_dns") }}</n-text>
+        <n-tag
+          class="upstream-link"
+          type="info"
+          :bordered="false"
+          role="button"
+          tabindex="0"
+          @click="editUpstream"
+          @keydown.enter="editUpstream"
+        >
+          {{ upstreamLabel }}
+        </n-tag>
+        <n-text depth="3">{{ t("flow.list.request") }}</n-text>
+      </n-flex>
     </n-flex>
     <FlowRuleEgress :mark="rule.mark" :flow-id="rule.flow_id" :flows="flows" />
   </div>

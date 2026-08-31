@@ -2,8 +2,11 @@
 import { getFlowRuleByFlowId } from "@landscape-router/types/api/flow-rules/flow-rules";
 import type { FlowConfig } from "@landscape-router/types/api/schemas";
 import { onMounted, ref, watch } from "vue";
-import { Docker, NetworkWired } from "@vicons/fa";
-import { Plug } from "@vicons/carbon";
+import {
+  ContainerServices as Docker,
+  Network3 as NetworkWired,
+  Plug,
+} from "@vicons/carbon";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
 import { flowTargetName, isPluginTarget } from "@/lib/flow_target";

@@ -3,8 +3,7 @@ import { h, computed } from "vue";
 import { formatSize, formatCount } from "@/lib/util";
 import { useThemeVars, NTooltip, NIcon, NButton } from "naive-ui";
 import type { DataTableSortState } from "naive-ui";
-import { Search } from "@vicons/carbon";
-import { GlobeSearch24Regular } from "@vicons/fluent";
+import { Search, SearchLocate as GlobeSearch24Regular } from "@vicons/carbon";
 import type {
   IpHistoryStat,
   ConnectSortKey,

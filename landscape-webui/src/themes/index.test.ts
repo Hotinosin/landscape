@@ -69,4 +69,14 @@ describe("theme behavior", () => {
       );
     }
   });
+
+  it("uses one standard radius and height for common controls", () => {
+    for (const theme of Object.values(themeRegistry)) {
+      expect(theme.tokens.radiusControl).toBe(theme.tokens.radiusPanel);
+      expect(theme.tokens.radiusSurface).toBe(theme.tokens.radiusPanel);
+      expect(theme.tokens.radiusLarge).toBe(theme.tokens.radiusPanel);
+      expect(theme.overrides.Button?.heightSmall).toBe("28px");
+      expect(theme.overrides.Tag?.heightSmall).toBe("28px");
+    }
+  });
 });

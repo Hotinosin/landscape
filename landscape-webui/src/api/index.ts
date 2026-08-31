@@ -8,6 +8,13 @@ import {
 } from "@/lib/common";
 import { useHistoryRouteStore } from "@/stores/history_route";
 
+export function isCurrentSessionUnauthorized(
+  requestAuthorization: unknown,
+  currentToken: string | null,
+): boolean {
+  return !currentToken || requestAuthorization === `Bearer ${currentToken}`;
+}
+
 function formatApiErrorTemplate(
   template: string,
   args: Record<string, unknown> | undefined,
@@ -50,7 +57,13 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
       if (error.response != undefined && error.response.status != undefined) {
         const code = error.response.status;
         const { error_id, message, args } = error.response.data;
-        if (code === 401) {
+        if (
+          code === 401 &&
+          isCurrentSessionUnauthorized(
+            error.config?.headers?.Authorization,
+            localStorage.getItem(LANDSCAPE_TOKEN_KEY),
+          )
+        ) {
           clearLandscapeSession();
           useHistoryRouteStore().resetRoutes();
 

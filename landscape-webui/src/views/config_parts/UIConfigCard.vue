@@ -4,7 +4,7 @@ import { useFrontEndStore } from "@/stores/front_end_config";
 import { useMessage } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { Checkmark, HelpCircleOutline } from "@vicons/ionicons5";
+import { Checkmark, Help as HelpCircleOutline } from "@vicons/carbon";
 import type { AccentColor } from "@/themes";
 
 const prefStore = usePreferenceStore();

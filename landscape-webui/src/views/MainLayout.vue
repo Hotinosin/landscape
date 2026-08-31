@@ -1,22 +1,17 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch } from "vue";
+import { computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useHistoryRouteStore } from "@/stores/history_route";
 
 import { useI18n } from "vue-i18n";
 import { useThemeVars } from "naive-ui";
-import { Logout, Pin, PinFilled, Terminal } from "@vicons/carbon";
+import { Logout, Pin, PinFilled } from "@vicons/carbon";
 import { clearLandscapeSession } from "@/lib/common";
 import { useFrontEndStore } from "@/stores/front_end_config";
-import { usePtyStore } from "@/stores/pty";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import IntervalFetch from "@/components/head/IntervalFetch.vue";
 import LanguageSetting from "@/components/head/LanguageSetting.vue";
 import LandscapeSiderBar from "@/views/LandscapeSiderBar.vue";
-
-const GlobalTerminal = defineAsyncComponent(
-  () => import("@/components/GlobalTerminal.vue"),
-);
 
 const router = useRouter();
 const route = useRoute();
@@ -51,8 +46,6 @@ function handleTagClose(path: string) {
 }
 
 const frontEndStore = useFrontEndStore();
-const ptyStore = usePtyStore();
-const terminalLoaded = ref(false);
 const enrolledDeviceStore = useEnrolledDeviceStore();
 
 watch(
@@ -70,11 +63,6 @@ function logout() {
   router.push("/login");
 }
 
-function toggleTerminal() {
-  terminalLoaded.value = true;
-  ptyStore.toggleOpen();
-}
-
 // Dynamic content style for Split Mode
 const MAIN_CONTENT_GUTTER = 15;
 
@@ -88,14 +76,6 @@ const contentStyle = computed(() => {
     paddingRight: `${MAIN_CONTENT_GUTTER}px`,
     transition: "all 0.3s ease",
   };
-
-  if (ptyStore.viewMode === "dock" && ptyStore.isOpen) {
-    if (ptyStore.dockPosition === "bottom") {
-      baseStyle.bottom = `${ptyStore.dockSize + MAIN_CONTENT_GUTTER}px`;
-    } else if (ptyStore.dockPosition === "right") {
-      baseStyle.right = `${ptyStore.dockSize}px`;
-    }
-  }
 
   return baseStyle;
 });
@@ -132,7 +112,6 @@ const contentStyle = computed(() => {
                   style="
                     cursor: pointer;
                     padding: 0 8px;
-                    height: 23px;
                     display: flex;
                     align-items: center;
                   "
@@ -156,41 +135,24 @@ const contentStyle = computed(() => {
               </n-flex>
             </n-scrollbar>
 
-            <n-flex :size="[5, 0]">
+            <n-flex align="center" :size="[5, 0]">
               <LanguageSetting />
               <PresentationMode></PresentationMode>
-              <n-flex align="center">
-                <n-button
-                  quaternary
-                  circle
-                  size="small"
-                  @click="toggleTerminal"
-                  title="WebShell"
-                >
-                  <template #icon>
-                    <n-icon><Terminal /></n-icon>
-                  </template>
-                </n-button>
-              </n-flex>
-              <n-flex align="center">
-                <n-button
-                  quaternary
-                  circle
-                  size="small"
-                  @click="logout"
-                  :title="t('common.logout')"
-                >
-                  <template #icon>
-                    <n-icon><Logout /></n-icon>
-                  </template>
-                </n-button>
-              </n-flex>
+              <n-button
+                quaternary
+                size="small"
+                style="font-size: var(--app-font-size-caption)"
+                @click="logout"
+              >
+                <template #icon>
+                  <n-icon><Logout /></n-icon>
+                </template>
+                {{ t("common.logout") }}
+              </n-button>
               <IntervalFetch />
             </n-flex>
           </n-flex>
         </n-layout-header>
-
-        <GlobalTerminal v-if="terminalLoaded" />
 
         <n-layout
           :native-scrollbar="false"

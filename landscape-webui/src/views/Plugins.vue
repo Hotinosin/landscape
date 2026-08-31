@@ -2,7 +2,7 @@
 import { computed, h, onMounted, ref } from "vue";
 import { Add, Launch, Renew, TrashCan } from "@vicons/carbon";
 import type { DataTableColumns, UploadCustomRequestOptions } from "naive-ui";
-import { NButton, NIcon, NPopconfirm, useMessage } from "naive-ui";
+import { NButton, NIcon, NPopconfirm, NSpace, useMessage } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import {
   importPlugin,
@@ -55,7 +55,7 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
     title: t("common.actions"),
     key: "actions",
     render: (row) =>
-      h("div", { class: "plugin-actions" }, [
+      h(NSpace, { size: "small", wrap: false }, () => [
         h(
           NButton,
           {
@@ -206,10 +206,6 @@ onMounted(() => {
 }
 .status-offline {
   color: var(--app-text-muted-color);
-}
-.plugin-actions {
-  display: flex;
-  gap: var(--app-space-sm);
 }
 .plugin-upload {
   width: auto;

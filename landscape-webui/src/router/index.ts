@@ -51,6 +51,11 @@ const inner_zone: Array<RouteRecordRaw> = [
     component: () => import("@/views/Plugins.vue"),
   },
   {
+    path: "/webshell",
+    name: "routes.webshell",
+    component: () => import("@/views/WebShell.vue"),
+  },
+  {
     path: "/firewall-nat/firewall",
     name: "routes.firewall",
     component: () => import("@/views/Firewall.vue"),

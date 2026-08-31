@@ -3,8 +3,7 @@ import { computed, ref } from "vue";
 import { WifiMode } from "@/lib/dev";
 import { ServiceExhibitSwitch } from "@/lib/services";
 import { change_wifi_mode } from "@/api/network";
-import { SpatialAudioOutlined } from "@vicons/material";
-import { Wifi } from "@vicons/carbon";
+import { RouterWifi as SpatialAudioOutlined, Wifi } from "@vicons/carbon";
 import { stop_and_del_iface_wifi } from "@/api/service_wifi";
 import { useI18n } from "vue-i18n";
 

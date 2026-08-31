@@ -13,6 +13,7 @@ import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
 const login_info = ref<LoginInfo>({ username: "", password: "" });
+const loading = ref(false);
 
 const router = useRouter();
 const frontEndStore = useFrontEndStore();
@@ -20,21 +21,24 @@ const preferenceStore = usePreferenceStore();
 const message = useMessage();
 
 async function login() {
+  if (loading.value) return;
+  loading.value = true;
   clearLandscapeSession();
-  let result = await do_login(login_info.value);
-  if (result.success) {
+  try {
+    const result = await do_login(login_info.value);
+    if (!result.success) return;
     localStorage.setItem(LANDSCAPE_TOKEN_KEY, result.token);
-    await preferenceStore.loadPreference();
+    frontEndStore.INSERT_USERNAME(login_info.value.username);
+    let redirect = (history.state?.redirect as string) || "/";
+    if (redirect === "/login") redirect = "/";
+    await router.push(redirect);
+    void preferenceStore.loadPreference();
+    message.success(
+      t("config.welcome", { username: login_info.value.username }),
+    );
+  } finally {
+    loading.value = false;
   }
-  frontEndStore.INSERT_USERNAME(login_info.value.username);
-  let redirect = (history.state?.redirect as string) || "/";
-  if (redirect === "/login") {
-    redirect = "/";
-  }
-  router.push({
-    path: redirect,
-  });
-  message.success(t("config.welcome", { username: login_info.value.username }));
 }
 </script>
 
@@ -65,7 +69,14 @@ async function login() {
             />
           </n-form-item-row>
         </n-form>
-        <n-button type="primary" size="large" block strong @click="login">
+        <n-button
+          type="primary"
+          size="large"
+          block
+          strong
+          :loading="loading"
+          @click="login"
+        >
           {{ t("common.login") }}
         </n-button>
       </n-card>

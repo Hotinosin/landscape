@@ -12,6 +12,7 @@ export default {
   flow: "Traffic Policies",
   docker: "Docker Management",
   plugins: "Plugins",
+  webshell: "WebShell",
   firewall: "Firewall",
   geo: "Geo Databases",
   "geo-domain": "GeoSite Data",

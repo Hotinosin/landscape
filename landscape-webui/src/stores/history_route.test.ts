@@ -36,4 +36,23 @@ describe("history route layout state", () => {
     store.resetRoutes();
     expect(store.visitedRoutes).toEqual([]);
   });
+
+  it("keeps at most six tabs and evicts the oldest unpinned tab", () => {
+    const store = useHistoryRouteStore();
+    store.addRoute(route("/pinned"));
+    store.togglePin("/pinned");
+    for (let index = 1; index <= 6; index++) {
+      store.addRoute(route(`/page-${index}`));
+    }
+
+    expect(store.visitedRoutes).toHaveLength(6);
+    expect(store.visitedRoutes.map((item) => item.path)).toEqual([
+      "/pinned",
+      "/page-2",
+      "/page-3",
+      "/page-4",
+      "/page-5",
+      "/page-6",
+    ]);
+  });
 });

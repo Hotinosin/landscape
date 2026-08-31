@@ -7,8 +7,11 @@ import { useFrontEndStore } from "@/stores/front_end_config";
 import { delFlowRule } from "@landscape-router/types/api/flow-rules/flow-rules";
 import FlowEntryRuleExhibit from "@/components/flow/FlowEntryRuleExhibit.vue";
 
-import { Docker, NetworkWired } from "@vicons/fa";
-import { Plug } from "@vicons/carbon";
+import {
+  ContainerServices as Docker,
+  Network3 as NetworkWired,
+  Plug,
+} from "@vicons/carbon";
 import { flowTargetName, isPluginTarget } from "@/lib/flow_target";
 
 const frontEndStore = useFrontEndStore();

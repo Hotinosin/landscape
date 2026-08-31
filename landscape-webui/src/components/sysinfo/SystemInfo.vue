@@ -7,6 +7,7 @@ import { useI18n } from "vue-i18n";
 import { InformationFilled, WarningAltFilled } from "@vicons/carbon";
 
 import { usePreferenceStore } from "@/stores/preference";
+import { overviewCardStyles } from "@/components/overviewCardStyle";
 const { t } = useI18n({ useScope: "global" });
 const themeVars = useThemeVars();
 const prefStore = usePreferenceStore();
@@ -63,7 +64,12 @@ const uptime = computed(() => {
 </script>
 
 <template>
-  <n-card content-style="display: flex; flex-direction: column; height: 100%;">
+  <n-card
+    class="overview-card"
+    :style="overviewCardStyles.card"
+    :header-style="overviewCardStyles.header"
+    :content-style="overviewCardStyles.content"
+  >
     <!-- Header -->
     <template #header>
       <n-flex align="center" justify="space-between">
@@ -75,7 +81,12 @@ const uptime = computed(() => {
     </template>
 
     <!-- Main Info Section -->
-    <n-flex vertical :size="12">
+    <n-flex
+      vertical
+      :size="12"
+      class="overview-card__primary"
+      :style="overviewCardStyles.primary"
+    >
       <!-- Hostname - Featured -->
       <n-flex vertical :size="4">
         <n-text depth="3" class="info-label">{{
@@ -110,10 +121,18 @@ const uptime = computed(() => {
       </n-flex>
     </n-flex>
 
-    <n-divider style="margin: var(--app-space-section) 0" />
+    <n-divider
+      class="overview-card__divider"
+      :style="overviewCardStyles.divider"
+    />
 
     <!-- Version and Runtime Info -->
-    <n-flex vertical :size="8">
+    <n-flex
+      vertical
+      :size="8"
+      class="overview-card__secondary"
+      :style="overviewCardStyles.secondary"
+    >
       <!-- Landscape Router Version -->
       <n-flex justify="space-between" align="center">
         <n-text depth="3" style="font-size: var(--app-font-size-caption)">{{

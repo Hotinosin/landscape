@@ -26,17 +26,17 @@ import { useFrontEndStore } from "@/stores/front_end_config";
 import type { DataTableColumns } from "naive-ui";
 import type { DataTableSortState, TagProps } from "naive-ui";
 import {
-  Refresh,
-  TrashOutline,
-  HelpCircleOutline,
-  TimeOutline,
+  Renew as Refresh,
+  TrashCan as TrashOutline,
+  Help as HelpCircleOutline,
+  Time as TimeOutline,
   Search,
-} from "@vicons/ionicons5";
+  SearchLocate,
+} from "@vicons/carbon";
 import { useDebounceFn } from "@vueuse/core";
 import DNSDashboard from "./DNSDashboard.vue";
 import FlowExhibit from "@/components/flow/FlowExhibit.vue";
 import CheckDomainDrawer from "@/components/dns/CheckDomainDrawer.vue";
-import { SearchLocate } from "@vicons/carbon";
 import { usePreferenceStore } from "@/stores/preference";
 import { getFlowRules } from "@landscape-router/types/api/flow-rules/flow-rules";
 import type {

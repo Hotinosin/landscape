@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArchiveOutline as ArchiveIcon } from "@vicons/ionicons5";
+import { Archive as ArchiveIcon } from "@vicons/carbon";
 import { UploadCustomRequestOptions, UploadInst } from "naive-ui";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
