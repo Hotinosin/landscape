@@ -1,6 +1,8 @@
 use landscape_common::store::storev4::LandscapeStoreTrait;
 use landscape_common::{
-    config_service::geo::{GeoError, GeoFileCacheKey, GeoIpConfig, GeoIpSource, GeoIpSourceConfig},
+    config_service::geo::{
+        GeoError, GeoFileCacheKey, GeoIpConfig, GeoIpLookupResult, GeoIpSource, GeoIpSourceConfig,
+    },
     database::LandscapeStore,
     flow::ip_mark::{IpMarkInfo, WanIPRuleSource, WanIpRuleConfig},
     service::controller::ConfigController,
@@ -11,6 +13,7 @@ use uuid::Uuid;
 use std::{
     collections::HashMap,
     collections::HashSet,
+    net::IpAddr,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -308,6 +311,27 @@ impl GeoIpService {
         lock.get(key)
     }
 
+    pub async fn lookup_ip(&self, input: &str) -> Result<Vec<GeoIpLookupResult>, GeoError> {
+        let ip = input
+            .parse::<IpAddr>()
+            .map_err(|_| GeoError::IpInvalidLookupAddress(input.to_string()))?;
+        let mut lock = self.file_cache.lock().await;
+        let mut result = Vec::new();
+        for key in lock.keys() {
+            let Some(config) = lock.get(&key) else { continue };
+            let values = config
+                .values
+                .into_iter()
+                .filter(|cidr| cidr_contains(cidr.ip, cidr.prefix, ip))
+                .collect::<Vec<_>>();
+            if !values.is_empty() {
+                result.push(GeoIpLookupResult { key, values });
+            }
+        }
+        result.sort_by(|a, b| a.key.key.cmp(&b.key.key).then(a.key.name.cmp(&b.key.name)));
+        Ok(result)
+    }
+
     pub async fn query_geo_by_name(&self, name: Option<String>) -> Vec<GeoIpSourceConfig> {
         self.store.query_by_name(name).await.unwrap()
     }
@@ -327,6 +351,20 @@ impl GeoIpService {
         self.replace_cache_by_name(&name, result).await;
         self.notify_dst_ip_updated();
         Ok(())
+    }
+}
+
+fn cidr_contains(network: IpAddr, prefix: u32, ip: IpAddr) -> bool {
+    match (network, ip) {
+        (IpAddr::V4(network), IpAddr::V4(ip)) if prefix <= 32 => {
+            let mask = if prefix == 0 { 0 } else { u32::MAX << (32 - prefix) };
+            u32::from(network) & mask == u32::from(ip) & mask
+        }
+        (IpAddr::V6(network), IpAddr::V6(ip)) if prefix <= 128 => {
+            let mask = if prefix == 0 { 0 } else { u128::MAX << (128 - prefix) };
+            u128::from(network) & mask == u128::from(ip) & mask
+        }
+        _ => false,
     }
 }
 
@@ -365,7 +403,18 @@ mod tests {
         store::storev4::StoreFileManager,
         LANDSCAPE_GEO_CACHE_TMP_DIR,
     };
-    use std::path::PathBuf;
+    use std::{net::IpAddr, path::PathBuf, str::FromStr};
+
+    use super::cidr_contains;
+
+    #[test]
+    fn matches_ipv4_and_ipv6_cidrs() {
+        let ip = |value| IpAddr::from_str(value).unwrap();
+        assert!(cidr_contains(ip("10.0.0.0"), 8, ip("10.1.2.3")));
+        assert!(!cidr_contains(ip("10.0.0.0"), 8, ip("11.1.2.3")));
+        assert!(cidr_contains(ip("2001:db8::"), 32, ip("2001:db8::1")));
+        assert!(!cidr_contains(ip("2001:db8::"), 32, ip("2001:db9::1")));
+    }
 
     // cargo test --package landscape --lib -- config_service::geo_ip_service::tests --show-output
     #[test]

@@ -1,9 +1,10 @@
 use landscape_common::{
     config_service::geo::{
         GeoDomainConfig, GeoError, GeoFileCacheKey, GeoMatcherSource, GeoSiteFileConfig,
-        GeoSiteSource,
+        GeoSiteLookupResult, GeoSiteSource,
     },
     database::LandscapeStore,
+    dns::domain::normalize_domain_name,
     dns::rule::DomainMatchType,
     service::controller::ConfigController,
     utils::time::{get_f64_timestamp, MILL_A_DAY},
@@ -26,6 +27,7 @@ use landscape_common::{
 use landscape_database::{
     geo_site::repository::GeoSiteConfigRepository, provider::LandscapeDBServiceProvider,
 };
+use landscape_dns::server::domain_rule_matches_normalized;
 use reqwest::Client;
 use sha2::{Digest, Sha256};
 use tokio::sync::{mpsc, Mutex};
@@ -430,6 +432,30 @@ impl GeoSiteService {
 
     pub async fn query_geo_by_name(&self, name: Option<String>) -> Vec<GeoSiteSourceConfig> {
         self.store.query_by_name(name).await.unwrap()
+    }
+
+    pub async fn lookup_domain(&self, domain: &str) -> Result<Vec<GeoSiteLookupResult>, GeoError> {
+        let normalized = normalize_domain_name(domain)
+            .map_err(|_| GeoError::SiteInvalidLookupDomain(domain.to_string()))?;
+        let mut lock = self.file_cache.lock().await;
+        let mut result = Vec::new();
+
+        // ponytail: on-demand full scan; add a reverse index only if measured lookup latency requires it.
+        for key in lock.keys() {
+            let Some(config) = lock.get(&key) else { continue };
+            let values = config
+                .values
+                .into_iter()
+                .filter(|value| {
+                    domain_rule_matches_normalized(&value.match_type, &value.value, &normalized)
+                })
+                .collect::<Vec<_>>();
+            if !values.is_empty() {
+                result.push(GeoSiteLookupResult { key, values });
+            }
+        }
+        result.sort_by(|a, b| a.key.key.cmp(&b.key.key).then(a.key.name.cmp(&b.key.name)));
+        Ok(result)
     }
 
     pub async fn update_geo_config_by_bytes(&self, name: String, file_bytes: impl Into<Vec<u8>>) {
