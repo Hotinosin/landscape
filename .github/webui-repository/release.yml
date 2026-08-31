@@ -1,0 +1,59 @@
+name: build and release WebUI
+
+on:
+  push:
+    branches: ['main']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Build WebUI
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter @landscape-router/types generate
+          mkdir -p landscape-webui/public/scalar
+          cp landscape-webui/node_modules/@scalar/api-reference/dist/browser/standalone.js landscape-webui/public/scalar/
+          cp landscape-webui/node_modules/@scalar/api-reference/dist/style.css landscape-webui/public/scalar/
+          pnpm --filter landscape-webui test
+          pnpm --filter landscape-webui build
+
+      - name: Package WebUI
+        run: |
+          mkdir -p output/static
+          cp -r landscape-webui/dist/. output/static/
+          cd output
+          zip -r static.zip static
+          sha256sum static.zip > SHASUM256sum.txt
+          VERSION=$(node -p "require('../landscape-webui/package.json').version")
+          echo "RELEASE_TAG=v${VERSION}.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+
+      - name: Create latest release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: Landscape WebUI ${{ env.RELEASE_TAG }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          prerelease: false
+          make_latest: true
+          files: |
+            output/static.zip
+            output/SHASUM256sum.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

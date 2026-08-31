@@ -3,7 +3,6 @@ name: build and release
 on:
   push:
     branches:
-      - 'webui-upstream'
       - 'webui-extensions'
       - 'feature/landscape-extensions'
 
@@ -381,7 +380,6 @@ jobs:
       - name: Resolve release metadata
         run: |
           case "${GITHUB_REF_NAME}" in
-            webui-upstream) VARIANT=webui ;;
             webui-extensions) VARIANT=webui-extensions ;;
             feature/landscape-extensions) VARIANT=extensions ;;
             *) echo "Unsupported release branch: ${GITHUB_REF_NAME}" >&2; exit 1 ;;
@@ -398,7 +396,8 @@ jobs:
           target_commitish: ${{ github.sha }}
           body: |
             Auto-generated from `${{ github.ref_name }}` at `${{ github.sha }}`.
-          prerelease: true
+          prerelease: false
+          make_latest: true
           generate_release_notes: true
           files: |
             output/*

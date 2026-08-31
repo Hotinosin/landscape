@@ -1,0 +1,45 @@
+name: sync upstream WebUI
+
+on:
+  push:
+    branches: ['webui-upstream']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Export OpenAPI contract
+        run: cargo test -p landscape-webserver export_openapi_json -- --nocapture
+
+      - name: Checkout public WebUI repository
+        uses: actions/checkout@v6
+        with:
+          repository: Hotinosin/landscape-webui
+          token: ${{ secrets.WEBUI_SYNC_TOKEN }}
+          path: public-webui
+
+      - name: Project WebUI sources
+        run: |
+          rsync -a --delete landscape-webui/ public-webui/landscape-webui/
+          rsync -a --delete landscape-types/ public-webui/landscape-types/
+          cp pnpm-lock.yaml pnpm-workspace.yaml public-webui/
+          cp .github/webui-repository/release.yml public-webui/.github/workflows/release.yml
+          cp .github/webui-repository/README.md public-webui/README.md
+
+      - name: Push changed projection
+        working-directory: public-webui
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add --all
+          git diff --cached --quiet && exit 0
+          git commit -m "sync: Hotinosin/landscape webui-upstream@${GITHUB_SHA}"
+          git push
