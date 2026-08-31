@@ -11,6 +11,7 @@ export default {
   "nat-v6": "IPv6 Static Mapping",
   flow: "Traffic Policies",
   docker: "Docker Management",
+  plugins: "Plugins",
   webshell: "WebShell",
   firewall: "Firewall",
   geo: "Geo Databases",

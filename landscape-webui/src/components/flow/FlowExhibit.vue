@@ -5,10 +5,11 @@ import { onMounted, ref, watch } from "vue";
 import {
   ContainerServices as Docker,
   Network3 as NetworkWired,
+  Plug,
 } from "@vicons/carbon";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
-import { flowTargetName } from "@/lib/flow_target";
+import { flowTargetName, isPluginTarget } from "@/lib/flow_target";
 
 const frontEndStore = useFrontEndStore();
 const { t } = useI18n();
@@ -53,7 +54,11 @@ async function refresh() {
           <template #icon>
             <n-icon
               :component="
-                each.target.t === 'netns' ? Docker : NetworkWired
+                isPluginTarget(each.target)
+                  ? Plug
+                  : each.target.t === 'netns'
+                    ? Docker
+                    : NetworkWired
               "
             />
           </template>

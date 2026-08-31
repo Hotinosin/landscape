@@ -10,8 +10,9 @@ import FlowEntryRuleExhibit from "@/components/flow/FlowEntryRuleExhibit.vue";
 import {
   ContainerServices as Docker,
   Network3 as NetworkWired,
+  Plug,
 } from "@vicons/carbon";
-import { flowTargetName } from "@/lib/flow_target";
+import { flowTargetName, isPluginTarget } from "@/lib/flow_target";
 
 const frontEndStore = useFrontEndStore();
 const { t } = useI18n();
@@ -173,7 +174,11 @@ const show_remark = computed(
         <template #icon>
           <n-icon
             :component="
-              each.target.t === 'netns' ? Docker : NetworkWired
+              isPluginTarget(each.target)
+                ? Plug
+                : each.target.t === 'netns'
+                  ? Docker
+                  : NetworkWired
             "
           />
         </template>

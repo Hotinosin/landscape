@@ -4,6 +4,7 @@ import i18n from "@/i18n";
 import {
   clearLandscapeSession,
   LANDSCAPE_TOKEN_KEY,
+  syncPluginSessionCookie,
 } from "@/lib/common";
 import { useHistoryRouteStore } from "@/stores/history_route";
 
@@ -48,6 +49,7 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
       const newToken = response.headers["x-refresh-token"];
       if (newToken) {
         localStorage.setItem(LANDSCAPE_TOKEN_KEY, newToken);
+        syncPluginSessionCookie();
       }
       return response.data;
     },

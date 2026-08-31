@@ -4,10 +4,11 @@ import { useI18n } from "vue-i18n";
 import {
   ContainerServices as Docker,
   Network3 as NetworkWired,
+  Plug,
 } from "@vicons/carbon";
 import type { FlowConfig, FlowMark } from "@landscape-router/types/api/schemas";
 import { useFrontEndStore } from "@/stores/front_end_config";
-import { flowTargetName } from "@/lib/flow_target";
+import { flowTargetName, isPluginTarget } from "@/lib/flow_target";
 
 const props = defineProps<{
   mark: FlowMark;
@@ -53,7 +54,11 @@ const targetLabel = computed(() => {
       <template #icon>
         <n-icon
           :component="
-            target.t === 'netns' ? Docker : NetworkWired
+            isPluginTarget(target)
+              ? Plug
+              : target.t === 'netns'
+                ? Docker
+                : NetworkWired
           "
         />
       </template>
