@@ -378,13 +378,13 @@ jobs:
 
       - name: Resolve release metadata
         run: |
-          case "${GITHUB_REF_NAME}" in
-            feature/extensions) VARIANT=extensions ;;
-            *) echo "Unsupported release branch: ${GITHUB_REF_NAME}" >&2; exit 1 ;;
-          esac
+          if [ "${GITHUB_REF_NAME}" != "feature/extensions" ]; then
+            echo "Unsupported release branch: ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
           BASE_VERSION=$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n 1)
-          echo "RELEASE_TAG=v${BASE_VERSION}-${VARIANT}.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
-          echo "RELEASE_NAME=Landscape ${VARIANT} ${BASE_VERSION}.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v${BASE_VERSION}-extension" >> "$GITHUB_ENV"
+          echo "RELEASE_NAME=Landscape extension ${BASE_VERSION}" >> "$GITHUB_ENV"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
