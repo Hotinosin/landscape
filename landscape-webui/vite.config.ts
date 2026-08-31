@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
   const useHttps = mode !== "test" && env.VITE_DEV_HTTPS !== "false";
 
   return {
+    base: "./",
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
     },
