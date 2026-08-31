@@ -105,6 +105,7 @@ impl Modify for SecurityAddon {
         (name = "Docker Networks", description = "Docker network management"),
         (name = "Metric", description = "Metric data and statistics"),
         (name = "Gateway", description = "HTTP/HTTPS reverse proxy gateway"),
+        (name = "Plugins", description = "Runtime plugin management"),
     ),
     components(schemas(
         landscape_common::config_service::geo::GeoFileCacheKey,
@@ -312,6 +313,11 @@ pub fn build_full_openapi_spec() -> utoipa::openapi::OpenApi {
     let (_, mut gateway_openapi) = build_gateway_openapi_router().split_for_parts();
     prefix_paths(&mut gateway_openapi, "/api/v1/gateway");
     spec.merge(gateway_openapi);
+
+    // /api/v1/plugins
+    let mut plugins_openapi = crate::plugins::openapi();
+    prefix_paths(&mut plugins_openapi, "/api/v1/plugins");
+    spec.merge(plugins_openapi);
 
     // Add x-tagGroups for Scalar UI sidebar grouping
     let tag_groups = serde_json::json!([

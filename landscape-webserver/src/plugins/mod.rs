@@ -24,11 +24,12 @@ use tokio::{
     process::{Child, Command},
     sync::{Mutex, RwLock},
 };
+use utoipa::{OpenApi, ToSchema};
 
 const MAX_MANIFEST_SIZE: usize = 64 * 1024;
 const RUNTIME_ROOT: &str = "/run/landscape/plugins";
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
 pub struct PluginNetwork {
     #[serde(default)]
     pub namespace: Option<String>,
@@ -56,12 +57,13 @@ const fn default_tproxy_port() -> u16 {
     12345
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
 pub struct PluginManifest {
     pub protocol_version: u16,
     pub id: String,
     pub name: String,
     pub host_interface: String,
+    #[schema(value_type = String)]
     pub controller_socket: PathBuf,
     #[serde(default = "default_ui_path")]
     pub ui_path: String,
@@ -73,7 +75,7 @@ fn default_ui_path() -> String {
     "/ui/".into()
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, ToSchema)]
 pub struct PluginInfo {
     #[serde(flatten)]
     pub manifest: PluginManifest,
@@ -489,10 +491,26 @@ fn error(status: StatusCode, message: impl Into<String>) -> Response {
     (status, Json(serde_json::json!({ "message": message.into() }))).into_response()
 }
 
+#[utoipa::path(
+    get,
+    path = "/",
+    tag = "Plugins",
+    responses((status = 200, description = "Installed plugins", body = [PluginInfo]))
+)]
 async fn list_plugins(State(manager): State<PluginManager>) -> Json<Vec<PluginInfo>> {
     Json(manager.list().await)
 }
 
+#[utoipa::path(
+    post,
+    path = "/import",
+    tag = "Plugins",
+    responses(
+        (status = 200, description = "Imported plugin", body = PluginInfo),
+        (status = 400, description = "Invalid plugin manifest"),
+        (status = 413, description = "Plugin manifest is too large")
+    )
+)]
 async fn import_plugin(State(manager): State<PluginManager>, mut multipart: Multipart) -> Response {
     let Ok(Some(field)) = multipart.next_field().await else {
         return error(StatusCode::BAD_REQUEST, "plugin manifest is required");
@@ -509,6 +527,16 @@ async fn import_plugin(State(manager): State<PluginManager>, mut multipart: Mult
     }
 }
 
+#[utoipa::path(
+    delete,
+    path = "/{id}",
+    tag = "Plugins",
+    params(("id" = String, Path, description = "Plugin id")),
+    responses(
+        (status = 204, description = "Plugin removed"),
+        (status = 404, description = "Plugin not found")
+    )
+)]
 async fn remove_plugin(
     State(manager): State<PluginManager>,
     AxumPath(id): AxumPath<String>,
@@ -536,6 +564,18 @@ pub fn api_router(manager: PluginManager) -> Router {
         .route("/import", post(import_plugin))
         .route("/{id}", delete(remove_plugin))
         .with_state(manager)
+}
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(list_plugins, import_plugin, remove_plugin),
+    components(schemas(PluginNetwork, PluginManifest, PluginInfo)),
+    tags((name = "Plugins", description = "Runtime plugin management"))
+)]
+struct PluginApiDoc;
+
+pub fn openapi() -> utoipa::openapi::OpenApi {
+    PluginApiDoc::openapi()
 }
 
 pub fn ui_router(manager: PluginManager) -> Router {
