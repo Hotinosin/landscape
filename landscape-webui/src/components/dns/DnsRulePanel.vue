@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, h, onMounted, ref, watch } from "vue";
+import type { DataTableColumns } from "naive-ui";
+import type { DNSRuleConfig } from "@landscape-router/types/api/schemas";
 import { SearchLocate } from "@vicons/carbon";
 import { useI18n } from "vue-i18n";
 import { useMessage } from "naive-ui";
-import DnsRuleCard from "@/components/dns/DnsRuleCard.vue";
+import DnsRuleListRow from "@/components/dns/DnsRuleListRow.vue";
+import StandardDataTable from "@/components/common/StandardDataTable.vue";
 import {
   getFlowDnsRules,
   addManyDnsRules,
@@ -17,10 +20,30 @@ const props = withDefaults(defineProps<{ flow_id?: number }>(), { flow_id: 0 });
 const emit = defineEmits(["changed"]);
 const { t } = useI18n();
 const message = useMessage();
-const rules = ref<any[]>([]);
+const rules = ref<DNSRuleConfig[]>([]);
 const loading = ref(false);
 const showCreateModal = ref(false);
 const showQueryModal = ref(false);
+
+const columns = computed<DataTableColumns<DNSRuleConfig>>(() =>
+  [
+    [`${t("common.status")} / ${t("common.priority")}`, "status", "22%"],
+    [t("dns.rule_card.traffic_action"), "action", "20%"],
+    [t("dns.rule_card.upstream_config"), "upstream", "18%"],
+    [t("dns.rule_card.match_rules"), "sources", "28%"],
+    [t("common.actions"), "actions", "12%"],
+  ].map(([title, cell, width]) => ({
+    title,
+    key: cell,
+    width,
+    render: (rule) =>
+      h(DnsRuleListRow, {
+        rule,
+        cell: cell as any,
+        onRefresh: handleRulesChanged,
+      }),
+  })),
+);
 
 async function readRules() {
   loading.value = true;
@@ -86,15 +109,14 @@ watch(() => props.flow_id, readRules);
         </n-button>
       </n-flex>
       <n-scrollbar class="rule-list">
-        <n-flex vertical>
-          <DnsRuleCard
-            v-for="rule in rules"
-            :key="rule.id ?? rule.index"
-            :rule="rule"
-            @refresh="handleRulesChanged"
-          />
-          <n-empty v-if="rules.length === 0 && !loading" />
-        </n-flex>
+        <StandardDataTable
+          :columns="columns"
+          :data="rules"
+          :loading="loading"
+          :row-key="(rule) => rule.id ?? rule.index"
+          :scroll-x="900"
+          size="small"
+        />
       </n-scrollbar>
     </n-flex>
   </n-spin>
