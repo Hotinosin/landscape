@@ -38,6 +38,17 @@ const matchLabels = computed(() =>
     ? props.rule.source.map(sourceLabel)
     : [t("flow.list.all_domains")],
 );
+const visibleMatchLabels = computed(() =>
+  matchLabels.value.slice(0, 2).map((full) => {
+    const prefix = "GeoSite/";
+    const value = full.startsWith(prefix) ? full.slice(prefix.length) : "";
+    return {
+      full,
+      label: value.length > 3 ? `${prefix}${value.slice(0, 3)}...` : full,
+    };
+  }),
+);
+const hasHiddenMatchLabels = computed(() => matchLabels.value.length > 2);
 const upstreamLabel = computed(() => {
   const upstream = props.upstreams.find(
     (item) => item.id === props.rule.upstream_id,
@@ -58,9 +69,26 @@ const upstreamLabel = computed(() => {
     </n-flex>
     <n-flex align="center" size="small" :wrap="false">
       <n-flex vertical align="start" :size="4">
-        <n-tag v-for="source in matchLabels" :key="source" :bordered="false">
-          {{ source }}
-        </n-tag>
+        <n-tooltip
+          v-for="(source, index) in visibleMatchLabels"
+          :key="`${source.full}-${index}`"
+          :disabled="source.label === source.full"
+        >
+          <template #trigger>
+            <n-tag :bordered="false">{{ source.label }}</n-tag>
+          </template>
+          {{ source.full }}
+        </n-tooltip>
+        <n-tooltip v-if="hasHiddenMatchLabels">
+          <template #trigger>
+            <n-tag :bordered="false">...</n-tag>
+          </template>
+          <n-flex vertical :size="4">
+            <n-text v-for="(source, index) in matchLabels" :key="index">
+              {{ source }}
+            </n-text>
+          </n-flex>
+        </n-tooltip>
       </n-flex>
       <n-flex align="center" size="small" :wrap="false">
         <n-text depth="3">{{ t("flow.list.uses_dns") }}</n-text>
