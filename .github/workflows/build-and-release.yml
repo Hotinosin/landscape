@@ -371,11 +371,6 @@ jobs:
           name: openapi-spec
           path: output
 
-      - name: Generate SHASUM
-        run: |
-          cd output
-          sha256sum * > SHASUM256sum.txt
-
       - name: Resolve release metadata
         run: |
           if [ "${GITHUB_REF_NAME}" != "feature/extensions" ]; then
@@ -383,8 +378,41 @@ jobs:
             exit 1
           fi
           BASE_VERSION=$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n 1)
+          if ! [[ "$BASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "lkit stable version must be SemVer without a suffix: ${BASE_VERSION}" >&2
+            exit 1
+          fi
+          echo "BASE_VERSION=${BASE_VERSION}" >> "$GITHUB_ENV"
           echo "RELEASE_TAG=v${BASE_VERSION}-extension" >> "$GITHUB_ENV"
           echo "RELEASE_NAME=Landscape extension ${BASE_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Compress backend for lkit repository
+        run: zstd --ultra -19 --threads=0 --keep output/landscape-webserver-x86_64
+
+      - name: Ensure lkit version is immutable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          status=$(curl -sS -o /tmp/lkit-manifest.json -w '%{http_code}' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/releases/${BASE_VERSION}/manifest.json?ref=lkit-repository")
+          case "$status" in
+            404) ;;
+            200)
+              echo "lkit repository version ${BASE_VERSION} is already published; bump the package version" >&2
+              exit 1
+              ;;
+            *)
+              echo "Unable to verify lkit repository version (HTTP ${status})" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Generate SHASUM
+        run: |
+          cd output
+          sha256sum * > SHASUM256sum.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
@@ -401,3 +429,64 @@ jobs:
             output/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate lkit HTTP repository metadata
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY_URL: https://github.com/${{ github.repository }}/releases/download
+        run: |
+          mkdir -p lkit-repository/channels lkit-repository/releases/${BASE_VERSION}
+          printf '{"protocol_version":1}\n' > lkit-repository/repository.json
+
+          current_stable=$(curl -fsS \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github.raw+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/channels/stable.json?ref=lkit-repository" \
+            | jq -r '.version // empty' || true)
+          if [ -z "$current_stable" ] || dpkg --compare-versions "$BASE_VERSION" gt "$current_stable"; then
+            printf '{"protocol_version":1,"version":"%s"}\n' "$BASE_VERSION" > lkit-repository/channels/stable.json
+          fi
+
+          backend=output/landscape-webserver-x86_64.zst
+          static=output/static.zip
+          jq -n \
+            --arg version "$BASE_VERSION" \
+            --arg backend_url "${REPOSITORY_URL}/${RELEASE_TAG}/landscape-webserver-x86_64.zst" \
+            --arg backend_sha256 "$(sha256sum "$backend" | cut -d ' ' -f 1)" \
+            --argjson backend_size "$(stat -c %s "$backend")" \
+            --arg static_url "${REPOSITORY_URL}/${RELEASE_TAG}/static.zip" \
+            --arg static_sha256 "$(sha256sum "$static" | cut -d ' ' -f 1)" \
+            --argjson static_size "$(stat -c %s "$static")" \
+            '{
+              protocol_version: 1,
+              version: $version,
+              assets: {
+                webserver: {
+                  x86_64: {
+                    url: $backend_url,
+                    sha256: $backend_sha256,
+                    size: $backend_size
+                  }
+                },
+                static: {
+                  url: $static_url,
+                  sha256: $static_sha256,
+                  size: $static_size
+                }
+              }
+            }' > lkit-repository/releases/${BASE_VERSION}/manifest.json
+
+          jq -e \
+            --arg version "$BASE_VERSION" \
+            '.protocol_version == 1 and .version == $version and
+             (.assets.webserver.x86_64.size > 0) and (.assets.static.size > 0)' \
+            lkit-repository/releases/${BASE_VERSION}/manifest.json > /dev/null
+          zstd --test "$backend"
+
+      - name: Publish lkit HTTP repository metadata
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: lkit-repository
+          publish_dir: ./lkit-repository
+          keep_files: true
