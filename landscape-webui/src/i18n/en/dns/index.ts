@@ -23,6 +23,7 @@ export default {
     duplicate_priority_warning:
       "**Priority** cannot be -1 and must be unique, or it may overwrite existing rules",
     source_style_full: "Exact Match",
+    source_style_geo: "Geo Database",
     source_style_domain: "Domain Match",
     source_style_regex: "Regex Match",
     source_style_plain: "Keyword Match",

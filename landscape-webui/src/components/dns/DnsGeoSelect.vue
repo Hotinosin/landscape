@@ -168,14 +168,14 @@ const attribute_options = computed(() => {
 });
 </script>
 <template>
-  <n-flex :size="[10, 0]" :wrap="false" align="center">
+  <n-flex class="dns-geo-select" :size="[10, 0]" :wrap="false" align="center">
     <n-popover trigger="hover">
       <template #trigger>
         <n-checkbox v-model:checked="inverse"> </n-checkbox>
       </template>
       <span>{{ t("common.inverse") }} </span>
     </n-popover>
-    <n-input-group>
+    <n-input-group style="flex: 1; min-width: 0">
       <n-select
         :style="{ width: '33%' }"
         v-model:value="name"
@@ -214,3 +214,10 @@ const attribute_options = computed(() => {
     </n-input-group>
   </n-flex>
 </template>
+
+<style scoped>
+.dns-geo-select {
+  flex: 1;
+  min-width: 0;
+}
+</style>

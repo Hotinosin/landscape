@@ -61,6 +61,11 @@ export default {
   open: "开启",
   override: "覆盖",
   add: "增加",
+  copy_success: "复制成功",
+  copy_failed: "复制失败",
+  paste_replace_success: "替换粘贴成功",
+  paste_append_success: "增量粘贴成功",
+  paste_failed: "粘贴失败，请检查剪贴板内容",
 
   username: "用户名",
   password: "密码",

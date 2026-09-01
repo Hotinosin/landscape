@@ -1,4 +1,5 @@
 import { MessageApi } from "naive-ui";
+import i18n from "@/i18n";
 
 export class Range {
   start: number;
@@ -32,9 +33,9 @@ export async function copy_context_to_clipboard(
 ) {
   try {
     await navigator.clipboard.writeText(content);
-    message.success("copy success");
+    message.success(i18n.global.t("common.copy_success"));
   } catch (e) {
-    message.error("copy fail");
+    message.error(i18n.global.t("common.copy_failed"));
   }
 }
 
