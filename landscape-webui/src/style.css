@@ -57,7 +57,7 @@ body {
   ) !important;
 }
 
-.n-dynamic-input .n-button--circle {
+.n-dynamic-input-item__action .n-button {
   --n-border-radius: var(--app-radius-control) !important;
 }
 
