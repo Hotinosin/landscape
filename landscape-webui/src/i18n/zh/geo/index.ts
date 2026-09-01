@@ -79,6 +79,7 @@ export default {
     txt_key: "TXT Key",
     update_with_file: "使用文件更新",
     force_refresh: "强制刷新",
+    refresh_source: "刷新此数据源",
     force_refresh_confirm: "强制刷新将从来源 URL 重新下载并解析规则。",
   },
   detail_drawer: {

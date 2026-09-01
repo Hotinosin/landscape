@@ -129,7 +129,7 @@ async function force_refresh() {
           >
             <template #trigger>
               <n-button size="small" type="primary" secondary>
-                {{ t("geo.item_card.force_refresh") }}
+                {{ t("geo.item_card.refresh_source") }}
               </n-button>
             </template>
             {{ t("geo.item_card.force_refresh_confirm") }}

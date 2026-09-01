@@ -80,6 +80,7 @@ export default {
     txt_key: "TXT Key",
     update_with_file: "Update Using File",
     force_refresh: "Force Refresh",
+    refresh_source: "Refresh Source",
     force_refresh_confirm:
       "Force refresh will re-download and re-parse the rules from the source URL.",
   },

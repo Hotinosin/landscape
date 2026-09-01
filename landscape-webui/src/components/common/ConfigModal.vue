@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { CSSProperties } from "vue";
-import { useI18n } from "vue-i18n";
 
 defineOptions({ inheritAttrs: false });
 
@@ -24,8 +23,6 @@ const props = withDefaults(
     showSwitch: true,
   },
 );
-
-const { t } = useI18n();
 
 const cardStyle = computed<CSSProperties>(() => {
   const style: CSSProperties = {
@@ -57,6 +54,10 @@ const headerStyle = computed<CSSProperties>(() => {
 function closeModal() {
   show.value = false;
 }
+
+function enableRailStyle({ checked }: { checked: boolean }) {
+  return checked ? { background: "var(--app-status-success-color)" } : {};
+}
 </script>
 
 <template>
@@ -77,10 +78,9 @@ function closeModal() {
             v-if="showSwitch"
             v-model:value="enabled"
             :disabled="switchDisabled"
-          >
-            <template #checked>{{ t("common.enable") }}</template>
-            <template #unchecked>{{ t("common.disable") }}</template>
-          </n-switch>
+            :rail-style="enableRailStyle"
+            size="small"
+          />
         </div>
       </template>
 
