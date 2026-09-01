@@ -36,11 +36,11 @@ const menuThemeOverrides = {
   itemHeight: "var(--app-control-height)",
   borderRadius: "var(--app-radius-panel)",
   itemColorActive:
-    "color-mix(in srgb, var(--app-brand-color) 22%, transparent)",
-  itemColorActiveHover:
     "color-mix(in srgb, var(--app-brand-color) 28%, transparent)",
+  itemColorActiveHover:
+    "color-mix(in srgb, var(--app-brand-color) 34%, transparent)",
   itemColorActiveCollapsed:
-    "color-mix(in srgb, var(--app-brand-color) 22%, transparent)",
+    "color-mix(in srgb, var(--app-brand-color) 28%, transparent)",
   itemTextColorActive: "var(--app-brand-active-color)",
   itemTextColorActiveHover: "var(--app-brand-active-color)",
   itemIconColorActive: "var(--app-brand-active-color)",

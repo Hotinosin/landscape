@@ -35,7 +35,12 @@ const matchLabels = computed(() =>
       <n-text strong>{{ rule.remark || t("common.unnamed") }}</n-text>
     </n-flex>
     <n-flex align="center" size="small">
-      <n-tag v-for="source in matchLabels" :key="source" :bordered="false">
+      <n-tag
+        v-for="source in matchLabels"
+        :key="source"
+        class="semantic-tag--match"
+        :bordered="false"
+      >
         {{ source }}
       </n-tag>
     </n-flex>

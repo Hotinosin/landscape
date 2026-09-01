@@ -2,14 +2,12 @@
 import { computed } from "vue";
 import type { FlowEntryRule } from "@landscape-router/types/api/schemas";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
-import { useThemeVars } from "naive-ui";
 
 interface Prop {
   rule: FlowEntryRule;
 }
 
 const enrolledDeviceStore = useEnrolledDeviceStore();
-const themeVars = useThemeVars();
 const props = defineProps<Prop>();
 
 const label = computed(() => {
@@ -34,7 +32,7 @@ const label = computed(() => {
 </script>
 
 <template>
-  <n-tag :bordered="false" :color="themeVars.primaryColor">
+  <n-tag class="semantic-tag--entry" :bordered="false">
     {{ label }}
   </n-tag>
 </template>

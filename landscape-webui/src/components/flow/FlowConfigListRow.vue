@@ -119,6 +119,7 @@ function flowEnableRailStyle({ checked }: { checked: boolean }) {
       <n-tag
         v-for="(target, index) in config.flow_targets"
         :key="index"
+        class="semantic-tag--egress"
         size="small"
         :bordered="false"
       >

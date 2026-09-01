@@ -167,7 +167,11 @@ const show_remark = computed(
       </n-flex>
     </n-flex>
     <template #action>
-      <n-tag v-for="each in config.flow_targets" :bordered="false">
+      <n-tag
+        v-for="each in config.flow_targets"
+        class="semantic-tag--egress"
+        :bordered="false"
+      >
         {{ frontEndStore.MASK_INFO(flowTargetName(each.target)) }}
         <span v-if="(each.weight ?? 1) !== 1"> ×{{ each.weight ?? 1 }}</span>
         <template #icon>

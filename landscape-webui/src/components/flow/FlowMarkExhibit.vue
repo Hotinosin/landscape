@@ -20,6 +20,7 @@ enum FlowMarkActionCode {
 <template>
   <n-flex>
     <n-tag
+      class="semantic-tag--egress"
       :bordered="false"
       v-if="mark.action.t == FlowMarkActionCode.KEEP_GOING"
     >
@@ -30,6 +31,7 @@ enum FlowMarkActionCode {
       }}
     </n-tag>
     <n-tag
+      class="semantic-tag--egress"
       :bordered="false"
       v-else-if="mark.action.t == FlowMarkActionCode.DIRECT"
     >
@@ -43,9 +45,9 @@ enum FlowMarkActionCode {
       {{ t("flow.mark_exhibit.drop") }}
     </n-tag>
     <n-tag
+      class="semantic-tag--egress"
       :bordered="false"
       v-else-if="mark.action.t == FlowMarkActionCode.REDIRECT"
-      type="warning"
     >
       <FlowExhibit :flow_id="mark.flow_id"></FlowExhibit>
     </n-tag>

@@ -75,13 +75,15 @@ const upstreamLabel = computed(() => {
           :disabled="source.label === source.full"
         >
           <template #trigger>
-            <n-tag :bordered="false">{{ source.label }}</n-tag>
+            <n-tag class="semantic-tag--match" :bordered="false">
+              {{ source.label }}
+            </n-tag>
           </template>
           {{ source.full }}
         </n-tooltip>
         <n-tooltip v-if="hasHiddenMatchLabels">
           <template #trigger>
-            <n-tag :bordered="false">...</n-tag>
+            <n-tag class="semantic-tag--match" :bordered="false">...</n-tag>
           </template>
           <n-flex vertical :size="4">
             <n-text v-for="(source, index) in matchLabels" :key="index">
@@ -93,8 +95,7 @@ const upstreamLabel = computed(() => {
       <n-flex align="center" size="small" :wrap="false">
         <n-text depth="3">{{ t("flow.list.uses_dns") }}</n-text>
         <n-tag
-          class="upstream-link"
-          type="info"
+          class="upstream-link semantic-tag--upstream"
           :bordered="false"
           role="button"
           tabindex="0"

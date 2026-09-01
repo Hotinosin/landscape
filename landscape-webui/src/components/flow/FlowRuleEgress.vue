@@ -47,9 +47,11 @@ const targetLabel = computed(() => {
 <template>
   <n-flex align="center" size="small">
     <n-text depth="3">{{ t("flow.list.egress_label") }}</n-text>
-    <n-tag :bordered="false">{{ actionLabel }}</n-tag>
+    <n-tag class="semantic-tag--egress" :bordered="false">
+      {{ actionLabel }}
+    </n-tag>
     <n-text v-if="target" depth="3">→</n-text>
-    <n-tag v-if="target" :bordered="false">
+    <n-tag v-if="target" class="semantic-tag--egress" :bordered="false">
       <template #icon>
         <n-icon
           :component="
