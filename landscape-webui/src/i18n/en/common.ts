@@ -23,6 +23,7 @@ export default {
   realtime_refresh: "Live",
   config: "Configure",
   force_refresh: "Force Refresh",
+  force_refresh_all: "Force Refresh All",
   force_refresh_confirm:
     "Force refresh? This will clear all keys and re-download.",
   force_refresh_confirm_long:

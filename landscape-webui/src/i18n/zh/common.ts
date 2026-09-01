@@ -23,6 +23,7 @@ export default {
   realtime_refresh: "实时",
   config: "配置",
   force_refresh: "强制刷新",
+  force_refresh_all: "全部强制刷新",
   force_refresh_confirm: "强制刷新吗? 将会清空所有 key 并且重新下载",
   force_refresh_confirm_long:
     "强制刷新吗? 将会清空所有 key 并且重新下载. 可能会持续一段时间",

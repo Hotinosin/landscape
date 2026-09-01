@@ -39,6 +39,24 @@ body {
   border-radius: var(--app-radius-control);
 }
 
+.n-button--error-type.n-button--secondary {
+  --n-color: color-mix(
+    in srgb,
+    var(--app-status-danger-color) 24%,
+    transparent
+  ) !important;
+  --n-color-hover: color-mix(
+    in srgb,
+    var(--app-status-danger-color) 30%,
+    transparent
+  ) !important;
+  --n-color-pressed: color-mix(
+    in srgb,
+    var(--app-status-danger-color) 36%,
+    transparent
+  ) !important;
+}
+
 .standard-list-toolbar {
   margin-bottom: var(--app-space-section, 12px);
 }

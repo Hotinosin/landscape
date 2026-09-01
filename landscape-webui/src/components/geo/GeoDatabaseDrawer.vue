@@ -141,7 +141,7 @@ async function forceRefresh(source: Source) {
               <n-popconfirm @positive-click="forceRefresh('site')">
                 <template #trigger>
                   <n-button :loading="refreshing === 'site'" style="flex: 1">
-                    {{ t("common.force_refresh") }}
+                    {{ t("common.force_refresh_all") }}
                   </n-button>
                 </template>
                 {{ t("common.force_refresh_confirm_long") }}
@@ -181,7 +181,7 @@ async function forceRefresh(source: Source) {
               <n-popconfirm @positive-click="forceRefresh('ip')">
                 <template #trigger>
                   <n-button :loading="refreshing === 'ip'" style="flex: 1">
-                    {{ t("common.force_refresh") }}
+                    {{ t("common.force_refresh_all") }}
                   </n-button>
                 </template>
                 {{ t("common.force_refresh_confirm_long") }}
