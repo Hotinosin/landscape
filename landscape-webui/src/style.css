@@ -61,6 +61,30 @@ body {
   --n-border-radius: var(--app-radius-control) !important;
 }
 
+.semantic-tag--entry {
+  --n-color: var(--app-tag-entry-surface-color) !important;
+  --n-text-color: var(--app-tag-entry-color) !important;
+}
+
+.semantic-tag--match {
+  --n-color: var(--app-tag-match-surface-color) !important;
+  --n-text-color: var(--app-tag-match-color) !important;
+}
+
+.semantic-tag--egress {
+  --n-color: color-mix(
+    in srgb,
+    var(--app-brand-color) 18%,
+    transparent
+  ) !important;
+  --n-text-color: var(--app-brand-active-color) !important;
+}
+
+.semantic-tag--upstream {
+  --n-color: var(--app-tag-upstream-surface-color) !important;
+  --n-text-color: var(--app-tag-upstream-color) !important;
+}
+
 .standard-list-toolbar {
   margin-bottom: var(--app-space-section, 12px);
 }

@@ -12,12 +12,17 @@ const props = defineProps<Props>();
 </script>
 
 <template>
-  <n-tag v-if="source.t === RuleSourceEnum.Config">
+  <n-tag
+    v-if="source.t === RuleSourceEnum.Config"
+    class="semantic-tag--match"
+    :bordered="false"
+  >
     {{ source.match_type }}:{{ frontEndStore.MASK_INFO(source.value) }}
   </n-tag>
   <n-tag
     v-if="source.t === RuleSourceEnum.GeoKey"
-    :type="source.inverse ? `warning` : ''"
+    class="semantic-tag--match"
+    :bordered="false"
   >
     {{ frontEndStore.MASK_INFO(source.name) }}/{{
       frontEndStore.MASK_INFO(source.key)

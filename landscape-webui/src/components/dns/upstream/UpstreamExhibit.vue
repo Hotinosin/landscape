@@ -31,7 +31,9 @@ async function refresh() {
 <template>
   <n-popover v-if="rule" trigger="hover">
     <template #trigger>
-      {{ rule.remark }}
+      <n-tag class="semantic-tag--upstream" :bordered="false">
+        {{ rule.remark }}
+      </n-tag>
     </template>
     <DnsUpstreamCard :show_action="false" :rule="rule"></DnsUpstreamCard>
     <!-- <span>{{ rule }}</span> -->

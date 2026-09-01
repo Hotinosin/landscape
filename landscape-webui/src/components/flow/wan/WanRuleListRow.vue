@@ -44,6 +44,7 @@ async function remove() {
     <n-tag
       v-for="(source, index) in rule.source"
       :key="index"
+      class="semantic-tag--match"
       :bordered="false"
     >
       {{ sourceLabel(source) }}
