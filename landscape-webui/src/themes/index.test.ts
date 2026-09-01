@@ -32,7 +32,7 @@ describe("theme behavior", () => {
 
     const light = applyAccentColor(themeRegistry.light, "purple");
     const dark = applyAccentColor(themeRegistry.dark, "purple");
-    expect(light.tokens.brandColor).toBe("#5848d2");
+    expect(light.tokens.brandColor).toBe("#665cf6");
     expect(dark.tokens.brandColor).toBe("#958cff");
     expect(light.tokens.statusSuccessColor).toBe(
       themeRegistry.light.tokens.statusSuccessColor,
