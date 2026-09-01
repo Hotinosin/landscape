@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, h, onMounted, ref, watch } from "vue";
+import type { DataTableColumns } from "naive-ui";
+import type { WanIpRuleConfig } from "@landscape-router/types/api/schemas";
 import { useI18n } from "vue-i18n";
 import { useMessage } from "naive-ui";
 import WanRuleEditModal from "./WanRuleEditModal.vue";
-import WanRuleCard from "./WanRuleCard.vue";
+import WanRuleListRow from "./WanRuleListRow.vue";
+import StandardDataTable from "@/components/common/StandardDataTable.vue";
 import {
   get_flow_dst_ip_rules,
   push_many_dst_ip_rule,
@@ -17,9 +20,28 @@ const props = withDefaults(defineProps<{ flow_id?: number }>(), { flow_id: 0 });
 const emit = defineEmits(["changed"]);
 const { t } = useI18n();
 const message = useMessage();
-const rules = ref<any[]>([]);
+const rules = ref<WanIpRuleConfig[]>([]);
 const loading = ref(false);
 const showCreateModal = ref(false);
+
+const columns = computed<DataTableColumns<WanIpRuleConfig>>(() =>
+  [
+    [`${t("common.status")} / ${t("common.priority")}`, "status", "25%"],
+    [t("flow.wan_rule_edit.egress_select"), "action", "25%"],
+    [t("flow.wan_rule_card.match_rules"), "sources", "35%"],
+    [t("common.actions"), "actions", "15%"],
+  ].map(([title, cell, width]) => ({
+    title,
+    key: cell,
+    width,
+    render: (rule) =>
+      h(WanRuleListRow, {
+        rule,
+        cell: cell as any,
+        onRefresh: handleRulesChanged,
+      }),
+  })),
+);
 
 async function readRules() {
   loading.value = true;
@@ -82,15 +104,14 @@ watch(() => props.flow_id, readRules);
         </n-popconfirm>
       </n-flex>
       <n-scrollbar class="rule-list">
-        <n-flex vertical>
-          <WanRuleCard
-            v-for="rule in rules"
-            :key="rule.id ?? rule.index"
-            :rule="rule"
-            @refresh="handleRulesChanged"
-          />
-          <n-empty v-if="rules.length === 0 && !loading" />
-        </n-flex>
+        <StandardDataTable
+          :columns="columns"
+          :data="rules"
+          :loading="loading"
+          :row-key="(rule) => rule.id ?? rule.index"
+          :scroll-x="760"
+          size="small"
+        />
       </n-scrollbar>
     </n-flex>
   </n-spin>
