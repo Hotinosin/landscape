@@ -111,7 +111,7 @@ export default {
     title: "Rule Editor",
     priority: "Priority",
     enabled: "Enabled",
-    egress_select: "Select traffic egress",
+    egress_select: "Rule Egress",
     remark: "Remark",
     matched_ips: "Matched IPs",
     copy: "Copy",

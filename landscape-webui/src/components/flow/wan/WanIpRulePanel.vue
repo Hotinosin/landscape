@@ -27,8 +27,8 @@ const showCreateModal = ref(false);
 const columns = computed<DataTableColumns<WanIpRuleConfig>>(() =>
   [
     [`${t("common.status")} / ${t("common.priority")}`, "status", "25%"],
-    [t("flow.wan_rule_edit.egress_select"), "action", "25%"],
     [t("flow.wan_rule_card.match_rules"), "sources", "35%"],
+    [t("flow.wan_rule_edit.egress_select"), "action", "25%"],
     [t("common.actions"), "actions", "15%"],
   ].map(([title, cell, width]) => ({
     title,

@@ -6,7 +6,7 @@ export default {
       "Lower numbers have higher priority. Rules are evaluated from low to high and stop at the first match; 1 is higher than 1000.",
     remark: "Remark",
     filter_result: "Filter result",
-    flow_action: "Flow action",
+    flow_action: "Rule Egress",
     upstream_select: "DNS upstream",
     source_rules_title:
       "Domain match rules (empty means match all, rule order is ignored)",
@@ -113,7 +113,7 @@ export default {
     confirm_delete: "Confirm deletion?",
   },
   rule_card: {
-    traffic_action: "Traffic Action",
+    traffic_action: "Rule Egress",
     upstream_config: "DNS Upstream Config",
     match_rules: "Match Rules",
     no_match_rules: "No match rules. All domains will match.",
