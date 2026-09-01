@@ -159,10 +159,10 @@ async function import_rules() {
   >
     <template #header-extra>
       <n-flex>
-        <n-button :focusable="false" @click="export_config" size="tiny" strong>
+        <n-button :focusable="false" @click="export_config" size="small" strong>
           {{ t("dns.upstream_edit.copy") }}
         </n-button>
-        <n-button :focusable="false" @click="import_rules" size="tiny" strong>
+        <n-button :focusable="false" @click="import_rules" size="small" strong>
           {{ t("dns.upstream_edit.paste") }}
         </n-button>
       </n-flex>
