@@ -148,6 +148,14 @@ function createTheme(
         heightSmall: "28px",
         borderRadius: tokens.radiusControl,
       },
+      Popover: {
+        color: tokens.surfaceOverlayColor,
+        textColor: tokens.textPrimaryColor,
+      },
+      Tooltip: {
+        color: tokens.surfaceOverlayColor,
+        textColor: tokens.textPrimaryColor,
+      },
       Tabs: {
         tabBorderRadius: tokens.radiusControl,
       },

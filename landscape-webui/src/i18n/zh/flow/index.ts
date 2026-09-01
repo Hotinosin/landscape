@@ -58,6 +58,8 @@ export default {
     step1_title: "第一步：匹配源客户端",
     step2_title: "第二步：查询目标",
     select_device_placeholder: "选择已登记设备",
+    source_device: "已登记设备",
+    source_manual: "手动输入",
     src_ipv4_optional: "源 IPv4 (可选)",
     src_ipv6_optional: "源 IPv6 (可选)",
     src_mac_optional: "源 MAC (可选)",
@@ -145,6 +147,9 @@ export default {
   },
   match_rule: {
     add_entry_rule: "增加一条入口匹配规则",
+    type_device: "已登记设备",
+    type_mac: "MAC 地址",
+    type_ip: "IP 地址",
     select_device_placeholder: "选择已登记设备",
     mac_placeholder: "手动输入 MAC 地址",
     ip_placeholder: "IP 地址",

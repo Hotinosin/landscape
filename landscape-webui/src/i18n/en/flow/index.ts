@@ -61,6 +61,8 @@ export default {
     step1_title: "Step 1: Match source client",
     step2_title: "Step 2: Query destination",
     select_device_placeholder: "Select an enrolled device",
+    source_device: "Enrolled device",
+    source_manual: "Manual input",
     src_ipv4_optional: "Source IPv4 (optional)",
     src_ipv6_optional: "Source IPv6 (optional)",
     src_mac_optional: "Source MAC (optional)",
@@ -149,6 +151,9 @@ export default {
   },
   match_rule: {
     add_entry_rule: "Add entry match rule",
+    type_device: "Enrolled device",
+    type_mac: "MAC address",
+    type_ip: "IP address",
     select_device_placeholder: "Select an enrolled device",
     mac_placeholder: "Enter MAC address",
     ip_placeholder: "IP address",

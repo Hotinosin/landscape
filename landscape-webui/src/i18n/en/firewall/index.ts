@@ -6,6 +6,8 @@ export default {
     title: "Firewall Blacklist Editor",
     remark: "Remark",
     source: "Blacklist Source",
+    source_type_ip: "IP address",
+    source_type_geo: "GeoIP database",
     add_source: "Add source",
     block_all_tip: "This will block access from all IP addresses",
     geo_key_required: "Source #{index}: GeoIP key is required",

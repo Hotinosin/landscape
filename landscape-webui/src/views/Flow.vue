@@ -77,13 +77,13 @@ const columns = computed<DataTableColumns<FlowTableRow>>(() => [
   {
     title: t("flow.list.dns"),
     key: "dns",
-    width: "25%",
+    width: "30%",
     render: (row) => renderCell(row, "dns"),
   },
   {
     title: t("flow.list.target_ip"),
     key: "targetIp",
-    width: "25%",
+    width: "20%",
     render: (row) => renderCell(row, "targetIp"),
   },
   {
