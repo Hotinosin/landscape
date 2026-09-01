@@ -15,6 +15,7 @@ hickory-resolver = { workspace = true, features = [
     "system-config",
     "__tls",
     "__https",
+    "h3-ring",
     "quic-ring",
     "rustls-platform-verifier",
 ] }

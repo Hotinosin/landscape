@@ -45,7 +45,7 @@ impl MarkRuntimeProvider {
             mark_value,
             bind_addr4,
             bind_addr6,
-            quic_binder: MarkQuicSocketBinder { mark_value },
+            quic_binder: MarkQuicSocketBinder { mark_value, bind_addr4, bind_addr6 },
         }
     }
 }
@@ -164,18 +164,55 @@ impl RuntimeProvider for MarkRuntimeProvider {
 #[derive(Clone)]
 struct MarkQuicSocketBinder {
     mark_value: u32,
+    bind_addr4: Option<Ipv4Addr>,
+    bind_addr6: Option<Ipv6Addr>,
 }
 
 impl QuicSocketBinder for MarkQuicSocketBinder {
     fn bind_quic(
         &self,
         local_addr: SocketAddr,
-        _server_addr: SocketAddr,
+        server_addr: SocketAddr,
     ) -> Result<Arc<dyn quinn::AsyncUdpSocket>, io::Error> {
         use quinn::Runtime;
+        let local_addr = self.local_addr(local_addr, server_addr);
         let socket = std::net::UdpSocket::bind(local_addr)?;
         set_socket_mark(socket.as_raw_fd(), self.mark_value)?;
         quinn::TokioRuntime.wrap_udp_socket(socket)
+    }
+}
+
+impl MarkQuicSocketBinder {
+    fn local_addr(&self, local_addr: SocketAddr, server_addr: SocketAddr) -> SocketAddr {
+        match server_addr {
+            SocketAddr::V4(_) => self
+                .bind_addr4
+                .map(|addr| SocketAddr::new(IpAddr::V4(addr), local_addr.port()))
+                .unwrap_or(local_addr),
+            SocketAddr::V6(_) => self
+                .bind_addr6
+                .map(|addr| SocketAddr::new(IpAddr::V6(addr), local_addr.port()))
+                .unwrap_or(local_addr),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quic_uses_configured_bind_address() {
+        let binder = MarkQuicSocketBinder {
+            mark_value: 0,
+            bind_addr4: Some(Ipv4Addr::new(192, 0, 2, 1)),
+            bind_addr6: None,
+        };
+
+        assert_eq!(
+            binder.local_addr("0.0.0.0:0".parse().unwrap(), "1.1.1.1:443".parse().unwrap()),
+            "192.0.2.1:0".parse().unwrap()
+        );
     }
 }
 

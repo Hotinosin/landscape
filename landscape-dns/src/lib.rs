@@ -36,6 +36,59 @@ pub mod listener;
 pub mod mdns;
 pub mod server;
 
+pub async fn test_doh3_upstream(
+    mut config: landscape_common::dns::config::DnsUpstreamConfig,
+) -> Result<
+    landscape_common::dns::upstream::DnsUpstreamH3TestResult,
+    landscape_common::dns::upstream::DnsUpstreamError,
+> {
+    use hickory_proto::rr::RecordType;
+    use landscape_common::dns::upstream::{
+        DnsUpstreamError, DnsUpstreamH3TestAttempt, DnsUpstreamH3TestResult,
+    };
+
+    let landscape_common::dns::upstream::DnsUpstreamMode::Https { http3, .. } = &mut config.mode
+    else {
+        return Err(DnsUpstreamError::H3TestRequiresHttps);
+    };
+    *http3 = true;
+
+    let Some(resolver) = connection::create_resolver(0, 0x8000, config) else {
+        return Err(DnsUpstreamError::H3TestResolverFailed);
+    };
+    let query_domain = "example.com.".to_string();
+    let mut attempts = Vec::with_capacity(5);
+
+    for _ in 0..5 {
+        let started = Instant::now();
+        let result = resolver.lookup(&query_domain, RecordType::A).await;
+        let latency_ms = started.elapsed().as_secs_f64() * 1000.0;
+        attempts.push(match result {
+            Ok(lookup) => DnsUpstreamH3TestAttempt {
+                latency_ms,
+                answers: lookup.answers().iter().map(|record| record.data.to_string()).collect(),
+                error: None,
+            },
+            Err(error) => DnsUpstreamH3TestAttempt {
+                latency_ms,
+                answers: vec![],
+                error: Some(error.to_string()),
+            },
+        });
+    }
+
+    let reused: Vec<f64> = attempts
+        .iter()
+        .skip(1)
+        .filter(|attempt| attempt.error.is_none())
+        .map(|attempt| attempt.latency_ms)
+        .collect();
+    let reuse_average_ms =
+        (!reused.is_empty()).then(|| reused.iter().sum::<f64>() / reused.len() as f64);
+
+    Ok(DnsUpstreamH3TestResult { query_domain, attempts, reuse_average_ms })
+}
+
 static RESOLVER_CONF: &str = "/etc/resolv.conf";
 static RESOLVER_CONF_LD_BACK: &str = "/etc/resolv.conf.ld_back";
 

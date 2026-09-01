@@ -99,6 +99,14 @@ export default {
     warn_default_endpoint:
       "Empty value will fallback to `/dns-query` (warning can be ignored)",
     warn_empty_endpoint_fill: "URL is empty, fallback to `/dns-query`",
+    test_h3: "Test H3",
+    h3_test_title: "DoH3 Connection Test",
+    h3_test_success: "H3 connected and returned a DNS response",
+    h3_test_failed: "H3 connection failed",
+    test_domain: "Test Domain",
+    reuse_average: "Reused Average Latency",
+    latency: "Latency",
+    result: "Result",
   },
   upstream_card: {
     no_config: "No config",

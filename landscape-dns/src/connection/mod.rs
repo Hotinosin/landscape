@@ -42,7 +42,7 @@ pub(crate) fn create_resolver(
                 NameServerConfig::new(*ip, true, vec![conn])
             })
             .collect(),
-        DnsUpstreamMode::Https { domain, http_endpoint } => ips
+        DnsUpstreamMode::Https { domain, http_endpoint, http3 } => ips
             .iter()
             .map(|ip| {
                 let path: Arc<str> = http_endpoint
@@ -50,10 +50,16 @@ pub(crate) fn create_resolver(
                     .filter(|s| !s.is_empty())
                     .map(|s| s.clone().into())
                     .unwrap_or_else(|| Arc::from("/dns-query"));
-                let mut conn = ConnectionConfig::new(ProtocolConfig::Https {
-                    server_name: domain.clone().into(),
-                    path,
-                });
+                let protocol = if http3 {
+                    ProtocolConfig::H3 {
+                        server_name: domain.clone().into(),
+                        path,
+                        disable_grease: false,
+                    }
+                } else {
+                    ProtocolConfig::Https { server_name: domain.clone().into(), path }
+                };
+                let mut conn = ConnectionConfig::new(protocol);
                 conn.port = port.unwrap_or(443);
                 NameServerConfig::new(*ip, true, vec![conn])
             })

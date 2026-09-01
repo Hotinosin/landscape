@@ -6,7 +6,7 @@ use landscape_common::service::controller::ConfigController;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use landscape_common::dns::upstream::DnsUpstreamError;
+use landscape_common::dns::upstream::{DnsUpstreamError, DnsUpstreamH3TestResult};
 
 use crate::api::JsonBody;
 use crate::LandscapeApp;
@@ -16,7 +16,21 @@ pub fn get_dns_upstream_config_paths() -> OpenApiRouter<LandscapeApp> {
     OpenApiRouter::new()
         .routes(routes!(get_dns_upstreams, add_dns_upstream))
         .routes(routes!(add_many_dns_upstreams))
+        .routes(routes!(test_dns_upstream_h3))
         .routes(routes!(get_dns_upstream, del_dns_upstream))
+}
+
+#[utoipa::path(
+    post,
+    path = "/upstreams/test-h3",
+    tag = "DNS Upstreams",
+    request_body = DnsUpstreamConfig,
+    responses((status = 200, body = CommonApiResp<DnsUpstreamH3TestResult>))
+)]
+async fn test_dns_upstream_h3(
+    JsonBody(config): JsonBody<DnsUpstreamConfig>,
+) -> LandscapeApiResult<DnsUpstreamH3TestResult> {
+    LandscapeApiResp::success(landscape_dns::test_doh3_upstream(config).await?)
 }
 
 #[utoipa::path(

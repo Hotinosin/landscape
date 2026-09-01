@@ -4,7 +4,12 @@ import { isIP } from "is-ip";
 import { computed } from "vue";
 import { ref } from "vue";
 import type { DnsUpstreamConfig } from "@landscape-router/types/api/schemas";
-import { get_dns_upstream, push_dns_upstream } from "@/api/dns_rule/upstream";
+import {
+  get_dns_upstream,
+  push_dns_upstream,
+  test_dns_upstream_h3,
+  type DnsUpstreamH3TestResult,
+} from "@/api/dns_rule/upstream";
 import { DnsUpstreamModeTsEnum, UPSTREAM_OPTIONS } from "@/lib/dns";
 import {
   copy_context_to_clipboard,
@@ -33,9 +38,48 @@ const origin_rule_json = ref<string>("");
 const rule = ref<DnsUpstreamConfig>();
 
 const commit_spin = ref(false);
+const h3TestLoading = ref(false);
+const h3TestResult = ref<DnsUpstreamH3TestResult>();
+const showH3TestResult = ref(false);
 const isModified = computed(() => {
   return JSON.stringify(rule.value) !== origin_rule_json.value;
 });
+
+const HTTP3_DOMAINS = new Set([
+  "dns.alidns.com",
+  "cloudflare-dns.com",
+  "dns.google",
+]);
+const supportsHttp3 = computed(
+  () =>
+    rule.value?.mode.t === DnsUpstreamModeTsEnum.Https &&
+    HTTP3_DOMAINS.has(rule.value.mode.domain),
+);
+const http3Enabled = computed({
+  get: () =>
+    rule.value?.mode.t === DnsUpstreamModeTsEnum.Https &&
+    Boolean(rule.value.mode.http3),
+  set: (enabled: boolean) => {
+    if (rule.value?.mode.t === DnsUpstreamModeTsEnum.Https) {
+      rule.value.mode.http3 = enabled;
+    }
+  },
+});
+const h3TestSucceeded = computed(() =>
+  h3TestResult.value?.attempts.some((attempt) => !attempt.error),
+);
+
+async function testH3() {
+  if (!rule.value) return;
+  await formRef.value?.validate();
+  h3TestLoading.value = true;
+  try {
+    h3TestResult.value = await test_dns_upstream_h3(rule.value);
+    showH3TestResult.value = true;
+  } finally {
+    h3TestLoading.value = false;
+  }
+}
 
 async function enter() {
   if (props.rule_id) {
@@ -116,6 +160,12 @@ async function saveRule() {
       ) {
         message.warning(t("dns.upstream_edit.warn_empty_endpoint_fill"));
         rule.value.mode.http_endpoint = null as any;
+      }
+      if (
+        rule.value.mode.t === DnsUpstreamModeTsEnum.Https &&
+        !supportsHttp3.value
+      ) {
+        rule.value.mode.http3 = false;
       }
 
       commit_spin.value = true;
@@ -235,7 +285,19 @@ async function import_rules() {
           /> -->
         </n-form-item-gi>
 
-        <n-form-item-gi :span="4" :label="t('dns.upstream_edit.port')">
+        <n-form-item-gi v-if="supportsHttp3" :span="2" label="HTTP/3">
+          <n-flex align="center" :wrap="false">
+            <n-checkbox v-model:checked="http3Enabled">H3</n-checkbox>
+            <n-button size="small" :loading="h3TestLoading" @click="testH3">
+              {{ t("dns.upstream_edit.test_h3") }}
+            </n-button>
+          </n-flex>
+        </n-form-item-gi>
+
+        <n-form-item-gi
+          :span="supportsHttp3 ? 2 : 4"
+          :label="t('dns.upstream_edit.port')"
+        >
           <n-input-number
             style="flex: 1"
             :min="1"
@@ -311,5 +373,47 @@ async function import_rules() {
         </n-button>
       </n-flex>
     </template>
+  </n-modal>
+  <n-modal
+    v-model:show="showH3TestResult"
+    preset="card"
+    :title="t('dns.upstream_edit.h3_test_title')"
+    style="width: 560px"
+  >
+    <n-alert :type="h3TestSucceeded ? 'success' : 'error'" :bordered="false">
+      {{
+        h3TestSucceeded
+          ? t("dns.upstream_edit.h3_test_success")
+          : t("dns.upstream_edit.h3_test_failed")
+      }}
+    </n-alert>
+    <n-descriptions v-if="h3TestResult" :column="2" style="margin-top: 12px">
+      <n-descriptions-item :label="t('dns.upstream_edit.test_domain')">
+        {{ h3TestResult.query_domain }}
+      </n-descriptions-item>
+      <n-descriptions-item :label="t('dns.upstream_edit.reuse_average')">
+        {{
+          h3TestResult.reuse_average_ms == null
+            ? "-"
+            : `${h3TestResult.reuse_average_ms.toFixed(2)} ms`
+        }}
+      </n-descriptions-item>
+    </n-descriptions>
+    <n-table v-if="h3TestResult" size="small" style="margin-top: 12px">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>{{ t("dns.upstream_edit.latency") }}</th>
+          <th>{{ t("dns.upstream_edit.result") }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(attempt, index) in h3TestResult.attempts" :key="index">
+          <td>{{ index + 1 }}</td>
+          <td>{{ attempt.latency_ms.toFixed(2) }} ms</td>
+          <td>{{ attempt.error || attempt.answers.join(", ") || "-" }}</td>
+        </tr>
+      </tbody>
+    </n-table>
   </n-modal>
 </template>
