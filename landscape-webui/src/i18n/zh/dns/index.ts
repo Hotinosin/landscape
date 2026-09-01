@@ -22,6 +22,7 @@ export default {
     duplicate_priority_warning:
       "**优先级** 值不能为 -1, 且不能重复, 否则将会覆盖规则",
     source_style_full: "精确匹配",
+    source_style_geo: "地理关系库",
     source_style_domain: "域名匹配",
     source_style_regex: "正则匹配",
     source_style_plain: "关键词匹配",

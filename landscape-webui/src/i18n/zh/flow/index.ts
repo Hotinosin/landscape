@@ -112,6 +112,8 @@ export default {
     paste_replace: "替换粘贴",
     paste_append: "增量粘贴",
     add_wan_rule: "增加一条 Wan 规则",
+    source_style_geo: "地理关系库",
+    source_style_exact: "精确匹配",
     duplicate_priority_warning:
       "**优先级** 值不能为 -1, 且不能重复, 否则将会覆盖规则",
     cancel: "取消",

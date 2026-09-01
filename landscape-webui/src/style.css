@@ -57,6 +57,10 @@ body {
   ) !important;
 }
 
+.n-dynamic-input .n-button--circle {
+  --n-border-radius: var(--app-radius-control) !important;
+}
+
 .standard-list-toolbar {
   margin-bottom: var(--app-space-section, 12px);
 }

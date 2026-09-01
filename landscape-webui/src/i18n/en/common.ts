@@ -63,6 +63,11 @@ export default {
   open: "Open",
   override: "Override",
   add: "Add",
+  copy_success: "Copied",
+  copy_failed: "Copy failed",
+  paste_replace_success: "Replaced from clipboard",
+  paste_append_success: "Appended from clipboard",
+  paste_failed: "Paste failed. Check the clipboard content.",
 
   username: "Username",
   password: "Password",

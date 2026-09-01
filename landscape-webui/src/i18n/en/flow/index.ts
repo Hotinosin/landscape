@@ -116,6 +116,8 @@ export default {
     paste_replace: "Paste Replace",
     paste_append: "Paste Append",
     add_wan_rule: "Add a WAN rule",
+    source_style_geo: "Geo Database",
+    source_style_exact: "Exact Match",
     duplicate_priority_warning:
       "**Priority** cannot be -1 and must be unique, or it may overwrite existing rules",
     cancel: "Cancel",
