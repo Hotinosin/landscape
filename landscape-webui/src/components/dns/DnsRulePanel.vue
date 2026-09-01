@@ -28,9 +28,9 @@ const showQueryModal = ref(false);
 const columns = computed<DataTableColumns<DNSRuleConfig>>(() =>
   [
     [`${t("common.status")} / ${t("common.priority")}`, "status", "22%"],
-    [t("dns.rule_card.traffic_action"), "action", "20%"],
-    [t("dns.rule_card.upstream_config"), "upstream", "18%"],
     [t("dns.rule_card.match_rules"), "sources", "28%"],
+    [t("dns.rule_card.upstream_config"), "upstream", "18%"],
+    [t("dns.rule_card.traffic_action"), "action", "20%"],
     [t("common.actions"), "actions", "12%"],
   ].map(([title, cell, width]) => ({
     title,

@@ -107,7 +107,7 @@ export default {
     title: "规则编辑",
     priority: "优先级",
     enabled: "启用",
-    egress_select: "选择流量出口",
+    egress_select: "规则出口",
     remark: "备注",
     matched_ips: "匹配的 IP",
     copy: "复制",
