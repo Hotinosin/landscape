@@ -6,6 +6,8 @@ export default {
     title: "防火墙黑名单编辑",
     remark: "备注",
     source: "黑名单来源",
+    source_type_ip: "IP 地址",
+    source_type_geo: "GeoIP 数据库",
     add_source: "增加一条来源",
     block_all_tip: "将会阻止所有 IP 的访问",
     geo_key_required: "第 {index} 条来源: GeoIP Key 不能为空",

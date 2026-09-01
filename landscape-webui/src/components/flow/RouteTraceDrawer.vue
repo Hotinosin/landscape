@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { ChangeCatalog } from "@vicons/carbon";
 import { trace_flow_match, trace_verdict } from "@/api/route/trace";
 import { check_domain } from "@/api/dns_service";
 import { reset_cache } from "@/api/route/cache";
@@ -27,6 +26,10 @@ const { t } = useI18n();
 
 // Step 1 state
 const selectMode = ref(true);
+const sourceModeOptions = computed(() => [
+  { label: t("flow.trace.source_device"), value: true },
+  { label: t("flow.trace.source_manual"), value: false },
+]);
 const selectedDevice = ref<string | null>(null);
 const srcIpv4 = ref("");
 const srcIpv6 = ref("");
@@ -382,11 +385,11 @@ function actionTagType(
         <n-card size="small" :title="t('flow.trace.step1_title')">
           <n-flex vertical :size="8">
             <n-flex :wrap="false" align="center">
-              <n-button size="small" @click="selectMode = !selectMode">
-                <template #icon>
-                  <n-icon><ChangeCatalog /></n-icon>
-                </template>
-              </n-button>
+              <n-select
+                v-model:value="selectMode"
+                :options="sourceModeOptions"
+                style="width: 120px"
+              />
               <template v-if="selectMode">
                 <n-select
                   :options="deviceOptions"
