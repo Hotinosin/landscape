@@ -11,7 +11,9 @@ export function isCurrentSessionUnauthorized(
   requestAuthorization: unknown,
   currentToken: string | null,
 ): boolean {
-  return !currentToken || requestAuthorization === `Bearer ${currentToken}`;
+  return (
+    Boolean(currentToken) && requestAuthorization === `Bearer ${currentToken}`
+  );
 }
 
 function formatApiErrorTemplate(
@@ -55,13 +57,15 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
       if (error.response != undefined && error.response.status != undefined) {
         const code = error.response.status;
         const { error_id, message, args } = error.response.data;
-        if (
+        const requestAuthorization = error.config?.headers?.Authorization;
+        const authenticatedRequest = Boolean(requestAuthorization);
+        const currentSessionUnauthorized =
           code === 401 &&
           isCurrentSessionUnauthorized(
-            error.config?.headers?.Authorization,
+            requestAuthorization,
             localStorage.getItem(LANDSCAPE_TOKEN_KEY),
-          )
-        ) {
+          );
+        if (currentSessionUnauthorized) {
           clearLandscapeSession();
           useHistoryRouteStore().resetRoutes();
 
@@ -92,7 +96,12 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
             ? (i18n.global.t(errorKey, args || {}) as string)
             : message;
 
-        if (displayMsg && window.$message && !error.config?.silent) {
+        if (
+          displayMsg &&
+          window.$message &&
+          !error.config?.silent &&
+          (code !== 401 || !authenticatedRequest || currentSessionUnauthorized)
+        ) {
           window.$message.error(displayMsg);
         }
         return Promise.reject(error.response.data);
