@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import axios from "axios";
 import { setAxiosInstance } from "@landscape-router/types/mutator";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { API_ERROR_EVENT, applyInterceptors, type ApiError } from "@/api";
 import { LANDSCAPE_TOKEN_KEY } from "@/lib/session";
 import App from "./App";
@@ -46,9 +46,10 @@ describe("React infrastructure", () => {
   it("preserves the target when a protected route redirects to login", async () => {
     await renderAt("/dns/upstream?source=test#details");
     expect(location.pathname).toBe("/login");
-    expect(document.body.textContent).toContain(
-      "Return target: /dns/upstream?source=test#details",
-    );
+    expect(history.state).toMatchObject({
+      usr: { redirect: "/dns/upstream?source=test#details" },
+    });
+    expect(document.querySelector('input[name="username"]')).toBeTruthy();
   });
 
   it("renders the React 404 for an authenticated unknown route", async () => {
@@ -71,6 +72,7 @@ describe("React infrastructure", () => {
 
   it("executes a read-only request through the shared interceptors", async () => {
     localStorage.setItem(LANDSCAPE_TOKEN_KEY, "test-token");
+    const cookieSetter = vi.spyOn(document, "cookie", "set");
     const client = applyInterceptors(axios.create());
     const result = await client.get("/api/read-only", {
       adapter: async (config) => {
@@ -79,12 +81,16 @@ describe("React infrastructure", () => {
         return {
           config,
           data: { data: { language: "en" } },
-          headers: {},
+          headers: { "x-refresh-token": "refreshed-token" },
           status: 200,
           statusText: "OK",
         };
       },
     });
     expect(result).toEqual({ data: { language: "en" } });
+    expect(localStorage.getItem(LANDSCAPE_TOKEN_KEY)).toBe("refreshed-token");
+    expect(cookieSetter).toHaveBeenCalledWith(
+      expect.stringContaining("LANDSCAPE_PLUGIN_TOKEN=refreshed-token"),
+    );
   });
 });

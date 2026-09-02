@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Toast, toast } from "@heroui/react";
 import {
   BrowserRouter,
@@ -13,7 +13,8 @@ import { API_ERROR_EVENT, type ApiError, UNAUTHORIZED_EVENT } from "@/api";
 import { LANDSCAPE_TOKEN_KEY } from "@/lib/session";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { I18nProvider, useI18n } from "./i18n";
-import { LoginPending, MainLayout, MigrationPending, NotFound } from "./pages";
+import Login from "./Login";
+import { MainLayout, MigrationPending, NotFound } from "./pages";
 
 const pendingRoutes = [
   ["", "routes.dashboard"],
@@ -68,13 +69,20 @@ function Infrastructure() {
   const navigate = useNavigate();
   const location = useLocation();
   const { setLanguage, t } = useI18n();
+  const loadedPreferenceForToken = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem(LANDSCAPE_TOKEN_KEY)) return;
+    const token = localStorage.getItem(LANDSCAPE_TOKEN_KEY);
+    if (!token) {
+      loadedPreferenceForToken.current = null;
+      return;
+    }
+    if (loadedPreferenceForToken.current === token) return;
+    loadedPreferenceForToken.current = token;
     void getUiConfigFast({ silent: true })
       .then((preference) => setLanguage(preference.language))
       .catch(() => undefined);
-  }, [setLanguage]);
+  }, [location.pathname, setLanguage]);
 
   useEffect(() => {
     const showApiError = (event: Event) => {
@@ -108,7 +116,7 @@ function RouterTree() {
     <>
       <Infrastructure />
       <Routes>
-        <Route path="/login" element={<LoginPending />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedLayout />}>
           {pendingRoutes.map(([path, routeKey]) => (
             <Route

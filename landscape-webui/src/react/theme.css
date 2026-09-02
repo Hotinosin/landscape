@@ -83,3 +83,130 @@ input {
   outline: 2px solid var(--focus);
   outline-offset: var(--ring-offset-width);
 }
+
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.login-background,
+.login-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.login-background {
+  background:
+    radial-gradient(
+      ellipse 55% 32% at 12% 75%,
+      color-mix(in oklch, var(--accent) 38%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 48% 28% at 88% 68%,
+      color-mix(in oklch, var(--accent) 26%, transparent),
+      transparent 74%
+    ),
+    var(--background);
+}
+
+.login-mask {
+  background: linear-gradient(
+    to bottom,
+    transparent 55%,
+    color-mix(in oklch, var(--background) 75%, transparent)
+  );
+}
+
+.login-content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 2rem;
+}
+
+.login-card {
+  width: min(26.25rem, 100%);
+  border: 1px solid var(--border);
+  background: color-mix(in oklch, var(--surface) 92%, transparent);
+  box-shadow: var(--overlay-shadow);
+  backdrop-filter: blur(1rem);
+}
+
+.login-brand {
+  gap: 0.35rem;
+}
+
+.login-brand .card__title {
+  font-size: 1.35rem;
+}
+
+.login-brand .card__description {
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.login-title {
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.login-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: login-spin 0.75s linear infinite;
+}
+
+.login-footer {
+  position: absolute;
+  z-index: 2;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.login-footer a {
+  color: var(--link);
+}
+
+@keyframes login-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-spinner {
+    animation: none;
+  }
+}
+
+@media (max-width: 40rem) {
+  .login-content {
+    align-items: start;
+    padding: 1rem;
+    padding-top: max(4rem, 12vh);
+  }
+
+  .login-footer {
+    font-size: 0.7rem;
+  }
+}

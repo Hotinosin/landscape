@@ -1,12 +1,16 @@
 import type { LoginInfo } from "@landscape-router/types/api/schemas";
+import type { LandscapeApiOptions } from "@landscape-router/types/mutator";
 import { loginHandler } from "@landscape-router/types/api/auth/auth";
 import axios from "axios";
 import { applyInterceptors } from "@/api";
 
 const authAxios = applyInterceptors(axios.create({ timeout: 30000 }));
 
-export async function do_login(login: LoginInfo) {
-  return loginHandler(login);
+export async function do_login(
+  login: LoginInfo,
+  options?: LandscapeApiOptions,
+) {
+  return loginHandler(login, options);
 }
 
 export async function change_password(payload: {

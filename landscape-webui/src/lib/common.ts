@@ -4,6 +4,7 @@ import i18n from "@/i18n";
 export {
   clearLandscapeSession,
   LANDSCAPE_TOKEN_KEY,
+  saveLandscapeSession,
   syncPluginSessionCookie,
 } from "./session";
 

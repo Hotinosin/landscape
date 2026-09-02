@@ -1,5 +1,10 @@
 export const LANDSCAPE_TOKEN_KEY = "LANDSCAPE_TOKEN";
 
+export function saveLandscapeSession(token: string) {
+  localStorage.setItem(LANDSCAPE_TOKEN_KEY, token);
+  syncPluginSessionCookie();
+}
+
 export function clearLandscapeSession() {
   localStorage.removeItem(LANDSCAPE_TOKEN_KEY);
   document.cookie =

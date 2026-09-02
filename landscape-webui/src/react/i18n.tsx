@@ -22,7 +22,7 @@ function translate(
   key: string,
   args?: Record<string, unknown>,
 ): string {
-  const value = key
+  let value = key
     .split(".")
     .reduce<unknown>(
       (current, part) =>
@@ -31,6 +31,11 @@ function translate(
           : undefined,
       messages,
     );
+  if (value === undefined && key.startsWith("errors.")) {
+    value = (messages.errors as Record<string, unknown>)[
+      key.slice("errors.".length)
+    ];
+  }
   const template = typeof value === "string" ? value : key;
   return template.replace(/\{([^}]+)\}/g, (_, name: string) =>
     args?.[name] == null ? `{${name}}` : String(args[name]),

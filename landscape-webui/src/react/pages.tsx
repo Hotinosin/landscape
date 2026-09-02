@@ -1,5 +1,5 @@
 import { Button, Card } from "@heroui/react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import {
   type RadiusMode,
   type ThemePreference,
@@ -61,23 +61,6 @@ export function MigrationPending({ routeKey }: { routeKey: string }) {
           <Card.Title>{t(routeKey)}</Card.Title>
           <Card.Description>
             This route is preserved and waiting for its React page migration.
-          </Card.Description>
-        </Card.Header>
-      </Card>
-    </main>
-  );
-}
-
-export function LoginPending() {
-  const location = useLocation();
-  const redirect = (location.state as { redirect?: string } | null)?.redirect;
-  return (
-    <main className="centered-page">
-      <Card className="status-card">
-        <Card.Header>
-          <Card.Title>Login migration pending</Card.Title>
-          <Card.Description>
-            {redirect ? `Return target: ${redirect}` : "No return target."}
           </Card.Description>
         </Card.Header>
       </Card>
