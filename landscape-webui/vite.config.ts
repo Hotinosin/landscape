@@ -1,5 +1,7 @@
 import { defineConfig, loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 import { readFileSync } from "fs";
 
@@ -25,7 +27,9 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       ...(useHttps ? [basicSsl()] : []),
+      tailwindcss(),
       vue(),
+      react(),
       AutoImport({
         imports: [
           "vue",
@@ -54,6 +58,9 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       chunkSizeWarningLimit: 5000,
+      ...(mode === "react"
+        ? { rollupOptions: { input: path.resolve(__dirname, "react.html") } }
+        : {}),
     },
     server: {
       host: dev_host,

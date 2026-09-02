@@ -134,4 +134,4 @@ DOCKER_ARCH="${DOCKER_ARCHS[$TARGET]}"
 
 export TARGET TARGET_ARCH DOCKER_ARCH
 
-source "$SCRIPT_DIR/scripts/pnpm_cmd.sh"
+source "$SCRIPT_DIR/scripts/bun_cmd.sh"

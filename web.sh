@@ -3,10 +3,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-source "$SCRIPT_DIR/scripts/pnpm_cmd.sh"
+source "$SCRIPT_DIR/scripts/bun_cmd.sh"
 
 (
     cd "$SCRIPT_DIR"
     "$SCRIPT_DIR/gen_ts_bindings.sh" --if-stale
-    pnpm_cmd --filter landscape-webui dev "$@"
+    bun_cmd run --cwd "$SCRIPT_DIR/landscape-webui" dev "$@"
 )

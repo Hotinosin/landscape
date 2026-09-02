@@ -5,12 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:react": "vite --mode react --open /react.html",
     "dev:visual": "vite --mode test --host 127.0.0.1",
     "build": "vue-tsc && vite build",
+    "build:react": "tsc -p tsconfig.react.json && vite build --mode react",
     "test": "vitest run",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@heroui/react": "^3.2.4",
+    "@heroui/styles": "^3.2.4",
     "@landscape-router/types": "workspace:*",
     "@vue-flow/core": "^1.48.2",
     "@vue-flow/minimap": "^1.5.4",
@@ -24,6 +28,9 @@
     "is-ip": "^5.0.1",
     "pinia": "^4.0.2",
     "pinia-plugin-persistedstate": "^4.7.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwindcss": "^4.3.3",
     "vue": "^3.5.40",
     "vue-echarts": "^8.0.1",
     "vue-i18n": "11.4.8",
@@ -31,9 +38,13 @@
   },
   "devDependencies": {
     "@scalar/api-reference": "1.63.0",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.1.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
     "@vicons/carbon": "^0.13.0",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/test-utils": "^2.4.11",
     "happy-dom": "^20.11.8",
@@ -44,7 +55,7 @@
     "unplugin-auto-import": "^21.0.0",
     "unplugin-vue-components": "^32.1.0",
     "vfonts": "^0.1.0",
-    "vite": "^8.1.5",
+    "vite": "^8.2.2",
     "vitest": "^4.1.10",
     "vue-tsc": "^3.3.8"
   }

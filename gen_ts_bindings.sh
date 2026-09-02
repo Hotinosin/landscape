@@ -7,7 +7,7 @@ API_DIR="$TYPES_DIR/src/api"
 OPENAPI_JSON="$TYPES_DIR/openapi.json"
 SCHEMA_INDEX="$API_DIR/schemas/index.ts"
 LOCK_FILE="$TYPES_DIR/.bindings.lock"
-source "$SCRIPT_DIR/scripts/pnpm_cmd.sh"
+source "$SCRIPT_DIR/scripts/bun_cmd.sh"
 
 MODE="force"
 
@@ -63,7 +63,7 @@ fi
 
     # 3. Regenerate via orval
     echo "Running orval..."
-    pnpm_cmd --filter @landscape-router/types generate
+    bun_cmd run --cwd "$TYPES_DIR" generate
 )
 
 touch "$LOCK_FILE"

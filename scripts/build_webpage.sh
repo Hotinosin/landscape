@@ -10,7 +10,7 @@ echo "Docker architecture: $DOCKER_ARCH"
 echo "构建 Vue 项目..."
 cd "$SCRIPT_DIR"
 
-pnpm_cmd install --frozen-lockfile
+bun_cmd install --frozen-lockfile
 
 "$SCRIPT_DIR/gen_ts_bindings.sh" --if-stale
 
@@ -19,7 +19,7 @@ SCALAR_OUTPUT_DIR="$SCRIPT_DIR/output/static/scalar"
 SCALAR_JS_SRC="$SCRIPT_DIR/landscape-webui/node_modules/@scalar/api-reference/dist/browser/standalone.js"
 SCALAR_CSS_SRC="$SCRIPT_DIR/landscape-webui/node_modules/@scalar/api-reference/dist/style.css"
 
-pnpm_cmd --filter landscape-webui build
+bun_cmd run --cwd "$SCRIPT_DIR/landscape-webui" build
 
 rm -rf "$SCRIPT_DIR/output/static"
 mkdir -p "$SCALAR_OUTPUT_DIR"
