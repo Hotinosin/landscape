@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -10,6 +11,7 @@ import zh from "@/i18n/zh";
 
 type Language = "en" | "zh";
 type Messages = typeof zh;
+export const LANGUAGE_STORAGE_KEY = "landscape-language";
 
 const dictionaries: Record<Language, Messages> = { en, zh };
 
@@ -50,12 +52,18 @@ const I18nContext = createContext<{
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState(() =>
-    normalizeLanguage(navigator.language),
+    normalizeLanguage(
+      localStorage.getItem(LANGUAGE_STORAGE_KEY) || navigator.language,
+    ),
   );
   const setLanguage = useCallback(
     (next?: string) => setLanguageState(normalizeLanguage(next)),
     [],
   );
+  useEffect(() => {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+    document.documentElement.lang = language;
+  }, [language]);
   const t = useCallback(
     (key: string, args?: Record<string, unknown>) =>
       translate(dictionaries[language], key, args),

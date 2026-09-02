@@ -1,56 +1,6 @@
 import { Button, Card } from "@heroui/react";
-import { Link, Outlet, useNavigate } from "react-router-dom";
-import {
-  type RadiusMode,
-  type ThemePreference,
-  useThemePreferences,
-} from "./theme";
+import { useNavigate } from "react-router-dom";
 import { useI18n } from "./i18n";
-
-const themeOptions: ThemePreference[] = ["system", "light", "dark"];
-const radiusOptions: RadiusMode[] = ["sharp", "default", "rounded"];
-
-export function MainLayout() {
-  const preferences = useThemePreferences();
-  return (
-    <div className="app-shell">
-      <header className="app-header">
-        <Link to="/">Landscape</Link>
-        <div className="preference-controls">
-          <label>
-            Theme
-            <select
-              aria-label="Theme"
-              value={preferences.theme}
-              onChange={(event) =>
-                preferences.setTheme(event.target.value as ThemePreference)
-              }
-            >
-              {themeOptions.map((value) => (
-                <option key={value}>{value}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Radius
-            <select
-              aria-label="Radius"
-              value={preferences.radius}
-              onChange={(event) =>
-                preferences.setRadius(event.target.value as RadiusMode)
-              }
-            >
-              {radiusOptions.map((value) => (
-                <option key={value}>{value}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </header>
-      <Outlet />
-    </div>
-  );
-}
 
 export function MigrationPending({ routeKey }: { routeKey: string }) {
   const { t } = useI18n();

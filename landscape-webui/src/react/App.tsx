@@ -14,40 +14,9 @@ import { LANDSCAPE_TOKEN_KEY } from "@/lib/session";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { I18nProvider, useI18n } from "./i18n";
 import Login from "./Login";
-import { MainLayout, MigrationPending, NotFound } from "./pages";
-
-const pendingRoutes = [
-  ["", "routes.dashboard"],
-  ["dns/redirect", "routes.dns-redirect"],
-  ["network/ipv6-pd", "routes.ipv6-pd"],
-  ["network/dhcp-v4", "routes.dhcp-v4"],
-  ["network/ipv6-ra", "routes.ipv6-ra"],
-  ["dns/upstream", "routes.dns-upstream"],
-  ["firewall-nat/nat/v4", "routes.nat-v4"],
-  ["firewall-nat/nat/v6", "routes.nat-v6"],
-  ["flow", "routes.flow"],
-  ["docker", "routes.docker"],
-  ["plugins", "routes.plugins"],
-  ["webshell", "routes.webshell"],
-  ["firewall-nat/firewall", "routes.firewall"],
-  ["metrics/conn/live", "routes.connect-live"],
-  ["metrics/conn/history", "routes.connect-history"],
-  ["metrics/conn/iface", "routes.connect-iface"],
-  ["metrics/conn/src", "routes.connect-src"],
-  ["metrics/conn/dst", "routes.connect-dst"],
-  ["metrics/conn/history-src", "routes.connect-history-src"],
-  ["metrics/conn/history-dst", "routes.connect-history-dst"],
-  ["metrics/dns", "routes.dns-metric"],
-  ["geo/domain", "routes.geo-domain"],
-  ["config", "routes.config"],
-  ["mac-binding", "routes.mac-binding"],
-  ["domains/dns-providers", "routes.dns-provider-profiles"],
-  ["domains/ddns", "routes.ddns"],
-  ["domains/cert-accounts", "routes.cert-accounts"],
-  ["domains/certs", "routes.certs"],
-  ["gateway", "routes.gateway"],
-  ["about", "routes.about"],
-] as const;
+import { MainLayout } from "./MainLayout";
+import { MigrationPending, NotFound } from "./pages";
+import { pendingRoutes } from "./navigation";
 
 function ProtectedLayout() {
   const location = useLocation();

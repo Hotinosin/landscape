@@ -77,7 +77,7 @@ export default function Login() {
       if (!result.success || !result.token) {
         throw { message: "Login failed" } satisfies ApiError;
       }
-      saveLandscapeSession(result.token);
+      saveLandscapeSession(result.token, credentials.username);
       toast.success(t("config.welcome", { username: credentials.username }));
       navigate(redirect, { replace: true, state: null });
     } catch (reason) {
