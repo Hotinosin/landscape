@@ -1,12 +1,19 @@
 import type { AxiosInstance } from "axios";
-import router from "@/router";
-import i18n from "@/i18n";
 import {
   clearLandscapeSession,
   LANDSCAPE_TOKEN_KEY,
   syncPluginSessionCookie,
-} from "@/lib/common";
-import { useHistoryRouteStore } from "@/stores/history_route";
+} from "@/lib/session";
+
+export type ApiError = {
+  status?: number;
+  error_id?: string;
+  message: string;
+  args?: Record<string, unknown>;
+};
+
+export const API_ERROR_EVENT = "landscape:api-error";
+export const UNAUTHORIZED_EVENT = "landscape:unauthorized";
 
 export function isCurrentSessionUnauthorized(
   requestAuthorization: unknown,
@@ -17,34 +24,22 @@ export function isCurrentSessionUnauthorized(
   );
 }
 
-function formatApiErrorTemplate(
-  template: string,
-  args: Record<string, unknown> | undefined,
-): string {
-  if (!args) return template;
-  return template.replace(/\{([^}]+)\}/g, (_m: string, key: string) => {
-    const value = args[key];
-    return value == null ? `{${key}}` : String(value);
-  });
+function normalizeApiError(error: any): ApiError {
+  const data = error.response?.data;
+  return {
+    status: error.response?.status,
+    error_id: data?.error_id,
+    message: data?.message || error.message || "Request failed",
+    args: data?.args,
+  };
 }
 
-/**
- * Apply common interceptors (auth token, token refresh, error handling)
- * to any axios instance.
- */
 export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
-  instance.interceptors.request.use(
-    (config) => {
-      const token = localStorage.getItem(LANDSCAPE_TOKEN_KEY);
-      if (token) {
-        config.headers["Authorization"] = `Bearer ${token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    },
-  );
+  instance.interceptors.request.use((config) => {
+    const token = localStorage.getItem(LANDSCAPE_TOKEN_KEY);
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  });
 
   instance.interceptors.response.use(
     (response) => {
@@ -56,59 +51,30 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
       return response.data;
     },
     (error) => {
-      if (error.response != undefined && error.response.status != undefined) {
-        const code = error.response.status;
-        const { error_id, message, args } = error.response.data;
-        const requestAuthorization = error.config?.headers?.Authorization;
-        const authenticatedRequest = Boolean(requestAuthorization);
-        const currentSessionUnauthorized =
-          code === 401 &&
-          isCurrentSessionUnauthorized(
-            requestAuthorization,
-            localStorage.getItem(LANDSCAPE_TOKEN_KEY),
-          );
-        if (currentSessionUnauthorized) {
-          clearLandscapeSession();
-          useHistoryRouteStore().resetRoutes();
+      const apiError = normalizeApiError(error);
+      const requestAuthorization = error.config?.headers?.Authorization;
+      const currentSessionUnauthorized =
+        apiError.status === 401 &&
+        isCurrentSessionUnauthorized(
+          requestAuthorization,
+          localStorage.getItem(LANDSCAPE_TOKEN_KEY),
+        );
 
-          const currentPath = router.currentRoute.value.fullPath;
-          router.push({
-            path: "/login",
-            state: currentPath === "/login" ? {} : { redirect: currentPath },
-          });
-        }
-
-        const locale =
-          typeof i18n.global.locale === "string"
-            ? i18n.global.locale
-            : i18n.global.locale.value;
-        const localeMessages = i18n.global.getLocaleMessage(locale) as Record<
-          string,
-          unknown
-        >;
-        const errorsMap = localeMessages.errors as
-          Record<string, string> | undefined;
-        const flatTemplate =
-          error_id && errorsMap ? errorsMap[error_id] : undefined;
-
-        const errorKey = error_id ? `errors.${error_id}` : "";
-        const displayMsg = flatTemplate
-          ? formatApiErrorTemplate(flatTemplate, args || {})
-          : errorKey && i18n.global.te(errorKey)
-            ? (i18n.global.t(errorKey, args || {}) as string)
-            : message;
-
-        if (
-          displayMsg &&
-          window.$message &&
-          !error.config?.silent &&
-          (code !== 401 || !authenticatedRequest || currentSessionUnauthorized)
-        ) {
-          window.$message.error(displayMsg);
-        }
-        return Promise.reject(error.response.data);
+      if (currentSessionUnauthorized) {
+        clearLandscapeSession();
+        window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
       }
-      return Promise.reject(error);
+      if (
+        !error.config?.silent &&
+        (apiError.status !== 401 ||
+          !requestAuthorization ||
+          currentSessionUnauthorized)
+      ) {
+        window.dispatchEvent(
+          new CustomEvent<ApiError>(API_ERROR_EVENT, { detail: apiError }),
+        );
+      }
+      return Promise.reject(apiError);
     },
   );
 

@@ -1,14 +1,10 @@
 import { defineConfig, loadEnv } from "vite";
-import vue from "@vitejs/plugin-vue";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 import { readFileSync } from "fs";
 
 import basicSsl from "@vitejs/plugin-basic-ssl";
-import AutoImport from "unplugin-auto-import/vite";
-import Components from "unplugin-vue-components/vite";
-import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
 
 const pkg = JSON.parse(readFileSync("./package.json", "utf-8"));
 
@@ -25,42 +21,18 @@ export default defineConfig(({ mode }) => {
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
     },
-    plugins: [
-      ...(useHttps ? [basicSsl()] : []),
-      tailwindcss(),
-      vue(),
-      react(),
-      AutoImport({
-        imports: [
-          "vue",
-          {
-            "naive-ui": [
-              "useDialog",
-              "useMessage",
-              "useNotification",
-              "useLoadingBar",
-            ],
-          },
-        ],
-      }),
-      Components({
-        resolvers: [NaiveUiResolver()],
-      }),
-    ],
+    plugins: [...(useHttps ? [basicSsl()] : []), tailwindcss(), react()],
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, "./src"),
+        "@": path.resolve(import.meta.dirname, "./src"),
         "@landscape-router/types": path.resolve(
-          __dirname,
+          import.meta.dirname,
           "../landscape-types/src",
         ),
       },
     },
     build: {
       chunkSizeWarningLimit: 5000,
-      ...(mode === "react"
-        ? { rollupOptions: { input: path.resolve(__dirname, "react.html") } }
-        : {}),
     },
     server: {
       host: dev_host,

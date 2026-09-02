@@ -1,60 +1,143 @@
-import { Button, Card } from "@heroui/react";
+import { useEffect } from "react";
+import { Toast, toast } from "@heroui/react";
 import {
-  type RadiusMode,
-  type ThemePreference,
-  useThemePreferences,
-} from "./theme";
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+import { getUiConfigFast } from "@landscape-router/types/api/system-config/system-config";
+import { API_ERROR_EVENT, type ApiError, UNAUTHORIZED_EVENT } from "@/api";
+import { LANDSCAPE_TOKEN_KEY } from "@/lib/session";
+import { ErrorBoundary } from "./ErrorBoundary";
+import { I18nProvider, useI18n } from "./i18n";
+import { LoginPending, MainLayout, MigrationPending, NotFound } from "./pages";
 
-const themeOptions: ThemePreference[] = ["system", "light", "dark"];
-const radiusOptions: RadiusMode[] = ["sharp", "default", "rounded"];
+const pendingRoutes = [
+  ["", "routes.dashboard"],
+  ["dns/redirect", "routes.dns-redirect"],
+  ["network/ipv6-pd", "routes.ipv6-pd"],
+  ["network/dhcp-v4", "routes.dhcp-v4"],
+  ["network/ipv6-ra", "routes.ipv6-ra"],
+  ["dns/upstream", "routes.dns-upstream"],
+  ["firewall-nat/nat/v4", "routes.nat-v4"],
+  ["firewall-nat/nat/v6", "routes.nat-v6"],
+  ["flow", "routes.flow"],
+  ["docker", "routes.docker"],
+  ["plugins", "routes.plugins"],
+  ["webshell", "routes.webshell"],
+  ["firewall-nat/firewall", "routes.firewall"],
+  ["metrics/conn/live", "routes.connect-live"],
+  ["metrics/conn/history", "routes.connect-history"],
+  ["metrics/conn/iface", "routes.connect-iface"],
+  ["metrics/conn/src", "routes.connect-src"],
+  ["metrics/conn/dst", "routes.connect-dst"],
+  ["metrics/conn/history-src", "routes.connect-history-src"],
+  ["metrics/conn/history-dst", "routes.connect-history-dst"],
+  ["metrics/dns", "routes.dns-metric"],
+  ["geo/domain", "routes.geo-domain"],
+  ["config", "routes.config"],
+  ["mac-binding", "routes.mac-binding"],
+  ["domains/dns-providers", "routes.dns-provider-profiles"],
+  ["domains/ddns", "routes.ddns"],
+  ["domains/cert-accounts", "routes.cert-accounts"],
+  ["domains/certs", "routes.certs"],
+  ["gateway", "routes.gateway"],
+  ["about", "routes.about"],
+] as const;
+
+function ProtectedLayout() {
+  const location = useLocation();
+  if (!localStorage.getItem(LANDSCAPE_TOKEN_KEY)) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{
+          redirect: location.pathname + location.search + location.hash,
+        }}
+      />
+    );
+  }
+  return <MainLayout />;
+}
+
+function Infrastructure() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { setLanguage, t } = useI18n();
+
+  useEffect(() => {
+    if (!localStorage.getItem(LANDSCAPE_TOKEN_KEY)) return;
+    void getUiConfigFast({ silent: true })
+      .then((preference) => setLanguage(preference.language))
+      .catch(() => undefined);
+  }, [setLanguage]);
+
+  useEffect(() => {
+    const showApiError = (event: Event) => {
+      const error = (event as CustomEvent<ApiError>).detail;
+      const key = error.error_id ? `errors.${error.error_id}` : "";
+      const translated = key ? t(key, error.args) : "";
+      toast.danger(
+        translated && translated !== key ? translated : error.message,
+      );
+    };
+    const redirectUnauthorized = () => {
+      const redirect = location.pathname + location.search + location.hash;
+      navigate("/login", {
+        replace: true,
+        state: redirect === "/login" ? undefined : { redirect },
+      });
+    };
+    addEventListener(API_ERROR_EVENT, showApiError);
+    addEventListener(UNAUTHORIZED_EVENT, redirectUnauthorized);
+    return () => {
+      removeEventListener(API_ERROR_EVENT, showApiError);
+      removeEventListener(UNAUTHORIZED_EVENT, redirectUnauthorized);
+    };
+  }, [location, navigate, t]);
+
+  return null;
+}
+
+function RouterTree() {
+  return (
+    <>
+      <Infrastructure />
+      <Routes>
+        <Route path="/login" element={<LoginPending />} />
+        <Route path="/" element={<ProtectedLayout />}>
+          {pendingRoutes.map(([path, routeKey]) => (
+            <Route
+              key={path}
+              index={!path}
+              path={path || undefined}
+              element={<MigrationPending routeKey={routeKey} />}
+            />
+          ))}
+          <Route
+            path="geo/ip"
+            element={<Navigate to="/geo/domain" replace />}
+          />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </>
+  );
+}
 
 export default function App() {
-  const preferences = useThemePreferences();
-
   return (
-    <main className="shell">
-      <Card className="shell-card">
-        <Card.Header>
-          <Card.Title>Landscape React shell</Card.Title>
-          <Card.Description>
-            React 19, Tailwind CSS v4 and HeroUI v3 are ready without replacing
-            the Vue application.
-          </Card.Description>
-        </Card.Header>
-        <Card.Content className="controls">
-          <label>
-            Theme
-            <select
-              value={preferences.theme}
-              onChange={(event) =>
-                preferences.setTheme(event.target.value as ThemePreference)
-              }
-            >
-              {themeOptions.map((value) => (
-                <option key={value}>{value}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Radius
-            <select
-              value={preferences.radius}
-              onChange={(event) =>
-                preferences.setRadius(event.target.value as RadiusMode)
-              }
-            >
-              {radiusOptions.map((value) => (
-                <option key={value}>{value}</option>
-              ))}
-            </select>
-          </label>
-        </Card.Content>
-        <Card.Footer className="preview-actions">
-          <Button variant="primary">HeroUI button</Button>
-          <a href="#theme-preview">HeroUI link color</a>
-          <input aria-label="Field radius preview" placeholder="Field radius" />
-        </Card.Footer>
-      </Card>
-    </main>
+    <ErrorBoundary>
+      <I18nProvider>
+        <Toast.Provider placement="top end" />
+        <BrowserRouter>
+          <RouterTree />
+        </BrowserRouter>
+      </I18nProvider>
+    </ErrorBoundary>
   );
 }

@@ -5,10 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:react": "vite --mode react --open /react.html",
     "dev:visual": "vite --mode test --host 127.0.0.1",
-    "build": "vue-tsc && vite build",
-    "build:react": "tsc -p tsconfig.react.json && vite build --mode react",
+    "build": "tsc -p tsconfig.react.json && vite build",
+    "typecheck": "tsc -p tsconfig.react.json",
     "test": "vitest run",
     "preview": "vite preview"
   },
@@ -30,6 +29,7 @@
     "pinia-plugin-persistedstate": "^4.7.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.3",
     "tailwindcss": "^4.3.3",
     "vue": "^3.5.40",
     "vue-echarts": "^8.0.1",
