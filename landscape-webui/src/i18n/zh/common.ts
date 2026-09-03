@@ -1,5 +1,9 @@
 export default {
   load_failed: "加载失败",
+  loading: "加载中",
+  invalid_format: "格式无效",
+  enabled: "已启用",
+  disabled: "已禁用",
   retry: "重试",
   private_mode: "隐私模式",
   create: "创建",

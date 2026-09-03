@@ -107,6 +107,9 @@ describe("React MainLayout", () => {
     await click(link);
     expect(location.pathname).toBe("/dns/upstream");
     expect(document.body.textContent).toContain("Upstream DNS Settings");
+    expect(document.body.textContent).not.toContain(
+      "waiting for its React page migration",
+    );
   });
 
   it("persists the desktop sidebar collapse preference", async () => {

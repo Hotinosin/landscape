@@ -16,6 +16,7 @@ import { I18nProvider, useI18n } from "./i18n";
 import Login from "./Login";
 import About from "./About";
 import Dashboard from "./Dashboard";
+import { DnsRedirectPage, DnsUpstreamPage } from "./DnsPages";
 import { MainLayout } from "./MainLayout";
 import { MigrationPending, NotFound } from "./pages";
 import { pendingRoutes } from "./navigation";
@@ -91,6 +92,8 @@ function RouterTree() {
         <Route path="/" element={<ProtectedLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="about" element={<About />} />
+          <Route path="dns/upstream" element={<DnsUpstreamPage />} />
+          <Route path="dns/redirect" element={<DnsRedirectPage />} />
           {pendingRoutes.map(([path, routeKey]) => (
             <Route
               key={path}

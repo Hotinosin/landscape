@@ -1,5 +1,9 @@
 export default {
   load_failed: "Failed to load",
+  loading: "Loading",
+  invalid_format: "Invalid format",
+  enabled: "Enabled",
+  disabled: "Disabled",
   retry: "Retry",
   private_mode: "Private Mode",
   create: "Create",

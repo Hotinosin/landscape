@@ -126,7 +126,9 @@ export const pendingRoutes = [
   ),
   ["metrics/conn/history-src", "routes.connect-history-src"],
   ["metrics/conn/history-dst", "routes.connect-history-dst"],
-] as const;
+].filter(
+  ([path]) => path !== "dns/upstream" && path !== "dns/redirect",
+) as ReadonlyArray<readonly [string, string]>;
 
 export function menuPath(pathname: string) {
   if (
