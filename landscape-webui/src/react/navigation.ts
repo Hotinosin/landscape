@@ -117,7 +117,6 @@ export const navigation: NavigationItem[] = [
 ];
 
 export const pendingRoutes = [
-  ["", "routes.dashboard"],
   ...navigation.flatMap((item) =>
     item.children
       ? item.children.map(({ path, label }) => [path!.slice(1), label] as const)
@@ -127,7 +126,6 @@ export const pendingRoutes = [
   ),
   ["metrics/conn/history-src", "routes.connect-history-src"],
   ["metrics/conn/history-dst", "routes.connect-history-dst"],
-  ["about", "routes.about"],
 ] as const;
 
 export function menuPath(pathname: string) {

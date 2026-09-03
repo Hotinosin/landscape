@@ -9,6 +9,8 @@ export default {
   device_not_found: "Device not found",
   fit_view: "Fit to view",
   minimap: "Topology minimap",
+  hide_down: "Hide offline devices",
+  show_down: "Show offline devices",
   node: {
     confirm_toggle_iface: "Are you sure you want to {action} this interface?",
     action_disable: "disable",

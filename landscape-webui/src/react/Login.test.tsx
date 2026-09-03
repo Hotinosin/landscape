@@ -171,9 +171,9 @@ describe("React Login", () => {
 
   it("redirects an authenticated visitor away from login", async () => {
     localStorage.setItem(LANDSCAPE_TOKEN_KEY, "existing-token");
-    await renderAt("/login", { usr: { redirect: "/about?from=login#info" } });
+    await renderAt("/login", { usr: { redirect: "/flow?from=login#info" } });
     expect(`${location.pathname}${location.search}${location.hash}`).toBe(
-      "/about?from=login#info",
+      "/flow?from=login#info",
     );
     expect(document.querySelector('input[type="password"]')).toBeNull();
   });

@@ -3,6 +3,11 @@
   "compilerOptions": {
     "jsx": "react-jsx"
   },
-  "include": ["src/vite-env.d.ts", "src/react/**/*.ts", "src/react/**/*.tsx"],
+  "include": [
+    "src/env.d.ts",
+    "src/vite-env.d.ts",
+    "src/react/**/*.ts",
+    "src/react/**/*.tsx"
+  ],
   "references": []
 }

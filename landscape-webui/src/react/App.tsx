@@ -14,6 +14,8 @@ import { LANDSCAPE_TOKEN_KEY } from "@/lib/session";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { I18nProvider, useI18n } from "./i18n";
 import Login from "./Login";
+import About from "./About";
+import Dashboard from "./Dashboard";
 import { MainLayout } from "./MainLayout";
 import { MigrationPending, NotFound } from "./pages";
 import { pendingRoutes } from "./navigation";
@@ -87,6 +89,8 @@ function RouterTree() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="about" element={<About />} />
           {pendingRoutes.map(([path, routeKey]) => (
             <Route
               key={path}

@@ -155,6 +155,7 @@ export function MainLayout() {
   const [expandedGroup, setExpandedGroup] = useState<string>();
   const username = readLandscapeUsername() || t("common.username");
   const title = useMemo(() => {
+    if (location.pathname === "/about") return t("routes.about");
     const current = menuPath(location.pathname);
     const item = navigation.find(
       (entry) =>
@@ -190,6 +191,35 @@ export function MainLayout() {
           />
         </ScrollShadow>
         <Separator />
+        <nav
+          aria-label={t("routes.about")}
+          className={`sidebar-resources${collapsed ? " sidebar-resources--collapsed" : ""}`}
+        >
+          <a
+            aria-label={t("about.documentation")}
+            href="https://landscape.whileaway.dev/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            ⌘{!collapsed ? <span>{t("about.documentation")}</span> : null}
+          </a>
+          <a
+            aria-label={t("about.api_docs")}
+            href="/api/docs"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            API{!collapsed ? <span>{t("about.api_docs")}</span> : null}
+          </a>
+          <Link
+            aria-current={location.pathname === "/about" ? "page" : undefined}
+            aria-label={t("routes.about")}
+            className={location.pathname === "/about" ? "is-active" : undefined}
+            to="/about"
+          >
+            ⓘ{!collapsed ? <span>{t("routes.about")}</span> : null}
+          </Link>
+        </nav>
         <div className="sidebar-footer">
           {!collapsed ? <span>Landscape Router</span> : null}
           <Button

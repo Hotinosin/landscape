@@ -9,6 +9,8 @@ export default {
   device_not_found: "找不到设备",
   fit_view: "适配全图",
   minimap: "拓扑缩略图",
+  hide_down: "隐藏离线设备",
+  show_down: "显示离线设备",
   node: {
     confirm_toggle_iface: "确定要{action}该网卡吗？",
     action_disable: "关闭",
