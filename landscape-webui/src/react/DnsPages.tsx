@@ -77,7 +77,14 @@ const presets: Record<string, Omit<DnsUpstreamConfig, "id" | "remark">> = {
   },
   "DNSPod UDP": {
     mode: { t: "plaintext" },
-    ips: ["119.29.29.29", "119.28.28.28", "240c::6666", "240c::6644", "182.254.116.116", "2402:4e00::"],
+    ips: [
+      "119.29.29.29",
+      "119.28.28.28",
+      "240c::6666",
+      "240c::6644",
+      "182.254.116.116",
+      "2402:4e00::",
+    ],
     port: 53,
     enable_ip_validation: false,
   },
@@ -517,8 +524,16 @@ function UpstreamEditor({
                             : "dns.upstream_edit.h3_test_failed",
                         )}
                       </Alert.Title>
-            <div>{t("dns.upstream_edit.test_domain")}: {testResult.query_domain}</div>
-            <div>{t("dns.upstream_edit.reuse_average")}: {testResult.reuse_average_ms == null ? "-" : `${testResult.reuse_average_ms.toFixed(2)} ms`}</div>
+                      <div>
+                        {t("dns.upstream_edit.test_domain")}:{" "}
+                        {testResult.query_domain}
+                      </div>
+                      <div>
+                        {t("dns.upstream_edit.reuse_average")}:{" "}
+                        {testResult.reuse_average_ms == null
+                          ? "-"
+                          : `${testResult.reuse_average_ms.toFixed(2)} ms`}
+                      </div>
                       {testResult.attempts.map((attempt, index) => (
                         <div key={index}>
                           {attempt.latency_ms.toFixed(2)} ms ·{" "}
@@ -671,7 +686,7 @@ export function DnsUpstreamPage() {
 }
 
 const matchTypes = ["geo_key", "full", "domain", "plain", "regex"] as const;
-function MatchRulesEditor({
+export function MatchRulesEditor({
   rules,
   onChange,
 }: {

@@ -9,7 +9,6 @@ import {
   ProgressBar,
   Separator,
   Skeleton,
-  Tooltip,
 } from "@heroui/react";
 import type { LandscapeSystemInfo } from "@/lib/sys";
 import { LandscapeStatus } from "@/lib/sys";
@@ -22,9 +21,8 @@ import {
 } from "@/api/metric/dns";
 import { get_iface_stats } from "@/api/metric";
 import { ifaces } from "@/api/network";
-import { getFlowDnsRules } from "@landscape-router/types/api/dns-rules/dns-rules";
-import { get_flow_dst_ip_rules } from "@/api/dst_ip_rule";
 import { useI18n } from "./i18n";
+import { RuleDrawers } from "./RuleDrawers";
 
 const gb = (bytes: number) => (bytes / 1024 ** 3).toFixed(2);
 const bounded = (value: number) => Math.max(0, Math.min(100, value || 0));
@@ -91,109 +89,6 @@ function Metric({
       <dt>{label}</dt>
       <dd>{value}</dd>
     </div>
-  );
-}
-
-function RulesDrawer({
-  kind,
-  onClose,
-}: {
-  kind?: "dns" | "ip";
-  onClose: () => void;
-}) {
-  const { t } = useI18n();
-  const [rules, setRules] = useState<unknown[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    if (!kind) return;
-    setLoading(true);
-    setFailed(false);
-    const request =
-      kind === "dns" ? getFlowDnsRules(0) : get_flow_dst_ip_rules(0);
-    void request
-      .then((value) => setRules(Array.isArray(value) ? value : []))
-      .catch(() => setFailed(true))
-      .finally(() => setLoading(false));
-  }, [kind]);
-  return (
-    <Drawer isOpen={Boolean(kind)} onOpenChange={(open) => !open && onClose()}>
-      <Drawer.Backdrop>
-        <Drawer.Content className="rules-drawer">
-          <Drawer.Dialog>
-            <Drawer.Header>
-              <Drawer.Heading>
-                {kind === "dns"
-                  ? t("dns.rule_drawer.title_default")
-                  : t("flow.wan_rule_drawer.title_default")}
-              </Drawer.Heading>
-              <Drawer.CloseTrigger aria-label={t("common.close")}>
-                ×
-              </Drawer.CloseTrigger>
-            </Drawer.Header>
-            <Drawer.Body>
-              <Link href={kind === "dns" ? "/dns/redirect" : "/flow"}>
-                {t("common.edit")}
-              </Link>
-              {loading ? (
-                <Skeleton className="rules-skeleton" />
-              ) : failed ? (
-                <Alert status="danger">
-                  <Alert.Indicator />
-                  <Alert.Content>
-                    <Alert.Title>{t("common.load_failed")}</Alert.Title>
-                  </Alert.Content>
-                </Alert>
-              ) : rules.length === 0 ? (
-                <p className="drawer-description">{t("common.no_data")}</p>
-              ) : (
-                <div className="rule-list">
-                  {rules.map((item, index) => {
-                    const rule = item as Record<string, unknown>;
-                    return (
-                      <Card key={String(rule.id ?? index)}>
-                        <Card.Header>
-                          <Card.Title>
-                            {String(rule.name ?? rule.remark ?? `${index + 1}`)}
-                          </Card.Title>
-                          <Chip size="sm">
-                            <Chip.Label>
-                              {rule.enable === false
-                                ? t("common.disabled")
-                                : t("common.enabled")}
-                            </Chip.Label>
-                          </Chip>
-                        </Card.Header>
-                        <Card.Content>
-                          <dl className="device-details">
-                            <Metric
-                              label="Flow"
-                              value={String(rule.flow_id ?? 0)}
-                            />
-                            <Metric
-                              label="Mark"
-                              value={String(rule.mark ?? "-")}
-                            />
-                            <Metric
-                              label={t("dns.rule_card.match_rules")}
-                              value={
-                                Array.isArray(rule.source) && rule.source.length
-                                  ? rule.source.map(String).join(", ")
-                                  : t("common.no_data")
-                              }
-                            />
-                          </dl>
-                        </Card.Content>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
-            </Drawer.Body>
-          </Drawer.Dialog>
-        </Drawer.Content>
-      </Drawer.Backdrop>
-    </Drawer>
   );
 }
 
@@ -339,7 +234,7 @@ function DnsCard() {
           )}
         </Card.Content>
       </Card>
-      <RulesDrawer kind={drawer} onClose={() => setDrawer(undefined)} />
+      <RuleDrawers kind={drawer} onClose={() => setDrawer(undefined)} />
     </>
   );
 }
@@ -710,30 +605,24 @@ export default function Dashboard() {
               />
             </div>
             <div aria-label={t("sysinfo.cores")} className="cpu-cores">
-              {status.cpus.map((cpu) => (
-                <Tooltip key={cpu.name}>
-                  <Tooltip.Trigger>
-                    <button
-                      aria-label={`${cpu.name} ${cpu.usage.toFixed(1)}%`}
-                      className={`cpu-core tone-${severity(cpu.usage, 50, 80)}`}
-                      type="button"
-                    >
-                      <span
-                        style={{
-                          height: `${Math.max(4, bounded(cpu.usage))}%`,
-                        }}
-                      />
-                    </button>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content>
-                    {cpu.name} · {cpu.usage.toFixed(1)}% ·{" "}
-                    {cpu.temperature == null
-                      ? t("sysinfo.no_sensor")
-                      : `${cpu.temperature.toFixed(1)}°C`}{" "}
-                    · {cpu.frequency} MHz
-                  </Tooltip.Content>
-                </Tooltip>
-              ))}
+              {status.cpus.map((cpu) => {
+                const details = `${cpu.name} · ${cpu.usage.toFixed(1)}% · ${cpu.temperature == null ? t("sysinfo.no_sensor") : `${cpu.temperature.toFixed(1)}°C`} · ${cpu.frequency} MHz`;
+                return (
+                  <button
+                    aria-label={`${cpu.name} ${cpu.usage.toFixed(1)}%`}
+                    className={`cpu-core tone-${severity(cpu.usage, 50, 80)}`}
+                    key={cpu.name}
+                    title={details}
+                    type="button"
+                  >
+                    <span
+                      style={{
+                        height: `${Math.max(4, bounded(cpu.usage))}%`,
+                      }}
+                    />
+                  </button>
+                );
+              })}
             </div>
           </Card.Content>
         </Card>
