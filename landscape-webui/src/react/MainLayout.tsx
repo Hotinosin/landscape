@@ -18,13 +18,29 @@ import {
 import { useI18n } from "./i18n";
 import { activeGroup, menuPath, navigation } from "./navigation";
 import {
+  fonts,
+  type FontMode,
+  radii,
   type RadiusMode,
   type ThemePreference,
   useThemePreferences,
 } from "./theme";
 
 const themeOptions: ThemePreference[] = ["system", "light", "dark"];
-const radiusOptions: RadiusMode[] = ["sharp", "default", "rounded"];
+const radiusLabels: Record<RadiusMode, string> = {
+  none: "None",
+  "extra-small": "XS Extra Small",
+  small: "S Small",
+  medium: "M Medium",
+  large: "L Large",
+  full: "Full",
+};
+const fontLabels: Record<FontMode, string> = {
+  inter: "Inter",
+  system: "System Sans",
+  serif: "Serif",
+  mono: "Monospace",
+};
 
 function Navigation({
   collapsed = false,
@@ -264,34 +280,6 @@ export function MainLayout() {
           <h1>{title}</h1>
           <div className="preference-controls">
             <label>
-              <span>Theme</span>
-              <select
-                aria-label="Theme"
-                onChange={(event) =>
-                  preferences.setTheme(event.target.value as ThemePreference)
-                }
-                value={preferences.theme}
-              >
-                {themeOptions.map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>Radius</span>
-              <select
-                aria-label="Radius"
-                onChange={(event) =>
-                  preferences.setRadius(event.target.value as RadiusMode)
-                }
-                value={preferences.radius}
-              >
-                {radiusOptions.map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
-              </select>
-            </label>
-            <label>
               <span>Language</span>
               <select
                 aria-label="Language"
@@ -315,6 +303,100 @@ export function MainLayout() {
             </Button>
           </div>
         </header>
+        <section className="theme-customizer" aria-label="Theme settings">
+          <label className="theme-color-control">
+            <span>Accent</span>
+            <input
+              aria-label="Accent"
+              max="360"
+              min="0"
+              onInput={(event) =>
+                preferences.setAccent(Number(event.currentTarget.value))
+              }
+              step="0.01"
+              type="range"
+              value={preferences.accent}
+            />
+          </label>
+          <label className="theme-base-control">
+            <span>
+              Base <output>{preferences.base.toFixed(3)}</output>
+            </span>
+            <input
+              aria-label="Base"
+              max="0.05"
+              min="0"
+              onInput={(event) =>
+                preferences.setBase(Number(event.currentTarget.value))
+              }
+              step="0.001"
+              type="range"
+              value={preferences.base}
+            />
+          </label>
+          <label>
+            <span>Font Family</span>
+            <select
+              aria-label="Font Family"
+              onChange={(event) =>
+                preferences.setFont(event.target.value as FontMode)
+              }
+              value={preferences.font}
+            >
+              {fonts.map((value) => (
+                <option key={value} value={value}>
+                  {fontLabels[value]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Radius</span>
+            <select
+              aria-label="Radius"
+              onChange={(event) =>
+                preferences.setRadius(event.target.value as RadiusMode)
+              }
+              value={preferences.radius}
+            >
+              {radii.map((value) => (
+                <option key={value} value={value}>
+                  {radiusLabels[value]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Radius Form</span>
+            <select
+              aria-label="Radius Form"
+              onChange={(event) =>
+                preferences.setFormRadius(event.target.value as RadiusMode)
+              }
+              value={preferences.formRadius}
+            >
+              {radii.map((value) => (
+                <option key={value} value={value}>
+                  {radiusLabels[value]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Theme</span>
+            <select
+              aria-label="Theme"
+              onChange={(event) =>
+                preferences.setTheme(event.target.value as ThemePreference)
+              }
+              value={preferences.theme}
+            >
+              {themeOptions.map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </select>
+          </label>
+        </section>
         <main className="app-content" id="main-content">
           <Outlet />
         </main>

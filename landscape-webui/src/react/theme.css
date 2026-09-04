@@ -1,9 +1,26 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 
-[data-radius="sharp"] {
-  --radius: 0.25rem;
-  --field-radius: calc(var(--radius) * 1.5);
+[data-theme="light"] {
+  --background: oklch(97.02% var(--theme-base-chroma, 0.01) 285.89);
+  --surface: oklch(100% var(--theme-base-chroma, 0.01) 285.89);
+  --surface-secondary: oklch(95.24% var(--theme-base-chroma, 0.01) 285.89);
+  --surface-tertiary: oklch(93.73% var(--theme-base-chroma, 0.01) 285.89);
+  --overlay: var(--surface);
+  --default: oklch(94% var(--theme-base-chroma, 0.01) 285.89);
+  --border: oklch(90% var(--theme-base-chroma, 0.01) 285.89);
+  --separator: oklch(92% var(--theme-base-chroma, 0.01) 285.89);
+}
+
+[data-theme="dark"] {
+  --background: oklch(12% var(--theme-base-chroma, 0.01) 285.89);
+  --surface: oklch(21.03% var(--theme-base-chroma, 0.01) 285.89);
+  --surface-secondary: oklch(25.7% var(--theme-base-chroma, 0.01) 285.89);
+  --surface-tertiary: oklch(27.21% var(--theme-base-chroma, 0.01) 285.89);
+  --overlay: var(--surface);
+  --default: oklch(27.4% var(--theme-base-chroma, 0.01) 285.89);
+  --border: oklch(28% var(--theme-base-chroma, 0.01) 285.89);
+  --separator: oklch(25% var(--theme-base-chroma, 0.01) 285.89);
 }
 
 .dns-page {
@@ -145,11 +162,6 @@
   .dns-rule-row select {
     grid-column: 1 / -1;
   }
-}
-
-[data-radius="rounded"] {
-  --radius: 0.75rem;
-  --field-radius: calc(var(--radius) * 1.5);
 }
 
 html,
@@ -367,6 +379,87 @@ body {
 .preference-controls select {
   min-height: 2rem;
   padding-inline: 0.5rem;
+}
+
+.theme-customizer {
+  z-index: 9;
+  display: grid;
+  grid-template-columns: minmax(8rem, 1.3fr) minmax(8rem, 1.3fr) repeat(
+      4,
+      minmax(8rem, 1fr)
+    );
+  gap: 0.75rem;
+  padding: 0.65rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-secondary);
+  box-shadow: var(--surface-shadow);
+}
+
+.theme-customizer label {
+  display: grid;
+  min-width: 0;
+  gap: 0.35rem;
+  color: var(--foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.theme-customizer select {
+  width: 100%;
+  min-height: 2.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--field-radius);
+  background: var(--surface);
+  color: var(--foreground);
+  box-shadow: var(--field-shadow);
+}
+
+.theme-customizer select {
+  padding-inline: 0.65rem;
+}
+
+.theme-color-control input {
+  width: 100%;
+  height: 2.25rem;
+  margin: 0;
+  appearance: none;
+  border-radius: var(--field-radius);
+  background: linear-gradient(
+    90deg,
+    #e11d48,
+    #f59e0b,
+    #22c55e,
+    #06b6d4,
+    #2563eb,
+    #8b5cf6,
+    #db2777,
+    #e11d48
+  );
+}
+
+.theme-color-control input::-webkit-slider-thumb {
+  width: 1.15rem;
+  height: 1.15rem;
+  appearance: none;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 25%);
+}
+
+.theme-base-control span {
+  display: flex;
+  justify-content: space-between;
+}
+
+.theme-base-control output {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.theme-base-control input {
+  width: 100%;
+  accent-color: var(--accent);
 }
 
 .current-user {
