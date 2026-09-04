@@ -378,13 +378,13 @@ jobs:
             exit 1
           fi
           BASE_VERSION=$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n 1)
-          if ! [[ "$BASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "lkit stable version must be SemVer without a suffix: ${BASE_VERSION}" >&2
+          if ! [[ "$BASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-extension\.[0-9]+$ ]]; then
+            echo "extension version must be SemVer like 0.24.2-extension.1: ${BASE_VERSION}" >&2
             exit 1
           fi
           echo "BASE_VERSION=${BASE_VERSION}" >> "$GITHUB_ENV"
-          echo "RELEASE_TAG=v${BASE_VERSION}-extension" >> "$GITHUB_ENV"
-          echo "RELEASE_NAME=Landscape extension ${BASE_VERSION}" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v${BASE_VERSION}" >> "$GITHUB_ENV"
+          echo "RELEASE_NAME=Landscape ${BASE_VERSION}" >> "$GITHUB_ENV"
 
       - name: Compress backend for lkit repository
         run: zstd --ultra -19 --threads=0 --keep output/landscape-webserver-x86_64
