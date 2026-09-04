@@ -251,7 +251,7 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
       v-model:show="showLookupResults"
       preset="card"
       class="geo-lookup-modal"
-      style="width: min(720px, calc(100vw - 32px))"
+      style="width: var(--app-secondary-modal-width)"
       :title="
         t(
           source === 'site'
@@ -282,23 +282,20 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
             class="geo-lookup-result"
             @click="jumpToMatch(result, value)"
           >
-            <span>
-              <strong>{{ result.key.key }}</strong>
-              <small>{{ result.key.name }}</small>
-            </span>
-            <span class="geo-lookup-rule">
+            <strong class="geo-lookup-group" :title="result.key.key">
+              {{ result.key.key }}
+            </strong>
+            <small>{{ result.key.name }}</small>
+            <span class="geo-lookup-value">
               {{
                 "match_type" in value
                   ? value.value
                   : `${value.ip}/${value.prefix}`
               }}
-              <n-tag
-                v-if="'match_type' in value"
-                size="tiny"
-                :bordered="false"
-                >{{ value.match_type }}</n-tag
-              >
             </span>
+            <n-tag v-if="'match_type' in value" size="tiny" :bordered="false">{{
+              value.match_type
+            }}</n-tag>
           </button>
         </template>
       </div>
@@ -403,7 +400,7 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
 }
 .geo-lookup-result {
   display: grid;
-  grid-template-columns: minmax(120px, 0.35fr) minmax(0, 1fr);
+  grid-template-columns: minmax(240px, 0.8fr) 88px minmax(180px, 1fr) auto;
   align-items: center;
   gap: var(--app-space-section);
   width: 100%;
@@ -418,18 +415,17 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
 .geo-lookup-result:hover {
   background: var(--app-interactive-hover-color);
 }
-.geo-lookup-result > span,
-.geo-lookup-rule {
-  display: flex;
-  align-items: center;
-  gap: var(--app-space-sm);
+.geo-lookup-result > * {
   min-width: 0;
+}
+.geo-lookup-group,
+.geo-lookup-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .geo-lookup-result small {
   color: var(--app-text-secondary-color);
-}
-.geo-lookup-rule {
-  justify-content: space-between;
 }
 @media (max-width: 800px) {
   .geo-toolbar {

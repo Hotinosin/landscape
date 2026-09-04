@@ -100,6 +100,7 @@ const h3TestMessage = computed(() => {
 
 async function testH3() {
   if (!rule.value) return;
+  showH3TestResult.value = true;
   h3TestLoading.value = true;
   h3TestResult.value = undefined;
   h3TestError.value = "";
@@ -112,7 +113,6 @@ async function testH3() {
       t("dns.upstream_edit.h3_test_failed");
   } finally {
     h3TestLoading.value = false;
-    showH3TestResult.value = true;
   }
 }
 
@@ -235,7 +235,7 @@ async function import_rules() {
   <n-modal
     :auto-focus="false"
     v-model:show="show"
-    style="width: 600px"
+    style="width: var(--app-secondary-modal-width)"
     class="custom-card"
     preset="card"
     :title="t('dns.upstream_edit.title')"
@@ -259,17 +259,17 @@ async function import_rules() {
       style="flex: 1"
       ref="formRef"
       :model="rule"
-      :cols="8"
+      :cols="12"
     >
-      <n-grid :cols="8">
-        <n-form-item-gi :span="4" :label="t('dns.upstream_edit.remark')">
+      <n-grid :cols="12" :x-gap="12">
+        <n-form-item-gi :span="6" :label="t('dns.upstream_edit.remark')">
           <n-input
             :placeholder="t('dns.upstream_edit.remark_placeholder')"
             v-model:value="rule.remark"
           />
         </n-form-item-gi>
 
-        <n-form-item-gi :offset="1" :span="2">
+        <n-form-item-gi :offset="1" :span="4">
           <template #label>
             <Notice>
               {{ t("dns.upstream_edit.ip_validation") }}
@@ -290,18 +290,19 @@ async function import_rules() {
           </n-switch>
         </n-form-item-gi>
 
-        <n-form-item-gi :span="8" :label="t('dns.upstream_edit.preset_fill')">
+        <n-form-item-gi :span="12" :label="t('dns.upstream_edit.preset_fill')">
           <DefaultUpstream v-model:rule="rule"></DefaultUpstream>
         </n-form-item-gi>
 
         <n-form-item-gi
-          :span="4"
+          :span="5"
           :label="t('dns.upstream_edit.request_mode')"
           path="mode.domain"
         >
           <n-radio-group
             v-model:value="rule.mode.t"
             name="dns_server_upstream_mode"
+            size="small"
           >
             <n-radio-button
               v-for="mode in UPSTREAM_OPTIONS"
@@ -321,17 +322,18 @@ async function import_rules() {
         </n-form-item-gi>
 
         <n-form-item-gi v-if="supportsHttp3" :span="4" label="HTTP/3">
-          <n-flex align="center" :wrap="false">
+          <n-flex align="center" :wrap="false" :size="8">
             <n-checkbox v-model:checked="http3Enabled">H3</n-checkbox>
-            <n-button :loading="h3TestLoading" @click="testH3">
+            <n-button size="small" :loading="h3TestLoading" @click="testH3">
               {{ t("dns.upstream_edit.test_h3") }}
             </n-button>
           </n-flex>
         </n-form-item-gi>
 
-        <n-form-item-gi :span="4" :label="t('dns.upstream_edit.port')">
+        <n-form-item-gi :span="3" :label="t('dns.upstream_edit.port')">
           <n-input-number
-            style="flex: 1"
+            style="width: 100%"
+            size="small"
             :min="1"
             :max="65535"
             :placeholder="t('dns.upstream_edit.port_placeholder')"
@@ -340,12 +342,13 @@ async function import_rules() {
         </n-form-item-gi>
 
         <n-form-item-gi
-          :span="4"
+          :span="6"
           v-if="rule.mode.t !== DnsUpstreamModeTsEnum.Plaintext"
           :label="t('dns.upstream_edit.domain')"
         >
           <n-input
-            style="width: 230px"
+            style="width: 100%"
+            size="small"
             :placeholder="t('dns.upstream_edit.domain_placeholder')"
             v-model:value="rule.mode.domain"
           >
@@ -353,7 +356,7 @@ async function import_rules() {
         </n-form-item-gi>
 
         <n-form-item-gi
-          :span="4"
+          :span="6"
           path="mode.http_endpoint"
           v-if="rule.mode.t === DnsUpstreamModeTsEnum.Https"
           :label="t('dns.upstream_edit.url')"
@@ -366,7 +369,7 @@ async function import_rules() {
         </n-form-item-gi>
 
         <n-form-item-gi
-          :span="8"
+          :span="12"
           :label="t('dns.upstream_edit.server_ips')"
           path="ips"
         >
@@ -412,43 +415,46 @@ async function import_rules() {
     :title="t('dns.upstream_edit.h3_test_title')"
     style="width: 560px"
   >
-    <n-alert :type="h3TestSucceeded ? 'success' : 'error'" :bordered="false">
-      {{ h3TestMessage }}
-    </n-alert>
-    <n-text
-      v-if="h3TestError"
-      type="error"
-      style="display: block; margin-top: 12px"
-    >
-      {{ h3TestError }}
-    </n-text>
-    <n-descriptions v-if="h3TestResult" :column="2" style="margin-top: 12px">
-      <n-descriptions-item :label="t('dns.upstream_edit.test_domain')">
-        {{ h3TestResult.query_domain }}
-      </n-descriptions-item>
-      <n-descriptions-item :label="t('dns.upstream_edit.reuse_average')">
-        {{
-          h3TestResult.reuse_average_ms == null
-            ? "-"
-            : `${h3TestResult.reuse_average_ms.toFixed(2)} ms`
-        }}
-      </n-descriptions-item>
-    </n-descriptions>
-    <n-table v-if="h3TestResult" size="small" style="margin-top: 12px">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>{{ t("dns.upstream_edit.latency") }}</th>
-          <th>{{ t("dns.upstream_edit.result") }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(attempt, index) in h3TestResult.attempts" :key="index">
-          <td>{{ index + 1 }}</td>
-          <td>{{ attempt.latency_ms.toFixed(2) }} ms</td>
-          <td>{{ attempt.error || attempt.answers.join(", ") || "-" }}</td>
-        </tr>
-      </tbody>
-    </n-table>
+    <n-spin v-if="h3TestLoading" style="display: block; padding: 32px" />
+    <template v-else>
+      <n-alert :type="h3TestSucceeded ? 'success' : 'error'" :bordered="false">
+        {{ h3TestMessage }}
+      </n-alert>
+      <n-text
+        v-if="h3TestError"
+        type="error"
+        style="display: block; margin-top: 12px"
+      >
+        {{ h3TestError }}
+      </n-text>
+      <n-descriptions v-if="h3TestResult" :column="2" style="margin-top: 12px">
+        <n-descriptions-item :label="t('dns.upstream_edit.test_domain')">
+          {{ h3TestResult.query_domain }}
+        </n-descriptions-item>
+        <n-descriptions-item :label="t('dns.upstream_edit.reuse_average')">
+          {{
+            h3TestResult.reuse_average_ms == null
+              ? "-"
+              : `${h3TestResult.reuse_average_ms.toFixed(2)} ms`
+          }}
+        </n-descriptions-item>
+      </n-descriptions>
+      <n-table v-if="h3TestResult" size="small" style="margin-top: 12px">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>{{ t("dns.upstream_edit.latency") }}</th>
+            <th>{{ t("dns.upstream_edit.result") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(attempt, index) in h3TestResult.attempts" :key="index">
+            <td>{{ index + 1 }}</td>
+            <td>{{ attempt.latency_ms.toFixed(2) }} ms</td>
+            <td>{{ attempt.error || attempt.answers.join(", ") || "-" }}</td>
+          </tr>
+        </tbody>
+      </n-table>
+    </template>
   </n-modal>
 </template>
