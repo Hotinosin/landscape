@@ -246,7 +246,7 @@ const isIndeterminate = computed(() => {
     v-model:enabled="rule_enabled"
     :title="t('nat.mapping.edit_title')"
     :switch-disabled="!rule"
-    width="600px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="enter"
   >
     <n-flex vertical>

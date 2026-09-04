@@ -150,7 +150,7 @@ function normalizeFlowTargets(
     :title="t('flow.edit.title')"
     :switch-disabled="!rule"
     :show-switch="!default_flow"
-    width="1000px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="enter"
     @after-leave="exit"
   >

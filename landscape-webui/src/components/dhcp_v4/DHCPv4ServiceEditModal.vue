@@ -189,7 +189,7 @@ const network_mask = computed({
     v-model:show="show_model"
     v-model:enabled="service_config.enable"
     :title="t('dhcp_v4.service.title')"
-    width="800px"
+    width="var(--app-secondary-modal-width)"
     max-height="80vh"
     @after-enter="on_modal_enter"
   >

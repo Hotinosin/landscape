@@ -416,7 +416,7 @@ async function saveRule() {
   <n-modal
     :auto-focus="false"
     v-model:show="show"
-    style="width: 600px"
+    style="width: var(--app-secondary-modal-width)"
     preset="card"
     :title="props.rule_id ? t('device.edit_title') : t('device.add_title')"
     @after-enter="enter"

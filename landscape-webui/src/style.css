@@ -1,4 +1,6 @@
 :root {
+  --app-secondary-modal-width: min(860px, calc(100vw - 32px));
+  --app-secondary-modal-max-height: calc(100vh - 48px);
   --font-sans:
     "v-sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     "PingFang SC", "Microsoft YaHei", sans-serif;

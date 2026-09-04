@@ -135,7 +135,7 @@ async function saveConfig() {
     v-model:enabled="config_enabled"
     :title="t('firewall.blacklist_edit.title')"
     :switch-disabled="!config"
-    width="700px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="enter"
   >
     <n-form v-if="config" style="flex: 1" :model="config">

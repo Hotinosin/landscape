@@ -151,7 +151,7 @@ async function save() {
   <n-modal
     :auto-focus="false"
     v-model:show="show"
-    style="width: 550px"
+    style="width: var(--app-secondary-modal-width)"
     class="custom-card"
     preset="card"
     :title="t('cert.account_edit_title')"

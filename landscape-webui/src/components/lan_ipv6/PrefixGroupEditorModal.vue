@@ -776,7 +776,7 @@ function cancelEmptyDraftAction() {
 <template>
   <n-modal
     :auto-focus="false"
-    style="width: 1180px"
+    style="width: var(--app-secondary-modal-width)"
     v-model:show="show"
     preset="card"
     :title="

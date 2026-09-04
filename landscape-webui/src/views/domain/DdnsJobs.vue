@@ -803,7 +803,7 @@ onMounted(async () => {
       v-model:show="showModal"
       v-model:enabled="formEnabled"
       :title="t('ddns.ddns_jobs')"
-      width="680px"
+      width="var(--app-secondary-modal-width)"
     >
       <n-form
         ref="formRef"

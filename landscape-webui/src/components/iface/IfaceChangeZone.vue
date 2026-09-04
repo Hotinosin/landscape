@@ -67,7 +67,7 @@ function reflush_zone() {
   >
     <n-spin :show="spin">
       <n-card
-        style="width: 600px; display: flex"
+        style="width: var(--app-secondary-modal-width); display: flex"
         :title="t('interface.change_zone_title')"
         :bordered="false"
         role="dialog"

@@ -61,8 +61,8 @@ export default {
     latency_subtitle: "平均延迟 (最少 3 个样本)",
     no_data: "无数据",
     from_samples: "来自 {count} 个样本",
-    rules: "域名规则",
-    ip_rules: "IP 规则",
+    rules: "DNS 规则",
+    ip_rules: "目标 IP 规则",
     refresh: "刷新指标",
     recent_5m: "(近5分钟)",
     latency_tip:

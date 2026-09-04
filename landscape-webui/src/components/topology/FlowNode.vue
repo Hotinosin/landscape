@@ -147,10 +147,9 @@ const role_tags = computed(() => {
   return tags.slice(0, 2);
 });
 
-const is_wan_node = computed(() => props.node.zone_type === IfaceZoneType.wan);
-const node_width = computed(() => (is_wan_node.value ? 235 : 235));
+const node_width = 280;
 const title_max_width = computed(
-  () => `${Math.max(node_width.value - 126, 140)}px`,
+  () => `${Math.max(node_width - 126, 140)}px`,
 );
 const has_metric = computed(
   () =>
@@ -313,7 +312,7 @@ const service_items = computed(() => {
 });
 
 const node_style = computed(() => ({
-  "--topology-node-width": `${node_width.value}px`,
+  "--topology-node-width": `${node_width}px`,
   "--topology-node-title-max": title_max_width.value,
   "--topology-node-border": themeVars.value.borderColor,
   "--topology-node-bg": changeColor(themeVars.value.cardColor, { alpha: 0.98 }),
@@ -402,7 +401,7 @@ const node_style = computed(() => ({
                   <n-icon><Link /></n-icon>
                 </template>
               </n-button>
-              <n-tag size="small" :type="status_type" round>
+              <n-tag size="small" :type="status_type" :bordered="false">
                 {{ node.dev_status.t }}
               </n-tag>
             </div>
@@ -652,7 +651,7 @@ const node_style = computed(() => ({
 
 .topology-node__metric-row {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--app-space-2xs);
   min-width: 0;
   padding: 4px 6px;
@@ -677,9 +676,12 @@ const node_style = computed(() => ({
 }
 
 .topology-node__metric-pps {
+  margin-left: auto;
   overflow: hidden;
   color: var(--topology-node-muted);
   font-size: var(--app-font-size-micro);
+  line-height: inherit;
+  text-align: right;
   text-overflow: ellipsis;
 }
 

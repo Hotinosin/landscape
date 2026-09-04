@@ -133,12 +133,30 @@ defineExpose({ refresh: loadSummary });
           </template>
           {{ t("metric.dns.dash.refresh") || "Refresh" }}
         </n-tooltip>
-        <n-button size="tiny" secondary @click="show_rule_drawer = true">
+        <n-tag
+          class="dns-rule-link"
+          size="small"
+          :bordered="false"
+          role="button"
+          tabindex="0"
+          @click="show_rule_drawer = true"
+          @keydown.enter="show_rule_drawer = true"
+          @keydown.space.prevent="show_rule_drawer = true"
+        >
           {{ t("metric.dns.dash.rules") }}
-        </n-button>
-        <n-button size="tiny" secondary @click="show_ip_rule = true">
+        </n-tag>
+        <n-tag
+          class="dns-rule-link"
+          size="small"
+          :bordered="false"
+          role="button"
+          tabindex="0"
+          @click="show_ip_rule = true"
+          @keydown.enter="show_ip_rule = true"
+          @keydown.space.prevent="show_ip_rule = true"
+        >
           {{ t("metric.dns.dash.ip_rules") }}
-        </n-button>
+        </n-tag>
       </n-flex>
     </template>
 
@@ -310,5 +328,9 @@ defineExpose({ refresh: loadSummary });
 <style scoped>
 .no-data-text {
   font-size: var(--app-font-size-detail);
+}
+
+.dns-rule-link {
+  cursor: pointer;
 }
 </style>

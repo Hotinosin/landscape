@@ -358,7 +358,7 @@ onMounted(refresh);
     <n-modal
       v-model:show="showModal"
       preset="card"
-      style="width: 640px"
+      style="width: var(--app-secondary-modal-width)"
       :title="t('dns_provider.provider_profiles')"
     >
       <n-form

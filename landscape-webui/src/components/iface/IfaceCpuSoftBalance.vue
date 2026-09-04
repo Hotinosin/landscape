@@ -137,7 +137,7 @@ function setRpsToZero() {
     @after-enter="get_current_config"
   >
     <n-card
-      style="width: 700px"
+      style="width: var(--app-secondary-modal-width)"
       :title="t('network.iface_cpu_balance.title')"
       :bordered="false"
       size="small"
