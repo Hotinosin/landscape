@@ -1,0 +1,18 @@
+{
+  "protocol_version": 1,
+  "version": "0.24.2-extension.2",
+  "assets": {
+    "webserver": {
+      "x86_64": {
+        "url": "https://github.com/Hotinosin/landscape/releases/download/v0.24.2-extension.2/landscape-webserver-x86_64.zst",
+        "sha256": "e868e9200b2c8e14e5a2fb88087ec9bd049dd3677bc9bbe09e3614a9ebd913ff",
+        "size": 20949840
+      }
+    },
+    "static": {
+      "url": "https://github.com/Hotinosin/landscape/releases/download/v0.24.2-extension.2/static.zip",
+      "sha256": "a4eb6cc05c95d60035b8a9793b070c49c4007bd2fd7dfa452bd1b1932f2be426",
+      "size": 2445457
+    }
+  }
+}
