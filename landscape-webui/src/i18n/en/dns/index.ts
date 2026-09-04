@@ -102,7 +102,15 @@ export default {
     test_h3: "Test H3",
     h3_test_title: "DoH3 Connection Test",
     h3_test_success: "H3 connected and returned a DNS response",
-    h3_test_failed: "H3 connection failed",
+    h3_test_failed: "H3 connection failed; see each attempt below",
+    h3_test_timeout:
+      "H3 connection timed out; check whether UDP/443 is allowed",
+    h3_test_network_unreachable:
+      "Network unreachable; check the default route and egress",
+    h3_test_tls_failed:
+      "H3 TLS handshake failed; check the domain, certificate, and system time",
+    h3_test_request_failed:
+      "The test request failed; check the backend service and retry",
     test_domain: "Test Domain",
     reuse_average: "Reused Average Latency",
     latency: "Latency",

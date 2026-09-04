@@ -40,6 +40,7 @@ const rule = ref<DnsUpstreamConfig>();
 const commit_spin = ref(false);
 const h3TestLoading = ref(false);
 const h3TestResult = ref<DnsUpstreamH3TestResult>();
+const h3TestError = ref("");
 const showH3TestResult = ref(false);
 const isModified = computed(() => {
   return JSON.stringify(rule.value) !== origin_rule_json.value;
@@ -68,16 +69,50 @@ const http3Enabled = computed({
 const h3TestSucceeded = computed(() =>
   h3TestResult.value?.attempts.some((attempt) => !attempt.error),
 );
+const h3TestMessage = computed(() => {
+  if (h3TestSucceeded.value) return t("dns.upstream_edit.h3_test_success");
+  if (h3TestError.value) return t("dns.upstream_edit.h3_test_request_failed");
+
+  const errors = h3TestResult.value?.attempts
+    .map((attempt) => attempt.error?.toLowerCase() || "")
+    .filter(Boolean);
+  if (errors?.some((error) => error.includes("timed out"))) {
+    return t("dns.upstream_edit.h3_test_timeout");
+  }
+  if (
+    errors?.some(
+      (error) =>
+        error.includes("network is unreachable") ||
+        error.includes("no route to host"),
+    )
+  ) {
+    return t("dns.upstream_edit.h3_test_network_unreachable");
+  }
+  if (
+    errors?.some(
+      (error) => error.includes("tls") || error.includes("certificate"),
+    )
+  ) {
+    return t("dns.upstream_edit.h3_test_tls_failed");
+  }
+  return t("dns.upstream_edit.h3_test_failed");
+});
 
 async function testH3() {
   if (!rule.value) return;
-  await formRef.value?.validate();
   h3TestLoading.value = true;
+  h3TestResult.value = undefined;
+  h3TestError.value = "";
   try {
     h3TestResult.value = await test_dns_upstream_h3(rule.value);
-    showH3TestResult.value = true;
+  } catch (error: any) {
+    h3TestError.value =
+      error?.message ||
+      error?.error_id ||
+      t("dns.upstream_edit.h3_test_failed");
   } finally {
     h3TestLoading.value = false;
+    showH3TestResult.value = true;
   }
 }
 
@@ -285,19 +320,16 @@ async function import_rules() {
           /> -->
         </n-form-item-gi>
 
-        <n-form-item-gi v-if="supportsHttp3" :span="2" label="HTTP/3">
+        <n-form-item-gi v-if="supportsHttp3" :span="4" label="HTTP/3">
           <n-flex align="center" :wrap="false">
             <n-checkbox v-model:checked="http3Enabled">H3</n-checkbox>
-            <n-button size="small" :loading="h3TestLoading" @click="testH3">
+            <n-button :loading="h3TestLoading" @click="testH3">
               {{ t("dns.upstream_edit.test_h3") }}
             </n-button>
           </n-flex>
         </n-form-item-gi>
 
-        <n-form-item-gi
-          :span="supportsHttp3 ? 2 : 4"
-          :label="t('dns.upstream_edit.port')"
-        >
+        <n-form-item-gi :span="4" :label="t('dns.upstream_edit.port')">
           <n-input-number
             style="flex: 1"
             :min="1"
@@ -381,12 +413,15 @@ async function import_rules() {
     style="width: 560px"
   >
     <n-alert :type="h3TestSucceeded ? 'success' : 'error'" :bordered="false">
-      {{
-        h3TestSucceeded
-          ? t("dns.upstream_edit.h3_test_success")
-          : t("dns.upstream_edit.h3_test_failed")
-      }}
+      {{ h3TestMessage }}
     </n-alert>
+    <n-text
+      v-if="h3TestError"
+      type="error"
+      style="display: block; margin-top: 12px"
+    >
+      {{ h3TestError }}
+    </n-text>
     <n-descriptions v-if="h3TestResult" :column="2" style="margin-top: 12px">
       <n-descriptions-item :label="t('dns.upstream_edit.test_domain')">
         {{ h3TestResult.query_domain }}

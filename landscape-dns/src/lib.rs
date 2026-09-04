@@ -12,7 +12,12 @@ pub use landscape_common::dns::check::{
     CheckChainDnsResult, CheckDnsReq, CheckDnsResult, LandscapeRecord as CommonRecord,
 };
 use moka::future::Cache;
-use std::{collections::HashSet, path::PathBuf, sync::Arc, time::Instant};
+use std::{
+    collections::HashSet,
+    path::PathBuf,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 pub fn to_common_records(records: Vec<Record>) -> Vec<CommonRecord> {
     records
@@ -61,18 +66,27 @@ pub async fn test_doh3_upstream(
 
     for _ in 0..5 {
         let started = Instant::now();
-        let result = resolver.lookup(&query_domain, RecordType::A).await;
+        let result = tokio::time::timeout(
+            Duration::from_secs(3),
+            resolver.lookup(&query_domain, RecordType::A),
+        )
+        .await;
         let latency_ms = started.elapsed().as_secs_f64() * 1000.0;
         attempts.push(match result {
-            Ok(lookup) => DnsUpstreamH3TestAttempt {
+            Ok(Ok(lookup)) => DnsUpstreamH3TestAttempt {
                 latency_ms,
                 answers: lookup.answers().iter().map(|record| record.data.to_string()).collect(),
                 error: None,
             },
-            Err(error) => DnsUpstreamH3TestAttempt {
+            Ok(Err(error)) => DnsUpstreamH3TestAttempt {
                 latency_ms,
                 answers: vec![],
                 error: Some(error.to_string()),
+            },
+            Err(_) => DnsUpstreamH3TestAttempt {
+                latency_ms,
+                answers: vec![],
+                error: Some("request timed out after 3 seconds".into()),
             },
         });
     }
