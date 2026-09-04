@@ -125,7 +125,7 @@ async function append_import_rules() {
     v-model:show="show"
     v-model:enabled="rule_enabled"
     :title="t('dns.rule_edit.title')"
-    width="860px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="enter"
   >
     <!-- {{ isModified }} -->

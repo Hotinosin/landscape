@@ -97,7 +97,7 @@ async function save() {
   <n-modal
     :show="show"
     preset="card"
-    style="width: 640px"
+    style="width: var(--app-secondary-modal-width)"
     :title="t('dns_provider.provider_profiles')"
     @update:show="emit('update:show', $event)"
   >

@@ -423,7 +423,7 @@ async function saveRule() {
     v-model:enabled="rule_enabled"
     :title="t('gateway.edit_title')"
     :switch-disabled="!rule || isLegacyRule"
-    width="1100px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="enter"
   >
     <div v-if="rule" class="editor-shell">
@@ -868,7 +868,11 @@ async function saveRule() {
 
   <n-modal
     v-model:show="showPathGroupModal"
-    style="width: 760px"
+    style="
+      width: var(--app-secondary-modal-width);
+      max-height: var(--app-secondary-modal-max-height);
+    "
+    content-style="min-height: 0; overflow: auto"
     class="custom-card"
     preset="card"
     :title="t('gateway.path_group_editor')"

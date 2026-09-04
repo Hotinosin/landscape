@@ -74,7 +74,7 @@ function onCreate(): StaticRouteConfig {
     v-model:enabled="service_enabled"
     :title="t('network.route_lan.title')"
     :switch-disabled="service_config === null"
-    width="600px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="on_modal_enter"
   >
     <n-form v-if="service_config !== null" :model="service_config">

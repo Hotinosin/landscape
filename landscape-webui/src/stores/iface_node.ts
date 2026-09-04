@@ -10,14 +10,14 @@ interface IfaceOption {
   ifindex: number;
 }
 
-const NODE_WIDTH = 360;
+const NODE_WIDTH = 280;
 const NODE_HEIGHT = 136;
 const LANE_PADDING = 48;
 const GROUP_GAP = 18;
 const STACK_GAP = 8;
 const CORE_COLUMN_GAP = 14;
-const IDEAL_COLUMN_GAP = 320;
-const MIN_GRAPH_WIDTH = 940;
+const IDEAL_COLUMN_GAP = NODE_WIDTH + LANE_PADDING;
+const MIN_GRAPH_WIDTH = NODE_WIDTH * 3 + LANE_PADDING * 4;
 const MAX_GRAPH_WIDTH = 1480;
 
 function sort_devices(devs: NetDev[]) {

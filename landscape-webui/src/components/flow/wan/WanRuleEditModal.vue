@@ -167,7 +167,7 @@ async function append_import_rules() {
     v-model:enabled="rule_enabled"
     :title="t('flow.wan_rule_edit.title')"
     :switch-disabled="!rule"
-    width="860px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="enter"
   >
     <!-- {{ isModified }} -->

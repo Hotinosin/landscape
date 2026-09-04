@@ -25,7 +25,7 @@ async function add_bridge() {
 <template>
   <n-modal v-model:show="showModal">
     <n-card
-      style="width: 600px; display: flex"
+      style="width: var(--app-secondary-modal-width); display: flex"
       :title="t('common.create_bridge_device')"
       :bordered="false"
       role="dialog"

@@ -17,7 +17,8 @@ const props = withDefaults(
     showSwitch?: boolean;
   }>(),
   {
-    width: "600px",
+    width: "var(--app-secondary-modal-width)",
+    maxHeight: "var(--app-secondary-modal-max-height)",
     closable: true,
     switchDisabled: false,
     showSwitch: true,
@@ -67,6 +68,7 @@ function enableRailStyle({ checked }: { checked: boolean }) {
       :bordered="false"
       :closable="closable"
       size="small"
+      content-style="min-height: 0; overflow: auto"
       role="dialog"
       aria-modal="true"
       @close="closeModal"

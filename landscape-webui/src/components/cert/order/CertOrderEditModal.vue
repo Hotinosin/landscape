@@ -294,7 +294,7 @@ async function save() {
   <n-modal
     :auto-focus="false"
     v-model:show="show"
-    style="width: 600px"
+    style="width: var(--app-secondary-modal-width)"
     class="custom-card"
     preset="card"
     :title="t('cert.cert_edit_title')"

@@ -170,7 +170,7 @@ async function append_import_rules() {
     v-model:enabled="rule_enabled"
     :title="t('dns.redirect_edit.title')"
     :switch-disabled="!rule"
-    width="600px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="enter"
   >
     <!-- {{ isModified }} -->

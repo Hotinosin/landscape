@@ -113,7 +113,7 @@ function select_ip_model(value: IfaceIpMode) {
     v-model:show="show_model"
     v-model:enabled="iface_data.enable"
     :title="t('interface.title')"
-    width="600px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="on_modal_enter"
   >
     <n-flex style="flex: 1" vertical v-if="iface_data.ip_model !== undefined">

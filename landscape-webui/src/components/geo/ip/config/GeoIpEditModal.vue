@@ -145,7 +145,7 @@ const rules: FormRules = {
     v-model:enabled="rule_enabled"
     :title="t('geo.geo_ip.title')"
     :switch-disabled="!rule"
-    width="600px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="enter"
   >
     <n-form

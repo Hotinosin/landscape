@@ -95,7 +95,7 @@ async function confirm_config() {
     v-model:show="show"
     v-model:enabled="value.enable"
     :title="t('pppoe.editor.title')"
-    width="600px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="init_conf_value"
   >
     <!-- <template #header-extra> 噢! </template> -->

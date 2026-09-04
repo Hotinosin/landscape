@@ -112,7 +112,7 @@ watch(
     v-model:show="show"
     preset="card"
     class="custom-card"
-    style="width: min(960px, 92vw)"
+    style="width: var(--app-secondary-modal-width)"
     :title="t('cert.cert_info_title')"
     :bordered="false"
   >

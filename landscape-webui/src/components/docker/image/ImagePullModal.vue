@@ -19,7 +19,7 @@ async function pull_image() {}
 <template>
   <n-modal :auto-focus="false" v-model:show="show_model">
     <n-card
-      style="width: 600px"
+      style="width: var(--app-secondary-modal-width)"
       :title="t('common.pull_image')"
       :bordered="false"
       size="small"

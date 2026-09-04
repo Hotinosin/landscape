@@ -203,7 +203,7 @@ const attribute_options = computed(() => {
       />
 
       <n-select
-        :style="{ width: '120px' }"
+        class="dns-geo-select__attribute"
         v-model:value="attribute_key"
         filterable
         :placeholder="t('common.filter_attr')"
@@ -219,5 +219,9 @@ const attribute_options = computed(() => {
 .dns-geo-select {
   flex: 1;
   min-width: 0;
+}
+.dns-geo-select__attribute {
+  width: 180px;
+  flex: 0 0 180px;
 }
 </style>

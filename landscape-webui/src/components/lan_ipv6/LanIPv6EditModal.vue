@@ -248,7 +248,7 @@ function replace_group_sources(
     :mask-closable="!config_dirty"
     :title="t('lan_ipv6.title')"
     :switch-disabled="!service_config"
-    width="1200px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="on_modal_enter"
   >
     <n-form

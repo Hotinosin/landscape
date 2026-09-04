@@ -130,7 +130,7 @@ const has_edge_label = computed({
     @after-enter="on_modal_enter"
   >
     <n-card
-      style="width: 600px"
+      style="width: var(--app-secondary-modal-width)"
       :title="t('docker.docker_run.title', { image: props.image_name })"
       :bordered="false"
       size="small"

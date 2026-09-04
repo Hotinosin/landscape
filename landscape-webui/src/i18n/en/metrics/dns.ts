@@ -61,8 +61,8 @@ export default {
     latency_subtitle: "Avg latency (min 3 samples)",
     no_data: "No Data",
     from_samples: "From {count} samples",
-    rules: "Domain Rules",
-    ip_rules: "IP Rules",
+    rules: "DNS Rules",
+    ip_rules: "Target IP Rules",
     refresh: "Refresh Metrics",
     recent_5m: "(5 mins)",
     latency_tip:

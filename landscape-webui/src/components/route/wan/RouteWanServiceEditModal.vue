@@ -64,7 +64,7 @@ async function save_config() {
     v-model:enabled="service_enabled"
     :title="t('network.route_wan.title')"
     :switch-disabled="service_config === null"
-    width="600px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="on_modal_enter"
   >
     <template #footer>

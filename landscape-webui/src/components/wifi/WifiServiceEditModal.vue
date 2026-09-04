@@ -48,7 +48,7 @@ async function save_config() {
     v-model:show="show_model"
     v-model:enabled="service_config.enable"
     :title="t('wifi.title')"
-    width="600px"
+    width="var(--app-secondary-modal-width)"
     @after-enter="on_modal_enter"
   >
     <n-form :model="service_config">
