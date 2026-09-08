@@ -92,6 +92,8 @@ body {
 }
 
 .standard-data-table {
+  width: calc(100% - 8px);
+  margin: 4px;
   overflow: hidden;
   border-radius: var(--app-radius-surface);
   box-shadow: 0 1px 4px var(--app-shadow-color);
@@ -158,19 +160,11 @@ body {
   padding: var(--app-space-page, var(--app-space-page));
 }
 
-/* Keep page surfaces and overlay containers in sync during theme changes. */
-.n-config-provider,
-.n-layout,
-.n-card,
-.n-alert,
-.n-modal,
-.n-dialog,
-.n-popover,
-.n-tooltip {
-  transition:
-    background-color var(--app-motion-normal, 180ms) ease,
-    border-color var(--app-motion-normal, 180ms) ease,
-    color var(--app-motion-normal, 180ms) ease;
+/* Theme mode changes are atomic; component transitions otherwise expose mixed frames. */
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
 }
 
 .n-drawer {

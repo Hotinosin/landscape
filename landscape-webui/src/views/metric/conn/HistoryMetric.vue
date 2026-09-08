@@ -305,7 +305,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <n-flex vertical :size="0" style="flex: 1; overflow: hidden">
+  <n-flex
+    vertical
+    :wrap="false"
+    :size="0"
+    style="flex: 1; min-height: 0; overflow: hidden"
+  >
     <!-- History global summary -->
     <n-card
       size="small"
@@ -610,7 +615,11 @@ onMounted(() => {
       <span></span>
     </div>
 
-    <n-virtual-list style="flex: 1" :item-size="64" :items="filteredHistory">
+    <n-virtual-list
+      style="flex: 1; min-height: 0"
+      :item-size="55"
+      :items="filteredHistory"
+    >
       <template #default="{ item, index }">
         <HistoryItemInfo
           :history="item"

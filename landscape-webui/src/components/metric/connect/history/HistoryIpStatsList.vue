@@ -235,7 +235,7 @@ const handleSort = (sorter: DataTableSortState | null) => {
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1; overflow: hidden">
+  <n-flex vertical :wrap="false" class="history-ip-stats-list">
     <n-flex align="center" justify="space-between" style="margin-bottom: 12px">
       <n-h3 style="margin: 0">{{ title }}</n-h3>
       <n-text depth="3">
@@ -244,13 +244,22 @@ const handleSort = (sorter: DataTableSortState | null) => {
     </n-flex>
 
     <n-data-table
+      class="history-ip-stats-table"
       remote
+      flex-height
       size="small"
       :columns="columns"
       :data="stats"
       :pagination="false"
-      :max-height="'calc(100vh - 350px)'"
       @update:sorter="handleSort"
     />
   </n-flex>
 </template>
+
+<style scoped>
+.history-ip-stats-list,
+.history-ip-stats-table {
+  flex: 1;
+  min-height: 0;
+}
+</style>

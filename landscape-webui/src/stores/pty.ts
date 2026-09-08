@@ -61,12 +61,16 @@ export const usePtyStore = defineStore("pty", () => {
   );
 
   const config = ref<LandscapePtyConfig>({
-    shell: "bash",
+    shell: localStorage.getItem("landscape-pty-shell") || "/bin/bash",
     rows: 0,
     cols: 0,
     pixel_width: 0,
     pixel_height: 0,
   });
+  watch(
+    () => config.value.shell,
+    (shell) => localStorage.setItem("landscape-pty-shell", shell),
+  );
 
   function objToQuery(obj: any) {
     const token = localStorage.getItem(LANDSCAPE_TOKEN_KEY) ?? "";

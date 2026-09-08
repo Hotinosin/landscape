@@ -157,7 +157,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <n-flex vertical :size="0" style="flex: 1; overflow: hidden">
+  <n-flex vertical :wrap="false" :size="0" class="live-metric">
     <!-- System-wide active connection stats -->
     <n-card
       size="small"
@@ -380,6 +380,12 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.live-metric {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .connect-list-header {
   display: grid;
   grid-template-columns: 220px 270px minmax(240px, 1fr) 120px 128px 28px;

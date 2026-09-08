@@ -237,7 +237,7 @@ const processedData = computed(() => {
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1; overflow: hidden">
+  <n-flex vertical :wrap="false" class="ip-stats-list">
     <n-flex align="center" justify="space-between" style="margin-bottom: 12px">
       <n-h3 style="margin: 0">{{ title }}</n-h3>
       <n-text depth="3">
@@ -246,13 +246,22 @@ const processedData = computed(() => {
     </n-flex>
 
     <n-data-table
+      class="ip-stats-table"
       remote
+      flex-height
       size="small"
       :columns="columns"
       :data="processedData"
       :pagination="false"
-      :max-height="'calc(100vh - 350px)'"
       @update:sorter="handleSort"
     />
   </n-flex>
 </template>
+
+<style scoped>
+.ip-stats-list,
+.ip-stats-table {
+  flex: 1;
+  min-height: 0;
+}
+</style>

@@ -5,6 +5,8 @@ import CPUUsage from "@/components/sysinfo/CPUUsage.vue";
 import MemUsage from "@/components/sysinfo/MemUsage.vue";
 import DnsStatusCard from "@/components/dns/DnsStatusCard.vue";
 import SystemInfo from "@/components/sysinfo/SystemInfo.vue";
+import RealtimeNetwork from "@/components/sysinfo/RealtimeNetwork.vue";
+import ServiceHealth from "@/components/sysinfo/ServiceHealth.vue";
 import NetFlow from "@/components/topology/NetFlow.vue";
 
 const { t } = useI18n({ useScope: "global" });
@@ -24,6 +26,12 @@ const { t } = useI18n({ useScope: "global" });
       </n-gi>
       <n-gi style="display: flex; height: 280px" :span="1">
         <DnsStatusCard></DnsStatusCard>
+      </n-gi>
+      <n-gi style="display: flex; height: 280px" :span="1">
+        <RealtimeNetwork />
+      </n-gi>
+      <n-gi style="display: flex; height: 280px" :span="1">
+        <ServiceHealth />
       </n-gi>
     </n-grid>
     <n-divider style="margin: 0px 0" title-placement="left">

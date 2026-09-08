@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useMessage } from "naive-ui";
+import { useMessage, type DataTableColumns } from "naive-ui";
 import { isIP } from "is-ip";
-import { computed } from "vue";
+import { computed, h } from "vue";
 import { ref } from "vue";
 import type { DnsUpstreamConfig } from "@landscape-router/types/api/schemas";
 import {
@@ -16,6 +16,7 @@ import {
   read_context_from_clipboard,
 } from "@/lib/common";
 import { useI18n } from "vue-i18n";
+import StandardDataTable from "@/components/common/StandardDataTable.vue";
 
 type Props = {
   rule_id: string | null;
@@ -97,6 +98,31 @@ const h3TestMessage = computed(() => {
   }
   return t("dns.upstream_edit.h3_test_failed");
 });
+type H3Attempt = DnsUpstreamH3TestResult["attempts"][number];
+const h3AttemptColumns = computed<DataTableColumns<H3Attempt>>(() => [
+  {
+    title: "#",
+    key: "index",
+    width: 52,
+    render: (_attempt, index) => index + 1,
+  },
+  {
+    title: t("dns.upstream_edit.latency"),
+    key: "latency",
+    width: 110,
+    render: (attempt) => `${attempt.latency_ms.toFixed(2)} ms`,
+  },
+  {
+    title: t("dns.upstream_edit.result"),
+    key: "result",
+    render: (attempt) =>
+      h(
+        "span",
+        { class: "h3-attempt-result" },
+        attempt.error || attempt.answers.join(", ") || "-",
+      ),
+  },
+]);
 
 async function testH3() {
   if (!rule.value) return;
@@ -439,22 +465,24 @@ async function import_rules() {
           }}
         </n-descriptions-item>
       </n-descriptions>
-      <n-table v-if="h3TestResult" size="small" style="margin-top: 12px">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>{{ t("dns.upstream_edit.latency") }}</th>
-            <th>{{ t("dns.upstream_edit.result") }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(attempt, index) in h3TestResult.attempts" :key="index">
-            <td>{{ index + 1 }}</td>
-            <td>{{ attempt.latency_ms.toFixed(2) }} ms</td>
-            <td>{{ attempt.error || attempt.answers.join(", ") || "-" }}</td>
-          </tr>
-        </tbody>
-      </n-table>
+      <StandardDataTable
+        v-if="h3TestResult"
+        class="h3-attempt-table"
+        :columns="h3AttemptColumns"
+        :data="h3TestResult.attempts"
+        :scroll-x="520"
+        size="small"
+      />
     </template>
   </n-modal>
 </template>
+
+<style scoped>
+.h3-attempt-table {
+  margin-top: var(--app-space-section);
+}
+
+.h3-attempt-result {
+  overflow-wrap: anywhere;
+}
+</style>

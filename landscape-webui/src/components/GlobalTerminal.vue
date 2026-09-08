@@ -18,8 +18,11 @@ import {
   OpenPanelBottom as PushOutline,
   Close,
   Settings as SettingsOutline,
+  Unlink,
+  Renew,
 } from "@vicons/carbon";
 import { usePtyStore } from "@/stores/pty";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { storeToRefs } from "pinia";
@@ -45,6 +48,10 @@ let fitAddon: FitAddon | null = null;
 // UI State
 const isFullScreen = ref(false);
 const showSettings = ref(false);
+const terminalSettingsEnabled = ref(true);
+const shellOptions = ["/bin/bash", "/bin/zsh", "/bin/sh", "/usr/bin/fish"].map(
+  (value) => ({ label: value, value }),
+);
 
 // Draggable button state
 const position = ref({ x: 0, y: 0 });
@@ -335,6 +342,10 @@ onUnmounted(cleanupTerminal);
         </n-tag>
       </n-flex>
       <n-flex size="small">
+        <n-button secondary size="small" @click="showSettings = true">
+          <template #icon><n-icon :component="SettingsOutline" /></template>
+          {{ t("terminal.settings") }}
+        </n-button>
         <n-button
           secondary
           type="error"
@@ -342,14 +353,19 @@ onUnmounted(cleanupTerminal);
           :disabled="!isConnected"
           @click="ptyStore.disconnect"
         >
+          <template #icon><n-icon :component="Unlink" /></template>
           {{ t("terminal.disconnect") }}
         </n-button>
         <n-button secondary type="primary" size="small" @click="reconnect">
+          <template #icon><n-icon :component="Renew" /></template>
           {{ t("terminal.reconnect") }}
         </n-button>
       </n-flex>
     </n-flex>
-    <div ref="pageContentRef" class="terminal-container terminal-page__content" />
+    <div
+      ref="pageContentRef"
+      class="terminal-container terminal-page__content"
+    />
   </div>
 
   <!-- Floating Button -->
@@ -426,58 +442,16 @@ onUnmounted(cleanupTerminal);
           </n-flex>
 
           <n-flex size="small" align="center">
-            <n-popover
-              trigger="click"
-              v-model:show="showSettings"
-              placement="bottom-end"
+            <n-button
+              strong
+              secondary
+              type="default"
+              size="tiny"
+              circle
+              @click="showSettings = true"
             >
-              <template #trigger>
-                <n-button strong secondary type="default" size="tiny" circle>
-                  <template #icon
-                    ><n-icon :component="SettingsOutline"
-                  /></template>
-                </n-button>
-              </template>
-              <n-flex
-                vertical
-                size="small"
-                style="padding: 4px; min-width: 200px"
-              >
-                <n-flex justify="space-between" align="center">
-                  <span>{{ t("terminal.shell") }}:</span>
-                  <n-input
-                    v-model:value="config.shell"
-                    placeholder="bash"
-                    size="tiny"
-                    style="width: 100px"
-                  />
-                </n-flex>
-                <n-flex justify="space-between" align="center">
-                  <span>{{ t("terminal.keep_alive") }}:</span>
-                  <n-switch v-model:value="keepAlive" size="small" />
-                </n-flex>
-                <n-divider style="margin: 4px 0" />
-                <n-flex justify="space-between">
-                  <n-popconfirm
-                    @positive-click="ptyStore.disconnect"
-                    :show-icon="false"
-                  >
-                    <template #trigger>
-                      <n-button
-                        type="error"
-                        size="small"
-                        :disabled="!isConnected"
-                        >{{ t("terminal.disconnect") }}</n-button
-                      >
-                    </template>
-                    {{ t("terminal.disconnect_confirm") }}
-                  </n-popconfirm>
-                  <n-button type="primary" size="small" @click="reconnect">{{
-                    t("terminal.reconnect")
-                  }}</n-button>
-                </n-flex>
-              </n-flex>
-            </n-popover>
+              <template #icon><n-icon :component="SettingsOutline" /></template>
+            </n-button>
 
             <n-divider vertical style="margin: 0 4px" />
 
@@ -564,58 +538,16 @@ onUnmounted(cleanupTerminal);
         </n-flex>
 
         <n-flex size="small" align="center">
-          <n-popover
-            trigger="click"
-            v-model:show="showSettings"
-            placement="bottom-end"
+          <n-button
+            strong
+            secondary
+            type="default"
+            size="tiny"
+            circle
+            @click="showSettings = true"
           >
-            <template #trigger>
-              <n-button strong secondary type="default" size="tiny" circle>
-                <template #icon
-                  ><n-icon :component="SettingsOutline"
-                /></template>
-              </n-button>
-            </template>
-            <n-flex
-              vertical
-              size="small"
-              style="padding: 4px; min-width: 200px"
-            >
-              <n-flex justify="space-between" align="center">
-                <span>{{ t("terminal.shell") }}:</span>
-                <n-input
-                  v-model:value="config.shell"
-                  placeholder="bash"
-                  size="tiny"
-                  style="width: 100px"
-                />
-              </n-flex>
-              <n-flex justify="space-between" align="center">
-                <span>{{ t("terminal.keep_alive") }}:</span>
-                <n-switch v-model:value="keepAlive" size="small" />
-              </n-flex>
-              <n-divider style="margin: 4px 0" />
-              <n-flex justify="space-between">
-                <n-popconfirm
-                  @positive-click="ptyStore.disconnect"
-                  :show-icon="false"
-                >
-                  <template #trigger>
-                    <n-button
-                      type="error"
-                      size="small"
-                      :disabled="!isConnected"
-                      >{{ t("terminal.disconnect") }}</n-button
-                    >
-                  </template>
-                  {{ t("terminal.disconnect_confirm") }}
-                </n-popconfirm>
-                <n-button type="primary" size="small" @click="reconnect">{{
-                  t("terminal.reconnect")
-                }}</n-button>
-              </n-flex>
-            </n-flex>
-          </n-popover>
+            <template #icon><n-icon :component="SettingsOutline" /></template>
+          </n-button>
 
           <n-divider vertical style="margin: 0 4px" />
 
@@ -676,6 +608,36 @@ onUnmounted(cleanupTerminal);
 
     <div ref="dockContentRef" class="terminal-container"></div>
   </div>
+
+  <ConfigModal
+    v-model:show="showSettings"
+    v-model:enabled="terminalSettingsEnabled"
+    :title="t('terminal.settings')"
+    :show-switch="false"
+  >
+    <n-form label-placement="left" label-width="100">
+      <n-form-item :label="t('terminal.shell_path')">
+        <n-select
+          v-model:value="config.shell"
+          :options="shellOptions"
+          filterable
+          tag
+          placeholder="/bin/bash"
+        />
+      </n-form-item>
+      <n-form-item :label="t('terminal.keep_alive')">
+        <n-switch v-model:value="keepAlive" />
+      </n-form-item>
+    </n-form>
+    <n-text depth="3">{{ t("terminal.shell_reconnect_tip") }}</n-text>
+    <template #footer>
+      <n-flex justify="end">
+        <n-button @click="showSettings = false">
+          {{ t("common.close") }}
+        </n-button>
+      </n-flex>
+    </template>
+  </ConfigModal>
 </template>
 
 <style scoped>
@@ -731,7 +693,7 @@ onUnmounted(cleanupTerminal);
   padding: 0 8px;
   background-color: var(--app-terminal-header-color) !important;
   border-bottom: 1px solid var(--app-terminal-border-color) !important;
-  color: var(--app-text-inverse-color);
+  color: var(--app-text-primary-color);
   flex-shrink: 0;
 }
 

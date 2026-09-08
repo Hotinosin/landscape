@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent, ref } from "vue";
+import { computed, defineAsyncComponent, ref } from "vue";
 import type {
   ConnectKey,
   ConnectRealtimeStatus,
@@ -17,6 +17,12 @@ interface Props {
   connect_metrics: ConnectRealtimeStatus[];
 }
 const props = defineProps<Props>();
+const virtualItems = computed(() =>
+  props.connect_metrics.map((item) => ({
+    ...item,
+    virtual_key: `${item.key.create_time}-${item.key.cpu_id}`,
+  })),
+);
 
 const show_chart = ref(false);
 const show_chart_key = ref<ConnectKey | null>(null);
@@ -35,7 +41,12 @@ const emit = defineEmits(["search:tuple", "search:src", "search:dst"]);
 </script>
 
 <template>
-  <n-virtual-list class="list" :item-size="56" :items="props.connect_metrics">
+  <n-virtual-list
+    class="list"
+    :item-size="44"
+    :items="virtualItems"
+    key-field="virtual_key"
+  >
     <template #default="{ item, index }">
       <ConnectItemInfo
         @show:chart="show_chart_drawer"
@@ -60,6 +71,7 @@ const emit = defineEmits(["search:tuple", "search:src", "search:dst"]);
 
 <style scoped>
 .list {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 </style>

@@ -348,7 +348,7 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
   min-height: 0;
   height: 100%;
   flex: 1;
-  border-radius: 0 0 6px 6px;
+  border-radius: 0 0 var(--app-radius-control) var(--app-radius-control);
 }
 .geo-key {
   width: 100%;

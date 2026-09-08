@@ -78,7 +78,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1; overflow: hidden">
+  <n-flex
+    vertical
+    :wrap="false"
+    style="flex: 1; min-height: 0; overflow: hidden"
+  >
     <!-- 系统全局活跃连接统计 -->
     <n-card
       size="small"

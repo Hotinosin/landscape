@@ -136,7 +136,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1; overflow: hidden">
+  <n-flex
+    vertical
+    :wrap="false"
+    style="flex: 1; min-height: 0; overflow: hidden"
+  >
     <!-- History global summary -->
     <n-card
       size="small"
@@ -234,7 +238,7 @@ onMounted(() => {
       }}</n-button>
     </n-flex>
 
-    <n-spin :show="loading">
+    <n-spin :show="loading" class="history-ip-spin">
       <HistoryIpStatsList
         :stats="stats"
         :title="$t('metric.connect.stats.history_dst')"
@@ -248,3 +252,16 @@ onMounted(() => {
     </n-spin>
   </n-flex>
 </template>
+
+<style scoped>
+.history-ip-spin {
+  flex: 1;
+  min-height: 0;
+}
+
+.history-ip-spin :deep(.n-spin-content) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+</style>

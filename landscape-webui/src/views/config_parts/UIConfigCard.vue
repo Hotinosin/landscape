@@ -2,10 +2,18 @@
 import { usePreferenceStore } from "@/stores/preference";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useMessage } from "naive-ui";
-import { computed } from "vue";
+import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { Checkmark, Help as HelpCircleOutline } from "@vicons/carbon";
-import type { AccentColor } from "@/themes";
+import { Help as HelpCircleOutline } from "@vicons/carbon";
+import {
+  selectThemePreset,
+  themePresets,
+  themeStyleColor,
+  themeStyleFromRgb,
+  type ThemePreset,
+  type ThemeRadius,
+  type ThemeStyle,
+} from "@/themes";
 
 const prefStore = usePreferenceStore();
 const frontEndStore = useFrontEndStore();
@@ -24,12 +32,72 @@ const themeOptions = computed(() => [
   { label: t("config.dark_mode"), value: "dark" },
 ]);
 
-const accentOptions = computed<{ label: string; value: AccentColor }[]>(() => [
-  { label: t("config.accent_blue"), value: "blue" },
-  { label: t("config.accent_green"), value: "green" },
-  { label: t("config.accent_red"), value: "red" },
-  { label: t("config.accent_purple"), value: "purple" },
+const presetOptions = computed(() => [
+  ...Object.keys(themePresets).map((value) => ({
+    label: value.charAt(0).toUpperCase() + value.slice(1),
+    value: value as Exclude<ThemePreset, "custom">,
+    color: themeStyleColor(
+      selectThemePreset(prefStore.themeStyle, value as ThemePreset),
+    ),
+  })),
+  {
+    label: t("config.theme_custom"),
+    value: "custom" as const,
+    color: themeColor.value,
+  },
 ]);
+
+const radiusOptions = computed<{ label: string; value: ThemeRadius }[]>(() => [
+  { label: t("config.radius_none"), value: "none" },
+  { label: t("config.radius_small"), value: "small" },
+  { label: t("config.radius_medium"), value: "medium" },
+  { label: t("config.radius_large"), value: "large" },
+]);
+
+const themeColor = computed({
+  get: () => themeStyleColor(prefStore.themeStyle),
+  set: (value: string) => {
+    prefStore.themeStyle = themeStyleFromRgb(prefStore.themeStyle, value);
+  },
+});
+
+function choosePreset(preset: ThemePreset) {
+  prefStore.themeStyle = selectThemePreset(prefStore.themeStyle, preset);
+}
+
+function renderPresetLabel(option: { label?: string; color?: string }) {
+  return h(
+    "span",
+    {
+      class: "preset-label",
+      style: "display:inline-flex;align-items:center;gap:8px",
+    },
+    [
+      h("span", {
+        class: "preset-label-swatch",
+        style: {
+          backgroundColor: option.color,
+          width: "14px",
+          height: "14px",
+          flex: "0 0 14px",
+          borderRadius: "50%",
+        },
+      }),
+      option.label,
+    ],
+  );
+}
+
+function updateThemeValue<K extends keyof ThemeStyle>(
+  key: K,
+  value: ThemeStyle[K] | null,
+) {
+  if (value === null) return;
+  prefStore.themeStyle = {
+    ...prefStore.themeStyle,
+    [key]: value,
+  };
+}
 
 const displayStyleOptions = computed(() => [
   { label: t("config.display_style_card"), value: "card" },
@@ -74,41 +142,72 @@ async function handleSave() {
         />
       </n-form-item>
       <n-form-item :label="t('config.theme')">
-        <n-flex align="center" :wrap="false" size="large">
-          <n-select
-            class="preference-control"
-            v-model:value="prefStore.theme"
-            :options="themeOptions"
-            :placeholder="t('config.theme_placeholder')"
-          />
-          <div
-            class="accent-picker"
-            role="radiogroup"
-            :aria-label="t('config.accent_color')"
-          >
-            <span>{{ t("config.accent_color") }}</span>
-            <n-tooltip v-for="option in accentOptions" :key="option.value">
-              <template #trigger>
+        <n-select
+          class="preference-control"
+          v-model:value="prefStore.theme"
+          :options="themeOptions"
+          :placeholder="t('config.theme_placeholder')"
+        />
+      </n-form-item>
+      <n-form-item :label="t('config.theme_preset')">
+        <div class="theme-editor">
+          <div class="preset-row">
+            <n-select
+              class="preference-control"
+              :value="prefStore.themeStyle.preset"
+              :options="presetOptions"
+              :render-label="renderPresetLabel"
+              @update:value="choosePreset"
+            />
+            <n-color-picker
+              v-if="prefStore.themeStyle.preset === 'custom'"
+              class="custom-color-picker"
+              v-model:value="themeColor"
+              :modes="['rgb']"
+              :show-alpha="false"
+            >
+              <template #trigger="{ value, onClick, ref: triggerRef }">
                 <button
-                  class="accent-swatch"
-                  :style="{
-                    '--swatch-color': `var(--app-accent-${option.value}-color)`,
-                  }"
+                  :ref="triggerRef"
+                  class="color-trigger"
                   type="button"
-                  role="radio"
-                  :aria-checked="prefStore.accent === option.value"
-                  :aria-label="option.label"
-                  @click="prefStore.accent = option.value"
-                >
-                  <n-icon v-if="prefStore.accent === option.value" size="16">
-                    <Checkmark />
-                  </n-icon>
-                </button>
+                  :style="{ backgroundColor: value || themeColor }"
+                  :aria-label="t('config.theme_color')"
+                  @click="onClick"
+                />
               </template>
-              {{ option.label }}
-            </n-tooltip>
+            </n-color-picker>
           </div>
-        </n-flex>
+          <div class="theme-parameters">
+            <label>
+              <span>{{ t("config.theme_base") }}</span>
+              <n-slider
+                :value="prefStore.themeStyle.base"
+                :min="0"
+                :max="0.08"
+                :step="0.005"
+                @update:value="updateThemeValue('base', $event)"
+              />
+              <n-input-number
+                :value="prefStore.themeStyle.base"
+                :min="0"
+                :max="0.08"
+                :step="0.005"
+                :show-button="false"
+                size="small"
+                @update:value="updateThemeValue('base', $event)"
+              />
+            </label>
+            <label>
+              <span>{{ t("config.radius") }}</span>
+              <n-select
+                :value="prefStore.themeStyle.radius"
+                :options="radiusOptions"
+                @update:value="updateThemeValue('radius', $event)"
+              />
+            </label>
+          </div>
+        </div>
       </n-form-item>
       <n-form-item :label="t('config.display_style')">
         <n-flex align="center" :wrap="false" size="small">
@@ -147,27 +246,62 @@ async function handleSave() {
   max-width: 100%;
 }
 
-.accent-picker {
+.theme-editor {
+  width: min(680px, 100%);
+}
+
+.preset-row {
   display: flex;
   align-items: center;
   gap: var(--app-space-sm);
+  margin-bottom: var(--app-space-lg);
 }
 
-.accent-swatch {
+.custom-color-picker {
+  width: 30px;
+  flex: 0 0 30px;
+}
+
+.theme-parameters {
   display: grid;
-  width: 24px;
-  height: 24px;
+  grid-template-columns: repeat(2, 300px);
+  gap: 40px;
+  width: min(640px, 100%);
+}
+
+.theme-parameters label {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 80px;
+  gap: var(--app-space-sm);
+  align-items: center;
+}
+
+.theme-parameters label:last-child {
+  grid-template-columns: 76px minmax(0, 1fr);
+}
+
+.color-trigger {
+  display: block;
+  width: 30px;
+  height: 30px;
   padding: 0;
-  place-items: center;
-  border: 0;
+  border: 1px solid var(--app-border-default-color);
   border-radius: 50%;
-  color: var(--app-text-inverse-color);
-  background: var(--swatch-color);
   cursor: pointer;
 }
 
-.accent-swatch:focus-visible {
+.color-trigger:hover {
+  border-color: var(--app-brand-color);
+}
+
+.color-trigger:focus-visible {
   outline: 2px solid var(--app-brand-color);
   outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .theme-parameters {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
