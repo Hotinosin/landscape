@@ -6,9 +6,10 @@
 #include <bpf/bpf_core_read.h>
 
 #include "landscape.h"
-#include "route_v4.h"
-#include "route_v6.h"
-#include "route/route_packet.h"
+#include "route/route4_path.h"
+#include "route/route6_path.h"
+#include "route/route4_context.h"
+#include "route/route6_context.h"
 
 #include "chain/tc_cb.h"
 #include "chain/tc_wan_exit_maps.h"
@@ -25,10 +26,10 @@ static __always_inline u8 get_wan_ingress_l3_offset(struct __sk_buff *skb) {
 #define TC_INGRESS_V6_SLOT 1
 
 SEC("tc/ingress")
-int tc_wan_ingress_route_v4(struct __sk_buff *skb) {
-#define BPF_LOG_TOPIC "tc_wan_ingress_route_v4"
+int tc_route4_wan_ingress(struct __sk_buff *skb) {
+#define BPF_LOG_TOPIC "tc_route4_wan_ingress"
     int ret = 0;
-    struct route_context_v4 context = {0};
+    struct route4_context context = {0};
     struct packet_offset_info offset_info = {0};
     u8 l3 = get_wan_ingress_l3_offset(skb);
 
@@ -37,7 +38,7 @@ int tc_wan_ingress_route_v4(struct __sk_buff *skb) {
         return TC_ACT_OK;
     }
 
-    ret = read_route_context_v4_from_scan(skb, &offset_info, &context);
+    ret = route4_read_context_from_scan(skb, &offset_info, &context);
     if (ret != TC_ACT_OK) {
         return TC_ACT_OK;
     }
@@ -46,16 +47,16 @@ int tc_wan_ingress_route_v4(struct __sk_buff *skb) {
         return TC_ACT_UNSPEC;
     }
 
-    ret = is_current_wan_packet_v4(skb, l3, &context);
+    ret = route4_is_current_wan_packet(skb, l3, &context);
     if (ret != TC_ACT_OK) {
         return ret;
     }
 
-    ret = lan_redirect_check_v4(skb, l3, &context, false);
+    ret = tc_route4_lan_redirect_check_in_wan(skb, l3, &context, false);
     if (ret == TC_ACT_REDIRECT) {
         u8 mark = get_cache_mask(skb->mark);
         if (mark == INGRESS_STATIC_MARK) {
-            setting_cache_in_wan_v4(&context, l3, skb->ifindex);
+            route4_set_cache_in_wan(&context, l3, skb->ifindex);
         }
     }
 
@@ -64,10 +65,10 @@ int tc_wan_ingress_route_v4(struct __sk_buff *skb) {
 }
 
 SEC("tc/ingress")
-int tc_wan_ingress_route_v6(struct __sk_buff *skb) {
-#define BPF_LOG_TOPIC "tc_wan_ingress_route_v6"
+int tc_route6_wan_ingress(struct __sk_buff *skb) {
+#define BPF_LOG_TOPIC "tc_route6_wan_ingress"
     int ret = 0;
-    struct route_context_v6 context = {0};
+    struct route6_context context = {0};
     struct packet_offset_info offset_info = {0};
     u8 l3 = get_wan_ingress_l3_offset(skb);
 
@@ -76,7 +77,7 @@ int tc_wan_ingress_route_v6(struct __sk_buff *skb) {
         return TC_ACT_OK;
     }
 
-    ret = read_route_context_v6_from_scan(skb, &offset_info, &context);
+    ret = route6_read_context_from_scan(skb, &offset_info, &context);
     if (ret != TC_ACT_OK) {
         return TC_ACT_OK;
     }
@@ -85,17 +86,17 @@ int tc_wan_ingress_route_v6(struct __sk_buff *skb) {
         return TC_ACT_UNSPEC;
     }
 
-    ret = is_current_wan_packet_v6(skb, l3, &context);
+    ret = route6_is_current_wan_packet(skb, l3, &context);
     if (ret != TC_ACT_OK) {
-        ld_bpf_log("is_current_wan_packet_v6: %pI6", context.daddr.bytes);
+        ld_bpf_log("route6_is_current_wan_packet: %pI6", context.daddr.bytes);
         return ret;
     }
 
-    ret = lan_redirect_check_v6(skb, l3, &context, false);
+    ret = tc_route6_lan_redirect_check_in_wan(skb, l3, &context, false);
     if (ret == TC_ACT_REDIRECT) {
         u8 mark = get_cache_mask(skb->mark);
         if (mark == INGRESS_STATIC_MARK) {
-            setting_cache_in_wan_v6(&context, l3, skb->ifindex);
+            route6_set_cache_in_wan(&context, l3, skb->ifindex);
         }
     }
 
@@ -112,8 +113,8 @@ struct {
 } ls_wan_in_tails SEC(".maps") = {
     .values =
         {
-            [TC_INGRESS_V4_SLOT] = (void *)&tc_wan_ingress_route_v4,
-            [TC_INGRESS_V6_SLOT] = (void *)&tc_wan_ingress_route_v6,
+            [TC_INGRESS_V4_SLOT] = (void *)&tc_route4_wan_ingress,
+            [TC_INGRESS_V6_SLOT] = (void *)&tc_route6_wan_ingress,
         },
 };
 

@@ -15,6 +15,8 @@ use axum::{
 use axum_server::tls_rustls::RustlsConfig;
 use colored::Colorize;
 
+use landscape_ebpf::{chain::ip6_dao_event::Ip6DaoEventSource, runtime::EbpfRuntime};
+
 use landscape::{
     boot::{boot_check, log::init_logger, write_config_toml, write_init_lock},
     cert::build_tls_server_config_with_shared_resolver,
@@ -156,7 +158,7 @@ async fn prepare_startup_init(
 
     let db_store_provider = startup_phase!(
         "db_store_provider.new",
-        LandscapeDBServiceProvider::new(&config.store).await
+        LandscapeDBServiceProvider::new(&config.store).await?
     );
 
     if let Some(init_config) = init_config_to_import {
@@ -197,9 +199,12 @@ async fn run_system(
 
     // init App
 
-    // init eBPF instance
-    landscape_ebpf::chain::tc_manager::TcChainManager::instance();
-    landscape_ebpf::chain::xdp_manager::XdpChainManager::instance();
+    // init eBPF runtime (map space + TC/XDP chain managers)
+    let ebpf_rt = Arc::new(
+        EbpfRuntime::init(&LAND_ARGS.ebpf_map_space, LAND_ARGS.try_native_xdp.clone())
+            .expect("failed to init eBPF runtime"),
+    );
+    let ebpf_paths = ebpf_rt.paths().clone();
 
     let event_hub = EventHub::new();
     startup_phase!("observer.dev_observer", landscape::observer::dev_observer(&event_hub).await);
@@ -211,7 +216,7 @@ async fn run_system(
 
     startup_phase!(
         "xdp_redirect_able.clear",
-        landscape_ebpf::map_setting::redirect_able::clear_xdp_redirect_able()
+        landscape_ebpf::maps::redirect_able::clear_xdp_redirect_able(&ebpf_paths)
     );
 
     let (dns_service_tx, dns_service_rx) = mpsc::channel(DNS_EVENT_CHANNEL_SIZE);
@@ -245,6 +250,7 @@ async fn run_system(
             dns_service_tx.clone(),
             route_service_tx.clone(),
             event_handle.subscribe_device(),
+            ebpf_rt.clone().flow_rules(),
         )
         .await
     );
@@ -256,9 +262,13 @@ async fn run_system(
 
     let metric_service = startup_phase!(
         "metric_service.new",
-        MetricService::new(home_path.clone(), config.metric.clone())
-            .await
-            .map_err(StartupError::Metric)?
+        MetricService::new(
+            home_path.clone(),
+            config.metric.clone(),
+            Arc::new(ebpf_rt.metric_source_factory()),
+        )
+        .await
+        .map_err(StartupError::Metric)?
     );
 
     let cert_account_service = startup_phase!(
@@ -312,7 +322,11 @@ async fn run_system(
             .await
     );
 
-    let route_service = IpRouteService::new(route_service_rx, db_store_provider.flow_rule_store());
+    let route_service = IpRouteService::new(
+        route_service_rx,
+        db_store_provider.flow_rule_store(),
+        ebpf_rt.clone().route_table(),
+    );
     let enrolled_devices =
         db_store_provider.enrolled_device_store().list_all().await.map_err(|e| {
             StartupError::Database(DbError::Internal(format!(
@@ -347,6 +361,8 @@ async fn run_system(
             cert_service.clone(),
             metric_service.get_dns_metric_channel(),
             lan_hostname_registry,
+            Arc::new(ebpf_rt.dns_result_sink()),
+            Arc::new(ebpf_rt.flow_socket_registrar()),
         )
         .await
     );
@@ -354,6 +370,16 @@ async fn run_system(
         DnsProviderProfileService::new(db_store_provider.clone()).await;
     let prefix_map = IAPrefixMap::new();
 
+    let dao_event_source = match Ip6DaoEventSource::spawn(ebpf_paths.clone()) {
+        Ok(source) => {
+            tracing::info!("ip6_dao_event ringbuf consumer started");
+            Some(Arc::new(source))
+        }
+        Err(e) => {
+            tracing::warn!("ip6_dao_event ringbuf consumer failed to start: {e}");
+            None
+        }
+    };
     let lan_ipv6_service = LanIPv6ManagerService::new(
         db_store_provider.clone(),
         event_handle.subscribe_iface(),
@@ -362,6 +388,8 @@ async fn run_system(
         route_service.clone(),
         prefix_map.clone(),
         ipv6_assign_sender.clone(),
+        ebpf_rt.clone().mac_binding(),
+        dao_event_source,
     )
     .await;
     let enrolled_ipv6_cache = lan_ipv6_service.get_device_ipv6_map().await;
@@ -382,23 +410,28 @@ async fn run_system(
         db_store_provider.clone(),
         geo_ip_service.clone(),
         dst_ip_service_tx.subscribe(),
+        ebpf_rt.clone().flow_rules(),
     )
     .await;
     let firewall_blacklist_service = FirewallBlacklistService::new(
         db_store_provider.clone(),
         geo_ip_service.clone(),
         dst_ip_service_tx.subscribe(),
+        ebpf_rt.clone().firewall(),
     )
     .await;
 
     let config_service =
         LandscapeConfigService::new(config.clone(), db_store_provider.clone()).await;
 
-    let ebpf_service = LandscapeEbpfService::new();
+    let ebpf_service = LandscapeEbpfService::new(ebpf_rt.start_neigh_update());
 
-    let static_nat4_mapping_service =
-        StaticNat4MappingService::new(db_store_provider.clone(), event_handle.subscribe_device())
-            .await;
+    let static_nat4_mapping_service = StaticNat4MappingService::new(
+        db_store_provider.clone(),
+        event_handle.subscribe_device(),
+        ebpf_rt.clone().nat(),
+    )
+    .await;
 
     let shared_wan_iid = Arc::new(generate_wan_iid());
     let static_nat6_mapping_service = StaticNat6MappingService::new(
@@ -406,6 +439,7 @@ async fn run_system(
         event_handle.subscribe_device(),
         event_handle.subscribe_ipv6_assign(),
         shared_wan_iid.clone(),
+        ebpf_rt.clone().nat(),
     )
     .await;
 
@@ -416,23 +450,27 @@ async fn run_system(
         db_store_provider.clone(),
         route_service.clone(),
         event_handle.subscribe_iface(),
+        ebpf_rt.clone().lan_route(),
     )
     .await;
     let route_wan_service = RouteWanServiceManagerService::new(
         db_store_provider.clone(),
         event_handle.subscribe_iface(),
+        ebpf_rt.clone().wan_route(),
     )
     .await;
 
     let mss_clamp_service = MssClampServiceManagerService::new(
         db_store_provider.clone(),
         event_handle.subscribe_iface(),
+        ebpf_rt.clone().mss_clamp(),
     )
     .await;
 
     let firewall_service = FirewallServiceManagerService::new(
         db_store_provider.clone(),
         event_handle.subscribe_iface(),
+        ebpf_rt.clone().firewall(),
     )
     .await;
 
@@ -440,6 +478,7 @@ async fn run_system(
         db_store_provider.clone(),
         event_handle.subscribe_iface(),
         route_service.clone(),
+        ebpf_rt.clone().nat(),
     )
     .await;
 
@@ -456,11 +495,14 @@ async fn run_system(
         event_handle.subscribe_iface(),
         ipv4_assign_sender,
         event_handle.subscribe_device(),
+        ebpf_rt.clone().mac_binding(),
     )
     .await;
 
     let wan_ip_service = IfaceIpServiceManagerService::new(
         route_service.clone(),
+        ebpf_rt.clone().wan_addr_binding(),
+        ebpf_rt.clone().pppoe_dataplane(),
         db_store_provider.clone(),
         event_handle.subscribe_iface(),
     )
@@ -471,14 +513,18 @@ async fn run_system(
         .await
         .map_err(StartupError::Plugin)?;
 
-    let pppd_service =
-        PPPDServiceConfigManagerService::new(db_store_provider.clone(), route_service.clone())
-            .await;
+    let pppd_service = PPPDServiceConfigManagerService::new(
+        db_store_provider.clone(),
+        route_service.clone(),
+        ebpf_rt.clone().wan_addr_binding(),
+    )
+    .await;
 
     let ipv6_pd_service = DHCPv6ClientManagerService::new(
         db_store_provider.clone(),
         event_handle.subscribe_iface(),
         route_service.clone(),
+        ebpf_rt.clone().wan_addr_binding(),
         prefix_map.clone(),
         ipv6_prefix_sender.clone(),
         shared_wan_iid,
@@ -495,6 +541,7 @@ async fn run_system(
     let landscape_app_status = LandscapeApp {
         home_path: home_path.clone(),
         auth: auth_share.clone(),
+        ebpf_paths,
         dns_service,
         ddns_service,
         dns_provider_profile_service,
@@ -578,7 +625,7 @@ async fn run_system(
     // - sysinfo (WatchResource state): /info/...
     let system_combined = system_router
         .with_state(landscape_app_status.clone())
-        .merge(system::info::get_sys_info_route());
+        .merge(system::info::get_sys_info_route(ebpf_rt.paths().clone()));
 
     // /api/v1 — all authenticated HTTP routes (Bearer token)
     let v1_route = Router::new()
@@ -805,7 +852,7 @@ async fn do_auto_init(home_path: &PathBuf, config: &RuntimeConfig) -> Result<(),
         return Ok(());
     }
 
-    let db_store_provider = LandscapeDBServiceProvider::new(&config.store).await;
+    let db_store_provider = LandscapeDBServiceProvider::new(&config.store).await?;
     let store = db_store_provider.iface_store();
     for cfg in default_configs {
         store.set_or_update_model(cfg.name.clone(), cfg).await.unwrap();

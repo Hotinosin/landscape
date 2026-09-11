@@ -6,9 +6,10 @@
 #include <bpf/bpf_core_read.h>
 
 #include "landscape.h"
-#include "route_v4.h"
-#include "route_v6.h"
-#include "route/route_packet.h"
+#include "route/route4_path.h"
+#include "route/route6_path.h"
+#include "route/route4_context.h"
+#include "route/route6_context.h"
 #include "neigh_learn.h"
 
 #include "chain/tc_cb.h"
@@ -23,189 +24,17 @@ const volatile u32 current_l3_offset = 14;
 #define TC_LAN_INGRESS_V4_SLOT 0
 #define TC_LAN_INGRESS_V6_SLOT 1
 
-static __always_inline int tc_lan_redirect_v4(struct __sk_buff *skb, u32 current_l3_offset,
-                                              struct route_context_v4 *context) {
-#define BPF_LOG_TOPIC "tc_lan_redirect_v4"
-    int ret;
-    struct lan_route_key_v4 lan_search_key = {0};
-    struct mac_key_v4 mac_key_search = {0};
-    struct mac_value_v4 *mac_value = NULL;
-
-    lan_search_key.prefixlen = 32;
-    lan_search_key.addr = context->daddr;
-
-    struct lan_route_info_v4 *lan_info = bpf_map_lookup_elem(&rt4_lan_map, &lan_search_key);
-
-    if (lan_info == NULL) {
-        return TC_ACT_OK;
-    }
-
-    if (lan_info->route_type == ROUTE_TYPE_WAN) {
-        if (lan_info->addr == context->daddr) return TC_ACT_UNSPEC;
-        return TC_ACT_OK;
-    }
-
-    if (unlikely(lan_info->ifindex == skb->ingress_ifindex)) {
-        if (lan_info->has_mac && lan_info->addr != 0 && lan_info->addr != context->daddr) {
-            mac_key_search.addr = context->daddr;
-            mac_value = bpf_map_lookup_elem(&ip_mac_v4, &mac_key_search);
-            if (mac_value) {
-                if (!bpf_skb_store_bytes(skb, 0, &mac_value->mac, 14, 0)) {
-                    return bpf_redirect(lan_info->ifindex, 0);
-                }
-            }
-        }
-        return TC_ACT_UNSPEC;
-    }
-
-    if (lan_info->route_type == ROUTE_TYPE_LAN && lan_info->addr == context->daddr) {
-        return TC_ACT_UNSPEC;
-    }
-
-    if (current_l3_offset == 0 && lan_info->has_mac) {
-        unsigned char ethhdr[14];
-        ethhdr[12] = 0x08;
-        ethhdr[13] = 0x00;
-
-        if (bpf_skb_change_head(skb, 14, 0)) return TC_ACT_SHOT;
-        if (bpf_skb_store_bytes(skb, 0, ethhdr, sizeof(ethhdr), 0)) return TC_ACT_SHOT;
-    }
-
-    bool target_has_mac = lan_info->has_mac;
-    if (unlikely(lan_info->route_type == ROUTE_TYPE_NEXTHOP)) {
-        mac_key_search.addr = lan_info->addr;
-    } else {
-        mac_key_search.addr = context->daddr;
-    }
-
-    if (target_has_mac) {
-        mac_value = bpf_map_lookup_elem(&ip_mac_v4, &mac_key_search);
-        if (mac_value) {
-            ret = store_mac_v4(skb, mac_value->mac, lan_info->mac_addr);
-            if (!ret) return bpf_redirect(lan_info->ifindex, 0);
-            ld_bpf_log("store_mac_v4 err: %d", ret);
-        } else {
-            ld_bpf_log("can't find mac, IP: %pI4, target ifindex: %d", &mac_key_search.addr,
-                       lan_info->ifindex);
-        }
-    } else {
-        return bpf_redirect(lan_info->ifindex, 0);
-    }
-
-    struct bpf_redir_neigh param;
-    param.nh_family = AF_INET;
-
-    if (unlikely(lan_info->route_type == ROUTE_TYPE_NEXTHOP)) {
-        param.ipv6_nh[0] = lan_info->addr;
-    } else {
-        param.ipv6_nh[0] = lan_search_key.addr;
-    }
-
-    ret = bpf_redirect_neigh(lan_info->ifindex, &param, sizeof(param), 0);
-    if (unlikely(ret != 7)) {
-        ld_bpf_log("bpf_redirect_neigh error: %d", ret);
-    }
-
-    return ret;
-#undef BPF_LOG_TOPIC
-}
-
-static __always_inline int tc_lan_redirect_v6(struct __sk_buff *skb, u32 current_l3_offset,
-                                              struct route_context_v6 *context) {
-#define BPF_LOG_TOPIC "tc_lan_redirect_v6"
-    int ret;
-    struct lan_route_key_v6 lan_search_key = {0};
-    struct mac_key_v6 mac_key_search = {0};
-    struct mac_value_v6 *mac_value = NULL;
-
-    lan_search_key.prefixlen = 128;
-    COPY_ADDR_FROM(lan_search_key.addr.bytes, context->daddr.bytes);
-
-    struct lan_route_info_v6 *lan_info = bpf_map_lookup_elem(&rt6_lan_map, &lan_search_key);
-
-    if (lan_info == NULL) return TC_ACT_OK;
-
-    if (lan_info->route_type == ROUTE_TYPE_WAN) {
-        if (ip_addr_equal_in6(&lan_info->addr, &context->daddr)) return TC_ACT_UNSPEC;
-        return TC_ACT_OK;
-    }
-
-    if (unlikely(lan_info->ifindex == skb->ingress_ifindex)) {
-        if (lan_info->has_mac && !ip_addr_is_zero_in6(&lan_info->addr) &&
-            !ip_addr_equal_in6(&lan_info->addr, &context->daddr)) {
-            COPY_ADDR_FROM(mac_key_search.addr.all, context->daddr.all);
-            mac_value = bpf_map_lookup_elem(&ip_mac_v6, &mac_key_search);
-            if (mac_value) {
-                if (!bpf_skb_store_bytes(skb, 0, &mac_value->mac, 14, 0)) {
-                    return bpf_redirect(lan_info->ifindex, 0);
-                }
-            }
-        }
-        return TC_ACT_UNSPEC;
-    }
-
-    if (lan_info->route_type == ROUTE_TYPE_LAN &&
-        ip_addr_equal_in6(&lan_info->addr, &context->daddr))
-        return TC_ACT_UNSPEC;
-
-    if (current_l3_offset == 0 && lan_info->has_mac) {
-        unsigned char ethhdr[14];
-        ethhdr[12] = 0x86;
-        ethhdr[13] = 0xdd;
-
-        if (bpf_skb_change_head(skb, 14, 0)) return TC_ACT_SHOT;
-        if (bpf_skb_store_bytes(skb, 0, ethhdr, sizeof(ethhdr), 0)) return TC_ACT_SHOT;
-    }
-
-    bool target_has_mac = lan_info->has_mac;
-    if (unlikely(lan_info->route_type == ROUTE_TYPE_NEXTHOP)) {
-        COPY_ADDR_FROM(mac_key_search.addr.all, lan_info->addr.all);
-    } else {
-        COPY_ADDR_FROM(mac_key_search.addr.all, context->daddr.all);
-    }
-
-    if (target_has_mac) {
-        mac_value = bpf_map_lookup_elem(&ip_mac_v6, &mac_key_search);
-        if (mac_value) {
-            ret = store_mac_v6(skb, mac_value->mac, lan_info->mac_addr);
-            if (!ret) return bpf_redirect(lan_info->ifindex, 0);
-            ld_bpf_log("store_mac_v6 err: %d", ret);
-        } else {
-            ld_bpf_log("can't find mac, IP: %pI6", &mac_key_search.addr);
-        }
-    } else {
-        return bpf_redirect(lan_info->ifindex, 0);
-    }
-
-    struct bpf_redir_neigh param;
-    param.nh_family = AF_INET6;
-
-    if (unlikely(lan_info->route_type == ROUTE_TYPE_NEXTHOP)) {
-        COPY_ADDR_FROM(param.ipv6_nh, lan_info->addr.all);
-    } else {
-        COPY_ADDR_FROM(param.ipv6_nh, lan_search_key.addr.all);
-    }
-
-    ret = bpf_redirect_neigh(lan_info->ifindex, &param, sizeof(param), 0);
-    if (unlikely(ret != 7)) {
-        ld_bpf_log("bpf_redirect_neigh error: %d", ret);
-    }
-
-    return ret;
-#undef BPF_LOG_TOPIC
-}
-
-static __always_inline int tc_pick_wan_v4(struct __sk_buff *skb, u32 current_l3_offset,
-                                          const struct route_context_v4 *context,
-                                          const u32 flow_id) {
-#define BPF_LOG_TOPIC "tc_lan_pick_wan_v4"
+static __always_inline int tc_route4_pick_wan_in_lan(struct __sk_buff *skb, u32 current_l3_offset,
+                                                     const struct route4_context *context,
+                                                     const u32 flow_id) {
+#define BPF_LOG_TOPIC "tc_route4_pick_wan_in_lan"
     const u32 resolved_flow_id = get_flow_id(flow_id);
 
-    struct route_target_slot_key_v4 slot_key = {
+    struct route4_slot_key slot_key = {
         .flow_id = resolved_flow_id,
-        .slot = route_target_slot_v4(context->daddr),
+        .slot = route4_target_slot(context->daddr),
     };
-    struct route_target_info_v4 *target_info = bpf_map_lookup_elem(&rt4_target_slot_map, &slot_key);
+    struct route4_target_info *target_info = bpf_map_lookup_elem(&rt4_slot_map, &slot_key);
 
     if (target_info == NULL) {
         if (resolved_flow_id == 0) {
@@ -266,17 +95,17 @@ static __always_inline int tc_pick_wan_v4(struct __sk_buff *skb, u32 current_l3_
 #undef BPF_LOG_TOPIC
 }
 
-static __always_inline int tc_pick_wan_v6(struct __sk_buff *skb, u32 current_l3_offset,
-                                          const struct route_context_v6 *context,
-                                          const u32 flow_id) {
-#define BPF_LOG_TOPIC "tc_pick_wan_v6"
+static __always_inline int tc_route6_pick_wan_in_lan(struct __sk_buff *skb, u32 current_l3_offset,
+                                                     const struct route6_context *context,
+                                                     const u32 flow_id) {
+#define BPF_LOG_TOPIC "tc_route6_pick_wan_in_lan"
     const u32 resolved_flow_id = get_flow_id(flow_id);
 
-    struct route_target_slot_key_v6 slot_key = {
+    struct route6_slot_key slot_key = {
         .flow_id = resolved_flow_id,
-        .slot = route_target_slot_v6(&context->daddr),
+        .slot = route6_target_slot(&context->daddr),
     };
-    struct route_target_info_v6 *target_info = bpf_map_lookup_elem(&rt6_target_slot_map, &slot_key);
+    struct route6_target_info *target_info = bpf_map_lookup_elem(&rt6_slot_map, &slot_key);
 
     if (target_info == NULL) {
         if (resolved_flow_id == 0) {
@@ -336,11 +165,11 @@ static __always_inline int tc_pick_wan_v6(struct __sk_buff *skb, u32 current_l3_
 }
 
 SEC("tc/ingress")
-int tc_lan_ingress_route_v4(struct __sk_buff *skb) {
-#define BPF_LOG_TOPIC "tc_lan_ingress_route_v4"
+int tc_route4_lan_ingress(struct __sk_buff *skb) {
+#define BPF_LOG_TOPIC "tc_route4_lan_ingress"
     int ret = 0;
     u32 flow_mark = skb->mark;
-    struct route_context_v4 context = {0};
+    struct route4_context context = {0};
     struct packet_offset_info offset_info = {0};
 
     ret = scan_route_packet(skb, current_l3_offset, &offset_info);
@@ -351,7 +180,7 @@ int tc_lan_ingress_route_v4(struct __sk_buff *skb) {
         return TC_ACT_OK;
     }
 
-    ret = read_route_context_v4_from_scan(skb, &offset_info, &context);
+    ret = route4_read_context_from_scan(skb, &offset_info, &context);
     if (ret != TC_ACT_OK) {
         return TC_ACT_OK;
     }
@@ -360,7 +189,7 @@ int tc_lan_ingress_route_v4(struct __sk_buff *skb) {
         return TC_ACT_UNSPEC;
     }
 
-    ret = search_route_in_lan_v4(skb, current_l3_offset, &context, &flow_mark);
+    ret = route4_search_cache_in_lan(skb, current_l3_offset, &context, &flow_mark);
     if (ret != TC_ACT_OK) {
         skb->mark = replace_flow_source(flow_mark, FLOW_FROM_LAN);
         return ret;
@@ -368,12 +197,12 @@ int tc_lan_ingress_route_v4(struct __sk_buff *skb) {
 
     learn_src_ip_mac_v4_tc(skb, &context, current_l3_offset);
 
-    ret = tc_lan_redirect_v4(skb, current_l3_offset, &context);
+    ret = tc_route4_lan_redirect_check_in_lan(skb, current_l3_offset, &context);
     if (ret != TC_ACT_OK) {
         return ret;
     }
 
-    ret = flow_verdict_v4(skb, current_l3_offset, &context, &flow_mark);
+    ret = route4_flow_verdict(skb, current_l3_offset, &context, &flow_mark);
     if (ret != TC_ACT_OK) {
         return ret;
     }
@@ -381,21 +210,21 @@ int tc_lan_ingress_route_v4(struct __sk_buff *skb) {
     barrier_var(flow_mark);
     skb->mark = replace_flow_source(flow_mark, FLOW_FROM_LAN);
 
-    ret = tc_pick_wan_v4(skb, current_l3_offset, &context, flow_mark);
+    ret = tc_route4_pick_wan_in_lan(skb, current_l3_offset, &context, flow_mark);
 
     if (ret == TC_ACT_REDIRECT) {
-        setting_cache_in_lan_v4(&context, flow_mark);
+        route4_set_cache_in_lan(&context, flow_mark);
     }
     return ret;
 #undef BPF_LOG_TOPIC
 }
 
 SEC("tc/ingress")
-int tc_lan_ingress_route_v6(struct __sk_buff *skb) {
-#define BPF_LOG_TOPIC "tc_lan_ingress_route_v6"
+int tc_route6_lan_ingress(struct __sk_buff *skb) {
+#define BPF_LOG_TOPIC "tc_route6_lan_ingress"
     int ret = 0;
     u32 flow_mark = skb->mark;
-    struct route_context_v6 context = {0};
+    struct route6_context context = {0};
     struct packet_offset_info offset_info = {0};
 
     ret = scan_route_packet(skb, current_l3_offset, &offset_info);
@@ -406,7 +235,7 @@ int tc_lan_ingress_route_v6(struct __sk_buff *skb) {
         return TC_ACT_OK;
     }
 
-    ret = read_route_context_v6_from_scan(skb, &offset_info, &context);
+    ret = route6_read_context_from_scan(skb, &offset_info, &context);
     if (ret != TC_ACT_OK) {
         return TC_ACT_OK;
     }
@@ -415,7 +244,7 @@ int tc_lan_ingress_route_v6(struct __sk_buff *skb) {
         return TC_ACT_UNSPEC;
     }
 
-    ret = search_route_in_lan_v6(skb, current_l3_offset, &context, &flow_mark);
+    ret = route6_search_cache_in_lan(skb, current_l3_offset, &context, &flow_mark);
     if (ret != TC_ACT_OK) {
         skb->mark = replace_flow_source(flow_mark, FLOW_FROM_LAN);
         return ret;
@@ -423,12 +252,12 @@ int tc_lan_ingress_route_v6(struct __sk_buff *skb) {
 
     learn_src_ip_mac_v6_tc(skb, &context, current_l3_offset);
 
-    ret = tc_lan_redirect_v6(skb, current_l3_offset, &context);
+    ret = tc_route6_lan_redirect_check_in_lan(skb, current_l3_offset, &context);
     if (ret != TC_ACT_OK) {
         return ret;
     }
 
-    ret = flow_verdict_v6(skb, current_l3_offset, &context, &flow_mark);
+    ret = route6_flow_verdict(skb, current_l3_offset, &context, &flow_mark);
     if (ret != TC_ACT_OK) {
         return ret;
     }
@@ -436,10 +265,10 @@ int tc_lan_ingress_route_v6(struct __sk_buff *skb) {
     barrier_var(flow_mark);
     skb->mark = replace_flow_source(flow_mark, FLOW_FROM_LAN);
 
-    ret = tc_pick_wan_v6(skb, current_l3_offset, &context, flow_mark);
+    ret = tc_route6_pick_wan_in_lan(skb, current_l3_offset, &context, flow_mark);
 
     if (ret == TC_ACT_REDIRECT) {
-        setting_cache_in_lan_v6(&context, flow_mark);
+        route6_set_cache_in_lan(&context, flow_mark);
     }
     return ret;
 #undef BPF_LOG_TOPIC
@@ -454,8 +283,8 @@ struct {
 } ls_lan_ingress_tails SEC(".maps") = {
     .values =
         {
-            [TC_LAN_INGRESS_V4_SLOT] = (void *)&tc_lan_ingress_route_v4,
-            [TC_LAN_INGRESS_V6_SLOT] = (void *)&tc_lan_ingress_route_v6,
+            [TC_LAN_INGRESS_V4_SLOT] = (void *)&tc_route4_lan_ingress,
+            [TC_LAN_INGRESS_V6_SLOT] = (void *)&tc_route6_lan_ingress,
         },
 };
 
