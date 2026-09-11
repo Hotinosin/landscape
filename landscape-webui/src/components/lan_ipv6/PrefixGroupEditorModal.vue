@@ -921,14 +921,11 @@ function cancelEmptyDraftAction() {
     <template #footer>
       <n-flex justify="space-between">
         <n-flex :size="8">
-          <n-popconfirm v-if="group" @positive-click="deleteCurrentGroup">
-            <template #trigger>
-              <n-button type="error" secondary>
-                {{ t("lan_ipv6.delete") }}
-              </n-button>
-            </template>
-            {{ t("lan_ipv6.prefix_group_delete_confirm") }}
-          </n-popconfirm>
+          <DeleteButton
+            v-if="group"
+            :content="t('lan_ipv6.prefix_group_delete_confirm')"
+            :on-confirm="deleteCurrentGroup"
+          />
 
           <n-button @click="show = false">{{ t("lan_ipv6.cancel") }}</n-button>
         </n-flex>
@@ -947,7 +944,7 @@ function cancelEmptyDraftAction() {
   <n-modal
     v-model:show="emptyDraftActionVisible"
     preset="card"
-    style="width: 460px"
+    style="width: var(--app-compact-modal-width)"
     :closable="false"
     :mask-closable="false"
     :auto-focus="false"

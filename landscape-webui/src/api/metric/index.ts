@@ -29,52 +29,52 @@ import {
 export * from "./dns";
 
 export async function get_src_ip_stats(): Promise<IpRealtimeStat[]> {
-  return _getSrcIpStats();
+  return _getSrcIpStats({ silent: true });
 }
 
 export async function get_dst_ip_stats(): Promise<IpRealtimeStat[]> {
-  return _getDstIpStats();
+  return _getDstIpStats({ silent: true });
 }
 
 export async function get_iface_stats(): Promise<IfaceRealtimeStat[]> {
-  return _getIfaceStats();
+  return _getIfaceStats({ silent: true });
 }
 
 export async function get_connect_global_stats(
   params?: GetConnectGlobalStatsParams,
 ): Promise<ConnectGlobalStats> {
-  return _getConnectGlobalStats(params);
+  return _getConnectGlobalStats(params, { silent: true });
 }
 
 export async function get_metric_status(): Promise<ServiceStatus> {
-  return _getMetricStatus() as Promise<ServiceStatus>;
+  return _getMetricStatus({ silent: true }) as Promise<ServiceStatus>;
 }
 
 export async function get_connects_info(): Promise<ConnectRealtimeStatus[]> {
-  return _getConnectsInfo();
+  return _getConnectsInfo({ silent: true });
 }
 
 export async function get_connect_history(
   params?: ConnectHistoryQueryParams,
 ): Promise<ConnectHistoryResponse> {
-  return _getConnectHistory(params);
+  return _getConnectHistory(params, { silent: true });
 }
 
 export async function get_connect_metric_info(
   key: ConnectKey,
   resolution?: MetricResolution,
 ): Promise<ConnectMetricPoint[]> {
-  return _getConnectMetricInfo({ key, resolution });
+  return _getConnectMetricInfo({ key, resolution }, { silent: true });
 }
 
 export async function get_history_src_ip_stats(
   params?: ConnectHistoryQueryParams,
 ): Promise<IpHistoryStat[]> {
-  return _getHistorySrcIpStats(params);
+  return _getHistorySrcIpStats(params, { silent: true });
 }
 
 export async function get_history_dst_ip_stats(
   params?: ConnectHistoryQueryParams,
 ): Promise<IpHistoryStat[]> {
-  return _getHistoryDstIpStats(params);
+  return _getHistoryDstIpStats(params, { silent: true });
 }

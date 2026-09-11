@@ -6,8 +6,9 @@ import Env from "@/components/Env.vue";
 import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
 import {
   applyThemeToDocument,
-  applyAccentColor,
+  applyThemeStyle,
   readAccentColorFromStorageEvent,
+  readThemeStyleFromStorageEvent,
   readThemePreferenceFromStorageEvent,
   resolveThemeName,
   themeRegistry,
@@ -26,6 +27,8 @@ function syncThemePreference(event: StorageEvent) {
   if (preference) prefStore.theme = preference;
   const accent = readAccentColorFromStorageEvent(event);
   if (accent) prefStore.accent = accent;
+  const themeStyle = readThemeStyleFromStorageEvent(event);
+  if (themeStyle) prefStore.themeStyle = themeStyle;
 }
 
 onMounted(() => {
@@ -53,12 +56,12 @@ const resolvedThemeName = computed(() =>
   resolveThemeName(prefStore.theme, systemPrefersDark.value),
 );
 const activeTheme = computed(() =>
-  applyAccentColor(themeRegistry[resolvedThemeName.value], prefStore.accent),
+  applyThemeStyle(themeRegistry[resolvedThemeName.value], prefStore.themeStyle),
 );
 const currentTheme = computed(() => activeTheme.value.naiveTheme);
 const themeOverrides = computed(() => activeTheme.value.overrides);
 
-watch(activeTheme, (theme) => applyThemeToDocument(theme, prefStore.accent), {
+watch(activeTheme, (theme) => applyThemeToDocument(theme), {
   immediate: true,
 });
 </script>

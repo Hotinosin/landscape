@@ -52,9 +52,7 @@ async function refresh() {
           <span v-if="(each.weight ?? 1) !== 1"> ×{{ each.weight ?? 1 }}</span>
           <template #icon>
             <n-icon
-              :component="
-                each.target.t === 'netns' ? Docker : NetworkWired
-              "
+              :component="each.target.t === 'netns' ? Docker : NetworkWired"
             />
           </template>
         </n-tag>

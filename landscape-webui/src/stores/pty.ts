@@ -1,9 +1,9 @@
 import { defineStore } from "pinia";
-import { ref, watch } from "vue";
+import { ref, shallowRef, watch, onScopeDispose } from "vue";
 import type { Terminal } from "@xterm/xterm";
 import type { SerializeAddon } from "@xterm/addon-serialize";
 import type { FitAddon } from "@xterm/addon-fit";
-import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
+import { LANDSCAPE_TOKEN_KEY, LANDSCAPE_SESSION_CLEARED } from "@/lib/common";
 import type {
   LandscapePtyConfig,
   PtyOutMessage,
@@ -11,15 +11,15 @@ import type {
 
 export const usePtyStore = defineStore("pty", () => {
   // The "Master" terminal holds the state but never renders to DOM
-  const masterTerminal = ref<Terminal | null>(null);
-  const masterSerializeAddon = ref<SerializeAddon | null>(null);
+  const masterTerminal = shallowRef<Terminal | null>(null);
+  const masterSerializeAddon = shallowRef<SerializeAddon | null>(null);
   const decoder = new TextDecoder("utf-8"); // Decoder for incoming UTF-8 bytes
 
   // The "Active" terminal is the one currently visible (if any)
-  const activeTerminal = ref<Terminal | null>(null);
-  const activeFitAddon = ref<FitAddon | null>(null);
+  const activeTerminal = shallowRef<Terminal | null>(null);
+  const activeFitAddon = shallowRef<FitAddon | null>(null);
 
-  const socket = ref<WebSocket | null>(null);
+  const socket = shallowRef<WebSocket | null>(null);
   const isConnected = ref(false);
   const keepAlive = ref(true);
   const hasUnread = ref(false);
@@ -61,12 +61,16 @@ export const usePtyStore = defineStore("pty", () => {
   );
 
   const config = ref<LandscapePtyConfig>({
-    shell: "bash",
+    shell: localStorage.getItem("landscape-pty-shell") || "/bin/bash",
     rows: 0,
     cols: 0,
     pixel_width: 0,
     pixel_height: 0,
   });
+  watch(
+    () => config.value.shell,
+    (shell) => localStorage.setItem("landscape-pty-shell", shell),
+  );
 
   function objToQuery(obj: any) {
     const token = localStorage.getItem(LANDSCAPE_TOKEN_KEY) ?? "";
@@ -80,13 +84,18 @@ export const usePtyStore = defineStore("pty", () => {
       : `token=${encodeURIComponent(token)}`;
   }
 
-  async function initMasterTerminal() {
+  let connectionAttempt = 0;
+  let connecting = false;
+
+  async function initMasterTerminal(attempt: number) {
     if (masterTerminal.value) return;
 
     const [{ Terminal }, { SerializeAddon }] = await Promise.all([
       import("@xterm/xterm"),
       import("@xterm/addon-serialize"),
     ]);
+
+    if (attempt !== connectionAttempt) return;
 
     // Headless terminal to keep state
     const term = new Terminal({
@@ -143,6 +152,7 @@ export const usePtyStore = defineStore("pty", () => {
 
     // Initial fit
     setTimeout(() => {
+      if (activeTerminal.value !== term) return;
       fit.fit();
       term.focus();
     }, 50);
@@ -157,23 +167,34 @@ export const usePtyStore = defineStore("pty", () => {
 
   async function connect() {
     if (
+      connecting ||
+      !localStorage.getItem(LANDSCAPE_TOKEN_KEY) ||
       isConnected.value ||
-      (socket.value && socket.value.readyState === WebSocket.OPEN)
+      (socket.value && socket.value.readyState <= WebSocket.OPEN)
     )
       return;
 
-    await initMasterTerminal();
+    const attempt = ++connectionAttempt;
+    connecting = true;
+    try {
+      await initMasterTerminal(attempt);
+    } finally {
+      if (attempt === connectionAttempt) connecting = false;
+    }
+    if (attempt !== connectionAttempt) return;
 
     const url = `wss://${window.location.hostname}:${window.location.port}/api/ws/pty/sessions?${objToQuery(config.value)}`;
     const ws = new WebSocket(url);
 
     ws.onopen = () => {
+      if (socket.value !== ws) return;
       isConnected.value = true;
       // Prevent accidental page refresh
       window.addEventListener("beforeunload", preventUnload);
     };
 
     ws.onmessage = (event) => {
+      if (socket.value !== ws) return;
       try {
         const msg = JSON.parse(event.data) as PtyOutMessage;
         if (msg.t === "data") {
@@ -202,12 +223,14 @@ export const usePtyStore = defineStore("pty", () => {
     };
 
     ws.onclose = () => {
+      if (socket.value !== ws) return;
       isConnected.value = false;
       socket.value = null;
       window.removeEventListener("beforeunload", preventUnload);
     };
 
     ws.onerror = () => {
+      if (socket.value !== ws) return;
       isConnected.value = false;
     };
 
@@ -215,13 +238,33 @@ export const usePtyStore = defineStore("pty", () => {
   }
 
   function disconnect() {
-    if (socket.value) {
-      socket.value.close();
-      socket.value = null;
-    }
+    connectionAttempt += 1;
+    connecting = false;
+    const ws = socket.value;
+    socket.value = null;
+    ws?.close();
     isConnected.value = false;
     window.removeEventListener("beforeunload", preventUnload);
   }
+
+  function clearSession() {
+    disconnect();
+    masterTerminal.value?.dispose();
+    masterTerminal.value = null;
+    masterSerializeAddon.value = null;
+    activeTerminal.value?.reset();
+    activeTerminal.value = null;
+    activeFitAddon.value = null;
+    decoder.decode();
+    hasUnread.value = false;
+    isOpen.value = false;
+  }
+
+  window.addEventListener(LANDSCAPE_SESSION_CLEARED, clearSession);
+  onScopeDispose(() => {
+    window.removeEventListener(LANDSCAPE_SESSION_CLEARED, clearSession);
+    clearSession();
+  });
 
   function preventUnload(e: BeforeUnloadEvent) {
     if (isConnected.value && keepAlive.value) {

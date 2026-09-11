@@ -222,7 +222,7 @@ onMounted(refresh);
       </n-spin>
     </template>
     <FlowEditModal @refresh="refresh" v-model:show="show_edit" />
-    <RouteTraceDrawer v-model:show="show_route_trace" />
+    <RouteTraceDrawer v-model:show="show_route_trace" presentation="modal" />
   </n-layout>
 </template>
 

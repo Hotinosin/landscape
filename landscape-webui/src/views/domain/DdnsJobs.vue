@@ -9,7 +9,6 @@ import {
   sync_ddns_job,
 } from "@/api/domain/ddns";
 import { get_dns_provider_profiles } from "@/api/domain/provider_profile";
-import { useWindowSize } from "@vueuse/core";
 import type {
   DdnsFamilyRuntime,
   DdnsJob,
@@ -23,13 +22,13 @@ import { computed, h, onMounted, ref } from "vue";
 import {
   NButton,
   NFlex,
-  NPopconfirm,
   NTag,
   useMessage,
   type DataTableColumns,
 } from "naive-ui";
 import ConfigModal from "@/components/common/ConfigModal.vue";
 import EditButton from "@/components/common/EditButton.vue";
+import DeleteButton from "@/components/common/DeleteButton.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import { useI18n } from "vue-i18n";
@@ -64,7 +63,6 @@ const detailJobId = ref<string | null>(null);
 const formRef = ref();
 const recordInputs = ref<string[]>([]);
 const sourceInputs = ref<SourceInputItem[]>([]);
-const { width: windowWidth } = useWindowSize();
 const form = ref<DdnsJob>({
   name: "",
   enable: true,
@@ -151,11 +149,6 @@ const useProfileDefaultTtl = computed({
 const selectedDetailJob = computed(
   () => items.value.find((item) => item.id === detailJobId.value) ?? null,
 );
-
-const detailDrawerWidth = computed(() => {
-  const width = windowWidth.value || 920;
-  return width < 768 ? width : 920;
-});
 
 const detailDrawerTitle = computed(() => {
   if (!selectedDetailJob.value) return t("ddns.ddns_job_details");
@@ -591,17 +584,6 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
       frontEndStore.MASK_INFO(providerName(row.provider_profile_id)),
   },
   {
-    title: t("common.enable"),
-    key: "enable",
-    width: 90,
-    render: (row) =>
-      h(
-        NTag,
-        { size: "small", type: row.enable ? "success" : "default" },
-        () => (row.enable ? t("common.enable") : t("common.disable")),
-      ),
-  },
-  {
     title: t("common.status"),
     key: "status",
     width: 100,
@@ -615,6 +597,17 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
     key: "status_message",
     width: 170,
     render: (row) => formatRuntimeSummary(getJobRuntime(row)),
+  },
+  {
+    title: t("common.enable"),
+    key: "enable",
+    width: 90,
+    render: (row) =>
+      h(
+        NTag,
+        { size: "small", type: row.enable ? "success" : "default" },
+        () => (row.enable ? t("common.enable") : t("common.disable")),
+      ),
   },
   {
     title: t("common.actions"),
@@ -650,24 +643,11 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
           showModal.value = true;
         },
       }),
-      h(
-        NPopconfirm,
-        { onPositiveClick: () => remove(row.id!) },
-        {
-          trigger: () =>
-            h(
-              NButton,
-              {
-                size: "small",
-                type: "error",
-                secondary: true,
-                style: "margin-left: 8px",
-              },
-              () => t("common.delete"),
-            ),
-          default: () => t("common.confirm_delete"),
-        },
-      ),
+      h(DeleteButton, {
+        style: "margin-left: 8px",
+        item: frontEndStore.MASK_INFO(row.name),
+        onConfirm: () => remove(row.id!),
+      }),
     ],
   },
 ]);
@@ -718,12 +698,17 @@ onMounted(async () => {
       @retry="listRequest.retry"
     />
 
-    <n-drawer
+    <n-modal
       v-model:show="showDetailDrawer"
-      placement="right"
-      :width="detailDrawerWidth"
     >
-      <n-drawer-content :title="detailDrawerTitle" closable>
+      <n-card
+        style="width: min(900px, calc(100vw - 32px))"
+        :title="detailDrawerTitle"
+        :bordered="false"
+        closable
+        content-style="max-height: calc(100vh - 120px); overflow: auto"
+        @close="showDetailDrawer = false"
+      >
         <template v-if="selectedDetailJob">
           <n-flex vertical :size="12">
             <n-flex :size="8" wrap>
@@ -796,8 +781,8 @@ onMounted(async () => {
             </div>
           </n-flex>
         </template>
-      </n-drawer-content>
-    </n-drawer>
+      </n-card>
+    </n-modal>
 
     <ConfigModal
       v-model:show="showModal"

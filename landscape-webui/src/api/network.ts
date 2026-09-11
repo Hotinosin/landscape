@@ -14,6 +14,9 @@ import { applyInterceptors } from "@/api";
 const networkAxios = applyInterceptors(
   axios.create({ baseURL: "/api/v1/interfaces", timeout: 30000 }),
 );
+const servicesAxios = applyInterceptors(
+  axios.create({ baseURL: "/api/v1/services", timeout: 30000 }),
+);
 
 export {
   add_controller,

@@ -45,165 +45,181 @@ function ifaceName(ifindex: number) {
 }
 
 onMounted(async () => {
-  await Promise.all([ifaceNodeStore.UPDATE_INFO(), metricStore.UPDATE_INFO()]);
+  await ifaceNodeStore.UPDATE_INFO();
 });
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1; overflow: hidden">
-    <n-card
-      size="small"
-      :bordered="false"
-      style="margin-bottom: 12px; background-color: var(--app-surface-color)"
+  <StandardRequestStatus
+    :has-succeeded="metricStore.currentState.hasSucceeded"
+    :loading="metricStore.currentState.loading"
+    :error="metricStore.currentState.error"
+    :last-success-at="metricStore.currentState.lastSuccessAt"
+    @retry="metricStore.REFRESH_CURRENT"
+  >
+    <n-flex
+      vertical
+      :wrap="false"
+      style="flex: 1; min-height: 0; overflow: hidden"
     >
-      <n-flex align="center" justify="space-between">
-        <ConnectViewSwitcher />
+      <n-card
+        size="small"
+        :bordered="false"
+        style="margin-bottom: 12px; background-color: var(--app-surface-color)"
+      >
+        <n-flex align="center" justify="space-between">
+          <ConnectViewSwitcher />
 
-        <n-flex align="center" size="large">
-          <n-flex align="center" size="small">
-            <span
-              style="
-                color: var(--app-text-muted-color);
-                font-size: var(--app-font-size-label);
-              "
-              >{{ t("metric.connect.stats.total_active_ifaces") }}:</span
-            >
-            <span style="font-weight: bold">{{ ifaceRows.length }}</span>
-          </n-flex>
-          <n-divider vertical />
-          <n-flex align="center" size="small">
-            <span
-              style="
-                color: var(--app-text-muted-color);
-                font-size: var(--app-font-size-label);
-              "
-              >{{ t("metric.connect.stats.total_active_conns") }}:</span
-            >
-            <span style="font-weight: bold">{{ totalStats.activeConns }}</span>
-          </n-flex>
-          <n-divider vertical />
-          <n-flex align="center" size="small">
-            <span
-              style="
-                color: var(--app-text-muted-color);
-                font-size: var(--app-font-size-label);
-              "
-              >{{ t("metric.connect.stats.total_egress") }}:</span
-            >
-            <span :style="{ fontWeight: 'bold', color: themeVars.infoColor }">{{
-              formatRate(totalStats.egressBps)
-            }}</span>
-          </n-flex>
-          <n-divider vertical />
-          <n-flex align="center" size="small">
-            <span
-              style="
-                color: var(--app-text-muted-color);
-                font-size: var(--app-font-size-label);
-              "
-              >{{ t("metric.connect.stats.total_ingress") }}:</span
-            >
-            <span
-              :style="{ fontWeight: 'bold', color: themeVars.successColor }"
-              >{{ formatRate(totalStats.ingressBps) }}</span
-            >
+          <n-flex align="center" size="large">
+            <n-flex align="center" size="small">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+                >{{ t("metric.connect.stats.total_active_ifaces") }}:</span
+              >
+              <span style="font-weight: bold">{{ ifaceRows.length }}</span>
+            </n-flex>
+            <n-divider vertical />
+            <n-flex align="center" size="small">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+                >{{ t("metric.connect.stats.total_active_conns") }}:</span
+              >
+              <span style="font-weight: bold">{{
+                totalStats.activeConns
+              }}</span>
+            </n-flex>
+            <n-divider vertical />
+            <n-flex align="center" size="small">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+                >{{ t("metric.connect.stats.total_egress") }}:</span
+              >
+              <span
+                :style="{ fontWeight: 'bold', color: themeVars.infoColor }"
+                >{{ formatRate(totalStats.egressBps) }}</span
+              >
+            </n-flex>
+            <n-divider vertical />
+            <n-flex align="center" size="small">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+                >{{ t("metric.connect.stats.total_ingress") }}:</span
+              >
+              <span
+                :style="{ fontWeight: 'bold', color: themeVars.successColor }"
+                >{{ formatRate(totalStats.ingressBps) }}</span
+              >
+            </n-flex>
+            <IconActionButton
+              kind="refresh"
+              :tooltip="t('metric.connect.stats.refresh_data')"
+              :disabled="metricStore.currentState.loading"
+              @click="metricStore.REFRESH_CURRENT()"
+            />
           </n-flex>
         </n-flex>
-      </n-flex>
-    </n-card>
+      </n-card>
 
-    <n-flex align="center" justify="space-between" style="margin-bottom: 12px">
-      <n-h3 style="margin: 0">{{ t("metric.connect.stats.live_iface") }}</n-h3>
-      <n-button @click="metricStore.UPDATE_INFO()" type="primary">
-        {{ t("metric.connect.stats.refresh_sample") }}
-      </n-button>
+      <n-scrollbar style="flex: 1; min-height: 0">
+        <n-grid :cols="1" :x-gap="12" :y-gap="12">
+          <n-gi v-for="item in ifaceRows" :key="item.ifindex">
+            <n-card
+              size="small"
+              :bordered="false"
+              style="background-color: var(--app-surface-color)"
+            >
+              <n-flex align="center" justify="space-between">
+                <n-flex vertical size="small">
+                  <n-flex align="center" size="small">
+                    <span
+                      style="
+                        font-size: var(--app-font-size-heading);
+                        font-weight: 700;
+                      "
+                      >{{ ifaceName(item.ifindex) }}</span
+                    >
+                    <n-tag size="small" :bordered="false">
+                      {{ t("metric.connect.col.ifindex") }} {{ item.ifindex }}
+                    </n-tag>
+                  </n-flex>
+                  <span style="color: var(--app-text-muted-color)">
+                    {{ t("metric.connect.col.active_conns") }}:
+                    {{ item.stats.active_conns }}
+                  </span>
+                </n-flex>
+
+                <n-flex align="center" size="large">
+                  <n-flex
+                    align="center"
+                    :wrap="false"
+                    size="small"
+                    style="width: 150px"
+                  >
+                    <n-icon :color="themeVars.infoColor" size="22">
+                      <ArrowUp />
+                    </n-icon>
+                    <n-flex vertical :size="[-4, 0]">
+                      <span
+                        style="
+                          font-size: var(--app-font-size-subtitle);
+                          font-weight: 700;
+                        "
+                        >{{ formatRate(item.stats.egress_bps) }}</span
+                      >
+                      <span
+                        style="
+                          font-size: var(--app-font-size-detail);
+                          color: var(--app-text-muted-color);
+                        "
+                        >{{ formatPackets(item.stats.egress_pps) }}</span
+                      >
+                    </n-flex>
+                  </n-flex>
+
+                  <n-flex
+                    align="center"
+                    :wrap="false"
+                    size="small"
+                    style="width: 150px"
+                  >
+                    <n-icon :color="themeVars.successColor" size="22">
+                      <ArrowDown />
+                    </n-icon>
+                    <n-flex vertical :size="[-4, 0]">
+                      <span
+                        style="
+                          font-size: var(--app-font-size-subtitle);
+                          font-weight: 700;
+                        "
+                        >{{ formatRate(item.stats.ingress_bps) }}</span
+                      >
+                      <span
+                        style="
+                          font-size: var(--app-font-size-detail);
+                          color: var(--app-text-muted-color);
+                        "
+                        >{{ formatPackets(item.stats.ingress_pps) }}</span
+                      >
+                    </n-flex>
+                  </n-flex>
+                </n-flex>
+              </n-flex>
+            </n-card>
+          </n-gi>
+        </n-grid>
+      </n-scrollbar>
     </n-flex>
-
-    <n-grid :cols="1" :x-gap="12" :y-gap="12">
-      <n-gi v-for="item in ifaceRows" :key="item.ifindex">
-        <n-card
-          size="small"
-          :bordered="false"
-          style="background-color: var(--app-surface-color)"
-        >
-          <n-flex align="center" justify="space-between">
-            <n-flex vertical size="small">
-              <n-flex align="center" size="small">
-                <span
-                  style="
-                    font-size: var(--app-font-size-heading);
-                    font-weight: 700;
-                  "
-                  >{{ ifaceName(item.ifindex) }}</span
-                >
-                <n-tag size="small" :bordered="false">
-                  {{ t("metric.connect.col.ifindex") }} {{ item.ifindex }}
-                </n-tag>
-              </n-flex>
-              <span style="color: var(--app-text-muted-color)">
-                {{ t("metric.connect.col.active_conns") }}:
-                {{ item.stats.active_conns }}
-              </span>
-            </n-flex>
-
-            <n-flex align="center" size="large">
-              <n-flex
-                align="center"
-                :wrap="false"
-                size="small"
-                style="width: 150px"
-              >
-                <n-icon :color="themeVars.infoColor" size="22">
-                  <ArrowUp />
-                </n-icon>
-                <n-flex vertical :size="[-4, 0]">
-                  <span
-                    style="
-                      font-size: var(--app-font-size-subtitle);
-                      font-weight: 700;
-                    "
-                    >{{ formatRate(item.stats.egress_bps) }}</span
-                  >
-                  <span
-                    style="
-                      font-size: var(--app-font-size-detail);
-                      color: var(--app-text-muted-color);
-                    "
-                    >{{ formatPackets(item.stats.egress_pps) }}</span
-                  >
-                </n-flex>
-              </n-flex>
-
-              <n-flex
-                align="center"
-                :wrap="false"
-                size="small"
-                style="width: 150px"
-              >
-                <n-icon :color="themeVars.successColor" size="22">
-                  <ArrowDown />
-                </n-icon>
-                <n-flex vertical :size="[-4, 0]">
-                  <span
-                    style="
-                      font-size: var(--app-font-size-subtitle);
-                      font-weight: 700;
-                    "
-                    >{{ formatRate(item.stats.ingress_bps) }}</span
-                  >
-                  <span
-                    style="
-                      font-size: var(--app-font-size-detail);
-                      color: var(--app-text-muted-color);
-                    "
-                    >{{ formatPackets(item.stats.ingress_pps) }}</span
-                  >
-                </n-flex>
-              </n-flex>
-            </n-flex>
-          </n-flex>
-        </n-card>
-      </n-gi>
-    </n-grid>
-  </n-flex>
+  </StandardRequestStatus>
 </template>

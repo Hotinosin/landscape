@@ -9,6 +9,7 @@ import { Logout, Pin, PinFilled } from "@vicons/carbon";
 import { clearLandscapeSession } from "@/lib/common";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
+import { useMetricStore } from "@/stores/status_metric";
 import IntervalFetch from "@/components/head/IntervalFetch.vue";
 import LanguageSetting from "@/components/head/LanguageSetting.vue";
 import LandscapeSiderBar from "@/views/LandscapeSiderBar.vue";
@@ -47,11 +48,17 @@ function handleTagClose(path: string) {
 
 const frontEndStore = useFrontEndStore();
 const enrolledDeviceStore = useEnrolledDeviceStore();
+const metricStore = useMetricStore();
+const accountName = computed(() => frontEndStore.username || "admin");
+const accountInitial = computed(() =>
+  accountName.value.charAt(0).toLowerCase(),
+);
 
 watch(
   () => route.path,
-  () => {
+  (path) => {
     void enrolledDeviceStore.UPDATE_INFO();
+    metricStore.SET_PAGE(path, !document.hidden);
   },
   { immediate: true },
 );
@@ -138,6 +145,15 @@ const contentStyle = computed(() => {
             <n-flex align="center" :size="[5, 0]">
               <LanguageSetting />
               <PresentationMode></PresentationMode>
+              <n-flex
+                class="header-account"
+                align="center"
+                :size="6"
+                :wrap="false"
+              >
+                <n-avatar round :size="22">{{ accountInitial }}</n-avatar>
+                <n-text>{{ accountName }}</n-text>
+              </n-flex>
               <n-button
                 quaternary
                 size="small"
@@ -167,3 +183,10 @@ const contentStyle = computed(() => {
     </n-layout>
   </div>
 </template>
+
+<style scoped>
+.header-account {
+  white-space: nowrap;
+  font-size: var(--app-font-size-caption);
+}
+</style>

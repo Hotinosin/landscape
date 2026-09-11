@@ -22,9 +22,13 @@ import { changeColor } from "seemly";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
-const props = defineProps<{
-  node: NetDev;
-}>();
+const props = withDefaults(
+  defineProps<{
+    node: NetDev;
+    allDevices?: boolean;
+  }>(),
+  { allDevices: false },
+);
 
 const emit = defineEmits(["close"]);
 
@@ -60,15 +64,23 @@ const controller_dev = computed(() => {
 
   return ifaceNodeStore.FIND_DEV_BY_IFINDEX(props.node.controller_id!);
 });
+const device_source = computed(() =>
+  props.allDevices ? ifaceNodeStore.net_devs : ifaceNodeStore.visible_net_devs,
+);
 const child_devices = computed(() =>
-  ifaceNodeStore.visible_net_devs.filter(
-    (dev) => dev.controller_id === props.node.index,
-  ),
+  device_source.value.filter((dev) => dev.controller_id === props.node.index),
 );
 const available_bridge_options = computed(() =>
-  ifaceNodeStore.bridges
-    .filter((bridge) => bridge.ifindex !== props.node.index)
-    .map((bridge) => ({ label: bridge.label, value: bridge.ifindex })),
+  device_source.value
+    .filter(
+      (device) =>
+        device.dev_kind === "bridge" && device.index !== props.node.index,
+    )
+    .map((bridge) => ({
+      label: bridge.name,
+      value: bridge.index,
+      ifindex: bridge.index,
+    })),
 );
 const can_manage_controller = computed(() =>
   canManageBridgeAttachment(props.node),
@@ -376,7 +388,7 @@ async function attachController() {
     return;
   }
 
-  const bridge = ifaceNodeStore.bridges.find(
+  const bridge = available_bridge_options.value.find(
     (item) => item.ifindex === selected_bridge_ifindex.value,
   );
   const bridge_dev = bridge

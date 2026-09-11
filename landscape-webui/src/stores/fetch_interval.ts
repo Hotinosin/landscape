@@ -30,9 +30,15 @@ export async function runRefreshTasks(
   );
   return failures.length
     ? failures
-        .map(({ reason }) =>
-          reason instanceof Error ? reason.message : String(reason),
-        )
+        .map(({ reason }) => {
+          if (reason instanceof Error) return reason.message;
+          if (typeof reason === "string") return reason;
+          try {
+            return JSON.stringify(reason) || "Request failed";
+          } catch {
+            return "Request failed";
+          }
+        })
         .join("; ")
     : undefined;
 }
@@ -97,6 +103,7 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
   const start_count_down_callback = ref<(() => void) | undefined>();
 
   function set_interval() {
+    if (document.hidden) return;
     // 如果已经存在计时器，先清理掉
     if (interval_timer !== undefined) {
       clean_interval();

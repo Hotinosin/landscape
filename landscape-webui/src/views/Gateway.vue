@@ -52,15 +52,17 @@ const columns = computed<DataTableColumns<HttpUpstreamRuleConfig>>(() =>
     ["gateway.domains", "domains"],
     ["gateway.upstream", "upstream"],
     ["gateway.path_groups", "paths"],
+    ["common.enable", "enable"],
     ["common.actions", "actions"],
   ].map(([title, cell]) => ({
     title: t(title),
     key: cell,
+    width: cell === "enable" ? 80 : undefined,
     render: (rule) =>
       h(GatewayRuleListRow, {
         rule,
         cell: cell as
-          "name" | "type" | "domains" | "upstream" | "paths" | "actions",
+          "name" | "enable" | "type" | "domains" | "upstream" | "paths" | "actions",
         ...(cell === "actions" ? { onRefresh: refreshAll } : {}),
       }),
   })),

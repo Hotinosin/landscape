@@ -57,12 +57,12 @@ describe("visual design contracts", () => {
     expect(violations).toEqual([]);
   });
 
-  it("uses the shared edit button", () => {
-    const directEditButtons = sourceWithoutTests()
+  it("uses the shared configuration button", () => {
+    const directConfigButtons = sourceWithoutTests()
       .filter(([path]) => !path.endsWith("/common/EditButton.vue"))
-      .filter(([, source]) => /common\.edit/.test(source))
+      .filter(([, source]) => /common\.(?:edit|config)/.test(source))
       .map(([path]) => path.replace(/^\.\.\//, ""));
 
-    expect(directEditButtons).toEqual([]);
+    expect(directConfigButtons).toEqual([]);
   });
 });

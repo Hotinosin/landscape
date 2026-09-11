@@ -26,10 +26,12 @@ const columns = computed<DataTableColumns<StaticNatMappingV6Config>>(() =>
     [t("common.ipv6_target"), "target"],
     [t("common.type"), "protocol"],
     [t("common.port_mapping"), "ports"],
+    [t("common.enable"), "enable"],
     [t("common.actions"), "actions"],
   ].map(([title, cell]) => ({
     title,
     key: cell,
+    width: cell === "enable" ? 80 : undefined,
     align: "left" as const,
     render: (rule: StaticNatMappingV6Config) =>
       h(StaticMappingV6ListRow, {

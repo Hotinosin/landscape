@@ -10,11 +10,14 @@ import i18n from "@/i18n";
 import {
   cacheThemePreference,
   cacheAccentColor,
+  cacheThemeStyle,
   normalizeThemePreference,
   readCachedAccentColor,
+  readCachedThemeStyle,
   readCachedThemePreference,
   type AccentColor,
   type ThemePreference,
+  type ThemeStyle,
 } from "@/themes";
 
 function normalizeLanguage(lang?: string, fallback: string = "zh"): string {
@@ -29,6 +32,7 @@ export const usePreferenceStore = defineStore("preference", () => {
   const timezone = ref<string | undefined>(undefined);
   const theme = ref<ThemePreference>(readCachedThemePreference());
   const accent = ref<AccentColor>(readCachedAccentColor());
+  const themeStyle = ref<ThemeStyle>(readCachedThemeStyle());
   const expectedHash = ref<string>("");
 
   async function loadPreference() {
@@ -89,12 +93,17 @@ export const usePreferenceStore = defineStore("preference", () => {
 
   watch(theme, (value) => cacheThemePreference(value), { immediate: true });
   watch(accent, (value) => cacheAccentColor(value), { immediate: true });
+  watch(themeStyle, (value) => cacheThemeStyle(value), {
+    deep: true,
+    immediate: true,
+  });
 
   return {
     language,
     timezone,
     theme,
     accent,
+    themeStyle,
     expectedHash,
     loadPreference,
     loadPreferenceForEdit,

@@ -52,31 +52,29 @@ async function act(fn: (name: string) => Promise<unknown>) {
       :time-zone="pref.timezone"
     /><span v-else>—</span> </template
   ><template v-else>
-    <n-flex justify="start" :wrap="false"
-      ><n-button
+    <n-flex justify="start" :wrap="false">
+      <n-button
         secondary
         size="small"
         :loading="busy"
         :disabled="!buttons.start"
         @click="act(start_container)"
-        >{{ t("common.open") }}</n-button
-      ><n-popconfirm @positive-click="act(stop_container)"
-        ><template #trigger
-          ><n-button secondary size="small" :disabled="!buttons.stop">{{
+      >
+        {{ t("common.open") }}
+      </n-button>
+      <ConfirmModal @positive-click="act(stop_container)">
+        <template #trigger>
+          <n-button secondary size="small" :disabled="!buttons.stop">{{
             t("common.close")
-          }}</n-button></template
-        >{{ t("common.confirm_stop") }}</n-popconfirm
-      ><n-popconfirm @positive-click="act(remove_container)"
-        ><template #trigger
-          ><n-button
-            secondary
-            type="error"
-            size="small"
-            :disabled="!buttons.remove"
-            >{{ t("common.delete") }}</n-button
-          ></template
-        >{{ t("common.confirm_delete") }}</n-popconfirm
-      ></n-flex
-    >
+          }}</n-button>
+        </template>
+        {{ t("common.confirm_stop") }}
+      </ConfirmModal>
+      <DeleteButton
+        :disabled="!buttons.remove"
+        :item="front.MASK_INFO(title)"
+        :on-confirm="() => act(remove_container)"
+      />
+    </n-flex>
   </template>
 </template>

@@ -57,14 +57,7 @@ const title_name = computed(() =>
       <template #header-extra>
         <n-flex>
           <EditButton @click="show_edit_modal = true" />
-          <n-popconfirm @positive-click="del()">
-            <template #trigger>
-              <n-button size="small" type="error" secondary>
-                {{ t("common.delete") }}
-              </n-button>
-            </template>
-            {{ t("common.confirm_delete") }}
-          </n-popconfirm>
+          <DeleteButton :item="rule.remark" :on-confirm="del" />
         </n-flex>
       </template>
     </n-card>

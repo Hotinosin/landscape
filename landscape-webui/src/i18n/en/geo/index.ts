@@ -1,6 +1,7 @@
 export default {
   common: {
     source_type: "Source Type",
+    source: "Source",
     source_url: "Download URL",
     source_url_mode: "Download from URL",
     source_direct_mode: "Define Directly",
@@ -22,11 +23,18 @@ export default {
     ip_placeholder: "IP Address",
     prefix_placeholder: "Prefix",
     add_ip: "Add IP",
+    lookup_placeholder: "Enter an IP address to find matching GeoIP groups…",
+    lookup_results: "Lookup Results ({count} groups)",
+    lookup_empty: "No matching GeoIP groups",
   },
   geo_site: {
     title: "Edit Geo Site Source",
     all_tags: "All Tags",
     search_tags: "Search tag names…",
+    lookup_placeholder: "Enter a domain to find matching GeoSite groups…",
+    lookup_action: "Search",
+    lookup_results: "Lookup Results ({count} groups)",
+    lookup_empty: "No matching GeoSite groups",
     domain_list: "Domain List",
     domain_placeholder: "Domain",
     add_domain: "Add Domain",
@@ -71,6 +79,8 @@ export default {
     geosite_data: "GeoSite Data",
     geoip_data: "GeoIP Data",
     config_title: "Geo Data Source Configuration",
+    refresh_all: "Update All",
+    update_all_confirm: "Re-download and update all data sources?",
   },
   item_card: {
     source_type: "Source Type",
@@ -79,10 +89,11 @@ export default {
     key_count: "Key Count",
     txt_key: "TXT Key",
     update_with_file: "Update Using File",
+    upload: "Upload",
     force_refresh: "Force Refresh",
-    refresh_source: "Refresh Source",
+    refresh_source: "Update",
     force_refresh_confirm:
-      "Force refresh will re-download and re-parse the rules from the source URL.",
+      "Update will re-download and re-parse the rules from the source URL.",
   },
   detail_drawer: {
     rule_details: "Rule Details",

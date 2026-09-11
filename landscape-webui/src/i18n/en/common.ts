@@ -7,6 +7,10 @@ export default {
   edit: "Edit",
   delete: "Delete",
   confirm_delete: "Confirm deletion?",
+  delete_confirm_content:
+    'You are about to delete "{item}". This cannot be undone.',
+  delete_confirm_generic:
+    "You are about to delete the selected item. This cannot be undone.",
   no_remark: "No remark",
   no_data: "No data",
   not_configured: "N/A",
@@ -39,6 +43,11 @@ export default {
   ipv4_target: "IPv4 Target",
   ipv6_target: "IPv6 Target",
   updated_at: "Updated At",
+  last_success_at: "Last successful update",
+  refresh_failed_previous_result:
+    "Refresh failed; showing the last successful result",
+  showing_previous_query:
+    "Filters changed; showing the previous successful query result",
   no_firewall_rules: "No blacklist rules",
   list_no_auto_refresh:
     "The list does not auto-refresh currently. IPs inactive for 30s will be marked as",
@@ -63,6 +72,10 @@ export default {
   open: "Open",
   override: "Override",
   add: "Add",
+  add_new: "Add",
+  copy: "Copy",
+  paste: "Paste",
+  query: "Query",
   copy_success: "Copied",
   copy_failed: "Copy failed",
   paste_replace_success: "Replaced from clipboard",

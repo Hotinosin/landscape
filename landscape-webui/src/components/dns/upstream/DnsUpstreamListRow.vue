@@ -48,15 +48,13 @@ async function remove() {
     }}</n-text>
   </template>
   <template v-else>
-    <n-flex :wrap="false"
-      ><EditButton @click="show = true" /><n-popconfirm @positive-click="remove"
-        ><template #trigger
-          ><n-button secondary type="error" size="small">{{
-            t("common.delete")
-          }}</n-button></template
-        >{{ t("common.confirm_delete") }}</n-popconfirm
-      ></n-flex
-    >
+    <n-flex :wrap="false">
+      <EditButton @click="show = true" />
+      <DeleteButton
+        :item="front.MASK_INFO(rule.remark || t('dns.upstream_card.no_remark'))"
+        :on-confirm="remove"
+      />
+    </n-flex>
     <UpstreamEditModal
       v-model:show="show"
       :rule_id="rule.id"

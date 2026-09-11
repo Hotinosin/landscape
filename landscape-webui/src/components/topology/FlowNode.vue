@@ -12,6 +12,7 @@ import RouteLanServiceEditModal from "@/components/route/lan/RouteLanServiceEdit
 import RouteWanServiceEditModal from "@/components/route/wan/RouteWanServiceEditModal.vue";
 import WifiModeChange from "@/components/wifi/WifiModeChange.vue";
 import WifiServiceEditModal from "@/components/wifi/WifiServiceEditModal.vue";
+import CarrierStatusDot from "@/components/topology/CarrierStatusDot.vue";
 import { Link } from "@vicons/carbon";
 import { useThemeVars } from "naive-ui";
 import { changeColor } from "seemly";
@@ -38,6 +39,7 @@ import { useRouteLanConfigStore } from "@/stores/status_route_lan";
 import { useRouteWanConfigStore } from "@/stores/status_route_wan";
 import { useWifiConfigStore } from "@/stores/status_wifi";
 import { useIfaceNodeStore } from "@/stores/iface_node";
+import { useFrontEndStore } from "@/stores/front_end_config";
 import type { IfaceRealtimeStat } from "@landscape-router/types/api/schemas";
 
 const props = withDefaults(
@@ -46,10 +48,14 @@ const props = withDefaults(
     metric?: IfaceRealtimeStat;
     selected?: boolean;
     dimmed?: boolean;
+    summary?: boolean;
+    docker?: boolean;
   }>(),
   {
     selected: false,
     dimmed: false,
+    summary: false,
+    docker: false,
   },
 );
 
@@ -57,6 +63,7 @@ const { t } = useI18n();
 const themeVars = useThemeVars();
 const show_switch = computed(() => new ServiceExhibitSwitch(props.node));
 const ifaceNodeStore = useIfaceNodeStore();
+const frontEndStore = useFrontEndStore();
 const show_mss_clamp_edit = ref(false);
 const iface_dhcp_v4_service_edit_show = ref(false);
 const iface_wifi_edit_show = ref(false);
@@ -120,6 +127,9 @@ const status_type = computed(() => {
   }
   return "warning";
 });
+const zone_label = computed(() =>
+  props.node.zone_type === IfaceZoneType.wan ? "WAN" : "LAN",
+);
 
 const zone_type = computed(() => {
   if (props.node.zone_type === IfaceZoneType.wan) {
@@ -133,6 +143,10 @@ const zone_type = computed(() => {
 
 const role_tags = computed(() => {
   const tags: string[] = [];
+
+  if (props.docker) {
+    tags.push("docker");
+  }
 
   if (props.node.dev_kind === "bridge") {
     tags.push("bridge");
@@ -148,9 +162,7 @@ const role_tags = computed(() => {
 });
 
 const node_width = 280;
-const title_max_width = computed(
-  () => `${Math.max(node_width - 126, 140)}px`,
-);
+const title_max_width = computed(() => `${Math.max(node_width - 126, 140)}px`);
 const has_metric = computed(
   () =>
     props.metric !== undefined &&
@@ -158,6 +170,10 @@ const has_metric = computed(
       (props.metric.stats.egress_bps || 0) > 0 ||
       (props.metric.stats.active_conns || 0) > 0),
 );
+
+function displayValue(value?: string | number | null) {
+  return value === undefined || value === null || value === "" ? "N/A" : value;
+}
 
 function serviceStatusText(status?: ServiceStatus) {
   return get_service_status_label(status, t);
@@ -326,9 +342,6 @@ const node_style = computed(() => ({
   "--topology-node-selected-shadow": `0 18px 36px ${changeColor(themeVars.value.primaryColor, { alpha: 0.18 })}, 0 0 0 1px ${changeColor(themeVars.value.primaryColor, { alpha: 0.18 })}`,
   "--topology-node-text": themeVars.value.textColor1,
   "--topology-node-muted": themeVars.value.textColor3,
-  "--topology-node-carrier-ring": changeColor(themeVars.value.textColor3, {
-    alpha: 0.12,
-  }),
   "--topology-node-service-bg": changeColor(themeVars.value.bodyColor, {
     alpha: 0.68,
   }),
@@ -362,83 +375,106 @@ const node_style = computed(() => ({
           class="topology-node__handle"
         />
 
-        <div class="topology-node__card">
-          <div class="topology-node__title-row">
-            <div class="topology-node__title">
-              <span
-                class="topology-node__carrier"
-                :style="{
-                  backgroundColor: node.carrier
-                    ? themeVars.successColor
-                    : themeVars.borderColor,
-                }"
-              />
-              <n-performant-ellipsis
-                :tooltip="false"
-                style="max-width: var(--topology-node-title-max)"
-              >
-                {{ node.name }}
-              </n-performant-ellipsis>
-            </div>
-            <div class="topology-node__header-actions">
-              <WifiModeChange
-                v-if="show_switch.wifi || show_switch.station"
-                :iface_name="node.name"
-                :wifi_info="node.wifi_mode"
-                :show_switch="show_switch"
-                @refresh="refreshGraph"
-              />
-              <n-button
-                v-if="show_switch.pppd"
-                quaternary
-                circle
-                size="tiny"
-                :focusable="false"
-                data-testid="topology-node-open-pppd"
-                @click.stop="show_pppd_drawer = true"
-              >
-                <template #icon>
-                  <n-icon><Link /></n-icon>
-                </template>
-              </n-button>
-              <n-tag size="small" :type="status_type" :bordered="false">
-                {{ node.dev_status.t }}
-              </n-tag>
-            </div>
-          </div>
+        <n-popover :disabled="!summary" trigger="hover" placement="top">
+          <template #trigger>
+            <div class="topology-node__card">
+              <div class="topology-node__title-row">
+                <div class="topology-node__title">
+                  <CarrierStatusDot :active="node.carrier" />
+                  <n-performant-ellipsis
+                    :tooltip="false"
+                    style="max-width: var(--topology-node-title-max)"
+                  >
+                    {{ node.name }}
+                  </n-performant-ellipsis>
+                </div>
+                <div class="topology-node__header-actions">
+                  <WifiModeChange
+                    v-if="!summary && (show_switch.wifi || show_switch.station)"
+                    :iface_name="node.name"
+                    :wifi_info="node.wifi_mode"
+                    :show_switch="show_switch"
+                    @refresh="refreshGraph"
+                  />
+                  <n-button
+                    v-if="!summary && show_switch.pppd"
+                    quaternary
+                    circle
+                    size="tiny"
+                    :focusable="false"
+                    data-testid="topology-node-open-pppd"
+                    @click.stop="show_pppd_drawer = true"
+                  >
+                    <template #icon>
+                      <n-icon><Link /></n-icon>
+                    </template>
+                  </n-button>
+                  <n-tag size="tiny" :type="status_type">
+                    {{ node.dev_status.t }}
+                  </n-tag>
+                </div>
+              </div>
 
-          <div class="topology-node__tags">
-            <n-tag size="tiny" :type="zone_type" round>
-              {{ node.zone_type }}
-            </n-tag>
-            <n-tag v-for="tag in role_tags" :key="tag" size="tiny" tertiary>
-              {{ tag }}
-            </n-tag>
-          </div>
+              <div class="topology-node__tags">
+                <n-tag
+                  v-if="node.zone_type !== IfaceZoneType.undefined"
+                  size="tiny"
+                  :type="zone_type"
+                >
+                  {{ zone_label }}
+                </n-tag>
+                <n-tag v-for="tag in role_tags" :key="tag" size="tiny" tertiary>
+                  {{ tag }}
+                </n-tag>
+              </div>
 
-          <div v-if="has_metric && metric" class="topology-node__metric">
-            <div class="topology-node__metric-row">
-              <span
-                class="topology-node__metric-label topology-node__metric-label--egress"
-                >↑</span
-              >
-              <span>{{ formatRate(metric.stats.egress_bps || 0) }}</span>
-              <span class="topology-node__metric-pps">{{
-                formatPackets(metric.stats.egress_pps || 0)
-              }}</span>
+              <div v-if="has_metric && metric" class="topology-node__metric">
+                <div class="topology-node__metric-row">
+                  <span
+                    class="topology-node__metric-label topology-node__metric-label--egress"
+                    >↑</span
+                  >
+                  <span>{{ formatRate(metric.stats.egress_bps || 0) }}</span>
+                  <span class="topology-node__metric-pps">{{
+                    formatPackets(metric.stats.egress_pps || 0)
+                  }}</span>
+                </div>
+                <div class="topology-node__metric-row">
+                  <span
+                    class="topology-node__metric-label topology-node__metric-label--ingress"
+                    >↓</span
+                  >
+                  <span>{{ formatRate(metric.stats.ingress_bps || 0) }}</span>
+                  <span class="topology-node__metric-pps">{{
+                    formatPackets(metric.stats.ingress_pps || 0)
+                  }}</span>
+                </div>
+              </div>
             </div>
-            <div class="topology-node__metric-row">
-              <span
-                class="topology-node__metric-label topology-node__metric-label--ingress"
-                >↓</span
-              >
-              <span>{{ formatRate(metric.stats.ingress_bps || 0) }}</span>
-              <span class="topology-node__metric-pps">{{
-                formatPackets(metric.stats.ingress_pps || 0)
-              }}</span>
-            </div>
-          </div>
-        </div>
+          </template>
+          <n-descriptions label-placement="left" :column="1" size="small">
+            <n-descriptions-item :label="t('topology.panel.ifindex')">
+              {{ node.index }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('topology.panel.boot')">
+              {{
+                t(
+                  node.enable_in_boot
+                    ? "topology.panel.yes"
+                    : "topology.panel.no",
+                )
+              }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('topology.node.perm_mac')">
+              {{
+                node.perm_mac ? frontEndStore.MASK_INFO(node.perm_mac) : "N/A"
+              }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('topology.panel.peer_link')">
+              {{ displayValue(node.peer_link_id) }}
+            </n-descriptions-item>
+          </n-descriptions>
+        </n-popover>
 
         <Handle
           v-if="node.has_source_hook()"
@@ -448,7 +484,10 @@ const node_style = computed(() => ({
         />
       </div>
 
-      <div v-if="service_items.length" class="topology-node__services">
+      <div
+        v-if="!summary && service_items.length"
+        class="topology-node__services"
+      >
         <n-tooltip
           v-for="item in service_items"
           :key="item.key"
@@ -625,14 +664,6 @@ const node_style = computed(() => ({
   color: var(--topology-node-text);
 }
 
-.topology-node__carrier {
-  width: 9px;
-  height: 9px;
-  flex: none;
-  border-radius: var(--app-radius-pill);
-  box-shadow: 0 0 0 4px var(--topology-node-carrier-ring);
-}
-
 .topology-node__tags {
   display: flex;
   margin-top: 8px;
@@ -720,8 +751,8 @@ const node_style = computed(() => ({
 }
 
 .topology-node__handle {
-  width: 12px;
-  height: 12px;
+  width: 8px;
+  height: 8px;
   opacity: 1;
   z-index: 2;
   cursor: crosshair;

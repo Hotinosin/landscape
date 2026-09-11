@@ -78,7 +78,7 @@ const skippedColumns = computed<DataTableColumns<RuleRow>>(() => [
       }}</n-text>
     </div>
   </n-popover>
-  <n-modal v-model:show="show" style="max-width: 520px">
+  <n-modal v-model:show="show" style="width: var(--app-compact-modal-width)">
     <n-card size="small" closable :title="sup('title')" @close="show = false">
       <n-flex vertical :size="10">
         <n-flex vertical :size="4">

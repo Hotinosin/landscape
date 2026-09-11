@@ -7,7 +7,7 @@ import {
 } from "@/api/enrolled_device";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
-import { Settings, TrashCan } from "@vicons/carbon";
+import { Settings } from "@vicons/carbon";
 import EnrolledDeviceEditModal from "./EnrolledDeviceEditModal.vue";
 import { computed } from "vue";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
@@ -121,14 +121,7 @@ async function del() {
     <template v-else-if="cell === 'actions'">
       <n-flex size="small" :wrap="false" justify="start">
         <EditButton @click="show_edit_modal = true" />
-        <n-popconfirm @positive-click="del()">
-          <template #trigger>
-            <n-button size="small" secondary type="error">
-              {{ t("common.delete") }}
-            </n-button>
-          </template>
-          {{ t("device.delete_confirm") }}
-        </n-popconfirm>
+        <DeleteButton :content="t('device.delete_confirm')" :on-confirm="del" />
       </n-flex>
     </template>
   </template>
@@ -224,16 +217,7 @@ async function del() {
           </template>
         </n-button>
 
-        <n-popconfirm @positive-click="del()">
-          <template #trigger>
-            <n-button size="small" quaternary circle type="error">
-              <template #icon>
-                <TrashCan />
-              </template>
-            </n-button>
-          </template>
-          {{ t("device.delete_confirm") }}
-        </n-popconfirm>
+        <DeleteButton :content="t('device.delete_confirm')" :on-confirm="del" />
       </n-flex>
     </template>
   </n-card>

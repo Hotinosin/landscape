@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, h, onMounted, ref, watch } from "vue";
 import type { DataTableColumns } from "naive-ui";
-import type { WanIpRuleConfig } from "@landscape-router/types/api/schemas";
+import type {
+  FlowConfig,
+  WanIpRuleConfig,
+} from "@landscape-router/types/api/schemas";
 import { useI18n } from "vue-i18n";
 import { useMessage } from "naive-ui";
 import WanRuleEditModal from "./WanRuleEditModal.vue";
@@ -15,8 +18,12 @@ import {
   copy_context_to_clipboard,
   read_context_from_clipboard,
 } from "@/lib/common";
+import { Add, Copy, Paste } from "@vicons/carbon";
 
-const props = withDefaults(defineProps<{ flow_id?: number }>(), { flow_id: 0 });
+const props = withDefaults(
+  defineProps<{ flow_id?: number; flows?: FlowConfig[] }>(),
+  { flow_id: 0, flows: () => [] },
+);
 const emit = defineEmits(["changed"]);
 const { t } = useI18n();
 const message = useMessage();
@@ -26,9 +33,10 @@ const showCreateModal = ref(false);
 
 const columns = computed<DataTableColumns<WanIpRuleConfig>>(() =>
   [
-    [`${t("common.status")} / ${t("common.priority")}`, "status", "25%"],
-    [t("flow.wan_rule_card.match_rules"), "sources", "35%"],
+    [`${t("common.status")} / ${t("common.priority")}`, "status", "22%"],
+    [t("flow.wan_rule_card.match_rules"), "sources", "30%"],
     [t("flow.wan_rule_edit.egress_select"), "action", "25%"],
+    [t("common.enable"), "enable", "8%"],
     [t("common.actions"), "actions", "15%"],
   ].map(([title, cell, width]) => ({
     title,
@@ -37,6 +45,7 @@ const columns = computed<DataTableColumns<WanIpRuleConfig>>(() =>
     render: (rule) =>
       h(WanRuleListRow, {
         rule,
+        flows: props.flows,
         cell: cell as any,
         onRefresh: handleRulesChanged,
       }),
@@ -88,20 +97,23 @@ watch(() => props.flow_id, readRules);
   <n-spin :show="loading">
     <n-flex vertical class="rule-panel">
       <n-flex>
-        <n-button @click="showCreateModal = true">{{
-          t("flow.wan_rule_drawer.add_rule")
-        }}</n-button>
-        <n-button @click="exportConfig">{{
-          t("flow.wan_rule_drawer.export_clipboard")
-        }}</n-button>
-        <n-popconfirm @positive-click="importRules">
-          <template #trigger
-            ><n-button>{{
-              t("flow.wan_rule_drawer.import_clipboard")
-            }}</n-button></template
-          >
+        <n-button type="primary" @click="showCreateModal = true">
+          <template #icon><n-icon><Add /></n-icon></template>
+          {{ t("common.add_new") }}
+        </n-button>
+        <n-button @click="exportConfig">
+          <template #icon><n-icon><Copy /></n-icon></template>
+          {{ t("common.copy") }}
+        </n-button>
+        <ConfirmModal @positive-click="importRules">
+          <template #trigger>
+            <n-button>
+              <template #icon><n-icon><Paste /></n-icon></template>
+              {{ t("common.paste") }}
+            </n-button>
+          </template>
           {{ t("flow.wan_rule_drawer.confirm_import") }}
-        </n-popconfirm>
+        </ConfirmModal>
       </n-flex>
       <n-scrollbar class="rule-list">
         <StandardDataTable

@@ -83,6 +83,8 @@ async function save_config() {
   await action();
 }
 
+defineExpose({ save: save_config });
+
 async function persist_config() {
   commit_loading.value = true;
   try {

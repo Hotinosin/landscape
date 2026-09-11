@@ -1,6 +1,7 @@
 export default {
   common: {
     source_type: "来源类型",
+    source: "来源",
     source_url: "下载 URL",
     source_url_mode: "URL 下载",
     source_direct_mode: "直接定义",
@@ -21,11 +22,18 @@ export default {
     ip_placeholder: "IP 地址",
     prefix_placeholder: "前缀",
     add_ip: "添加 IP",
+    lookup_placeholder: "输入 IP 地址，反查匹配的 GeoIP 分组…",
+    lookup_results: "查询结果（{count} 个分组）",
+    lookup_empty: "没有匹配的 GeoIP 分组",
   },
   geo_site: {
     title: "编辑 Geo Site",
     all_tags: "全部标签",
     search_tags: "搜索标签名称…",
+    lookup_placeholder: "输入域名，反查匹配的 GeoSite 分组…",
+    lookup_action: "查询",
+    lookup_results: "查询结果（{count} 个分组）",
+    lookup_empty: "没有匹配的 GeoSite 分组",
     domain_list: "域名列表",
     domain_placeholder: "域名",
     add_domain: "添加域名",
@@ -70,6 +78,8 @@ export default {
     geosite_data: "GeoSite 数据",
     geoip_data: "GeoIP 数据",
     config_title: "Geo 数据源配置",
+    refresh_all: "全部更新",
+    update_all_confirm: "确定重新下载并更新全部数据源吗？",
   },
   item_card: {
     source_type: "来源类型",
@@ -78,9 +88,10 @@ export default {
     key_count: "Key 数量",
     txt_key: "TXT Key",
     update_with_file: "使用文件更新",
+    upload: "上传",
     force_refresh: "强制刷新",
-    refresh_source: "刷新此数据源",
-    force_refresh_confirm: "强制刷新将从来源 URL 重新下载并解析规则。",
+    refresh_source: "更新",
+    force_refresh_confirm: "更新将从来源 URL 重新下载并解析规则。",
   },
   detail_drawer: {
     rule_details: "规则细节",

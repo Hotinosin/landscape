@@ -15,7 +15,7 @@ import { useThemeVars } from "naive-ui";
 import ConnectVirtualList from "@/components/metric/connect/live/ConnectVirtualList.vue";
 import FlowSelect from "@/components/flow/FlowSelect.vue";
 import ConnectViewSwitcher from "@/components/metric/connect/ConnectViewSwitcher.vue";
-import { ArrowDown, ArrowUp, ArrowsVertical } from "@vicons/carbon";
+import { ArrowDown, ArrowUp, ArrowsVertical, TrashCan } from "@vicons/carbon";
 import type { ConnectRealtimeStatus } from "@landscape-router/types/api/schemas";
 
 const metricStore = useMetricStore();
@@ -136,7 +136,7 @@ const totalStats = computed(() =>
   summarizeConnections(filteredConnectMetrics.value),
 );
 
-onMounted(async () => {
+onMounted(() => {
   // Initialize filters from route query
   const srcIp = queryString(route.query.src_ip);
   const dstIp = queryString(route.query.dst_ip);
@@ -151,235 +151,260 @@ onMounted(async () => {
   if (portEnd !== null) liveFilter.port_end = portEnd;
   if (flowId !== null) liveFilter.flow_id = flowId;
   if (ifindex !== null) liveFilter.ifindex = ifindex;
-
-  await metricStore.UPDATE_INFO();
 });
 </script>
 
 <template>
-  <n-flex vertical :size="0" style="flex: 1; overflow: hidden">
-    <!-- System-wide active connection stats -->
-    <n-card
-      size="small"
-      :bordered="false"
-      style="margin-bottom: 12px; background-color: var(--app-surface-color)"
-    >
-      <n-flex align="center" justify="space-between">
-        <ConnectViewSwitcher />
+  <StandardRequestStatus
+    :has-succeeded="metricStore.currentState.hasSucceeded"
+    :loading="metricStore.currentState.loading"
+    :error="metricStore.currentState.error"
+    :last-success-at="metricStore.currentState.lastSuccessAt"
+    @retry="metricStore.REFRESH_CURRENT"
+  >
+    <n-flex vertical :wrap="false" :size="0" class="live-metric">
+      <!-- System-wide active connection stats -->
+      <n-card
+        size="small"
+        :bordered="false"
+        style="margin-bottom: 12px; background-color: var(--app-surface-color)"
+      >
+        <n-flex align="center" justify="space-between">
+          <ConnectViewSwitcher />
 
-        <n-flex align="center" size="large">
-          <n-flex align="center" size="small">
-            <span
-              style="
-                color: var(--app-text-muted-color);
-                font-size: var(--app-font-size-label);
-              "
-              >{{ $t("metric.connect.stats.total_active_conns") }}:</span
-            >
-            <span style="font-weight: bold">{{ systemStats.count }}</span>
-          </n-flex>
-          <n-divider vertical />
-          <n-flex align="center" size="small">
-            <span
-              style="
-                color: var(--app-text-muted-color);
-                font-size: var(--app-font-size-label);
-              "
-              >{{ $t("metric.connect.stats.total_egress") }}:</span
-            >
-            <span :style="{ fontWeight: 'bold', color: themeVars.infoColor }">{{
-              formatRate(systemStats.egressBps)
-            }}</span>
-          </n-flex>
-          <n-divider vertical />
-          <n-flex align="center" size="small">
-            <span
-              style="
-                color: var(--app-text-muted-color);
-                font-size: var(--app-font-size-label);
-              "
-              >{{ $t("metric.connect.stats.total_ingress") }}:</span
-            >
-            <span
-              :style="{ fontWeight: 'bold', color: themeVars.successColor }"
-              >{{ formatRate(systemStats.ingressBps) }}</span
-            >
+          <n-flex align="center" size="large">
+            <n-flex align="center" size="small">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+                >{{ $t("metric.connect.stats.total_active_conns") }}:</span
+              >
+              <span style="font-weight: bold">{{ systemStats.count }}</span>
+            </n-flex>
+            <n-divider vertical />
+            <n-flex align="center" size="small">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+                >{{ $t("metric.connect.stats.total_egress") }}:</span
+              >
+              <span
+                :style="{ fontWeight: 'bold', color: themeVars.infoColor }"
+                >{{ formatRate(systemStats.egressBps) }}</span
+              >
+            </n-flex>
+            <n-divider vertical />
+            <n-flex align="center" size="small">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+                >{{ $t("metric.connect.stats.total_ingress") }}:</span
+              >
+              <span
+                :style="{ fontWeight: 'bold', color: themeVars.successColor }"
+                >{{ formatRate(systemStats.ingressBps) }}</span
+              >
+            </n-flex>
+            <IconActionButton
+              kind="refresh"
+              :tooltip="$t('metric.connect.stats.refresh_data')"
+              :disabled="metricStore.currentState.loading"
+              @click="metricStore.REFRESH_CURRENT()"
+            />
           </n-flex>
         </n-flex>
-      </n-flex>
-    </n-card>
+      </n-card>
 
-    <!-- Live mode toolbar -->
-    <n-flex align="center" :wrap="true" style="margin-bottom: 12px">
-      <n-input
-        v-model:value="liveFilter.src_ip"
-        :placeholder="$t('metric.connect.filter.src_ip')"
-        clearable
-        style="width: 170px"
-      />
-      <n-input
-        v-model:value="liveFilter.dst_ip"
-        :placeholder="$t('metric.connect.filter.dst_ip')"
-        clearable
-        style="width: 170px"
-      />
-      <n-input-group style="width: 220px">
-        <n-input-number
-          v-model:value="liveFilter.port_start"
-          :placeholder="$t('metric.connect.filter.port_start')"
-          :show-button="false"
+      <!-- Live mode toolbar -->
+      <n-flex align="center" :wrap="true" style="margin-bottom: 12px">
+        <n-input
+          v-model:value="liveFilter.src_ip"
+          :placeholder="$t('metric.connect.filter.src_ip')"
           clearable
+          style="width: 170px"
         />
-        <n-input-group-label>=></n-input-group-label>
-        <n-input-number
-          v-model:value="liveFilter.port_end"
-          :placeholder="$t('metric.connect.filter.port_end')"
-          :show-button="false"
+        <n-input
+          v-model:value="liveFilter.dst_ip"
+          :placeholder="$t('metric.connect.filter.dst_ip')"
           clearable
+          style="width: 170px"
         />
-      </n-input-group>
-      <n-select
-        v-model:value="liveFilter.l4_proto"
-        :placeholder="$t('metric.connect.filter.proto')"
-        :options="protocolOptions"
-        clearable
-        style="width: 130px"
-      />
-      <n-select
-        v-model:value="liveFilter.l3_proto"
-        :placeholder="$t('metric.connect.filter.l3_proto')"
-        :options="ipTypeOptions"
-        clearable
-        style="width: 110px"
-      />
-      <n-select
-        v-model:value="liveFilter.gress"
-        :placeholder="$t('metric.connect.filter.gress')"
-        :options="gressOptions"
-        clearable
-        style="width: 110px"
-      />
-      <FlowSelect v-model="liveFilter.flow_id" width="120px" />
-
-      <n-button-group>
-        <n-button @click="metricStore.UPDATE_INFO()" type="primary">{{
-          $t("metric.connect.stats.refresh_sample")
-        }}</n-button>
-        <n-button @click="resetLiveFilter">{{
-          $t("metric.connect.reset")
-        }}</n-button>
-      </n-button-group>
-    </n-flex>
-
-    <n-grid x-gap="12" :cols="5" style="margin-bottom: 12px">
-      <n-gi>
-        <n-card
-          size="small"
-          :bordered="false"
-          style="background-color: var(--app-surface-color); height: 100%"
-        >
-          <n-statistic
-            :label="$t('metric.connect.stats.filter_total')"
-            :value="totalStats.count"
+        <n-input-group style="width: 220px">
+          <n-input-number
+            v-model:value="liveFilter.port_start"
+            :placeholder="$t('metric.connect.filter.port_start')"
+            :show-button="false"
+            clearable
           />
-        </n-card>
-      </n-gi>
-      <n-gi>
-        <n-card
-          size="small"
-          :bordered="false"
-          style="background-color: var(--app-surface-color); height: 100%"
-        >
-          <n-statistic :label="$t('metric.connect.stats.total_egress')">
-            <span :style="{ color: themeVars.infoColor, fontWeight: 'bold' }">
-              {{ formatRate(totalStats.egressBps) }}
-            </span>
-          </n-statistic>
-        </n-card>
-      </n-gi>
-      <n-gi>
-        <n-card
-          size="small"
-          :bordered="false"
-          style="background-color: var(--app-surface-color); height: 100%"
-        >
-          <n-statistic :label="$t('metric.connect.stats.total_ingress')">
-            <span
-              :style="{ color: themeVars.successColor, fontWeight: 'bold' }"
+          <n-input-group-label>=></n-input-group-label>
+          <n-input-number
+            v-model:value="liveFilter.port_end"
+            :placeholder="$t('metric.connect.filter.port_end')"
+            :show-button="false"
+            clearable
+          />
+        </n-input-group>
+        <n-select
+          v-model:value="liveFilter.l4_proto"
+          :placeholder="$t('metric.connect.filter.proto')"
+          :options="protocolOptions"
+          clearable
+          style="width: 130px"
+        />
+        <n-select
+          v-model:value="liveFilter.l3_proto"
+          :placeholder="$t('metric.connect.filter.l3_proto')"
+          :options="ipTypeOptions"
+          clearable
+          style="width: 110px"
+        />
+        <n-select
+          v-model:value="liveFilter.gress"
+          :placeholder="$t('metric.connect.filter.gress')"
+          :options="gressOptions"
+          clearable
+          style="width: 110px"
+        />
+        <FlowSelect v-model="liveFilter.flow_id" width="120px" />
+
+        <n-button secondary @click="resetLiveFilter">
+          <template #icon><n-icon><TrashCan /></n-icon></template>
+          {{ $t("metric.connect.reset") }}
+        </n-button>
+      </n-flex>
+
+      <n-grid x-gap="12" :cols="5" style="margin-bottom: 12px">
+        <n-gi>
+          <n-card
+            size="small"
+            :bordered="false"
+            style="background-color: var(--app-surface-color); height: 100%"
+          >
+            <n-statistic
+              :label="$t('metric.connect.stats.filter_total')"
+              :value="totalStats.count"
+            />
+          </n-card>
+        </n-gi>
+        <n-gi>
+          <n-card
+            size="small"
+            :bordered="false"
+            style="background-color: var(--app-surface-color); height: 100%"
+          >
+            <n-statistic :label="$t('metric.connect.stats.total_egress')">
+              <span :style="{ color: themeVars.infoColor, fontWeight: 'bold' }">
+                {{ formatRate(totalStats.egressBps) }}
+              </span>
+            </n-statistic>
+          </n-card>
+        </n-gi>
+        <n-gi>
+          <n-card
+            size="small"
+            :bordered="false"
+            style="background-color: var(--app-surface-color); height: 100%"
+          >
+            <n-statistic :label="$t('metric.connect.stats.total_ingress')">
+              <span
+                :style="{ color: themeVars.successColor, fontWeight: 'bold' }"
+              >
+                {{ formatRate(totalStats.ingressBps) }}
+              </span>
+            </n-statistic>
+          </n-card>
+        </n-gi>
+        <n-gi>
+          <n-card
+            size="small"
+            :bordered="false"
+            style="background-color: var(--app-surface-color); height: 100%"
+          >
+            <n-statistic
+              :label="$t('metric.connect.stats.filter_ingress_pkts')"
             >
-              {{ formatRate(totalStats.ingressBps) }}
-            </span>
-          </n-statistic>
-        </n-card>
-      </n-gi>
-      <n-gi>
-        <n-card
-          size="small"
-          :bordered="false"
-          style="background-color: var(--app-surface-color); height: 100%"
-        >
-          <n-statistic :label="$t('metric.connect.stats.filter_ingress_pkts')">
-            <span style="color: var(--app-text-muted-color)">
-              {{ formatPackets(totalStats.ingressPps) }}
-            </span>
-          </n-statistic>
-        </n-card>
-      </n-gi>
-      <n-gi>
-        <n-card
-          size="small"
-          :bordered="false"
-          style="background-color: var(--app-surface-color); height: 100%"
-        >
-          <n-statistic :label="$t('metric.connect.stats.filter_egress_pkts')">
-            <span style="color: var(--app-text-muted-color)">
-              {{ formatPackets(totalStats.egressPps) }}
-            </span>
-          </n-statistic>
-        </n-card>
-      </n-gi>
-    </n-grid>
+              <span style="color: var(--app-text-muted-color)">
+                {{ formatPackets(totalStats.ingressPps) }}
+              </span>
+            </n-statistic>
+          </n-card>
+        </n-gi>
+        <n-gi>
+          <n-card
+            size="small"
+            :bordered="false"
+            style="background-color: var(--app-surface-color); height: 100%"
+          >
+            <n-statistic :label="$t('metric.connect.stats.filter_egress_pkts')">
+              <span style="color: var(--app-text-muted-color)">
+                {{ formatPackets(totalStats.egressPps) }}
+              </span>
+            </n-statistic>
+          </n-card>
+        </n-gi>
+      </n-grid>
 
-    <div class="connect-list-header">
-      <div class="sortable-column" :class="{ active: sortKey === 'time' }">
-        <span>{{ $t("metric.connect.filter.time") }}</span
-        ><n-button text class="sort-trigger" @click="toggleSort('time')"
-          ><n-icon size="18" :component="sortIcon('time')"
-        /></n-button>
-      </div>
-      <span></span>
-      <div class="sortable-column" :class="{ active: sortKey === 'port' }">
-        <span>{{ $t("metric.connect.filter.port") }}</span
-        ><n-button text class="sort-trigger" @click="toggleSort('port')"
-          ><n-icon size="18" :component="sortIcon('port')"
-        /></n-button>
-      </div>
-      <div class="sortable-column" :class="{ active: sortKey === 'egress' }">
-        <span>{{ $t("metric.connect.stats.egress") }}</span
-        ><n-button text class="sort-trigger" @click="toggleSort('egress')"
-          ><n-icon size="18" :component="sortIcon('egress')"
-        /></n-button>
-      </div>
-      <div class="sortable-column" :class="{ active: sortKey === 'ingress' }">
-        <span>{{ $t("metric.connect.stats.ingress") }}</span
-        ><n-button text class="sort-trigger" @click="toggleSort('ingress')"
-          ><n-icon size="18" :component="sortIcon('ingress')"
-        /></n-button>
-      </div>
-      <span></span>
-    </div>
+      <div class="standard-virtual-table">
+        <div class="connect-list-header">
+          <div class="sortable-column" :class="{ active: sortKey === 'time' }">
+            <span>{{ $t("metric.connect.filter.time") }}</span
+            ><n-button text class="sort-trigger" @click="toggleSort('time')"
+              ><n-icon size="18" :component="sortIcon('time')"
+            /></n-button>
+          </div>
+          <span></span>
+          <div class="sortable-column" :class="{ active: sortKey === 'port' }">
+            <span>{{ $t("metric.connect.filter.port") }}</span
+            ><n-button text class="sort-trigger" @click="toggleSort('port')"
+              ><n-icon size="18" :component="sortIcon('port')"
+            /></n-button>
+          </div>
+          <div
+            class="sortable-column"
+            :class="{ active: sortKey === 'egress' }"
+          >
+            <span>{{ $t("metric.connect.stats.egress") }}</span
+            ><n-button text class="sort-trigger" @click="toggleSort('egress')"
+              ><n-icon size="18" :component="sortIcon('egress')"
+            /></n-button>
+          </div>
+          <div
+            class="sortable-column"
+            :class="{ active: sortKey === 'ingress' }"
+          >
+            <span>{{ $t("metric.connect.stats.ingress") }}</span
+            ><n-button text class="sort-trigger" @click="toggleSort('ingress')"
+              ><n-icon size="18" :component="sortIcon('ingress')"
+            /></n-button>
+          </div>
+          <span></span>
+        </div>
 
-    <ConnectVirtualList
-      v-if="filteredConnectMetrics"
-      :connect_metrics="filteredConnectMetrics"
-      @search:tuple="handleSearchTuple"
-      @search:src="(ip) => (liveFilter.src_ip = ip)"
-      @search:dst="(ip) => (liveFilter.dst_ip = ip)"
-    />
-  </n-flex>
+        <ConnectVirtualList
+          v-if="filteredConnectMetrics"
+          :connect_metrics="filteredConnectMetrics"
+          @search:tuple="handleSearchTuple"
+          @search:src="(ip) => (liveFilter.src_ip = ip)"
+          @search:dst="(ip) => (liveFilter.dst_ip = ip)"
+        />
+      </div>
+    </n-flex>
+  </StandardRequestStatus>
 </template>
 
 <style scoped>
+.live-metric {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .connect-list-header {
   display: grid;
   grid-template-columns: 220px 270px minmax(240px, 1fr) 120px 128px 28px;

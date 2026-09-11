@@ -97,14 +97,11 @@ function pathGroups(): HttpPathGroup[] {
             @click.stop="openEditModal()"
           />
 
-          <n-popconfirm @positive-click="del()">
-            <template #trigger>
-              <n-button secondary size="small" type="error" @click.stop>
-                {{ t("common.delete") }}
-              </n-button>
-            </template>
-            {{ t("common.confirm_delete") }}
-          </n-popconfirm>
+          <DeleteButton
+            :item="frontEndStore.MASK_INFO(rule.name)"
+            :on-confirm="del"
+            @click.stop
+          />
         </n-flex>
       </template>
 

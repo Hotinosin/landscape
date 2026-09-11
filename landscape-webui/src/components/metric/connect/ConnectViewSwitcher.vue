@@ -14,6 +14,7 @@ const viewMode = computed({
     router.push({ path: `/metrics/conn/${val}`, query: { ...route.query } });
   },
 });
+const isHistory = computed(() => viewMode.value.startsWith("history"));
 </script>
 
 <template>
@@ -24,17 +25,17 @@ const viewMode = computed({
       size="small"
       style="min-width: 700px"
     >
-      <n-tab name="live">{{ $t("metric.connect.switcher.live") }}</n-tab>
-      <n-tab name="iface">{{ $t("metric.connect.switcher.iface") }}</n-tab>
-      <n-tab name="src">{{ $t("metric.connect.switcher.src") }}</n-tab>
-      <n-tab name="dst">{{ $t("metric.connect.switcher.dst") }}</n-tab>
-      <n-tab name="history">{{ $t("metric.connect.switcher.history") }}</n-tab>
-      <n-tab name="history-src">{{
-        $t("metric.connect.switcher.history_src")
-      }}</n-tab>
-      <n-tab name="history-dst">{{
-        $t("metric.connect.switcher.history_dst")
-      }}</n-tab>
+      <template v-if="isHistory">
+        <n-tab name="history">{{ $t("metric.connect.view.connection") }}</n-tab>
+        <n-tab name="history-src">{{ $t("metric.connect.view.src_ip") }}</n-tab>
+        <n-tab name="history-dst">{{ $t("metric.connect.view.dst_ip") }}</n-tab>
+      </template>
+      <template v-else>
+        <n-tab name="live">{{ $t("metric.connect.view.connection") }}</n-tab>
+        <n-tab name="iface">{{ $t("metric.connect.view.iface") }}</n-tab>
+        <n-tab name="src">{{ $t("metric.connect.view.src_ip") }}</n-tab>
+        <n-tab name="dst">{{ $t("metric.connect.view.dst_ip") }}</n-tab>
+      </template>
     </n-tabs>
 
     <n-tag
@@ -42,7 +43,6 @@ const viewMode = computed({
       :bordered="false"
       type="info"
       size="small"
-      round
     >
       <template #icon>
         <div class="pulse-dot"></div>

@@ -52,6 +52,9 @@ const menuThemeOverrides = {
 const menu_active_key = ref<string>("");
 
 const activeMenuByPath: Record<string, string> = {
+  "/metrics/conn/iface": "metrics/conn/live",
+  "/metrics/conn/src": "metrics/conn/live",
+  "/metrics/conn/dst": "metrics/conn/live",
   "/metrics/conn/history-src": "metrics/conn/history",
   "/metrics/conn/history-dst": "metrics/conn/history",
 };
@@ -118,6 +121,11 @@ const menuOptions = computed<MenuOption[]>(() => [
         disabled: false,
       },
     ],
+  },
+  {
+    label: t("routes.network-settings"),
+    key: "network/settings",
+    icon: renderIcon(Settings),
   },
   {
     label: t("routes.firewall-nat"),
@@ -197,28 +205,16 @@ const menuOptions = computed<MenuOption[]>(() => [
     icon: renderIcon(ChartCombo),
     children: [
       {
-        label: t("routes.dns-metric"),
-        key: "metrics/dns",
-      },
-      {
         label: t("routes.connect-live"),
         key: "metrics/conn/live",
       },
       {
-        label: t("routes.connect-iface"),
-        key: "metrics/conn/iface",
-      },
-      {
-        label: t("routes.connect-src"),
-        key: "metrics/conn/src",
-      },
-      {
-        label: t("routes.connect-dst"),
-        key: "metrics/conn/dst",
-      },
-      {
         label: t("routes.connect-history"),
         key: "metrics/conn/history",
+      },
+      {
+        label: t("routes.dns-metric"),
+        key: "metrics/dns",
       },
     ],
   },

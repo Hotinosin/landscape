@@ -148,23 +148,17 @@ async function deactivate() {
         @click="verify()"
         >{{ t("cert.action_verify") }}</n-button
       >
-      <n-popconfirm
+      <ConfirmModal
         v-if="rule.status === 'registered'"
         @positive-click="deactivate()"
         ><template #trigger
           ><n-button size="small" secondary :loading="deactivate_spin">{{
             t("cert.action_deactivate")
           }}</n-button></template
-        >{{ t("cert.confirm_deactivate") }}</n-popconfirm
+        >{{ t("cert.confirm_deactivate") }}</ConfirmModal
       >
       <EditButton @click="show_edit_modal = true" />
-      <n-popconfirm @positive-click="del()"
-        ><template #trigger
-          ><n-button size="small" type="error" secondary>{{
-            t("common.delete")
-          }}</n-button></template
-        >{{ t("common.confirm_delete") }}</n-popconfirm
-      >
+      <DeleteButton :item="rule.name" :on-confirm="del" />
     </n-flex>
   </template>
   <n-card v-else-if="display_style === 'card'" size="small">
@@ -222,7 +216,7 @@ async function deactivate() {
         >
           {{ t("cert.action_verify") }}
         </n-button>
-        <n-popconfirm
+        <ConfirmModal
           v-if="rule.status === 'registered'"
           @positive-click="deactivate()"
         >
@@ -237,16 +231,9 @@ async function deactivate() {
             </n-button>
           </template>
           {{ t("cert.confirm_deactivate") }}
-        </n-popconfirm>
+        </ConfirmModal>
         <EditButton @click="show_edit_modal = true" />
-        <n-popconfirm @positive-click="del()">
-          <template #trigger>
-            <n-button size="small" type="error" secondary>
-              {{ t("common.delete") }}
-            </n-button>
-          </template>
-          {{ t("common.confirm_delete") }}
-        </n-popconfirm>
+        <DeleteButton :item="rule.name" :on-confirm="del" />
       </n-flex>
     </template>
   </n-card>

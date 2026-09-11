@@ -86,14 +86,7 @@ async function del() {
       <template #header-extra>
         <n-flex size="small">
           <EditButton @click.stop="openEditModal()" />
-          <n-popconfirm @positive-click="del()">
-            <template #trigger>
-              <n-button secondary size="small" type="error" @click.stop>
-                {{ t("common.delete") }}
-              </n-button>
-            </template>
-            {{ t("common.confirm_delete") }}
-          </n-popconfirm>
+          <DeleteButton :item="rule.remark" :on-confirm="del" @click.stop />
         </n-flex>
       </template>
 

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { Settings } from "@vicons/carbon";
 import type {
   GeoFileCacheKey,
   QueryGeoKey,
@@ -77,11 +76,7 @@ onMounted(load);
         :options="sourceOptions"
         class="geo-source-select"
       />
-      <n-button secondary @click="showConfig = true">
-        <template #icon
-          ><n-icon><Settings /></n-icon></template
-        >{{ t("common.config") }}
-      </n-button>
+      <EditButton @click="showConfig = true" />
     </div>
 
     <div class="geo-browser">
@@ -131,7 +126,9 @@ onMounted(load);
           :items="values"
         >
           <template #default="{ item }">
-            <div class="geo-value">
+            <div
+              class="geo-value"
+            >
               <span>{{
                 source === "site" ? item.value : `${item.ip}/${item.prefix}`
               }}</span
@@ -191,7 +188,7 @@ onMounted(load);
   min-height: 0;
   height: 100%;
   flex: 1;
-  border-radius: 0 0 6px 6px;
+  border-radius: 0 0 var(--app-radius-control) var(--app-radius-control);
 }
 .geo-key {
   width: 100%;

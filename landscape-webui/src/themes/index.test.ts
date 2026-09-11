@@ -3,12 +3,17 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   applyThemeToDocument,
   applyAccentColor,
+  applyThemeStyle,
   cacheAccentColor,
   cacheThemePreference,
   normalizeThemePreference,
   readCachedThemePreference,
   readCachedAccentColor,
   resolveThemeName,
+  selectThemePreset,
+  themeStyleColor,
+  themeStyleFromRgb,
+  defaultThemeStyle,
   themeRegistry,
 } from ".";
 
@@ -78,5 +83,34 @@ describe("theme behavior", () => {
       expect(theme.overrides.Button?.heightSmall).toBe("28px");
       expect(theme.overrides.Tag?.heightSmall).toBe("28px");
     }
+  });
+
+  it("applies preset colors and separate surface and form radii", () => {
+    const style = selectThemePreset(defaultThemeStyle, "mint");
+    const theme = applyThemeStyle(themeRegistry.light, {
+      ...style,
+      radius: "large",
+    });
+
+    expect(theme.tokens.brandColor).toBe("rgb(0, 149, 99)");
+    expect(theme.tokens.radiusSurface).toBe("12px");
+    expect(theme.tokens.radiusControl).toBe("12px");
+    expect(theme.overrides.Card?.borderRadius).toBe("12px");
+    expect(theme.overrides.Button?.borderRadiusMedium).toBe("12px");
+  });
+
+  it("round-trips the RGB picker color through the theme model", () => {
+    const style = themeStyleFromRgb(defaultThemeStyle, "rgb(102, 92, 246)");
+    expect(themeStyleColor(style)).toBe("rgb(102, 92, 246)");
+    expect(style.preset).toBe("custom");
+  });
+
+  it("raises low-lightness accents in dark mode", () => {
+    const uber = selectThemePreset(defaultThemeStyle, "uber");
+    const light = applyThemeStyle(themeRegistry.light, uber);
+    const dark = applyThemeStyle(themeRegistry.dark, uber);
+
+    expect(light.tokens.brandColor).toBe("rgb(58, 58, 58)");
+    expect(dark.tokens.brandColor).toBe("rgb(164, 164, 164)");
   });
 });

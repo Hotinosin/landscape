@@ -11,18 +11,13 @@ import type {
   DnsProviderProfile,
 } from "@landscape-router/types/api/schemas";
 import { computed, h, onMounted, ref } from "vue";
-import {
-  NButton,
-  NPopconfirm,
-  NTag,
-  useMessage,
-  type DataTableColumns,
-} from "naive-ui";
+import { NButton, NTag, useMessage, type DataTableColumns } from "naive-ui";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
 import { Add, Renew } from "@vicons/carbon";
 import { usePageRequest } from "@/composables/usePageRequest";
 import EditButton from "@/components/common/EditButton.vue";
+import DeleteButton from "@/components/common/DeleteButton.vue";
 
 const { t } = useI18n();
 const message = useMessage();
@@ -301,24 +296,11 @@ const columns = computed<DataTableColumns<DnsProviderProfile>>(() => [
           showModal.value = true;
         },
       }),
-      h(
-        NPopconfirm,
-        { onPositiveClick: () => remove(row.id!) },
-        {
-          trigger: () =>
-            h(
-              NButton,
-              {
-                size: "small",
-                type: "error",
-                secondary: true,
-                style: "margin-left: 8px",
-              },
-              () => t("common.delete"),
-            ),
-          default: () => t("common.confirm_delete"),
-        },
-      ),
+      h(DeleteButton, {
+        style: "margin-left: 8px",
+        item: frontEndStore.MASK_INFO(row.name),
+        onConfirm: () => remove(row.id!),
+      }),
     ],
   },
 ]);

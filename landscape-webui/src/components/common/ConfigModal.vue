@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, inject, onMounted } from "vue";
 import type { CSSProperties } from "vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 defineOptions({ inheritAttrs: false });
 
 const show = defineModel<boolean>("show", { required: true });
 const enabled = defineModel<boolean>("enabled", { required: true });
+const emit = defineEmits(["after-enter", "dirty"]);
+const modalDepth = inject("app-modal-depth", 1);
 
 const props = withDefaults(
   defineProps<{
@@ -15,6 +18,7 @@ const props = withDefaults(
     closable?: boolean;
     switchDisabled?: boolean;
     showSwitch?: boolean;
+    embedded?: boolean;
   }>(),
   {
     width: "var(--app-secondary-modal-width)",
@@ -22,15 +26,22 @@ const props = withDefaults(
     closable: true,
     switchDisabled: false,
     showSwitch: true,
+    embedded: false,
   },
 );
 
 const cardStyle = computed<CSSProperties>(() => {
   const style: CSSProperties = {
-    width: typeof props.width === "number" ? `${props.width}px` : props.width,
+    width: props.embedded
+      ? "100%"
+      : modalDepth > 1 && props.width === "var(--app-secondary-modal-width)"
+        ? "var(--app-tertiary-modal-width)"
+        : typeof props.width === "number"
+          ? `${props.width}px`
+          : props.width,
   };
 
-  if (props.maxHeight) {
+  if (!props.embedded && props.maxHeight) {
     style.maxHeight = props.maxHeight;
   }
 
@@ -45,7 +56,7 @@ const headerStyle = computed<CSSProperties>(() => {
     gap: "8px",
   };
 
-  if (props.closable) {
+  if (props.closable && !props.embedded) {
     style.paddingRight = "28px";
   }
 
@@ -56,13 +67,36 @@ function closeModal() {
   show.value = false;
 }
 
-function enableRailStyle({ checked }: { checked: boolean }) {
-  return checked ? { background: "var(--app-status-success-color)" } : {};
-}
+onMounted(() => {
+  if (props.embedded) emit("after-enter");
+});
 </script>
 
 <template>
-  <n-modal v-bind="$attrs" v-model:show="show" :auto-focus="false">
+  <section
+    v-if="embedded"
+    class="config-modal--embedded"
+    @change.capture="emit('dirty')"
+    @input.capture="emit('dirty')"
+  >
+    <StandardSettingRow v-if="showSwitch" :label="title" control-width="auto">
+      <n-switch
+        v-model:value="enabled"
+        :disabled="switchDisabled"
+        size="small"
+      />
+    </StandardSettingRow>
+    <slot v-if="$slots.default" :enabled="enabled" :disabled="!enabled" />
+  </section>
+
+  <n-modal
+    v-else
+    v-bind="$attrs"
+    :show="show"
+    :auto-focus="false"
+    @update:show="(value: boolean) => (show = value)"
+    @after-enter="emit('after-enter')"
+  >
     <n-card
       :style="cardStyle"
       :bordered="false"
@@ -70,7 +104,7 @@ function enableRailStyle({ checked }: { checked: boolean }) {
       size="small"
       content-style="min-height: 0; overflow: auto"
       role="dialog"
-      aria-modal="true"
+      :aria-modal="true"
       @close="closeModal"
     >
       <template #header>
@@ -80,7 +114,6 @@ function enableRailStyle({ checked }: { checked: boolean }) {
             v-if="showSwitch"
             v-model:value="enabled"
             :disabled="switchDisabled"
-            :rail-style="enableRailStyle"
             size="small"
           />
         </div>
@@ -94,3 +127,10 @@ function enableRailStyle({ checked }: { checked: boolean }) {
     </n-card>
   </n-modal>
 </template>
+
+<style scoped>
+.config-modal--embedded {
+  width: 100%;
+  min-width: 0;
+}
+</style>

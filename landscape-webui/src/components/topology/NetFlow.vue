@@ -19,11 +19,16 @@ import { useMetricStore } from "@/stores/status_metric";
 
 interface Props {
   fit_padding?: number;
+  summary?: boolean;
+  dockerIfaces?: Set<string>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   fit_padding: 0.3,
+  summary: false,
+  dockerIfaces: () => new Set<string>(),
 });
+const emit = defineEmits<{ select: [device: NetDev] }>();
 
 const { t } = useI18n();
 const {
@@ -81,6 +86,9 @@ const flowNodes = computed(() => {
 
   return ifaceNodeStore.nodes.map((node) => ({
     ...node,
+    position: props.summary
+      ? { ...node.position, y: node.position.y * 0.62 }
+      : node.position,
     class: highlighted && !highlighted.has(Number(node.id)) ? "is-dimmed" : "",
   }));
 });
@@ -309,11 +317,12 @@ watch(selectedIface, (value) => {
 
 onMounted(() => {
   ifaceNodeStore.UPDATE_INFO();
-  metricStore.UPDATE_INFO();
 });
 
 onNodeClick(({ node }) => {
   selectedIfaceId.value = Number(node.id);
+  const device = findDeviceByNodeId(node.id);
+  if (device) emit("select", device);
 });
 
 onPaneClick(() => {
@@ -322,14 +331,19 @@ onPaneClick(() => {
 </script>
 
 <template>
-  <div ref="containerRef" class="topology-shell" data-testid="topology-page">
+  <div
+    ref="containerRef"
+    class="topology-shell"
+    :class="{ 'is-summary': summary }"
+    data-testid="topology-page"
+  >
     <VueFlow
       class="topology-flow"
       :style="flowStyle"
       :nodes="flowNodes"
       :edges="flowEdges"
       :nodes-draggable="false"
-      :nodes-connectable="true"
+      :nodes-connectable="!summary"
       :elements-selectable="false"
       :connect-on-click="false"
       :zoom-on-scroll="false"
@@ -347,17 +361,19 @@ onPaneClick(() => {
               highlightedIfaces && !highlightedIfaces.has(Number(nodeProps.id)),
             )
           "
+          :summary="summary"
+          :docker="dockerIfaces.has(nodeProps.data.name)"
         />
       </template>
 
-      <FlowHeaderExtra @fit-view="handleFitOverview" />
+      <FlowHeaderExtra :summary="summary" @fit-view="handleFitOverview" />
 
       <MiniMap
         v-if="!isDrawerMode"
         class="topology-minimap"
         position="bottom-left"
         :aria-label="t('topology.minimap')"
-        :height="MINIMAP_HEIGHT"
+        :height="summary ? 72 : MINIMAP_HEIGHT"
         :mask-border-radius="10"
         :mask-color="miniMapMaskColor"
         :mask-stroke-color="miniMapMaskStrokeColor"
@@ -367,14 +383,14 @@ onPaneClick(() => {
         :node-stroke-color="miniMapNodeStrokeColor"
         :node-stroke-width="1"
         :pannable="true"
-        :width="MINIMAP_WIDTH"
+        :width="summary ? 116 : MINIMAP_WIDTH"
         :zoomable="false"
         @click="handleMiniMapClick"
       />
 
       <transition name="topology-panel">
         <aside
-          v-if="selectedIface && !isDrawerMode"
+          v-if="!summary && selectedIface && !isDrawerMode"
           class="topology-side-panel nopan nowheel"
           data-testid="topology-side-panel"
         >
@@ -383,7 +399,7 @@ onPaneClick(() => {
       </transition>
 
       <n-drawer
-        v-if="isDrawerMode"
+        v-if="!summary && isDrawerMode"
         :show="detailOpen"
         placement="bottom"
         height="78%"
@@ -440,6 +456,12 @@ onPaneClick(() => {
       var(--topology-flow-bg),
       var(--topology-flow-bg-soft)
     );
+}
+
+.topology-shell.is-summary,
+.topology-shell.is-summary .topology-flow {
+  min-height: 400px;
+  height: 400px;
 }
 
 .topology-flow :deep(.vue-flow__node-netflow) {

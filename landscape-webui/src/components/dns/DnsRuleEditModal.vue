@@ -19,6 +19,7 @@ import { useI18n } from "vue-i18n";
 type Props = {
   flow_id: number;
   rule_id?: string;
+  showSwitch?: boolean;
 };
 
 const props = defineProps<Props>();
@@ -124,8 +125,9 @@ async function append_import_rules() {
   <ConfigModal
     v-model:show="show"
     v-model:enabled="rule_enabled"
+    :show-switch="showSwitch !== false"
     :title="t('dns.rule_edit.title')"
-    width="var(--app-secondary-modal-width)"
+    width="var(--app-tertiary-modal-width)"
     @after-enter="enter"
   >
     <!-- {{ isModified }} -->

@@ -55,12 +55,12 @@ async function stop() {
       <n-button v-if="is_down" size="small" type="primary" @click="start">{{
         t("common.open")
       }}</n-button>
-      <n-popconfirm v-else @positive-click="stop"
+      <ConfirmModal v-else @positive-click="stop"
         ><template #trigger
           ><n-button size="small">{{
             t("common.close_listener")
           }}</n-button></template
-        >{{ t("common.confirm_stop") }}</n-popconfirm
+        >{{ t("common.confirm_stop") }}</ConfirmModal
       >
     </n-flex>
     <DockerImageDrawer v-model:show="show_image_drawer" />
@@ -87,14 +87,14 @@ async function stop() {
         <n-button :focusable="false" size="small" @click="start" v-if="is_down">
           {{ t("common.open") }}
         </n-button>
-        <n-popconfirm v-else @positive-click="stop">
+        <ConfirmModal v-else @positive-click="stop">
           <template #trigger>
             <n-button :focusable="false" size="small" @click="">
               {{ t("common.close_listener") }}
             </n-button>
           </template>
           {{ t("common.confirm_stop") }}
-        </n-popconfirm>
+        </ConfirmModal>
       </n-flex>
     </template>
     <n-flex justify="center" align="center" style="flex: 1">

@@ -2,18 +2,19 @@
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { DNSRedirectRule } from "@landscape-router/types/api/schemas";
-import { delete_dns_redirect } from "@/api/dns_rule/redirect";
+import { delete_dns_redirect, push_dns_redirect } from "@/api/dns_rule/redirect";
 import { useFrontEndStore } from "@/stores/front_end_config";
 
 const props = defineProps<{
   rule: DNSRedirectRule;
   cell:
-    "status" | "flows" | "rules" | "mode" | "response" | "metadata" | "actions";
+    "status" | "enable" | "flows" | "rules" | "mode" | "response" | "metadata" | "actions";
 }>();
 const emit = defineEmits(["refresh"]);
 const { t } = useI18n();
 const frontEndStore = useFrontEndStore();
 const showEditModal = ref(false);
+const enableLoading = ref(false);
 
 const answerModeText = computed(() =>
   props.rule.answer_mode === "all_local_ips"
@@ -36,11 +37,22 @@ async function remove() {
   await delete_dns_redirect(props.rule.id);
   emit("refresh");
 }
+async function updateEnabled(enable: boolean) {
+  enableLoading.value = true;
+  try {
+    await push_dns_redirect({ ...props.rule, enable });
+    emit("refresh");
+  } finally {
+    enableLoading.value = false;
+  }
+}
 </script>
 
 <template>
   <template v-if="cell === 'status'">
-    <StatusTitle :enable="rule.enable" :remark="rule.remark" /> </template
+    <StatusTitle :enable="rule.enable" :remark="rule.remark || t('common.no_remark')" /> </template
+  ><template v-else-if="cell === 'enable'">
+    <StandardEnableSwitch :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" /> </template
   ><template v-else-if="cell === 'flows'">
     <n-flex v-if="rule.apply_flows.length" size="small">
       <n-tag
@@ -85,18 +97,15 @@ async function remove() {
   ><template v-else>
     <n-flex :wrap="false">
       <EditButton @click="showEditModal = true" />
-      <n-popconfirm @positive-click="remove">
-        <template #trigger>
-          <n-button secondary type="error" size="small">
-            {{ t("common.delete") }}
-          </n-button>
-        </template>
-        {{ t("common.confirm_delete") }}
-      </n-popconfirm>
+      <DeleteButton
+        :item="frontEndStore.MASK_INFO(rule.remark || t('common.no_remark'))"
+        :on-confirm="remove"
+      />
     </n-flex>
     <DnsRedirectEditModal
       v-model:show="showEditModal"
       :rule_id="rule.id"
+      :show-switch="false"
       @refresh="emit('refresh')"
     />
   </template>

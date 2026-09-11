@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, h, onMounted, ref, watch } from "vue";
 import type { DataTableColumns } from "naive-ui";
-import type { DNSRuleConfig } from "@landscape-router/types/api/schemas";
-import { SearchLocate } from "@vicons/carbon";
+import type {
+  DNSRuleConfig,
+  FlowConfig,
+} from "@landscape-router/types/api/schemas";
+import { Add, Copy, Paste, SearchLocate } from "@vicons/carbon";
 import { useI18n } from "vue-i18n";
 import { useMessage } from "naive-ui";
 import DnsRuleListRow from "@/components/dns/DnsRuleListRow.vue";
@@ -16,7 +19,10 @@ import {
   read_context_from_clipboard,
 } from "@/lib/common";
 
-const props = withDefaults(defineProps<{ flow_id?: number }>(), { flow_id: 0 });
+const props = withDefaults(
+  defineProps<{ flow_id?: number; flows?: FlowConfig[] }>(),
+  { flow_id: 0, flows: () => [] },
+);
 const emit = defineEmits(["changed"]);
 const { t } = useI18n();
 const message = useMessage();
@@ -27,10 +33,11 @@ const showQueryModal = ref(false);
 
 const columns = computed<DataTableColumns<DNSRuleConfig>>(() =>
   [
-    [`${t("common.status")} / ${t("common.priority")}`, "status", "22%"],
-    [t("dns.rule_card.match_rules"), "sources", "28%"],
+    [`${t("common.status")} / ${t("common.priority")}`, "status", "18%"],
+    [t("dns.rule_card.match_rules"), "sources", "24%"],
     [t("dns.rule_card.upstream_config"), "upstream", "18%"],
     [t("dns.rule_card.traffic_action"), "action", "20%"],
+    [t("common.enable"), "enable", "8%"],
     [t("common.actions"), "actions", "12%"],
   ].map(([title, cell, width]) => ({
     title,
@@ -39,6 +46,7 @@ const columns = computed<DataTableColumns<DNSRuleConfig>>(() =>
     render: (rule) =>
       h(DnsRuleListRow, {
         rule,
+        flows: props.flows,
         cell: cell as any,
         onRefresh: handleRulesChanged,
       }),
@@ -90,22 +98,26 @@ watch(() => props.flow_id, readRules);
   <n-spin :show="loading">
     <n-flex vertical class="rule-panel">
       <n-flex>
-        <n-button @click="showCreateModal = true">
-          {{ t("dns.rule_drawer.add_rule") }}
+        <n-button type="primary" @click="showCreateModal = true">
+          <template #icon><n-icon><Add /></n-icon></template>
+          {{ t("common.add_new") }}
         </n-button>
         <n-button @click="exportConfig">
-          {{ t("dns.rule_drawer.export_clipboard") }}
+          <template #icon><n-icon><Copy /></n-icon></template>
+          {{ t("common.copy") }}
         </n-button>
-        <n-popconfirm @positive-click="importRules">
+        <ConfirmModal @positive-click="importRules">
           <template #trigger>
-            <n-button>{{ t("dns.rule_drawer.import_clipboard") }}</n-button>
+            <n-button>
+              <template #icon><n-icon><Paste /></n-icon></template>
+              {{ t("common.paste") }}
+            </n-button>
           </template>
           {{ t("dns.rule_drawer.confirm_import") }}
-        </n-popconfirm>
+        </ConfirmModal>
         <n-button @click="showQueryModal = true">
-          <template #icon
-            ><n-icon><SearchLocate /></n-icon
-          ></template>
+          <template #icon><n-icon><SearchLocate /></n-icon></template>
+          {{ t("common.query") }}
         </n-button>
       </n-flex>
       <n-scrollbar class="rule-list">

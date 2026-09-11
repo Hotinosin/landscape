@@ -26,11 +26,11 @@ const router = useRouter();
 
 const columns = computed<DataTableColumns<DnsUpstreamConfig>>(() =>
   [
-    ["dns.upstream_card.upstream_ip", "ip"],
-    ["dns.upstream_card.request_port", "port"],
-    ["dns.upstream_card.domain_addr", "domain"],
-    ["dns.upstream_card.request_mode", "mode"],
     ["common.remark", "remark"],
+    ["dns.upstream_card.request_mode", "mode"],
+    ["dns.upstream_card.domain_addr", "domain"],
+    ["dns.upstream_card.request_port", "port"],
+    ["dns.upstream_card.upstream_ip", "ip"],
     ["common.actions", "actions"],
   ].map(([title, cell]) => ({
     title: t(title),

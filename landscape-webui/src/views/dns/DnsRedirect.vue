@@ -28,10 +28,12 @@ const columns = computed<DataTableColumns<DNSRedirectRule>>(() =>
     [t("dns.redirect_card.answer_mode"), "mode"],
     [t("dns.redirect_card.response_info"), "response"],
     [t("dns.redirect_card.block_metadata_queries"), "metadata"],
+    [t("common.enable"), "enable"],
     [t("common.actions"), "actions"],
   ].map(([title, cell]) => ({
     title,
     key: cell,
+    width: cell === "enable" ? 80 : undefined,
     render: (rule: DNSRedirectRule) =>
       h(DnsRedirectListRow, {
         rule,

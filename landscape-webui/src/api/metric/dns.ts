@@ -25,13 +25,13 @@ export type {
 export async function get_dns_history(
   params: GetDnsHistoryParams = {},
 ): Promise<DnsHistoryResponse> {
-  return _getDnsHistory(params);
+  return _getDnsHistory(params, { silent: true });
 }
 
 export async function get_dns_summary(
   params: GetDnsSummaryParams,
 ): Promise<DnsSummaryResponse> {
-  return _getDnsSummary(params);
+  return _getDnsSummary(params, { silent: true });
 }
 
 export async function get_dns_lightweight_summary(

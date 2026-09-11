@@ -33,7 +33,7 @@ async function change_mode() {
 </script>
 
 <template>
-  <n-popconfirm
+  <ConfirmModal
     v-if="show_switch.wifi || show_switch.station"
     @positive-click="change_mode()"
   >
@@ -51,5 +51,5 @@ async function change_mode() {
       </n-button>
     </template>
     {{ t("wifi.change_mode_confirm") }}
-  </n-popconfirm>
+  </ConfirmModal>
 </template>

@@ -48,14 +48,7 @@ async function del() {
       <template #header-extra>
         <n-flex>
           <EditButton @click="show_create_pppd_modal = true" />
-          <n-popconfirm @positive-click="del()">
-            <template #trigger>
-              <n-button type="error" secondary @click="">
-                {{ t("common.delete") }}
-              </n-button>
-            </template>
-            {{ t("common.confirm_delete") }}
-          </n-popconfirm>
+          <DeleteButton :item="config.attach_iface_name" :on-confirm="del" />
         </n-flex>
       </template>
     </n-card>

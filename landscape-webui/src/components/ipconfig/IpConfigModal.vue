@@ -6,6 +6,7 @@ import {
 import { IfaceIpServiceConfig, IfaceIpMode } from "@/lib/service_ipconfig";
 import { computed, ref } from "vue";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import IpEdit from "../IpEdit.vue";
 import { IfaceZoneType } from "@landscape-router/types/api/schemas";
 import { useI18n } from "vue-i18n";
@@ -76,6 +77,8 @@ async function update_mode() {
   }
 }
 
+defineExpose({ save: update_mode });
+
 function select_ip_model(value: IfaceIpMode) {
   if (value === IfaceIpMode.Nothing) {
     iface_data.value.ip_model = { t: IfaceIpMode.Nothing };
@@ -131,37 +134,29 @@ function select_ip_model(value: IfaceIpMode) {
           v-if="iface_data.ip_model.t === IfaceIpMode.Static"
         >
           <n-form style="flex: 1" :model="iface_data.ip_model" :cols="5">
-            <n-grid :cols="5">
-              <n-form-item-gi :label="t('interface.static_ip')" :span="5">
+            <div>
+              <StandardSettingRow :label="t('interface.static_ip')">
                 <IpEdit
                   v-model:ip="iface_data.ip_model.ipv4"
                   v-model:mask="iface_data.ip_model.ipv4_mask"
                 ></IpEdit>
-              </n-form-item-gi>
-              <n-form-item-gi
+              </StandardSettingRow>
+              <StandardSettingRow
                 v-if="iface_info.zone == IfaceZoneType.wan"
                 :label="t('interface.set_default_route')"
-                :span="5"
+                control-width="auto"
               >
-                <n-switch v-model:value="iface_data.ip_model.default_router">
-                  <template #checked>
-                    {{ t("interface.yes") }}
-                  </template>
-                  <template #unchecked>
-                    {{ t("interface.no") }}
-                  </template>
-                </n-switch>
-              </n-form-item-gi>
-              <n-form-item-gi
+                <n-switch v-model:value="iface_data.ip_model.default_router" />
+              </StandardSettingRow>
+              <StandardSettingRow
                 v-if="iface_info.zone == IfaceZoneType.wan"
                 :label="t('interface.route_ip')"
-                :span="5"
               >
                 <IpEdit
                   v-model:ip="iface_data.ip_model.default_router_ip"
                 ></IpEdit>
-              </n-form-item-gi>
-            </n-grid>
+              </StandardSettingRow>
+            </div>
           </n-form>
         </n-flex>
         <n-flex
@@ -170,43 +165,36 @@ function select_ip_model(value: IfaceIpMode) {
           v-else-if="iface_data.ip_model.t === IfaceIpMode.PPPoE"
         >
           <n-form style="flex: 1" :model="iface_data.ip_model" :cols="5">
-            <n-grid :cols="5">
-              <n-form-item-gi :label="t('interface.username')" :span="5">
+            <div>
+              <StandardSettingRow :label="t('interface.username')">
                 <n-input
                   v-model:value="iface_data.ip_model.username"
                   placeholder=""
                 />
-              </n-form-item-gi>
-              <n-form-item-gi :label="t('interface.password')" :span="5">
+              </StandardSettingRow>
+              <StandardSettingRow :label="t('interface.password')">
                 <n-input
                   v-model:value="iface_data.ip_model.password"
                   type="password"
                   show-password-on="click"
                   placeholder=""
                 />
-              </n-form-item-gi>
-              <n-form-item-gi
+              </StandardSettingRow>
+              <StandardSettingRow
                 :label="t('interface.set_default_route')"
-                :span="5"
+                control-width="auto"
               >
-                <n-switch v-model:value="iface_data.ip_model.default_router">
-                  <template #checked>
-                    {{ t("interface.yes") }}
-                  </template>
-                  <template #unchecked>
-                    {{ t("interface.no") }}
-                  </template>
-                </n-switch>
-              </n-form-item-gi>
-              <n-form-item-gi :label="t('interface.mtu')" :span="5">
+                <n-switch v-model:value="iface_data.ip_model.default_router" />
+              </StandardSettingRow>
+              <StandardSettingRow :label="t('interface.mtu')">
                 <n-input-number
                   v-model:value="iface_data.ip_model.mtu"
                   :min="576"
                   :max="1492"
                   style="width: 100%"
                 />
-              </n-form-item-gi>
-              <n-form-item-gi :span="5">
+              </StandardSettingRow>
+              <StandardSettingRow>
                 <template #label>
                   <Notice>
                     {{ t("interface.ac_name") }}
@@ -219,8 +207,8 @@ function select_ip_model(value: IfaceIpMode) {
                   v-model:value="iface_data.ip_model.ac_name"
                   placeholder=""
                 />
-              </n-form-item-gi>
-            </n-grid>
+              </StandardSettingRow>
+            </div>
           </n-form>
         </n-flex>
 
@@ -233,24 +221,17 @@ function select_ip_model(value: IfaceIpMode) {
             {{ t("interface.dhcp_warn") }}
           </n-alert>
           <n-form style="flex: 1" :model="iface_data.ip_model" :cols="5">
-            <n-grid :cols="5">
-              <n-form-item-gi
+            <div>
+              <StandardSettingRow
                 :label="t('interface.set_default_route')"
-                :span="5"
+                control-width="auto"
               >
-                <n-switch v-model:value="iface_data.ip_model.default_router">
-                  <template #checked>
-                    {{ t("interface.yes") }}
-                  </template>
-                  <template #unchecked>
-                    {{ t("interface.no") }}
-                  </template>
-                </n-switch>
-              </n-form-item-gi>
-              <n-form-item-gi :label="t('interface.dhcp_hostname')" :span="5">
+                <n-switch v-model:value="iface_data.ip_model.default_router" />
+              </StandardSettingRow>
+              <StandardSettingRow :label="t('interface.dhcp_hostname')">
                 <n-input v-model:value="iface_data.ip_model.hostname"></n-input>
-              </n-form-item-gi>
-            </n-grid>
+              </StandardSettingRow>
+            </div>
           </n-form>
         </n-flex>
       </n-flex>

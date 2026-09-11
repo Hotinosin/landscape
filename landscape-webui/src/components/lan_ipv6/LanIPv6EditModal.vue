@@ -201,6 +201,8 @@ async function save_config() {
   }
 }
 
+defineExpose({ save: save_config });
+
 const formRules = {};
 
 const show_static_source_add = ref(false);

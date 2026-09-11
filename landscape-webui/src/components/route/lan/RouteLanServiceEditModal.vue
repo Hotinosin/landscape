@@ -59,6 +59,8 @@ async function save_config() {
   }
 }
 
+defineExpose({ save: save_config });
+
 function onCreate(): StaticRouteConfig {
   return {
     next_hop: "",

@@ -189,7 +189,7 @@ const getCpuIndex = (name: string, index: number) => {
     <!-- CPU Cores Visualization -->
     <div
       class="cpu-cores-wrapper overview-card__secondary"
-      :style="overviewCardStyles.secondary"
+      :style="{ ...overviewCardStyles.secondary, overflow: 'visible' }"
     >
       <!-- Extra padding wrapper to prevent hover clipping -->
       <div class="cpu-cores-inner">
@@ -299,10 +299,6 @@ const getCpuIndex = (name: string, index: number) => {
   font-weight: 600;
 }
 
-.cpu-cores-wrapper {
-  overflow: hidden;
-}
-
 .cpu-cores-inner {
   padding: 0;
 }
@@ -335,7 +331,7 @@ const getCpuIndex = (name: string, index: number) => {
     height 0.3s ease,
     background-color 0.3s ease;
   min-height: 2px;
-  border-radius: 0 0 3px 3px;
+  border-radius: 0 0 var(--app-radius-indicator) var(--app-radius-indicator);
 }
 
 .cpu-core-label {
@@ -373,7 +369,7 @@ const getCpuIndex = (name: string, index: number) => {
 }
 
 .mode-large .cpu-core-fill {
-  border-radius: 0 0 5px 5px;
+  border-radius: 0 0 var(--app-radius-indicator) var(--app-radius-indicator);
 }
 
 .mode-large .cpu-index {
@@ -389,7 +385,7 @@ const getCpuIndex = (name: string, index: number) => {
 }
 
 .mode-small .cpu-core-fill {
-  border-radius: 0 0 2px 2px;
+  border-radius: 0 0 var(--app-radius-hairline) var(--app-radius-hairline);
 }
 
 .mode-compact {
@@ -397,7 +393,7 @@ const getCpuIndex = (name: string, index: number) => {
 }
 
 .mode-compact .cpu-core-fill {
-  border-radius: 0 0 1px 1px;
+  border-radius: 0 0 var(--app-radius-hairline) var(--app-radius-hairline);
 }
 
 /* Dark mode support */

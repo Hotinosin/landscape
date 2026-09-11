@@ -45,8 +45,7 @@ const targetLabel = computed(() => {
 </script>
 
 <template>
-  <n-flex align="center" size="small">
-    <n-text depth="3">{{ t("flow.list.egress_label") }}</n-text>
+  <n-flex align="center" size="small" :wrap="false">
     <n-tag class="semantic-tag--egress" :bordered="false">
       {{ actionLabel }}
     </n-tag>
@@ -54,9 +53,7 @@ const targetLabel = computed(() => {
     <n-tag v-if="target" class="semantic-tag--egress" :bordered="false">
       <template #icon>
         <n-icon
-          :component="
-            target.t === 'netns' ? Docker : NetworkWired
-          "
+          :component="target.t === 'netns' ? Docker : NetworkWired"
         />
       </template>
       {{ targetLabel }}

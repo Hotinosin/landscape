@@ -177,7 +177,7 @@ const attribute_options = computed(() => {
     </n-popover>
     <n-input-group style="flex: 1; min-width: 0">
       <n-select
-        :style="{ width: '33%' }"
+        :style="{ width: '36%' }"
         v-model:value="name"
         filterable
         :placeholder="t('common.select_geo_name')"
@@ -221,7 +221,7 @@ const attribute_options = computed(() => {
   min-width: 0;
 }
 .dns-geo-select__attribute {
-  width: 180px;
-  flex: 0 0 180px;
+  width: 100px;
+  flex: 0 0 100px;
 }
 </style>

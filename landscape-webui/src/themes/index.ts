@@ -6,11 +6,58 @@ import {
 
 export const THEME_STORAGE_KEY = "landscape-theme";
 export const ACCENT_STORAGE_KEY = "landscape-accent";
+export const THEME_STYLE_STORAGE_KEY = "landscape-theme-style";
 const THEME_CACHE_VERSION = 2;
 
 export type ThemePreference = "system" | ThemeName;
 export type ThemeName = "light" | "dark";
 export type AccentColor = "blue" | "green" | "red" | "purple";
+export type ThemePreset =
+  | "default"
+  | "sky"
+  | "lavender"
+  | "mint"
+  | "netflix"
+  | "uber"
+  | "spotify"
+  | "coinbase"
+  | "airbnb"
+  | "discord"
+  | "rabbit"
+  | "custom";
+export type ThemeRadius = "none" | "small" | "medium" | "large";
+
+export interface ThemeStyle {
+  preset: ThemePreset;
+  base: number;
+  chroma: number;
+  hue: number;
+  lightness: number;
+  radius: ThemeRadius;
+}
+
+export const themePresets: Record<
+  Exclude<ThemePreset, "custom">,
+  Omit<ThemeStyle, "preset" | "radius">
+> = {
+  default: { base: 0.005, chroma: 0.18, hue: 255, lightness: 0.61 },
+  sky: { base: 0.005, chroma: 0.16, hue: 210, lightness: 0.68 },
+  lavender: { base: 0.005, chroma: 0.2091, hue: 273.85, lightness: 0.5774 },
+  mint: { base: 0.005, chroma: 0.15, hue: 165, lightness: 0.66 },
+  netflix: { base: 0.005, chroma: 0.22, hue: 25, lightness: 0.58 },
+  uber: { base: 0, chroma: 0, hue: 0, lightness: 0.34 },
+  spotify: { base: 0.005, chroma: 0.18, hue: 155, lightness: 0.62 },
+  coinbase: { base: 0.005, chroma: 0.2, hue: 260, lightness: 0.57 },
+  airbnb: { base: 0.005, chroma: 0.18, hue: 18, lightness: 0.65 },
+  discord: { base: 0.005, chroma: 0.22, hue: 285, lightness: 0.5 },
+  rabbit: { base: 0.005, chroma: 0.2, hue: 55, lightness: 0.65 },
+};
+
+export const defaultThemeStyle: ThemeStyle = {
+  preset: "lavender",
+  ...themePresets.lavender,
+  radius: "small",
+};
 
 interface ThemeCache {
   version: typeof THEME_CACHE_VERSION;
@@ -169,6 +216,14 @@ function createTheme(
         heightSmall: "28px",
         borderRadius: tokens.radiusControl,
       },
+      Switch: {
+        railColorActive: tokens.statusSuccessColor,
+      },
+      Radio: {
+        buttonColorActive: tokens.brandColor,
+        buttonBorderColorActive: tokens.brandColor,
+        buttonTextColorActive: tokens.textInverseColor,
+      },
       Popover: {
         color: tokens.surfaceOverlayColor,
         textColor: tokens.textPrimaryColor,
@@ -254,9 +309,9 @@ export const themeRegistry: Record<ThemeName, LandscapeTheme> = {
     tagUpstreamSurfaceColor: "rgba(190, 24, 93, 0.14)",
     backdropSurfaceColor: "rgba(255, 255, 255, 0.72)",
     terminalBackgroundColor: "#000000",
-    terminalHeaderColor: "rgb(72, 72, 78)",
-    terminalBorderColor: "rgb(60, 60, 66)",
-    terminalHandleColor: "rgb(120, 120, 126)",
+    terminalHeaderColor: "#f4f6f8",
+    terminalBorderColor: "#d8dde3",
+    terminalHandleColor: "#68717a",
     radiusControl: "8px",
     radiusHairline: "2px",
     radiusIndicator: "4px",
@@ -329,9 +384,9 @@ export const themeRegistry: Record<ThemeName, LandscapeTheme> = {
     tagUpstreamSurfaceColor: "rgba(249, 168, 212, 0.18)",
     backdropSurfaceColor: "rgba(24, 24, 28, 0.72)",
     terminalBackgroundColor: "#000000",
-    terminalHeaderColor: "rgb(72, 72, 78)",
-    terminalBorderColor: "rgb(60, 60, 66)",
-    terminalHandleColor: "rgb(120, 120, 126)",
+    terminalHeaderColor: "#202024",
+    terminalBorderColor: "rgba(255, 255, 255, 0.16)",
+    terminalHandleColor: "rgba(255, 255, 255, 0.62)",
     radiusControl: "8px",
     radiusHairline: "2px",
     radiusIndicator: "4px",
@@ -467,6 +522,186 @@ export function applyAccentColor(
   });
 }
 
+const radiusValues: Record<ThemeRadius, string> = {
+  none: "0px",
+  small: "6px",
+  medium: "8px",
+  large: "12px",
+};
+
+function normalizeRadius(value: unknown, fallback: ThemeRadius): ThemeRadius {
+  return typeof value === "string" && value in radiusValues
+    ? (value as ThemeRadius)
+    : fallback;
+}
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
+
+function oklchRgb(lightness: number, chroma: number, hue: number) {
+  const angle = (clamp(hue, 0, 360) * Math.PI) / 180;
+  const a = clamp(chroma, 0, 0.4) * Math.cos(angle);
+  const b = clamp(chroma, 0, 0.4) * Math.sin(angle);
+  const l = clamp(lightness, 0, 1) + 0.3963377774 * a + 0.2158037573 * b;
+  const m = clamp(lightness, 0, 1) - 0.1055613458 * a - 0.0638541728 * b;
+  const s = clamp(lightness, 0, 1) - 0.0894841775 * a - 1.291485548 * b;
+  const linear = [
+    4.0767416621 * l ** 3 - 3.3077115913 * m ** 3 + 0.2309699292 * s ** 3,
+    -1.2684380046 * l ** 3 + 2.6097574011 * m ** 3 - 0.3413193965 * s ** 3,
+    -0.0041960863 * l ** 3 - 0.7034186147 * m ** 3 + 1.707614701 * s ** 3,
+  ];
+  return linear.map((channel) =>
+    Math.round(
+      255 *
+        clamp(
+          channel <= 0.0031308
+            ? 12.92 * channel
+            : 1.055 * channel ** (1 / 2.4) - 0.055,
+          0,
+          1,
+        ),
+    ),
+  );
+}
+
+function oklch(lightness: number, chroma: number, hue: number) {
+  return `rgb(${oklchRgb(lightness, chroma, hue).join(", ")})`;
+}
+
+export function themeStyleColor(style: ThemeStyle) {
+  return oklch(style.lightness, style.chroma, style.hue);
+}
+
+export function themeStyleFromRgb(
+  style: ThemeStyle,
+  value: string,
+): ThemeStyle {
+  const channels = value
+    .match(/[\d.]+/g)
+    ?.slice(0, 3)
+    .map(Number);
+  if (!channels || channels.length !== 3) return style;
+  const [r, g, b] = channels.map((channel) => {
+    const srgb = clamp(channel, 0, 255) / 255;
+    return srgb <= 0.04045 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4;
+  });
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  const lightness = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+  const a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+  const yellowBlue = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+  const hue = (Math.atan2(yellowBlue, a) * 180) / Math.PI;
+
+  return normalizeThemeStyle({
+    ...style,
+    preset: "custom",
+    lightness,
+    chroma: Math.hypot(a, yellowBlue),
+    hue: hue < 0 ? hue + 360 : hue,
+  });
+}
+
+export function normalizeThemeStyle(value?: Partial<ThemeStyle>): ThemeStyle {
+  const preset =
+    value?.preset && (value.preset === "custom" || value.preset in themePresets)
+      ? value.preset
+      : defaultThemeStyle.preset;
+  const source = preset === "custom" ? defaultThemeStyle : themePresets[preset];
+  const colors = value;
+  const radius = normalizeRadius(value?.radius, defaultThemeStyle.radius);
+
+  return {
+    preset,
+    base: clamp(Number(colors?.base ?? source.base), 0, 0.08),
+    chroma: clamp(Number(colors?.chroma ?? source.chroma), 0, 0.4),
+    hue: clamp(Number(colors?.hue ?? source.hue), 0, 360),
+    lightness: clamp(Number(colors?.lightness ?? source.lightness), 0.35, 0.8),
+    radius,
+  };
+}
+
+export function selectThemePreset(
+  style: ThemeStyle,
+  preset: ThemePreset,
+): ThemeStyle {
+  if (preset === "custom") return { ...style, preset };
+  return { ...style, preset, ...themePresets[preset] };
+}
+
+export function applyThemeStyle(
+  theme: LandscapeTheme,
+  value: Partial<ThemeStyle>,
+): LandscapeTheme {
+  const style = normalizeThemeStyle(value);
+  const dark = theme.name === "dark";
+  const brandLightness = dark
+    ? Math.max(style.lightness, 0.72)
+    : Math.min(style.lightness, 0.58);
+  const brandColor = oklch(brandLightness, style.chroma, style.hue);
+  const neutral = (lightness: number) =>
+    oklch(lightness, style.base, style.hue);
+  const surfaceRadius = radiusValues[style.radius];
+
+  return createTheme(theme.name, theme.naiveTheme, {
+    ...theme.tokens,
+    canvasColor: neutral(dark ? 0.13 : 0.97),
+    surfaceColor: neutral(dark ? 0.17 : 0.995),
+    surfaceOverlayColor: neutral(dark ? 0.22 : 1),
+    surfaceInteractiveColor: neutral(dark ? 0.21 : 0.975),
+    surfaceAlternateColor: neutral(dark ? 0.19 : 0.965),
+    brandColor,
+    brandHoverColor: oklch(brandLightness + 0.06, style.chroma, style.hue),
+    brandActiveColor: oklch(
+      brandLightness - (dark ? 0.08 : 0.07),
+      style.chroma,
+      style.hue,
+    ),
+    samplingColor: brandColor,
+    samplingGlowColor: `rgba(${oklchRgb(brandLightness, style.chroma, style.hue).join(", ")}, 0.7)`,
+    terminalHeaderColor: neutral(dark ? 0.2 : 0.96),
+    terminalBorderColor: neutral(dark ? 0.32 : 0.86),
+    terminalHandleColor: neutral(dark ? 0.68 : 0.42),
+    statusInfoColor: brandColor,
+    radiusControl: surfaceRadius,
+    radiusIndicator: radiusValues[style.radius],
+    radiusSurface: surfaceRadius,
+    radiusPanel: surfaceRadius,
+    radiusLarge: surfaceRadius,
+  });
+}
+
+export function readCachedThemeStyle(): ThemeStyle {
+  if (typeof window === "undefined") return defaultThemeStyle;
+  try {
+    return normalizeThemeStyle(
+      JSON.parse(window.localStorage.getItem(THEME_STYLE_STORAGE_KEY) || "{}"),
+    );
+  } catch {
+    return defaultThemeStyle;
+  }
+}
+
+export function cacheThemeStyle(value: Partial<ThemeStyle>): ThemeStyle {
+  const style = normalizeThemeStyle(value);
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(THEME_STYLE_STORAGE_KEY, JSON.stringify(style));
+  }
+  return style;
+}
+
+export function readThemeStyleFromStorageEvent(
+  event: StorageEvent,
+): ThemeStyle | undefined {
+  if (event.key !== THEME_STYLE_STORAGE_KEY || !event.newValue)
+    return undefined;
+  try {
+    return normalizeThemeStyle(JSON.parse(event.newValue));
+  } catch {
+    return undefined;
+  }
+}
+
 export function readCachedAccentColor(): AccentColor {
   if (typeof window === "undefined") return "blue";
   return normalizeAccentColor(window.localStorage.getItem(ACCENT_STORAGE_KEY));
@@ -553,6 +788,10 @@ export function applyThemeToDocument(
   accent?: AccentColor,
 ) {
   const root = document.documentElement;
+  const modeChanged = Boolean(
+    root.dataset.theme && root.dataset.theme !== theme.name,
+  );
+  if (modeChanged) root.classList.add("theme-switching");
   root.dataset.theme = theme.name;
   if (accent) root.dataset.accent = accent;
   root.style.colorScheme = theme.tokens.colorScheme;
@@ -568,5 +807,11 @@ export function applyThemeToDocument(
 
   for (const [name, palette] of Object.entries(accentPalettes[theme.name])) {
     root.style.setProperty(`--app-accent-${name}-color`, palette.brandColor);
+  }
+
+  if (modeChanged) {
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => root.classList.remove("theme-switching")),
+    );
   }
 }

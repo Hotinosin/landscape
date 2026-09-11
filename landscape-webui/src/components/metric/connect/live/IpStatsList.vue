@@ -237,22 +237,38 @@ const processedData = computed(() => {
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1; overflow: hidden">
+  <n-flex vertical :wrap="false" class="ip-stats-list">
     <n-flex align="center" justify="space-between" style="margin-bottom: 12px">
-      <n-h3 style="margin: 0">{{ title }}</n-h3>
+      <n-h3 v-if="title" style="margin: 0">{{ title }}</n-h3>
+      <span v-else />
       <n-text depth="3">
         {{ $t("metric.connect.stats.total_nodes", { count: stats.length }) }}
       </n-text>
     </n-flex>
 
-    <n-data-table
-      remote
-      size="small"
-      :columns="columns"
-      :data="processedData"
-      :pagination="false"
-      :max-height="'calc(100vh - 350px)'"
-      @update:sorter="handleSort"
-    />
+    <div class="ip-stats-viewport">
+      <StandardDataTable
+        remote
+        max-height="100%"
+        size="small"
+        :columns="columns"
+        :data="processedData"
+        :pagination="false"
+        @update:sorter="handleSort"
+      />
+    </div>
   </n-flex>
 </template>
+
+<style scoped>
+.ip-stats-list {
+  flex: 0 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.ip-stats-viewport {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+</style>

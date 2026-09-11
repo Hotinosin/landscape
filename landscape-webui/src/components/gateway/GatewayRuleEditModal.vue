@@ -19,6 +19,7 @@ import { useI18n } from "vue-i18n";
 
 type Props = {
   rule_id?: string;
+  showSwitch?: boolean;
 };
 
 const props = defineProps<Props>();
@@ -421,9 +422,10 @@ async function saveRule() {
   <ConfigModal
     v-model:show="show"
     v-model:enabled="rule_enabled"
+    :show-switch="showSwitch !== false"
     :title="t('gateway.edit_title')"
     :switch-disabled="!rule || isLegacyRule"
-    width="var(--app-secondary-modal-width)"
+    width="min(900px, calc(100vw - 32px))"
     @after-enter="enter"
   >
     <div v-if="rule" class="editor-shell">
