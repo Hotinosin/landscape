@@ -55,6 +55,14 @@ pub enum GeoError {
     #[api_error(id = "geo_ip.config_not_found", status = 404)]
     IpConfigNotFound(String),
 
+    #[error("Geo IP source request failed: {0}")]
+    #[api_error(id = "geo_ip.source_request_failed", status = 502)]
+    IpSourceRequestFailed(String),
+
+    #[error("Geo IP config store failed: {0}")]
+    #[api_error(id = "geo_ip.config_store_failed", status = 500)]
+    IpConfigStoreFailed(String),
+
     #[error("Geo IP DAT decode error")]
     #[api_error(id = "geo_ip.dat_decode_error", status = 400)]
     IpDatDecodeError,

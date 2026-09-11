@@ -136,7 +136,7 @@ async fn refresh_geo_ip_config_by_name(
     State(state): State<LandscapeApp>,
     Path(name): Path<String>,
 ) -> LandscapeApiResult<()> {
-    state.geo_ip_service.refresh_one(&name).await;
+    state.geo_ip_service.refresh_one(&name).await?;
     LandscapeApiResp::success(())
 }
 

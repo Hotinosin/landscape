@@ -118,51 +118,47 @@ impl GeoIpService {
         result
     }
 
-    async fn refresh_url_config(&self, client: &Client, config: &mut GeoIpSourceConfig) {
+    async fn refresh_url_config(
+        &self,
+        client: &Client,
+        config: &mut GeoIpSourceConfig,
+    ) -> Result<(), GeoError> {
         let url = match &config.source {
             GeoIpSource::Url { url, .. } => url.clone(),
-            _ => return,
+            _ => return Ok(()),
         };
 
         tracing::debug!("download file: {}", url);
         let time = Instant::now();
 
-        match client.get(&url).send().await {
-            Ok(resp) if resp.status().is_success() => match resp.bytes().await {
-                Ok(bytes) => {
-                    let parse_result = self.parse_source_bytes(&config.source, bytes).await;
-
-                    match parse_result {
-                        Ok(result) => {
-                            self.replace_cache_by_name(&config.name, result).await;
-
-                            // Update next_update_at in the source
-                            if let GeoIpSource::Url { next_update_at, .. } = &mut config.source {
-                                *next_update_at = get_f64_timestamp() + MILL_A_DAY as f64;
-                            }
-                            let _ = self.store.set(config.clone()).await;
-
-                            tracing::debug!(
-                                "handle file done: {}, time: {}s",
-                                url,
-                                time.elapsed().as_secs()
-                            );
-                            self.notify_dst_ip_updated();
-                        }
-                        Err(e) => {
-                            tracing::error!("parse geo ip source {} error: {}", config.name, e);
-                        }
-                    }
-                }
-                Err(e) => tracing::error!("read {} response error: {}", url, e),
-            },
-            Ok(resp) => {
-                tracing::error!("download {} error, HTTP status: {}", url, resp.status());
-            }
-            Err(e) => {
-                tracing::error!("request {} error: {}", url, e);
-            }
+        let response = client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| GeoError::IpSourceRequestFailed(e.to_string()))?;
+        if !response.status().is_success() {
+            return Err(GeoError::IpSourceRequestFailed(format!(
+                "{} returned HTTP {}",
+                url,
+                response.status()
+            )));
         }
+        let bytes =
+            response.bytes().await.map_err(|e| GeoError::IpSourceRequestFailed(e.to_string()))?;
+        let result = self.parse_source_bytes(&config.source, bytes).await?;
+        self.replace_cache_by_name(&config.name, result).await;
+
+        if let GeoIpSource::Url { next_update_at, .. } = &mut config.source {
+            *next_update_at = get_f64_timestamp() + MILL_A_DAY as f64;
+        }
+        self.store
+            .set(config.clone())
+            .await
+            .map_err(|e| GeoError::IpConfigStoreFailed(e.to_string()))?;
+
+        tracing::debug!("handle file done: {}, time: {}s", url, time.elapsed().as_secs());
+        self.notify_dst_ip_updated();
+        Ok(())
     }
 
     pub async fn refresh(&self, force: bool) {
@@ -181,7 +177,9 @@ impl GeoIpService {
                     if !force && *next_update_at >= now {
                         continue;
                     }
-                    self.refresh_url_config(&client, &mut config).await;
+                    if let Err(e) = self.refresh_url_config(&client, &mut config).await {
+                        tracing::error!("refresh geo ip source {} error: {}", config.name, e);
+                    }
                 }
                 GeoIpSource::Direct { data } => {
                     self.write_direct_to_cache(&config.name, data).await;
@@ -203,22 +201,23 @@ impl GeoIpService {
         }
     }
 
-    pub async fn refresh_one(&self, name: &str) {
-        let configs: Vec<GeoIpSourceConfig> = self.store.list().await.unwrap();
+    pub async fn refresh_one(&self, name: &str) -> Result<(), GeoError> {
+        let configs: Vec<GeoIpSourceConfig> =
+            self.store.list().await.map_err(|e| GeoError::IpConfigStoreFailed(e.to_string()))?;
         let Some(mut config) = configs.into_iter().find(|c| c.name == name) else {
-            tracing::warn!("refresh_one: config '{}' not found", name);
-            return;
+            return Err(GeoError::IpConfigNotFound(name.to_string()));
         };
 
         let client = Client::new();
 
         match &config.source {
-            GeoIpSource::Url { .. } => self.refresh_url_config(&client, &mut config).await,
+            GeoIpSource::Url { .. } => self.refresh_url_config(&client, &mut config).await?,
             GeoIpSource::Direct { data } => {
                 self.write_direct_to_cache(&config.name, data).await;
                 self.notify_dst_ip_updated();
             }
         }
+        Ok(())
     }
 
     async fn write_direct_to_cache(
