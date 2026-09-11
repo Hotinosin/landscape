@@ -1,19 +1,23 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import type { StaticNatMappingV4Config } from "@landscape-router/types/api/schemas";
-import { delete_static_nat_mapping_v4 } from "@/api/static_nat_mapping";
+import {
+  delete_static_nat_mapping_v4,
+  push_static_nat_mapping_v4,
+} from "@/api/static_nat_mapping";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
 const props = defineProps<{
   rule: StaticNatMappingV4Config;
-  cell: "status" | "target" | "protocol" | "ports" | "actions";
+  cell: "status" | "enable" | "target" | "protocol" | "ports" | "actions";
 }>();
 const emit = defineEmits(["refresh"]);
 const show = ref(false);
 const devices = useEnrolledDeviceStore();
 const front = useFrontEndStore();
 const { t } = useI18n();
+const enableLoading = ref(false);
 const target = computed(() => {
   const x = props.rule.lan_target;
   if (!x || x.t === "local") return t("nat.mapping.target_type_local");
@@ -26,13 +30,22 @@ async function remove() {
     emit("refresh");
   }
 }
+async function updateEnabled(enable: boolean) {
+  enableLoading.value = true;
+  try {
+    await push_static_nat_mapping_v4({ ...props.rule, enable });
+    emit("refresh");
+  } finally {
+    enableLoading.value = false;
+  }
+}
 </script>
 <template>
   <template v-if="cell === 'status'">
-    <StatusTitle
-      :enable="rule.enable"
-      :remark="rule.remark || t('common.no_remark')"
-    />
+    <StatusTitle :enable="rule.enable" :remark="rule.remark || t('common.no_remark')" />
+  </template>
+  <template v-else-if="cell === 'enable'">
+    <StandardEnableSwitch :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" />
   </template>
   <template v-else-if="cell === 'target'">{{ target }}</template>
   <template v-else-if="cell === 'protocol'">
@@ -59,18 +72,17 @@ async function remove() {
     >
   </template>
   <template v-else>
-    <n-flex justify="start" :wrap="false"
-      ><EditButton @click="show = true" /><n-popconfirm @positive-click="remove"
-        ><template #trigger
-          ><n-button secondary type="error" size="small">{{
-            t("common.delete")
-          }}</n-button></template
-        >{{ t("common.confirm_delete") }}</n-popconfirm
-      ></n-flex
-    >
+    <n-flex justify="start" :wrap="false">
+      <EditButton @click="show = true" />
+      <DeleteButton
+        :item="rule.remark || t('common.no_remark')"
+        :on-confirm="remove"
+      />
+    </n-flex>
     <MappingEditV4Modal
       v-model:show="show"
       :rule_id="rule.id"
+      :show-switch="false"
       @refresh="emit('refresh')"
     />
   </template>

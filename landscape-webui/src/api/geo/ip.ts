@@ -62,6 +62,13 @@ export async function refresh_geo_cache_key(): Promise<void> {
   await refreshGeoIpCache();
 }
 
+export async function refresh_geo_ip_by_name(name: string): Promise<void> {
+  await customInstance({
+    url: `/api/v1/geo/ips/${encodeURIComponent(name)}/refresh`,
+    method: "POST",
+  });
+}
+
 export async function search_geo_ip_cache(
   query: QueryGeoKey,
 ): Promise<GeoFileCacheKey[]> {

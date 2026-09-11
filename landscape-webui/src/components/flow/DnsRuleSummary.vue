@@ -9,6 +9,7 @@ import type {
 } from "@landscape-router/types/api/schemas";
 import { useRouter } from "vue-router";
 import FlowRuleEgress from "@/components/flow/FlowRuleEgress.vue";
+import CarrierStatusDot from "@/components/topology/CarrierStatusDot.vue";
 
 const props = defineProps<{
   rule: DNSRuleConfig;
@@ -60,10 +61,7 @@ const upstreamLabel = computed(() => {
 <template>
   <div class="dns-rule-summary">
     <n-flex align="center" size="small" :wrap="false">
-      <span
-        class="status-dot"
-        :class="{ 'status-dot--disabled': rule.enable === false }"
-      />
+      <CarrierStatusDot :active="rule.enable !== false" />
       <n-text>{{ t("flow.list.priority", { priority: rule.index }) }}</n-text>
       <n-text strong>{{ rule.name || t("common.unnamed") }}</n-text>
     </n-flex>
@@ -115,18 +113,6 @@ const upstreamLabel = computed(() => {
 .dns-rule-summary {
   display: grid;
   gap: 4px;
-}
-
-.status-dot {
-  width: 7px;
-  height: 7px;
-  flex: 0 0 7px;
-  border-radius: 50%;
-  background: var(--app-brand-color);
-}
-
-.status-dot--disabled {
-  background: var(--app-text-muted-color);
 }
 
 .upstream-link {

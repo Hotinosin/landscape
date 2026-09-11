@@ -1,9 +1,8 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { computed, reactive, ref } from "vue";
 import {
   get_connects_info,
   get_metric_status,
-  get_connect_metric_info,
   get_src_ip_stats,
   get_dst_ip_stats,
   get_iface_stats,
@@ -11,14 +10,38 @@ import {
 } from "@/api/metric";
 import { ServiceStatus, ServiceStatusType } from "@/lib/services";
 import type {
-  ConnectKey,
   ConnectRealtimeStatus,
   IfaceRealtimeStat,
   IpRealtimeStat,
   ConnectGlobalStats,
 } from "@landscape-router/types/api/schemas";
+import type { NetworkTrendState } from "@/components/sysinfo/networkTrend";
 
 export type FlowIpRealtimeStat = IpRealtimeStat & { flow_id?: number };
+export type MetricResource = "connections" | "src" | "dst" | "iface";
+export type MetricDemand = MetricResource[];
+export interface MetricResourceState {
+  loading: boolean;
+  error?: unknown;
+  hasSucceeded: boolean;
+  lastSuccessAt: number | null;
+}
+
+export function metricDemandForPath(path: string): MetricDemand {
+  if (path === "/") return ["iface", "connections"];
+  if (path === "/metrics/conn/live") return ["connections"];
+  if (path === "/metrics/conn/src") return ["src", "connections"];
+  if (path === "/metrics/conn/dst") return ["dst", "connections"];
+  if (path === "/metrics/conn/iface") return ["iface"];
+  return [];
+}
+
+const newState = (): MetricResourceState => ({
+  loading: false,
+  error: undefined,
+  hasSucceeded: false,
+  lastSuccessAt: null,
+});
 
 export const useMetricStore = defineStore("dns_metric", () => {
   const metric_status = ref<ServiceStatus>({ t: ServiceStatusType.Stop });
@@ -27,21 +50,106 @@ export const useMetricStore = defineStore("dns_metric", () => {
   const dst_ip_stats = ref<IpRealtimeStat[]>([]);
   const iface_stats = ref<IfaceRealtimeStat[]>([]);
   const global_history_stats = ref<ConnectGlobalStats | null>(null);
-
-  const is_down = computed(() => {
-    return (
-      metric_status.value.t == ServiceStatusType.Stop ||
-      metric_status.value.t == ServiceStatusType.Failed
-    );
+  const networkTrend = reactive<NetworkTrendState>({
+    upload: [],
+    download: [],
   });
+  const demand = ref<MetricDemand>([]);
+  const resourceStates = reactive<Record<MetricResource, MetricResourceState>>({
+    connections: newState(),
+    src: newState(),
+    dst: newState(),
+    iface: newState(),
+  });
+  const statusState = reactive(newState());
+  const globalHistoryState = reactive(newState());
+  const inFlight = new Map<string, Promise<void>>();
+
+  const is_down = computed(
+    () =>
+      metric_status.value.t === ServiceStatusType.Stop ||
+      metric_status.value.t === ServiceStatusType.Failed,
+  );
+
+  const currentState = computed<MetricResourceState>(() => {
+    const states = demand.value.map((name) => resourceStates[name]);
+    return {
+      loading: states.some((state) => state.loading),
+      error: states.find((state) => state.error)?.error,
+      hasSucceeded:
+        states.length > 0 && states.every((state) => state.hasSucceeded),
+      lastSuccessAt:
+        states.length > 0 &&
+        states.every((state) => state.lastSuccessAt !== null)
+          ? Math.min(...states.map((state) => state.lastSuccessAt!))
+          : null,
+    };
+  });
+
+  function run(
+    key: string,
+    state: MetricResourceState,
+    load: () => Promise<void>,
+  ) {
+    const existing = inFlight.get(key);
+    if (existing) return existing;
+    state.loading = true;
+    state.error = undefined;
+    const request = load()
+      .then(() => {
+        state.hasSucceeded = true;
+        state.lastSuccessAt = Date.now();
+      })
+      .catch((error) => {
+        state.error = error;
+        throw error;
+      })
+      .finally(() => {
+        state.loading = false;
+        inFlight.delete(key);
+      });
+    inFlight.set(key, request);
+    return request;
+  }
+
+  const loaders: Record<MetricResource, () => Promise<void>> = {
+    connections: () =>
+      get_connects_info().then((result) => {
+        firewall_info.value = result;
+      }),
+    src: () =>
+      get_src_ip_stats().then((result) => {
+        src_ip_stats.value = result;
+      }),
+    dst: () =>
+      get_dst_ip_stats().then((result) => {
+        dst_ip_stats.value = result;
+      }),
+    iface: () =>
+      get_iface_stats().then((result) => {
+        iface_stats.value = result;
+      }),
+  };
+
+  const loadResource = (name: MetricResource) =>
+    run(name, resourceStates[name], loaders[name]);
+
+  async function UPDATE_DEMAND() {
+    const results = await Promise.allSettled(demand.value.map(loadResource));
+    const failure = results.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (failure) throw failure.reason;
+  }
 
   async function UPDATE_INFO() {
     const results = await Promise.allSettled([
-      get_metric_status().then((res) => (metric_status.value = res)),
-      get_connects_info().then((res) => (firewall_info.value = res)),
-      get_src_ip_stats().then((res) => (src_ip_stats.value = res)),
-      get_dst_ip_stats().then((res) => (dst_ip_stats.value = res)),
-      get_iface_stats().then((res) => (iface_stats.value = res)),
+      run("status", statusState, () =>
+        get_metric_status().then((result) => {
+          metric_status.value = result;
+        }),
+      ),
+      UPDATE_DEMAND(),
     ]);
     const failure = results.find(
       (result): result is PromiseRejectedResult => result.status === "rejected",
@@ -49,9 +157,27 @@ export const useMetricStore = defineStore("dns_metric", () => {
     if (failure) throw failure.reason;
   }
 
+  function SET_PAGE(path: string, load = true) {
+    demand.value = metricDemandForPath(path);
+    if (load && demand.value.length)
+      void UPDATE_DEMAND().catch(() => undefined);
+  }
+
+  async function REFRESH_CURRENT() {
+    try {
+      await UPDATE_DEMAND();
+    } catch {
+      // Resource state carries the inline error.
+    }
+  }
+
   async function UPDATE_GLOBAL_HISTORY_STATS(force_refresh = false) {
-    global_history_stats.value = await get_connect_global_stats(
-      force_refresh ? { force_refresh: true } : undefined,
+    return run("global-history", globalHistoryState, () =>
+      get_connect_global_stats(
+        force_refresh ? { force_refresh: true } : undefined,
+      ).then((result) => {
+        global_history_stats.value = result;
+      }),
     );
   }
 
@@ -63,7 +189,16 @@ export const useMetricStore = defineStore("dns_metric", () => {
     dst_ip_stats,
     iface_stats,
     global_history_stats,
+    networkTrend,
+    demand,
+    resourceStates,
+    statusState,
+    globalHistoryState,
+    currentState,
+    SET_PAGE,
     UPDATE_INFO,
+    UPDATE_DEMAND,
+    REFRESH_CURRENT,
     UPDATE_GLOBAL_HISTORY_STATS,
   };
 });

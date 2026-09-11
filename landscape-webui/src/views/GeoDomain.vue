@@ -8,7 +8,7 @@ import {
   watch,
 } from "vue";
 import { useI18n } from "vue-i18n";
-import { Search, Settings } from "@vicons/carbon";
+import { Search } from "@vicons/carbon";
 import type {
   GeoFileCacheKey,
   GeoSiteFileConfig,
@@ -171,11 +171,7 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
           >{{ t("geo.geo_site.lookup_action") }}
         </n-button>
       </n-input-group>
-      <n-button secondary @click="showConfig = true">
-        <template #icon
-          ><n-icon><Settings /></n-icon></template
-        >{{ t("common.config") }}
-      </n-button>
+      <EditButton @click="showConfig = true" />
     </div>
 
     <div class="geo-browser">

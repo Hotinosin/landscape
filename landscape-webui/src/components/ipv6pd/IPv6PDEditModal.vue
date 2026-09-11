@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import { useMessage } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import { IPV6PDConfig, IPV6PDServiceConfig } from "@/lib/ipv6pd";
 import {
   get_iface_ipv6pd_config,
@@ -11,6 +12,7 @@ import {
 import { useIPv6PDStore } from "@/stores/status_ipv6pd";
 import { generateValidMAC, formatMacAddress } from "@/lib/util";
 import { IfaceZoneType } from "@landscape-router/types/api/schemas";
+import { Information } from "@vicons/carbon";
 
 let ipv6PDStore = useIPv6PDStore();
 const message = useMessage();
@@ -68,6 +70,8 @@ async function save_config() {
     show_model.value = false;
   }
 }
+
+defineExpose({ save: save_config });
 </script>
 
 <template>
@@ -80,15 +84,30 @@ async function save_config() {
   >
     <!-- {{ service_config }} -->
     <n-form :model="service_config">
-      <n-form-item :label="t('lan_ipv6.mac_hint')">
+      <StandardSettingRow>
+        <template #label>
+          <n-flex align="center" :wrap="false" size="small">
+            <span>{{ t("lan_ipv6.mac_hint") }}</span>
+            <n-popover trigger="hover">
+              <template #trigger>
+                <n-button text>
+                  <template #icon>
+                    <n-icon><Information /></n-icon>
+                  </template>
+                </n-button>
+              </template>
+              {{ t("lan_ipv6.mac_hint_desc") }}
+            </n-popover>
+          </n-flex>
+        </template>
         <n-input
           :value="service_config.config.mac"
           @update:value="
             (v: string) => (service_config.config.mac = formatMacAddress(v))
           "
         ></n-input>
-      </n-form-item>
-      <n-form-item :label="t('lan_ipv6.expected_pd_len')">
+      </StandardSettingRow>
+      <StandardSettingRow :label="t('lan_ipv6.expected_pd_len')">
         <n-input-number
           v-model:value="service_config.config.expected_pd_len"
           style="flex: 1"
@@ -97,7 +116,7 @@ async function save_config() {
           :step="1"
           :precision="0"
         />
-      </n-form-item>
+      </StandardSettingRow>
     </n-form>
 
     <template #footer>

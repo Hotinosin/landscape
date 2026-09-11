@@ -1,7 +1,6 @@
 export default {
-  title: "DNS 历史",
   auto_search_tip: "自动搜索 (500ms 抖动)",
-  dashboard: "仪表盘",
+  dashboard: "概览",
   query_log: "查询日志",
   // 过滤器
   domain: "域名",
@@ -16,7 +15,7 @@ export default {
   reset: "重置",
   // 查询类型
   all_types: "所有类型",
-  all_flows: "所有 Flow",
+  all_flows: "所有分流",
   // 状态
   all_status: "所有状态",
   status_hit: "命中 (缓存)",
@@ -34,7 +33,7 @@ export default {
   col_resp_code: "响应码",
   col_status: "状态",
   col_duration: "耗时 (ms)",
-  col_flow: "Flow 信息",
+  col_flow: "分流信息",
   col_answers: "回答",
   // 仪表盘
   dash: {
@@ -70,7 +69,7 @@ export default {
     cache_hit_tip: "命中率基于有效查询（排除拦截、过滤及错误）。",
   },
   tip: {
-    default_flow: "默认 Flow",
+    default_flow: "默认分流",
     search_domain: "搜索此域名",
     check_domain: "测试域名查询日志",
   },

@@ -113,7 +113,7 @@ const source_style = [
 }
 
 .rule-source-type {
-  width: 150px;
-  flex: 0 0 150px;
+  width: 120px;
+  flex: 0 0 120px;
 }
 </style>

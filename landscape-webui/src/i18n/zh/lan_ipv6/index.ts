@@ -270,7 +270,8 @@ export default {
   // IPv6PDEditModal
   ipv6_pd_config: "IPv6-PD 客户端配置",
   mac_required: "MAC 地址不能为空",
-  mac_hint: "申请使用的 mac 地址 (PPP网卡上是生成虚拟的)",
+  mac_hint: "申请使用的 MAC 地址",
+  mac_hint_desc: "PPP 网卡上使用生成的虚拟 MAC 地址",
   expected_pd_len: "预期上游 PD 前缀长度",
   expected_pd_len_invalid: "预期上游 PD 前缀长度必须是 56 到 64 的整数",
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+import { usePageRequest } from "@/composables/usePageRequest";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useMetricStore } from "@/stores/status_metric";
@@ -23,9 +24,6 @@ const prefStore = usePreferenceStore();
 const route = useRoute();
 const { t } = useI18n();
 
-const stats = ref<IpHistoryStat[]>([]);
-const loading = ref(false);
-
 const timeRange = ref<number | string | null>(300); // default 5 minutes
 const queryLimit = ref<number | null>(100);
 const flowId = ref<number | null>(null);
@@ -38,6 +36,10 @@ const sortKey = ref<ConnectSortKey>("egress");
 const sortOrder = ref<SortOrder>("desc");
 
 const globalStats = computed(() => metricStore.global_history_stats);
+const refreshGlobalStats = () =>
+  Promise.resolve(metricStore.UPDATE_GLOBAL_HISTORY_STATS()).catch(
+    () => undefined,
+  );
 
 const timeRangeOptions = computed(() => [
   { label: t("metric.connect.filter.last_5m"), value: 300 },
@@ -57,9 +59,17 @@ const limitOptions = computed(() => [
   { label: t("metric.connect.filter.unlimited"), value: null },
 ]);
 
-const fetchStats = async () => {
-  loading.value = true;
-  try {
+const {
+  data: stats,
+  loading,
+  error,
+  hasSucceeded,
+  lastSuccessAt,
+  stale,
+  execute: fetchStats,
+  markStale,
+} = usePageRequest(
+  async () => {
     let startTime: number | undefined;
     let endTime: number | undefined;
 
@@ -74,16 +84,15 @@ const fetchStats = async () => {
       start_time: startTime,
       end_time: endTime,
       limit: queryLimit.value || undefined,
-      flow_id: flowId.value || undefined,
+      flow_id: flowId.value ?? undefined,
       src_ip: ipSearch.value || undefined,
       sort_key: sortKey.value,
       sort_order: sortOrder.value,
     };
-    stats.value = await get_history_src_ip_stats(params);
-  } finally {
-    loading.value = false;
-  }
-};
+    return get_history_src_ip_stats(params);
+  },
+  { initialData: [] as IpHistoryStat[] },
+);
 
 const handleSortChange = ({
   key,
@@ -98,6 +107,7 @@ const handleSortChange = ({
 };
 
 watch(timeRange, (newVal) => {
+  markStale();
   if (newVal === "custom") {
     useCustomTimeRange.value = true;
   } else {
@@ -108,6 +118,7 @@ watch(timeRange, (newVal) => {
 });
 
 watch([queryLimit, flowId, customTimeRange], () => {
+  markStale();
   fetchStats();
 });
 
@@ -117,6 +128,7 @@ onUnmounted(() => {
   if (debounceTimer) clearTimeout(debounceTimer);
 });
 watch(ipSearch, () => {
+  markStale();
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     fetchStats();
@@ -130,7 +142,7 @@ onMounted(() => {
 
   fetchStats();
   if (!metricStore.global_history_stats) {
-    metricStore.UPDATE_GLOBAL_HISTORY_STATS();
+    refreshGlobalStats();
   }
 });
 </script>
@@ -142,57 +154,67 @@ onMounted(() => {
     style="flex: 1; min-height: 0; overflow: hidden"
   >
     <!-- History global summary -->
-    <n-card
-      size="small"
-      :bordered="false"
-      style="margin-bottom: 12px; background-color: var(--app-surface-color)"
+    <StandardRequestStatus
+      :has-succeeded="metricStore.globalHistoryState.hasSucceeded"
+      :loading="metricStore.globalHistoryState.loading"
+      :error="metricStore.globalHistoryState.error"
+      :last-success-at="metricStore.globalHistoryState.lastSuccessAt"
+      compact
+      @retry="refreshGlobalStats"
     >
-      <n-flex align="center" justify="space-between">
-        <ConnectViewSwitcher />
+      <n-card
+        size="small"
+        :bordered="false"
+        style="margin-bottom: 12px; background-color: var(--app-surface-color)"
+      >
+        <n-flex align="center" justify="space-between">
+          <ConnectViewSwitcher />
 
-        <n-flex align="center" size="large" v-if="globalStats">
-          <n-flex align="center" size="small">
-            <span
-              style="
-                color: var(--app-text-muted-color);
-                font-size: var(--app-font-size-label);
-              "
-              >{{ $t("metric.connect.stats.total_history_conns") }}:</span
-            >
-            <span style="font-weight: bold">{{
-              globalStats.total_connect_count
-            }}</span>
-          </n-flex>
-          <n-divider vertical />
-          <n-flex align="center" size="small">
-            <span
-              style="
-                color: var(--app-text-muted-color);
-                font-size: var(--app-font-size-label);
-              "
-              >{{ $t("metric.connect.stats.total_history_egress") }}:</span
-            >
-            <span :style="{ fontWeight: 'bold', color: themeVars.infoColor }">{{
-              formatSize(globalStats.total_egress_bytes)
-            }}</span>
-          </n-flex>
-          <n-divider vertical />
-          <n-flex align="center" size="small">
-            <span
-              style="
-                color: var(--app-text-muted-color);
-                font-size: var(--app-font-size-label);
-              "
-              >{{ $t("metric.connect.stats.total_history_ingress") }}:</span
-            >
-            <span
-              :style="{ fontWeight: 'bold', color: themeVars.successColor }"
-              >{{ formatSize(globalStats.total_ingress_bytes) }}</span
-            >
+          <n-flex align="center" size="large" v-if="globalStats">
+            <n-flex align="center" size="small">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+                >{{ $t("metric.connect.stats.total_history_conns") }}:</span
+              >
+              <span style="font-weight: bold">{{
+                globalStats.total_connect_count
+              }}</span>
+            </n-flex>
+            <n-divider vertical />
+            <n-flex align="center" size="small">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+                >{{ $t("metric.connect.stats.total_history_egress") }}:</span
+              >
+              <span
+                :style="{ fontWeight: 'bold', color: themeVars.infoColor }"
+                >{{ formatSize(globalStats.total_egress_bytes) }}</span
+              >
+            </n-flex>
+            <n-divider vertical />
+            <n-flex align="center" size="small">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+                >{{ $t("metric.connect.stats.total_history_ingress") }}:</span
+              >
+              <span
+                :style="{ fontWeight: 'bold', color: themeVars.successColor }"
+                >{{ formatSize(globalStats.total_ingress_bytes) }}</span
+              >
+            </n-flex>
           </n-flex>
         </n-flex>
-      </n-flex>
-    </n-card>
+      </n-card>
+    </StandardRequestStatus>
 
     <!-- Filter toolbar -->
     <n-flex
@@ -238,29 +260,40 @@ onMounted(() => {
       }}</n-button>
     </n-flex>
 
-    <n-spin :show="loading" class="history-ip-spin">
-      <HistoryIpStatsList
-        :stats="stats"
-        :title="$t('metric.connect.stats.history_src')"
-        :ip-label="$t('metric.connect.col.src_ip')"
-        :sort-key="sortKey"
-        :sort-order="sortOrder"
-        @update:sort="handleSortChange"
-        @search:ip="(ip) => (ipSearch = ip)"
-      />
-    </n-spin>
+    <StandardRequestStatus
+      :has-succeeded="hasSucceeded"
+      :loading="loading"
+      :error="error"
+      :last-success-at="lastSuccessAt"
+      :stale="stale"
+      @retry="fetchStats"
+    >
+      <n-spin :show="loading" class="history-ip-spin">
+        <HistoryIpStatsList
+          :stats="stats"
+          title=""
+          :ip-label="$t('metric.connect.col.src_ip')"
+          :sort-key="sortKey"
+          :sort-order="sortOrder"
+          @update:sort="handleSortChange"
+          @search:ip="(ip) => (ipSearch = ip)"
+        />
+      </n-spin>
+    </StandardRequestStatus>
   </n-flex>
 </template>
 
 <style scoped>
 .history-ip-spin {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
+  width: 100%;
 }
 
 .history-ip-spin :deep(.n-spin-content) {
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
-  height: 100%;
+  min-height: 0;
 }
 </style>

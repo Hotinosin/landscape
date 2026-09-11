@@ -32,3 +32,13 @@ Map components to an existing semantic surface instead. CSS consumers use the ge
   data-driven layout constraints such as table column widths, topology coordinates and icon geometry.
 - Use the typography tokens from `fontSizeMicro` through `fontSizeTitle`; feature pages must not
   introduce local body or caption font sizes.
+
+
+## Monitoring navigation
+
+- Sidebar order: Realtime (`/metrics/conn/live`), History
+  (`/metrics/conn/history`), DNS Analysis (`/metrics/dns`). Detail connection routes
+  remain available but select their Realtime or History sidebar entry.
+- Realtime content tabs: Connections, Interfaces, Source IP, Destination IP. History
+  content tabs: Connections, Source IP, Destination IP. Tabs preserve route queries.
+- DNS Analysis keeps its Overview and Query Log content tabs.

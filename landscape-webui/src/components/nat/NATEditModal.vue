@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import Range from "@/components/PortRange.vue";
 import { NatServiceConfig } from "@/lib/nat";
 import {
@@ -45,6 +46,8 @@ async function save_config() {
   await natConfigStore.UPDATE_INFO();
   show_model.value = false;
 }
+
+defineExpose({ save: save_config });
 </script>
 
 <template>
@@ -56,16 +59,25 @@ async function save_config() {
     @after-enter="on_modal_enter"
   >
     <n-form :model="nat_service_config">
-      <n-form-item :label="t('nat.service_edit.tcp_port_range')">
+      <StandardSettingRow
+        :label="t('nat.service_edit.tcp_port_range')"
+        control-width="wide"
+      >
         <Range v-model:range="nat_service_config.nat_config.tcp_range"> </Range>
-      </n-form-item>
-      <n-form-item :label="t('nat.service_edit.udp_port_range')">
+      </StandardSettingRow>
+      <StandardSettingRow
+        :label="t('nat.service_edit.udp_port_range')"
+        control-width="wide"
+      >
         <Range v-model:range="nat_service_config.nat_config.udp_range"> </Range>
-      </n-form-item>
-      <n-form-item :label="t('nat.service_edit.icmp_id_range')">
+      </StandardSettingRow>
+      <StandardSettingRow
+        :label="t('nat.service_edit.icmp_id_range')"
+        control-width="wide"
+      >
         <Range v-model:range="nat_service_config.nat_config.icmp_in_range">
         </Range>
-      </n-form-item>
+      </StandardSettingRow>
     </n-form>
 
     <template #footer>

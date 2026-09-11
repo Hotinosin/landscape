@@ -56,6 +56,8 @@ async function save_config() {
     show_model.value = false;
   }
 }
+
+defineExpose({ save: save_config });
 </script>
 
 <template>

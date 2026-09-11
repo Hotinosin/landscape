@@ -2,17 +2,18 @@
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { HttpUpstreamRuleConfig } from "@landscape-router/types/api/schemas";
-import { delete_gateway_rule } from "@/api/gateway";
+import { delete_gateway_rule, push_gateway_rule } from "@/api/gateway";
 import { useFrontEndStore } from "@/stores/front_end_config";
 
 const props = defineProps<{
   rule: HttpUpstreamRuleConfig;
-  cell: "name" | "type" | "domains" | "upstream" | "paths" | "actions";
+  cell: "name" | "enable" | "type" | "domains" | "upstream" | "paths" | "actions";
 }>();
 const emit = defineEmits(["refresh"]);
 const { t } = useI18n();
 const front = useFrontEndStore();
 const showEdit = ref(false);
+const enableLoading = ref(false);
 
 const matchType = computed(() => {
   if (props.rule.match_rule.t === "host") return t("gateway.type_host");
@@ -42,11 +43,23 @@ async function remove() {
   await delete_gateway_rule(props.rule.id);
   emit("refresh");
 }
+async function updateEnabled(enable: boolean) {
+  enableLoading.value = true;
+  try {
+    await push_gateway_rule({ ...props.rule, enable });
+    emit("refresh");
+  } finally {
+    enableLoading.value = false;
+  }
+}
 </script>
 
 <template>
   <template v-if="cell === 'name'">
     <StatusTitle :enable="rule.enable" :remark="front.MASK_INFO(rule.name)" />
+  </template>
+  <template v-else-if="cell === 'enable'">
+    <StandardEnableSwitch :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" />
   </template>
   <template v-else-if="cell === 'type'">
     <n-tag :bordered="false">{{ matchType }}</n-tag>
@@ -71,18 +84,12 @@ async function remove() {
         v-if="rule.match_rule.t !== 'legacy_path_prefix'"
         @click="showEdit = true"
       />
-      <n-popconfirm @positive-click="remove">
-        <template #trigger>
-          <n-button secondary size="small" type="error">
-            {{ t("common.delete") }}
-          </n-button>
-        </template>
-        {{ t("common.confirm_delete") }}
-      </n-popconfirm>
+      <DeleteButton :item="front.MASK_INFO(rule.name)" :on-confirm="remove" />
     </n-flex>
     <GatewayRuleEditModal
       v-model:show="showEdit"
       :rule_id="rule.id"
+      :show-switch="false"
       @refresh="emit('refresh')"
     />
   </template>

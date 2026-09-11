@@ -17,8 +17,12 @@ import type { FlowMatchResult } from "@/api/route/trace";
 import type { FlowVerdictResult } from "@/api/route/trace";
 import type { SingleVerdictResult } from "@landscape-router/types/api/schemas";
 import { useI18n } from "vue-i18n";
+import { NCard, NDrawer, NDrawerContent, NModal } from "naive-ui";
 
 const show = defineModel<boolean>("show", { required: true });
+const { presentation = "drawer" } = defineProps<{
+  presentation?: "drawer" | "modal";
+}>();
 
 const enrolledDeviceStore = useEnrolledDeviceStore();
 const frontEndStore = useFrontEndStore();
@@ -368,17 +372,34 @@ function actionTagType(
 </script>
 
 <template>
-  <n-drawer
+  <component
+    :is="presentation === 'modal' ? NModal : NDrawer"
     v-model:show="show"
-    width="500px"
-    placement="right"
+    v-bind="
+      presentation === 'modal'
+        ? {}
+        : { width: '500px', placement: 'right' }
+    "
     @after-enter="onOpen"
   >
-    <n-drawer-content
+    <component
+      :is="presentation === 'modal' ? NCard : NDrawerContent"
       :title="t('flow.trace.title')"
       closable
-      :native-scrollbar="false"
-      body-content-style="padding: 14px 16px"
+      v-bind="
+        presentation === 'modal'
+          ? {
+              bordered: false,
+              style: 'width: min(900px, calc(100vw - 32px))',
+              contentStyle:
+                'max-height: calc(100vh - 120px); overflow: auto; padding: 14px 16px',
+            }
+          : {
+              nativeScrollbar: false,
+              bodyContentStyle: 'padding: 14px 16px',
+            }
+      "
+      @close="show = false"
     >
       <n-flex vertical :size="16">
         <!-- Step 1: Source client -->
@@ -694,6 +715,6 @@ function actionTagType(
           </n-card>
         </template>
       </n-flex>
-    </n-drawer-content>
-  </n-drawer>
+    </component>
+  </component>
 </template>

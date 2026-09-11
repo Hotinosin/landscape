@@ -208,6 +208,47 @@ impl GeoIpService {
         }
     }
 
+    pub async fn refresh_one(&self, name: &str) {
+        let Some(mut config) =
+            self.store.list().await.unwrap().into_iter().find(|config| config.name == name)
+        else {
+            tracing::warn!("refresh_one: config '{}' not found", name);
+            return;
+        };
+
+        match &config.source {
+            GeoIpSource::Url { url, .. } => {
+                let url = url.clone();
+                let client = Client::new();
+                match client.get(&url).send().await {
+                    Ok(resp) if resp.status().is_success() => match resp.bytes().await {
+                        Ok(bytes) => match self.parse_source_bytes(&config.source, bytes).await {
+                            Ok(result) => {
+                                self.replace_cache_by_name(&config.name, result).await;
+                                if let GeoIpSource::Url { next_update_at, .. } = &mut config.source
+                                {
+                                    *next_update_at = get_f64_timestamp() + MILL_A_DAY as f64;
+                                }
+                                let _ = self.store.set(config).await;
+                                self.notify_dst_ip_updated();
+                            }
+                            Err(e) => tracing::error!("parse geo ip source {} error: {}", name, e),
+                        },
+                        Err(e) => tracing::error!("read {} response error: {}", url, e),
+                    },
+                    Ok(resp) => {
+                        tracing::error!("download {} error, HTTP status: {}", url, resp.status())
+                    }
+                    Err(e) => tracing::error!("request {} error: {}", url, e),
+                }
+            }
+            GeoIpSource::Direct { data } => {
+                self.write_direct_to_cache(&config.name, data).await;
+                self.notify_dst_ip_updated();
+            }
+        }
+    }
+
     async fn write_direct_to_cache(
         &self,
         name: &str,

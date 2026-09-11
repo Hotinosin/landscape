@@ -18,6 +18,7 @@ const emit = defineEmits(["refresh", "refresh:keys"]);
 
 interface Prop {
   geo_site: GeoSiteSourceConfig;
+  cell: "status" | "type" | "time" | "actions";
 }
 const props = defineProps<Prop>();
 const show_edit_modal = ref(false);
@@ -53,101 +54,39 @@ async function force_refresh() {
 }
 </script>
 <template>
-  <n-flex>
-    <n-card size="small">
-      <template #header>
-        <StatusTitle :enable="geo_site.enable" :remark="title"></StatusTitle>
-      </template>
-      <n-descriptions bordered label-placement="top" :column="2">
-        <n-descriptions-item :label="t('geo.item_card.source_type')">
-          <n-tag
-            :bordered="false"
-            :type="
-              geo_site.source.t === 'url'
-                ? 'info'
-                : geo_site.source.t === 'adguard_home'
-                  ? 'warning'
-                  : 'success'
-            "
-            size="small"
-          >
-            {{
-              geo_site.source.t === "url"
-                ? "URL"
-                : geo_site.source.t === "adguard_home"
-                  ? "AdGuard"
-                  : "Direct"
-            }}
-          </n-tag>
-        </n-descriptions-item>
-        <template
-          v-if="
-            geo_site.source.t === 'url' || geo_site.source.t === 'adguard_home'
-          "
-        >
-          <n-descriptions-item label="URL">
-            <n-ellipsis style="max-width: 200px">
-              {{
-                frontEndStore.presentation_mode
-                  ? mask_string(geo_site.source.url)
-                  : geo_site.source.url
-              }}
-            </n-ellipsis>
-          </n-descriptions-item>
-          <n-descriptions-item :label="t('geo.item_card.next_update_time')">
-            <n-time
-              :time="geo_site.source.next_update_at"
-              format="yyyy-MM-dd hh:mm:ss"
-              :time-zone="prefStore.timezone"
-            />
-          </n-descriptions-item>
-        </template>
-        <template v-if="geo_site.source.t === 'direct'">
-          <n-descriptions-item :label="t('geo.item_card.key_count')">
-            {{ geo_site.source.data.length }}
-          </n-descriptions-item>
-        </template>
-      </n-descriptions>
-      <template #header-extra>
-        <n-flex>
-          <n-button
-            v-if="geo_site.source.t === 'url'"
-            size="small"
-            type="info"
-            secondary
-            @click="show_upload = true"
-          >
-            {{ t("geo.item_card.update_with_file") }}
+  <StatusTitle v-if="cell === 'status'" :enable="geo_site.enable" :remark="title" />
+  <n-tag v-else-if="cell === 'type'" :bordered="false" size="small">
+      {{ geo_site.source.t === "url" ? "URL" : geo_site.source.t === "adguard_home" ? "AdGuard" : "Direct" }}
+  </n-tag>
+  <template v-else-if="cell === 'time'">
+    <n-time
+      v-if="geo_site.source.t !== 'direct'"
+      :time="geo_site.source.next_update_at"
+      format="yyyy-MM-dd HH:mm:ss"
+      :time-zone="prefStore.timezone"
+    />
+    <span v-else>—</span>
+  </template>
+    <n-flex v-else-if="cell === 'actions'" :wrap="false" size="small">
+      <n-button v-if="geo_site.source.t === 'url'" size="small" @click="show_upload = true">
+        {{ t("geo.item_card.upload") }}
+      </n-button>
+      <ConfirmModal
+        v-if="geo_site.source.t !== 'direct'"
+        :positive-button-props="{ loading: refreshing }"
+        @positive-click="force_refresh"
+      >
+        <template #trigger>
+          <n-button size="small">
+            {{ t("geo.item_card.refresh_source") }}
           </n-button>
-          <n-popconfirm
-            v-if="
-              geo_site.source.t === 'url' ||
-              geo_site.source.t === 'adguard_home'
-            "
-            :positive-button-props="{ loading: refreshing }"
-            @positive-click="force_refresh"
-          >
-            <template #trigger>
-              <n-button size="small" type="primary" secondary>
-                {{ t("geo.item_card.refresh_source") }}
-              </n-button>
-            </template>
-            {{ t("geo.item_card.force_refresh_confirm") }}
-          </n-popconfirm>
-
-          <EditButton @click="show_edit_modal = true" />
-
-          <n-popconfirm @positive-click="del()">
-            <template #trigger>
-              <n-button size="small" type="error" secondary @click="">
-                {{ t("common.delete") }}
-              </n-button>
-            </template>
-            {{ t("common.confirm_delete") }}
-          </n-popconfirm>
-        </n-flex>
-      </template>
-    </n-card>
+        </template>
+        {{ t("geo.item_card.force_refresh_confirm") }}
+      </ConfirmModal>
+      <EditButton @click="show_edit_modal = true" />
+      <DeleteButton :item="geo_site.name" :on-confirm="del" />
+    </n-flex>
+  <template v-if="cell === 'actions'">
     <GeoSiteEditModal
       :id="geo_site.id"
       @refresh="emit('refresh')"
@@ -158,5 +97,5 @@ async function force_refresh() {
       :upload="onGeoUpload"
       @refresh="emit('refresh:keys')"
     ></GeoUploadFile>
-  </n-flex>
+  </template>
 </template>

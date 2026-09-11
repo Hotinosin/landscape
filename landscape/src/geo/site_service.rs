@@ -74,6 +74,18 @@ fn domain_match_type_tag(match_type: &DomainMatchType) -> u8 {
     }
 }
 
+fn geo_value_matches_lookup(
+    value: &GeoSiteFileConfig,
+    normalized: &str,
+    keyword_lookup: bool,
+) -> bool {
+    if keyword_lookup {
+        value.value.to_ascii_lowercase().contains(normalized)
+    } else {
+        domain_rule_matches_normalized(&value.match_type, &value.value, normalized)
+    }
+}
+
 #[derive(Debug, Default)]
 struct GeoCacheApplyResult {
     changed_keys: HashSet<GeoFileCacheKey>,
@@ -437,6 +449,7 @@ impl GeoSiteService {
     pub async fn lookup_domain(&self, domain: &str) -> Result<Vec<GeoSiteLookupResult>, GeoError> {
         let normalized = normalize_domain_name(domain)
             .map_err(|_| GeoError::SiteInvalidLookupDomain(domain.to_string()))?;
+        let keyword_lookup = !normalized.contains('.');
         let mut lock = self.file_cache.lock().await;
         let mut result = Vec::new();
 
@@ -446,9 +459,7 @@ impl GeoSiteService {
             let values = config
                 .values
                 .into_iter()
-                .filter(|value| {
-                    domain_rule_matches_normalized(&value.match_type, &value.value, &normalized)
-                })
+                .filter(|value| geo_value_matches_lookup(value, &normalized, keyword_lookup))
                 .collect::<Vec<_>>();
             if !values.is_empty() {
                 result.push(GeoSiteLookupResult { key, values });
@@ -519,7 +530,7 @@ mod tests {
     use landscape_common::config_service::geo::GeoSiteFileConfig;
     use landscape_common::dns::rule::{DomainConfig, DomainMatchType};
 
-    use super::{domain_match_type_tag, geo_values_hash, GeoContentHash};
+    use super::{domain_match_type_tag, geo_value_matches_lookup, geo_values_hash, GeoContentHash};
 
     fn geo_value(value: &str, attributes: &[&str]) -> GeoSiteFileConfig {
         GeoSiteFileConfig {
@@ -579,5 +590,18 @@ mod tests {
         let mut hashes = HashMap::new();
         hashes.insert(key.clone(), geo_values_hash(&[geo_value("example.com", &[])]));
         assert!(hashes.contains_key(&key));
+    }
+
+    #[test]
+    fn keyword_lookup_matches_domain_values_without_matching_generic_regexes() {
+        let domain = geo_value("www.cloudflare.com", &[]);
+        let generic_regex = GeoSiteFileConfig {
+            match_type: DomainMatchType::Regex,
+            value: "^[a-z][a-z0-9-]+$".to_string(),
+            attributes: HashSet::new(),
+        };
+
+        assert!(geo_value_matches_lookup(&domain, "cloudflare", true));
+        assert!(!geo_value_matches_lookup(&generic_regex, "cloudflare", true));
     }
 }

@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import {
   get_iface_mss_clamp_config,
   update_mss_clamp_config,
@@ -38,9 +39,12 @@ async function on_modal_enter() {
 }
 
 async function save_config() {
-  let config = await update_mss_clamp_config(service_config.value);
+  await update_mss_clamp_config(service_config.value);
+  emit("refresh");
   show_model.value = false;
 }
+
+defineExpose({ save: save_config });
 </script>
 
 <template>
@@ -51,8 +55,8 @@ async function save_config() {
     width="var(--app-secondary-modal-width)"
     @after-enter="on_modal_enter"
   >
-    <n-form :model="service_config">
-      <n-form-item :label="t('network.mss_clamp.clamp_value')">
+    <n-form v-if="service_config.enable" :model="service_config">
+      <StandardSettingRow :label="t('network.mss_clamp.clamp_value')">
         <n-input-number
           v-model:value="service_config.clamp_size"
           :show-button="false"
@@ -61,7 +65,7 @@ async function save_config() {
           max="65535"
           placeholder=""
         />
-      </n-form-item>
+      </StandardSettingRow>
     </n-form>
 
     <template #footer>

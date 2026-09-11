@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { useThemeVars } from "naive-ui";
-import { ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { DotMark } from "@vicons/carbon";
+import CarrierStatusDot from "@/components/topology/CarrierStatusDot.vue";
 
 const { t } = useI18n();
-const themeVars = ref(useThemeVars());
 
 type Props = {
   enable: boolean;
@@ -15,12 +12,19 @@ type Props = {
 const props = defineProps<Props>();
 </script>
 <template>
-  <n-flex align="center" :size="[3, 0]" :wrap="false">
-    <n-icon :color="enable ? themeVars.primaryColor : ''" size="14">
-      <DotMark />
-    </n-icon>
+  <div class="status-title">
+    <CarrierStatusDot :active="enable" />
     <n-ellipsis>
       {{ remark !== "" ? remark : t("common.no_remark") }}
     </n-ellipsis>
-  </n-flex>
+  </div>
 </template>
+
+<style scoped>
+.status-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--app-space-section);
+}
+</style>

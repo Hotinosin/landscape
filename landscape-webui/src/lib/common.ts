@@ -23,10 +23,15 @@ export class SimpleResult {
 
 export const LANDSCAPE_TOKEN_KEY = "LANDSCAPE_TOKEN";
 
+export const LANDSCAPE_SESSION_CLEARED = "landscape-session-cleared";
+export let landscapeSessionGeneration = 0;
+
 export function clearLandscapeSession() {
+  landscapeSessionGeneration += 1;
   localStorage.removeItem(LANDSCAPE_TOKEN_KEY);
   document.cookie =
     "LANDSCAPE_PLUGIN_TOKEN=; Path=/api/plugins; Max-Age=0; SameSite=Strict";
+  window.dispatchEvent(new Event(LANDSCAPE_SESSION_CLEARED));
 }
 
 export function syncPluginSessionCookie() {

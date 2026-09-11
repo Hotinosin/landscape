@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   getFlowRule,
+  getFlowRules,
   addFlowRule,
 } from "@landscape-router/types/api/flow-rules/flow-rules";
 import { useMessage } from "naive-ui";
@@ -21,6 +22,7 @@ import WanIpRulePanel from "@/components/flow/wan/WanIpRulePanel.vue";
 interface Props {
   rule_id?: string;
   default_flow?: boolean;
+  showSwitch?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -36,9 +38,15 @@ const show = defineModel<boolean>("show", { required: true });
 
 const rule_json = ref("");
 const rule = ref<FlowConfig>();
+const flows = ref<FlowConfig[]>([]);
 
 const commit_spin = ref(false);
 const activeTab = ref<"flow" | "dns" | "target_ip">("flow");
+const modalWidth = computed(() => {
+  if (activeTab.value === "dns") return "min(1040px, calc(100vw - 48px))";
+  if (activeTab.value === "target_ip") return "min(900px, calc(100vw - 48px))";
+  return "var(--app-secondary-modal-width)";
+});
 const isModified = computed(() => {
   return JSON.stringify(rule.value) !== rule_json.value;
 });
@@ -65,6 +73,7 @@ async function enter() {
     rule.value = flow_config_default();
   }
 
+  flows.value = await getFlowRules();
   rule.value.flow_targets = normalizeFlowTargets(rule.value.flow_targets);
 
   rule_json.value = JSON.stringify(rule.value);
@@ -72,6 +81,7 @@ async function enter() {
 
 function exit() {
   rule.value = flow_config_default();
+  flows.value = [];
   rule_json.value = JSON.stringify(rule.value);
 }
 
@@ -149,8 +159,8 @@ function normalizeFlowTargets(
     v-model:enabled="rule_enabled"
     :title="t('flow.edit.title')"
     :switch-disabled="!rule"
-    :show-switch="!default_flow"
-    width="var(--app-secondary-modal-width)"
+    :show-switch="showSwitch !== false && !default_flow"
+    :width="modalWidth"
     @after-enter="enter"
     @after-leave="exit"
   >
@@ -223,12 +233,14 @@ function normalizeFlowTargets(
       <n-tab-pane name="dns" :tab="t('flow.edit.tab_dns')">
         <DnsRulePanel
           :flow_id="rule?.flow_id ?? 0"
+          :flows="flows"
           @changed="emit('refresh')"
         />
       </n-tab-pane>
       <n-tab-pane name="target_ip" :tab="t('flow.edit.tab_target_ip')">
         <WanIpRulePanel
           :flow_id="rule?.flow_id ?? 0"
+          :flows="flows"
           @changed="emit('refresh')"
         />
       </n-tab-pane>

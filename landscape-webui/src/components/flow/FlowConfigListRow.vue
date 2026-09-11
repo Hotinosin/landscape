@@ -64,9 +64,6 @@ async function updateEnabled(value: boolean) {
   }
 }
 
-function flowEnableRailStyle({ checked }: { checked: boolean }) {
-  return checked ? { background: "var(--app-status-success-color)" } : {};
-}
 </script>
 
 <template>
@@ -150,25 +147,19 @@ function flowEnableRailStyle({ checked }: { checked: boolean }) {
     <n-text v-else depth="3">—</n-text>
   </template>
   <template v-else-if="cell === 'enable'">
-    <n-switch
+    <StandardEnableSwitch
       :value="config.enable"
       :loading="enableLoading"
-      size="small"
-      :rail-style="flowEnableRailStyle"
       @update:value="updateEnabled"
     />
   </template>
   <template v-else-if="cell === 'actions'">
     <n-flex size="small" :wrap="false" justify="start">
       <EditButton @click="showEdit = true" />
-      <n-popconfirm @positive-click="removeFlow">
-        <template #trigger>
-          <n-button type="error" secondary size="small">
-            {{ t("common.delete") }}
-          </n-button>
-        </template>
-        {{ t("common.confirm_delete") }}
-      </n-popconfirm>
+      <DeleteButton
+        :item="`${config.flow_id}: ${titleName}`"
+        :on-confirm="removeFlow"
+      />
     </n-flex>
   </template>
 
@@ -176,6 +167,7 @@ function flowEnableRailStyle({ checked }: { checked: boolean }) {
     v-if="cell === 'actions'"
     v-model:show="showEdit"
     :rule_id="config.id"
+    :show-switch="false"
     @refresh="emit('refresh')"
   />
 </template>

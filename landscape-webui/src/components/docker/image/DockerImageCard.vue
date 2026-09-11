@@ -73,20 +73,7 @@ const show_create_model = ref(false);
           {{ t("common.create") }}
         </n-button>
 
-        <n-popconfirm @positive-click="delete_image">
-          <template #trigger>
-            <n-button
-              strong
-              secondary
-              size="small"
-              type="error"
-              :loading="loading"
-            >
-              {{ t("common.delete") }}
-            </n-button>
-          </template>
-          {{ t("common.confirm_delete") }}
-        </n-popconfirm>
+        <DeleteButton :loading="loading" :on-confirm="delete_image" />
       </n-flex>
     </template>
 

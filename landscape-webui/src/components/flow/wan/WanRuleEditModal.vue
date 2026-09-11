@@ -26,6 +26,7 @@ import { useI18n } from "vue-i18n";
 interface Props {
   flow_id: number;
   id: string | null;
+  showSwitch?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -165,6 +166,7 @@ async function append_import_rules() {
   <ConfigModal
     v-model:show="show"
     v-model:enabled="rule_enabled"
+    :show-switch="showSwitch !== false"
     :title="t('flow.wan_rule_edit.title')"
     :switch-disabled="!rule"
     width="var(--app-secondary-modal-width)"

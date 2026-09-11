@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useMessage } from "naive-ui";
+import { computed, h, ref } from "vue";
+import { useMessage, type DataTableColumns } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { SearchLocate } from "@vicons/carbon";
 import type {
   CheckChainDnsResult,
   CheckDomainParams,
   DNSRedirectRule,
+  DNSRuleConfig,
+  FlowConfig,
   LandscapeDnsRecordType,
 } from "@landscape-router/types/api/schemas";
 import {
@@ -17,6 +19,9 @@ import {
 import { DnsRule } from "@/lib/dns";
 import { getDnsRule } from "@landscape-router/types/api/dns-rules/dns-rules";
 import { get_dns_redirect } from "@/api/dns_rule/redirect";
+import { getFlowRules } from "@landscape-router/types/api/flow-rules/flow-rules";
+import DnsRuleListRow from "@/components/dns/DnsRuleListRow.vue";
+import DnsRedirectListRow from "@/components/dns/redirect/DnsRedirectListRow.vue";
 const message = useMessage();
 const { t } = useI18n();
 
@@ -61,6 +66,7 @@ async function init_req(isEnter = false) {
   result.value = createEmptyResult();
   config_rule.value = undefined;
   redirect_rule.value = undefined;
+  if (isEnter) flows.value = await getFlowRules();
   if (isEnter && req.value.domain) {
     await query();
   }
@@ -96,10 +102,52 @@ function extractDomain(input: string): string {
 }
 
 const loading = ref(false);
+const quickLoading = ref("");
 const deleteCacheLoading = ref(false);
 const refreshCacheLoading = ref(false);
 const config_rule = ref<DnsRule>();
 const redirect_rule = ref<DNSRedirectRule>();
+const flows = ref<FlowConfig[]>([]);
+const dnsRuleColumns = computed<DataTableColumns<DNSRuleConfig>>(() => [
+  {
+    title: `${t("common.status")} / ${t("common.priority")}`,
+    key: "status",
+    render: (rule) => h(DnsRuleListRow, { rule, flows: flows.value, cell: "status" }),
+  },
+  {
+    title: t("dns.rule_card.match_rules"),
+    key: "sources",
+    render: (rule) => h(DnsRuleListRow, { rule, flows: flows.value, cell: "sources" }),
+  },
+  {
+    title: t("dns.rule_card.upstream_config"),
+    key: "upstream",
+    render: (rule) => h(DnsRuleListRow, { rule, flows: flows.value, cell: "upstream" }),
+  },
+  {
+    title: t("dns.rule_card.traffic_action"),
+    key: "action",
+    render: (rule) => h(DnsRuleListRow, { rule, flows: flows.value, cell: "action" }),
+  },
+]);
+const redirectColumns = computed<DataTableColumns<DNSRedirectRule>>(() =>
+  ["status", "flows", "rules", "mode", "response"].map((cell) => ({
+    title: t(
+      cell === "status"
+        ? "common.status"
+        : cell === "flows"
+          ? "dns.redirect_card.apply_to"
+          : cell === "rules"
+            ? "dns.rule_card.match_rules"
+            : cell === "mode"
+              ? "dns.redirect_card.answer_mode"
+              : "dns.redirect_card.response_info",
+    ),
+    key: cell,
+    render: (rule: DNSRedirectRule) =>
+      h(DnsRedirectListRow, { rule, cell: cell as any }),
+  })),
+);
 const busy = computed(
   () => loading.value || deleteCacheLoading.value || refreshCacheLoading.value,
 );
@@ -190,28 +238,36 @@ async function refreshCache() {
 async function quick_btn(record_type: LandscapeDnsRecordType, domain: string) {
   req.value.domain = domain;
   req.value.record_type = record_type;
-  await query();
+  quickLoading.value = `${record_type}:${domain}`;
+  try {
+    await query();
+  } finally {
+    quickLoading.value = "";
+  }
 }
 </script>
 
 <template>
-  <n-drawer
+  <n-modal
     @after-enter="init_req(true)"
     @after-leave="init_req(false)"
     v-model:show="show"
-    width="500px"
-    placement="right"
     :mask-closable="false"
   >
-    <n-drawer-content
+    <n-card
+      style="width: min(900px, calc(100vw - 32px))"
       :title="t('dns.check_domain.test_flow_query', { flow_id })"
       closable
+      :bordered="false"
+      content-style="height: min(680px, calc(100vh - 120px)); overflow: hidden"
+      @close="show = false"
     >
       <n-flex style="height: 100%" vertical>
-        <n-flex :wrap="false" justify="space-between">
+        <n-flex :wrap="true" size="small">
           <n-button
             size="small"
-            :loading="busy"
+            :loading="quickLoading === 'A:www.baidu.com'"
+            :disabled="busy"
             type="info"
             ghost
             @click="quick_btn('A', 'www.baidu.com')"
@@ -221,7 +277,8 @@ async function quick_btn(record_type: LandscapeDnsRecordType, domain: string) {
           <n-button
             size="small"
             ghost
-            :loading="busy"
+            :loading="quickLoading === 'AAAA:www.baidu.com'"
+            :disabled="busy"
             type="success"
             @click="quick_btn('AAAA', 'www.baidu.com')"
           >
@@ -229,7 +286,8 @@ async function quick_btn(record_type: LandscapeDnsRecordType, domain: string) {
           </n-button>
           <n-button
             size="small"
-            :loading="busy"
+            :loading="quickLoading === 'HTTPS:crypto.cloudflare.com'"
+            :disabled="busy"
             type="info"
             ghost
             @click="quick_btn('HTTPS', 'crypto.cloudflare.com')"
@@ -238,7 +296,8 @@ async function quick_btn(record_type: LandscapeDnsRecordType, domain: string) {
           </n-button>
           <n-button
             size="small"
-            :loading="busy"
+            :loading="quickLoading === 'A:test.ustc.edu.cn'"
+            :disabled="busy"
             type="info"
             ghost
             @click="quick_btn('A', 'test.ustc.edu.cn')"
@@ -248,7 +307,8 @@ async function quick_btn(record_type: LandscapeDnsRecordType, domain: string) {
           <n-button
             size="small"
             ghost
-            :loading="busy"
+            :loading="quickLoading === 'AAAA:test6.ustc.edu.cn'"
+            :disabled="busy"
             type="success"
             @click="quick_btn('AAAA', 'test6.ustc.edu.cn')"
           >
@@ -285,18 +345,14 @@ async function quick_btn(record_type: LandscapeDnsRecordType, domain: string) {
               {{ t("dns.check_domain.diagnostic_hint") }}
             </n-text>
             <n-flex>
-              <n-popconfirm
-                :positive-button-props="{ loading: deleteCacheLoading }"
-                @positive-click="deleteCache"
-              >
-                <template #trigger>
-                  <n-button size="small" :disabled="!canDeleteCache">
-                    {{ t("dns.check_domain.delete_cache") }}
-                  </n-button>
-                </template>
-                {{ t("dns.check_domain.confirm_delete_cache") }}
-              </n-popconfirm>
-              <n-popconfirm
+              <DeleteButton
+                :disabled="!canDeleteCache"
+                :loading="deleteCacheLoading"
+                :label="t('dns.check_domain.delete_cache')"
+                :content="t('dns.check_domain.confirm_delete_cache')"
+                :on-confirm="deleteCache"
+              />
+              <ConfirmModal
                 :positive-button-props="{ loading: refreshCacheLoading }"
                 @positive-click="refreshCache"
               >
@@ -310,7 +366,7 @@ async function quick_btn(record_type: LandscapeDnsRecordType, domain: string) {
                   </n-button>
                 </template>
                 {{ t("dns.check_domain.confirm_refresh_cache") }}
-              </n-popconfirm>
+              </ConfirmModal>
             </n-flex>
           </n-flex>
           <n-alert
@@ -325,28 +381,44 @@ async function quick_btn(record_type: LandscapeDnsRecordType, domain: string) {
 
         <n-scrollbar>
           <n-flex v-if="config_rule" vertical>
-            <DnsRuleCard :rule="config_rule"> </DnsRuleCard>
+            <StandardDataTable
+              :columns="dnsRuleColumns"
+              :data="[config_rule]"
+              :row-key="(rule: DNSRuleConfig) => rule.id ?? rule.index"
+              :scroll-x="760"
+              size="small"
+            />
 
             <n-divider title-placement="left">
               {{ t("dns.check_domain.upstream_result") }}
             </n-divider>
-            <n-flex v-if="result.records">
+            <n-flex v-if="result.records?.length">
               <n-flex v-for="each in result.records">
                 {{ each }}
               </n-flex>
             </n-flex>
+            <n-text v-else depth="3">
+              {{ result.records ? '上游返回空记录' : '未返回上游记录；当前接口未提供查询失败原因，无法区分超时、解析失败或无有效响应。' }}
+            </n-text>
             <n-divider title-placement="left">
               {{ t("dns.check_domain.cache_result") }}
             </n-divider>
-            <n-flex v-if="result.cache_records">
+            <n-flex v-if="result.cache_records?.length">
               <n-flex v-for="each in result.cache_records">
                 {{ each }}
               </n-flex>
             </n-flex>
+            <n-text v-else depth="3">当前没有缓存记录</n-text>
           </n-flex>
 
           <n-flex v-if="redirect_rule" vertical>
-            <DnsRedirectCard :rule="redirect_rule"></DnsRedirectCard>
+            <StandardDataTable
+              :columns="redirectColumns"
+              :data="[redirect_rule]"
+              :row-key="(rule: DNSRedirectRule) => rule.id ?? rule.remark"
+              :scroll-x="760"
+              size="small"
+            />
             <n-divider title-placement="left">
               {{ t("dns.check_domain.redirect_result") }}
             </n-divider>
@@ -358,6 +430,6 @@ async function quick_btn(record_type: LandscapeDnsRecordType, domain: string) {
           </n-flex>
         </n-scrollbar>
       </n-flex>
-    </n-drawer-content>
-  </n-drawer>
+    </n-card>
+  </n-modal>
 </template>

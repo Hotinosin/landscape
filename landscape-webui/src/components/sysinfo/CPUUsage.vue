@@ -189,7 +189,7 @@ const getCpuIndex = (name: string, index: number) => {
     <!-- CPU Cores Visualization -->
     <div
       class="cpu-cores-wrapper overview-card__secondary"
-      :style="overviewCardStyles.secondary"
+      :style="{ ...overviewCardStyles.secondary, overflow: 'visible' }"
     >
       <!-- Extra padding wrapper to prevent hover clipping -->
       <div class="cpu-cores-inner">
@@ -297,10 +297,6 @@ const getCpuIndex = (name: string, index: number) => {
   flex: none;
   font-size: var(--app-font-size-body);
   font-weight: 600;
-}
-
-.cpu-cores-wrapper {
-  overflow: hidden;
 }
 
 .cpu-cores-inner {

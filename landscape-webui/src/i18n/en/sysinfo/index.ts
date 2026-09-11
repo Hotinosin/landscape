@@ -28,6 +28,7 @@ export default {
   realtime_network: "Realtime Network",
   upload_rate: "Upload Rate",
   download_rate: "Download Rate",
+  collecting_network_trend: "Collecting trend data",
   active_connections: "Active Connections",
   packet_rate: "Packet Rate",
   service_health: "Service Health",
@@ -40,4 +41,9 @@ export default {
   firewall: "Firewall",
   routing: "Routing",
   metrics: "Metrics",
+  dhcp_leases: "DHCP Leases",
+  online_devices: "Online Devices",
+  active_leases: "Active Leases",
+  pool_remaining: "Pool Remaining",
+  dhcp_load_failed: "Failed to load DHCP lease data",
 };

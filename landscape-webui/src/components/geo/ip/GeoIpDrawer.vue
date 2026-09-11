@@ -7,6 +7,7 @@ import {
 import { onMounted, ref } from "vue";
 import { useMessage } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import { Add, Copy, Paste } from "@vicons/carbon";
 const message = useMessage();
 const { t } = useI18n();
 
@@ -59,21 +60,24 @@ async function import_rules() {
   >
     <n-drawer-content :title="t('geo.drawer.geo_ip_config_source')" closable>
       <n-flex style="height: 100%" vertical>
-        <n-flex>
-          <n-button style="flex: 1" @click="show_create_modal = true">
-            {{ t("geo.drawer.add_rule") }}
+        <n-flex :wrap="true" size="small">
+          <n-button type="primary" @click="show_create_modal = true">
+            <template #icon><n-icon><Add /></n-icon></template>
+            {{ t("common.add_new") }}
           </n-button>
-          <n-button style="flex: 1" @click="export_config">
-            {{ t("geo.drawer.export_clipboard") }}
+          <n-button @click="export_config">
+            <template #icon><n-icon><Copy /></n-icon></template>
+            {{ t("common.copy") }}
           </n-button>
-          <n-popconfirm @positive-click="import_rules">
+          <ConfirmModal @positive-click="import_rules">
             <template #trigger>
-              <n-button style="flex: 1" @click="">
-                {{ t("geo.drawer.import_clipboard") }}
+              <n-button>
+                <template #icon><n-icon><Paste /></n-icon></template>
+                {{ t("common.paste") }}
               </n-button>
             </template>
             {{ t("geo.drawer.confirm_import") }}
-          </n-popconfirm>
+          </ConfirmModal>
         </n-flex>
 
         <n-scrollbar>

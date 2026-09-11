@@ -81,14 +81,7 @@ const show_remark = computed(
     <template v-if="show_action" #header-extra>
       <n-flex>
         <EditButton @click="show_edit = true" />
-        <n-popconfirm @positive-click="del">
-          <template #trigger>
-            <n-button type="error" secondary size="small">{{
-              t("common.delete")
-            }}</n-button>
-          </template>
-          {{ t("common.confirm_delete") }}
-        </n-popconfirm>
+        <DeleteButton :item="`${config.flow_id}: ${title_name}`" :on-confirm="del" />
       </n-flex>
     </template>
 

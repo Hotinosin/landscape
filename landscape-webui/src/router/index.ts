@@ -19,6 +19,11 @@ const inner_zone: Array<RouteRecordRaw> = [
     name: "routes.dns-redirect",
     component: () => import("@/views/dns/DnsRedirect.vue"),
   },
+  {
+    path: "/network/settings",
+    name: "routes.network-settings",
+    component: () => import("@/views/NetworkSettings.vue"),
+  },
   ...service_status_route,
   {
     path: "/dns/upstream",

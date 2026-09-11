@@ -1,6 +1,7 @@
 export default {
   common: {
     source_type: "来源类型",
+    source: "来源",
     source_url: "下载 URL",
     source_url_mode: "URL 下载",
     source_direct_mode: "直接定义",
@@ -77,6 +78,8 @@ export default {
     geosite_data: "GeoSite 数据",
     geoip_data: "GeoIP 数据",
     config_title: "Geo 数据源配置",
+    refresh_all: "全部更新",
+    update_all_confirm: "确定重新下载并更新全部数据源吗？",
   },
   item_card: {
     source_type: "来源类型",
@@ -85,9 +88,10 @@ export default {
     key_count: "Key 数量",
     txt_key: "TXT Key",
     update_with_file: "使用文件更新",
+    upload: "上传",
     force_refresh: "强制刷新",
-    refresh_source: "刷新此数据源",
-    force_refresh_confirm: "强制刷新将从来源 URL 重新下载并解析规则。",
+    refresh_source: "更新",
+    force_refresh_confirm: "更新将从来源 URL 重新下载并解析规则。",
   },
   detail_drawer: {
     rule_details: "规则细节",

@@ -103,7 +103,7 @@ async function remove() {
         >
           start
         </n-button>
-        <n-popconfirm
+        <ConfirmModal
           v-model:show="show_stop_popconfirm"
           @positive-click="stop"
         >
@@ -120,22 +120,14 @@ async function remove() {
             </n-button>
           </template>
           {{ t("common.confirm_stop") }}
-        </n-popconfirm>
+        </ConfirmModal>
 
-        <n-popconfirm @positive-click="remove">
-          <template #trigger>
-            <n-button
-              :loading="remove_spin"
-              secondary
-              size="small"
-              type="error"
-              :disabled="!show_btn.remove"
-            >
-              remove
-            </n-button>
-          </template>
-          {{ t("common.confirm_delete") }}
-        </n-popconfirm>
+        <DeleteButton
+          :disabled="!show_btn.remove"
+          :loading="remove_spin"
+          label="remove"
+          :on-confirm="remove"
+        />
       </n-flex>
     </template>
 

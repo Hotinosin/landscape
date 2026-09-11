@@ -15,12 +15,15 @@ export function usePageRequest<T>(
   const data = shallowRef(options.initialData) as ShallowRef<T>;
   const error = shallowRef<unknown>();
   const initialized = ref(false);
+  const hasSucceeded = ref(false);
+  const lastSuccessAt = ref<number | null>(null);
+  const stale = ref(false);
   const pendingCount = ref(0);
   let latestRequest = 0;
 
   const loading = computed(() => pendingCount.value > 0);
-  const initialLoading = computed(() => loading.value && !initialized.value);
-  const refreshing = computed(() => loading.value && initialized.value);
+  const initialLoading = computed(() => loading.value && !hasSucceeded.value);
+  const refreshing = computed(() => loading.value && hasSucceeded.value);
   const empty = computed(() =>
     options.isEmpty
       ? options.isEmpty(data.value)
@@ -31,9 +34,9 @@ export function usePageRequest<T>(
   const state = computed(() =>
     resolvePageState({
       initialized: initialized.value,
-      loading: loading.value,
+      loading: loading.value && !hasSucceeded.value,
       itemCount: empty.value ? 0 : 1,
-      error: error.value,
+      error: hasSucceeded.value ? undefined : error.value,
     }),
   );
 
@@ -46,7 +49,12 @@ export function usePageRequest<T>(
       if (requestId === latestRequest) {
         data.value = result;
         await options.onSuccess?.(result);
-        initialized.value = true;
+        if (requestId === latestRequest) {
+          initialized.value = true;
+          hasSucceeded.value = true;
+          lastSuccessAt.value = Date.now();
+          stale.value = false;
+        }
       }
       return result;
     } catch (cause) {
@@ -65,10 +73,17 @@ export function usePageRequest<T>(
     error.value = undefined;
   }
 
+  function markStale() {
+    if (hasSucceeded.value) stale.value = true;
+  }
+
   return {
     data,
     error,
     initialized,
+    hasSucceeded,
+    lastSuccessAt,
+    stale,
     loading,
     initialLoading,
     refreshing,
@@ -78,5 +93,6 @@ export function usePageRequest<T>(
     refresh: execute,
     retry: execute,
     clearError,
+    markStale,
   };
 }

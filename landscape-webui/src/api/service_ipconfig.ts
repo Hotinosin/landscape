@@ -20,8 +20,9 @@ export async function get_all_ipconfig_status(): Promise<
 
 export async function get_iface_server_config(
   iface_name: string,
+  silent = false,
 ): Promise<IfaceIpServiceConfig> {
-  const data = await getIpconfigServiceConfig(iface_name);
+  const data = await getIpconfigServiceConfig(iface_name, { silent });
   return new IfaceIpServiceConfig(data as any);
 }
 

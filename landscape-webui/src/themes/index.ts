@@ -216,6 +216,14 @@ function createTheme(
         heightSmall: "28px",
         borderRadius: tokens.radiusControl,
       },
+      Switch: {
+        railColorActive: tokens.statusSuccessColor,
+      },
+      Radio: {
+        buttonColorActive: tokens.brandColor,
+        buttonBorderColorActive: tokens.brandColor,
+        buttonTextColorActive: tokens.textInverseColor,
+      },
       Popover: {
         color: tokens.surfaceOverlayColor,
         textColor: tokens.textPrimaryColor,

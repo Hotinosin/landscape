@@ -2,6 +2,7 @@
 import type { DnsUpstreamConfig } from "@landscape-router/types/api/schemas";
 import { DnsUpstreamModeTsEnum } from "@/lib/dns";
 import { useI18n } from "vue-i18n";
+import { computed } from "vue";
 
 const { t } = useI18n();
 
@@ -144,6 +145,26 @@ const DEFAULT_CONFIGS: Record<
   },
 };
 
+const selectedPreset = computed(() => {
+  const current = rule.value;
+  return (
+    Object.entries(DEFAULT_CONFIGS) as [
+      DefaultDnsConfig,
+      (typeof DEFAULT_CONFIGS)[DefaultDnsConfig],
+    ][]
+  ).find(
+    ([, config]) =>
+      current.port === config.port &&
+      current.enable_ip_validation === config.enable_ip_validation &&
+      JSON.stringify(current.mode) === JSON.stringify(config.mode) &&
+      JSON.stringify(current.ips) === JSON.stringify(config.ips),
+  )?.[0];
+});
+
+function presetType(config: DefaultDnsConfig) {
+  return selectedPreset.value === config ? "primary" : "default";
+}
+
 function replace_default(config: DefaultDnsConfig) {
   rule.value = {
     id: rule.value.id,
@@ -164,29 +185,29 @@ const btn_size = "small";
         </n-input-group-label>
         <n-button
           @click="replace_default(DefaultDnsConfig.ALI_UDP)"
+          :type="presetType(DefaultDnsConfig.ALI_UDP)"
           :size="btn_size"
-          secondary
           strong
           >UDP</n-button
         >
         <n-button
           @click="replace_default(DefaultDnsConfig.ALI_DOH)"
+          :type="presetType(DefaultDnsConfig.ALI_DOH)"
           :size="btn_size"
-          secondary
           strong
           >DoH</n-button
         >
         <n-button
           @click="replace_default(DefaultDnsConfig.ALI_DOT)"
+          :type="presetType(DefaultDnsConfig.ALI_DOT)"
           :size="btn_size"
-          secondary
           strong
           >DoT</n-button
         >
         <n-button
           @click="replace_default(DefaultDnsConfig.ALI_DOQ)"
+          :type="presetType(DefaultDnsConfig.ALI_DOQ)"
           :size="btn_size"
-          secondary
           strong
           >DoQ</n-button
         >
@@ -197,15 +218,15 @@ const btn_size = "small";
         </n-input-group-label>
         <n-button
           @click="replace_default(DefaultDnsConfig.DNSPOD_UDP)"
+          :type="presetType(DefaultDnsConfig.DNSPOD_UDP)"
           :size="btn_size"
-          secondary
           strong
           >UDP</n-button
         >
         <n-button
           @click="replace_default(DefaultDnsConfig.DNSPOD_DOH)"
+          :type="presetType(DefaultDnsConfig.DNSPOD_DOH)"
           :size="btn_size"
-          secondary
           strong
           >DoH</n-button
         >
@@ -225,22 +246,22 @@ const btn_size = "small";
         </n-input-group-label>
         <n-button
           @click="replace_default(DefaultDnsConfig.CLOUDFLARE_UDP)"
+          :type="presetType(DefaultDnsConfig.CLOUDFLARE_UDP)"
           :size="btn_size"
-          secondary
           strong
           >UDP</n-button
         >
         <n-button
           @click="replace_default(DefaultDnsConfig.CLOUDFLARE_DOH)"
+          :type="presetType(DefaultDnsConfig.CLOUDFLARE_DOH)"
           :size="btn_size"
-          secondary
           strong
           >DoH</n-button
         >
         <n-button
           @click="replace_default(DefaultDnsConfig.CLOUDFLARE_DOT)"
+          :type="presetType(DefaultDnsConfig.CLOUDFLARE_DOT)"
           :size="btn_size"
-          secondary
           strong
           >DoT</n-button
         >
@@ -251,22 +272,22 @@ const btn_size = "small";
         </n-input-group-label>
         <n-button
           @click="replace_default(DefaultDnsConfig.GOOGLE_UDP)"
+          :type="presetType(DefaultDnsConfig.GOOGLE_UDP)"
           :size="btn_size"
-          secondary
           strong
           >UDP</n-button
         >
         <n-button
           @click="replace_default(DefaultDnsConfig.GOOGLE_DOH)"
+          :type="presetType(DefaultDnsConfig.GOOGLE_DOH)"
           :size="btn_size"
-          secondary
           strong
           >DoH</n-button
         >
         <n-button
           @click="replace_default(DefaultDnsConfig.GOOGLE_DOT)"
+          :type="presetType(DefaultDnsConfig.GOOGLE_DOT)"
           :size="btn_size"
-          secondary
           strong
           >DoT</n-button
         >

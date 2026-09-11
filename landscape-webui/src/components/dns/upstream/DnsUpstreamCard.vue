@@ -88,14 +88,10 @@ const domain = computed(() => {
           {{ t("dns.upstream_card.edit") }}
         </n-button>
 
-        <n-popconfirm @positive-click="del()">
-          <template #trigger>
-            <n-button size="small" type="error" secondary @click="">
-              {{ t("dns.upstream_card.delete") }}
-            </n-button>
-          </template>
-          {{ t("dns.upstream_card.confirm_delete") }}
-        </n-popconfirm>
+        <DeleteButton
+          :content="t('dns.upstream_card.confirm_delete')"
+          :on-confirm="del"
+        />
       </n-flex>
     </template>
   </n-card>

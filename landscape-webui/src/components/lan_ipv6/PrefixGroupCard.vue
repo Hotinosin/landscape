@@ -4,7 +4,7 @@ import type {
   LanPrefixGroupConfig,
 } from "@landscape-router/types/api/schemas";
 import { computed, ref } from "vue";
-import { Edit, TrashCan } from "@vicons/carbon";
+import { Edit } from "@vicons/carbon";
 import { useI18n } from "vue-i18n";
 import PrefixGroupEditorModal from "@/components/lan_ipv6/PrefixGroupEditorModal.vue";
 import {
@@ -262,24 +262,11 @@ function openEditor(kind: ServiceKind) {
             </template>
           </n-button>
 
-          <n-popconfirm @positive-click="deleteGroup">
-            <template #trigger>
-              <n-button
-                quaternary
-                circle
-                size="small"
-                type="error"
-                :title="t('lan_ipv6.delete')"
-                :aria-label="t('lan_ipv6.delete')"
-                @click.stop
-              >
-                <template #icon>
-                  <n-icon><TrashCan /></n-icon>
-                </template>
-              </n-button>
-            </template>
-            {{ t("lan_ipv6.prefix_group_delete_confirm") }}
-          </n-popconfirm>
+          <DeleteButton
+            :content="t('lan_ipv6.prefix_group_delete_confirm')"
+            :on-confirm="deleteGroup"
+            @click.stop
+          />
         </n-flex>
       </div>
     </div>

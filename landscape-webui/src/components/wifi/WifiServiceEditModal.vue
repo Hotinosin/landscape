@@ -41,6 +41,8 @@ async function save_config() {
   await wifiConfigStore.UPDATE_INFO();
   show_model.value = false;
 }
+
+defineExpose({ save: save_config });
 </script>
 
 <template>

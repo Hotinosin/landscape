@@ -1,7 +1,6 @@
 export default {
-  title: "DNS History",
   auto_search_tip: "Auto-search (500ms debounce)",
-  dashboard: "Dashboard",
+  dashboard: "Overview",
   query_log: "Query Log",
   // Filters
   domain: "Domain",

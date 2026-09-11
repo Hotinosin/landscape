@@ -45,7 +45,7 @@ const show_geo_drawer_modal = ref(false);
       <n-button @click="show_geo_drawer_modal = true">
         {{ t("common.ip_rule_source_config") }}
       </n-button>
-      <n-popconfirm
+      <ConfirmModal
         :positive-button-props="{ loading: loading }"
         @positive-click="refresh_cache"
       >
@@ -53,7 +53,7 @@ const show_geo_drawer_modal = ref(false);
           <n-button>{{ t("common.force_refresh") }}</n-button>
         </template>
         {{ t("common.force_refresh_confirm_long") }}
-      </n-popconfirm>
+      </ConfirmModal>
 
       <GeoIpKeySelect
         v-model:geo_key="filter.key"

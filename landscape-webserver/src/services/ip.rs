@@ -39,8 +39,29 @@ async fn validate_ip_config(
 pub fn get_iface_ipconfig_paths() -> OpenApiRouter<LandscapeApp> {
     OpenApiRouter::new()
         .routes(routes!(get_all_ipconfig_status))
+        .routes(routes!(get_runtime_ip_addresses))
         .routes(routes!(handle_iface_service_status))
         .routes(routes!(get_iface_service_config, delete_and_stop_iface_service))
+}
+
+#[utoipa::path(
+    get,
+    path = "/ip/runtime-addresses",
+    tag = "IP Config",
+    responses((status = 200, body = CommonApiResp<HashMap<String, String>>))
+)]
+async fn get_runtime_ip_addresses(
+    State(state): State<LandscapeApp>,
+) -> LandscapeApiResult<HashMap<String, String>> {
+    LandscapeApiResp::success(
+        state
+            .route_service
+            .get_all_ipv4_wan_routes()
+            .await
+            .into_iter()
+            .map(|(name, route)| (name, route.iface_ip.to_string()))
+            .collect(),
+    )
 }
 
 #[utoipa::path(

@@ -28,8 +28,14 @@ const title = computed(() => {
 </script>
 
 <template>
-  <n-drawer v-model:show="show" width="80%" placement="right">
-    <n-drawer-content closable :title="title">
+  <n-modal v-model:show="show">
+    <n-card
+      style="width: min(1040px, calc(100vw - 32px))"
+      :bordered="false"
+      closable
+      :title="title"
+      @close="show = false"
+    >
       <template v-if="conn">
         <LiveConnectChart
           v-if="type === 'live'"
@@ -44,6 +50,6 @@ const title = computed(() => {
           :last-report-time="lastReportTime"
         />
       </template>
-    </n-drawer-content>
-  </n-drawer>
+    </n-card>
+  </n-modal>
 </template>

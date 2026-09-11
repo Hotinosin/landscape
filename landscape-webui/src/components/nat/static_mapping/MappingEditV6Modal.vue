@@ -16,6 +16,7 @@ import { useI18n } from "vue-i18n";
 
 type Props = {
   rule_id?: string;
+  showSwitch?: boolean;
 };
 
 const props = defineProps<Props>();
@@ -245,7 +246,7 @@ const isIndeterminate = computed(() => {
     v-model:show="show"
     v-model:enabled="rule_enabled"
     :title="t('nat.mapping.edit_title')"
-    :switch-disabled="!rule"
+    :show-switch="showSwitch !== false"
     width="var(--app-secondary-modal-width)"
     @after-enter="enter"
   >

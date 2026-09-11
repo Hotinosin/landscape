@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import FlowEditModal from "@/components/flow/FlowEditModal.vue";
 import DnsRuleSummary from "@/components/flow/DnsRuleSummary.vue";
 import TargetIpRuleSummary from "@/components/flow/TargetIpRuleSummary.vue";
+import CarrierStatusDot from "@/components/topology/CarrierStatusDot.vue";
 import type {
   DnsUpstreamConfig,
   FlowConfig,
@@ -32,7 +33,7 @@ const showEdit = ref(false);
 <template>
   <template v-if="cell === 'flow'">
     <n-flex align="center" size="small" :wrap="false">
-      <span class="status-dot" />
+      <CarrierStatusDot :active="true" />
       <n-text strong>0: {{ t("flow.default_card.title") }}</n-text>
     </n-flex>
   </template>
@@ -92,15 +93,4 @@ const showEdit = ref(false);
   border-top: 1px dashed var(--app-border-subtle-color);
 }
 
-.status-dot {
-  width: 7px;
-  height: 7px;
-  flex: 0 0 7px;
-  border-radius: 50%;
-  background: var(--app-brand-color);
-}
-
-.status-dot--disabled {
-  background: var(--app-text-muted-color);
-}
 </style>

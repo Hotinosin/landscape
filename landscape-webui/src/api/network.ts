@@ -14,6 +14,9 @@ import { applyInterceptors } from "@/api";
 const networkAxios = applyInterceptors(
   axios.create({ baseURL: "/api/v1/interfaces", timeout: 30000 }),
 );
+const servicesAxios = applyInterceptors(
+  axios.create({ baseURL: "/api/v1/services", timeout: 30000 }),
+);
 
 export {
   add_controller,
@@ -39,4 +42,10 @@ export async function change_iface_boot_status(
   return networkAxios.post(
     `/${encodeURIComponent(iface_name)}/boot/${enable_in_boot}`,
   );
+}
+
+export async function get_runtime_ip_addresses(): Promise<
+  Record<string, string>
+> {
+  return servicesAxios.get("/ip/runtime-addresses", { silent: true } as any);
 }

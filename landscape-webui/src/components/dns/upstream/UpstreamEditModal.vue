@@ -295,7 +295,7 @@ async function import_rules() {
           />
         </n-form-item-gi>
 
-        <n-form-item-gi :offset="1" :span="4">
+        <n-form-item-gi :span="6">
           <template #label>
             <Notice>
               {{ t("dns.upstream_edit.ip_validation") }}
@@ -306,14 +306,7 @@ async function import_rules() {
             </Notice>
           </template>
 
-          <n-switch v-model:value="rule.enable_ip_validation">
-            <template #checked>
-              {{ t("dns.upstream_edit.ip_validation_on") }}
-            </template>
-            <template #unchecked>
-              {{ t("dns.upstream_edit.ip_validation_off") }}
-            </template>
-          </n-switch>
+          <n-switch v-model:value="rule.enable_ip_validation" />
         </n-form-item-gi>
 
         <n-form-item-gi :span="12" :label="t('dns.upstream_edit.preset_fill')">
@@ -321,7 +314,7 @@ async function import_rules() {
         </n-form-item-gi>
 
         <n-form-item-gi
-          :span="5"
+          :span="6"
           :label="t('dns.upstream_edit.request_mode')"
           path="mode.domain"
         >
@@ -347,15 +340,6 @@ async function import_rules() {
           /> -->
         </n-form-item-gi>
 
-        <n-form-item-gi v-if="supportsHttp3" :span="4" label="HTTP/3">
-          <n-flex align="center" :wrap="false" :size="8">
-            <n-checkbox v-model:checked="http3Enabled">H3</n-checkbox>
-            <n-button size="small" :loading="h3TestLoading" @click="testH3">
-              {{ t("dns.upstream_edit.test_h3") }}
-            </n-button>
-          </n-flex>
-        </n-form-item-gi>
-
         <n-form-item-gi :span="3" :label="t('dns.upstream_edit.port')">
           <n-input-number
             style="width: 100%"
@@ -365,6 +349,15 @@ async function import_rules() {
             :placeholder="t('dns.upstream_edit.port_placeholder')"
             v-model:value="rule.port"
           />
+        </n-form-item-gi>
+
+        <n-form-item-gi v-if="supportsHttp3" :span="3" label="HTTP/3">
+          <n-flex align="center" :wrap="false" :size="8">
+            <n-switch v-model:value="http3Enabled" />
+            <n-button size="small" :loading="h3TestLoading" @click="testH3">
+              {{ t("dns.upstream_edit.test_h3") }}
+            </n-button>
+          </n-flex>
         </n-form-item-gi>
 
         <n-form-item-gi
@@ -439,7 +432,7 @@ async function import_rules() {
     v-model:show="showH3TestResult"
     preset="card"
     :title="t('dns.upstream_edit.h3_test_title')"
-    style="width: 560px"
+    style="width: var(--app-tertiary-modal-width)"
   >
     <n-spin v-if="h3TestLoading" style="display: block; padding: 32px" />
     <template v-else>
@@ -453,7 +446,12 @@ async function import_rules() {
       >
         {{ h3TestError }}
       </n-text>
-      <n-descriptions v-if="h3TestResult" :column="2" style="margin-top: 12px">
+      <n-descriptions
+        v-if="h3TestResult"
+        :column="2"
+        label-placement="left"
+        style="margin-top: 12px"
+      >
         <n-descriptions-item :label="t('dns.upstream_edit.test_domain')">
           {{ h3TestResult.query_domain }}
         </n-descriptions-item>
@@ -470,7 +468,6 @@ async function import_rules() {
         class="h3-attempt-table"
         :columns="h3AttemptColumns"
         :data="h3TestResult.attempts"
-        :scroll-x="520"
         size="small"
       />
     </template>

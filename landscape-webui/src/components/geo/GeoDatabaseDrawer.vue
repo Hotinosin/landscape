@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, h, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useMessage } from "naive-ui";
+import { useMessage, type DataTableColumns } from "naive-ui";
 import type {
   GeoIpSourceConfig,
   GeoSiteSourceConfig,
@@ -20,6 +20,9 @@ import {
   copy_context_to_clipboard,
   read_context_from_clipboard,
 } from "@/lib/common";
+import { Add, Copy, Paste, Renew } from "@vicons/carbon";
+import GeoSiteItemCard from "@/components/geo/site/config/GeoSiteItemCard.vue";
+import GeoIpItemCard from "@/components/geo/ip/config/GeoIpItemCard.vue";
 
 type Source = "site" | "ip";
 
@@ -43,6 +46,31 @@ const ipConfigs = ref<GeoIpSourceConfig[]>([]);
 const showSiteModal = ref(false);
 const showIpModal = ref(false);
 const refreshing = ref<Source | null>(null);
+const sourceCells = ["status", "type", "time", "actions"] as const;
+const sourceTitles = computed(() => [
+  `${t("common.status")} / ${t("common.name")}`,
+  t("geo.item_card.source_type"),
+  t("geo.item_card.next_update_time"),
+  t("common.actions"),
+]);
+const siteColumns = computed<DataTableColumns<GeoSiteSourceConfig>>(() =>
+  sourceCells.map((cell, index) => ({
+    title: sourceTitles.value[index],
+    key: cell,
+    width: cell === "status" ? 220 : cell === "type" ? 110 : cell === "time" ? 180 : 280,
+    render: (rule) => h(GeoSiteItemCard, { geo_site: rule, cell, onRefresh: refreshSite, "onRefresh:keys": () => emit("refresh") }),
+  })),
+);
+const ipColumns = computed<DataTableColumns<GeoIpSourceConfig>>(() =>
+  sourceCells.map((cell, index) => ({
+    title: sourceTitles.value[index],
+    key: cell,
+    width: cell === "status" ? 220 : cell === "type" ? 110 : cell === "time" ? 180 : 200,
+    render: (rule) => h(GeoIpItemCard, { geo_ip_source: rule, cell, onRefresh: refreshIp, "onRefresh:keys": () => emit("refresh") }),
+  })),
+);
+const siteRowKey = (rule: GeoSiteSourceConfig) => rule.id ?? rule.name;
+const ipRowKey = (rule: GeoIpSourceConfig) => rule.id ?? rule.name;
 
 watch(
   () => props.show,
@@ -113,90 +141,100 @@ async function forceRefresh(source: Source) {
 </script>
 
 <template>
-  <n-drawer
+  <n-modal
     :show="show"
-    width="560px"
-    placement="right"
     @update:show="emit('update:show', $event)"
   >
-    <n-drawer-content :title="t('geo.database.config_title')" closable>
-      <n-tabs v-model:value="activeTab" type="line" animated>
+    <n-card
+      class="geo-database-card"
+      style="width: min(1000px, calc(100vw - 32px))"
+      :title="t('geo.database.config_title')"
+      :bordered="false"
+      closable
+      content-style="max-height: calc(100vh - 120px); overflow: hidden"
+      @close="emit('update:show', false)"
+    >
+      <n-tabs v-model:value="activeTab" type="line">
         <n-tab-pane name="site" :tab="t('geo.database.geosite_data')">
           <n-flex vertical>
-            <n-flex :wrap="false">
-              <n-button style="flex: 1" @click="showSiteModal = true">
-                {{ t("geo.drawer.add_rule") }}
+            <n-flex :wrap="true" size="small">
+              <n-button type="primary" @click="showSiteModal = true">
+                <template #icon><n-icon><Add /></n-icon></template>
+                {{ t("common.add_new") }}
               </n-button>
-              <n-button style="flex: 1" @click="exportConfigs('site')">
-                {{ t("geo.drawer.export_clipboard") }}
+              <n-button @click="exportConfigs('site')">
+                <template #icon><n-icon><Copy /></n-icon></template>
+                {{ t("common.copy") }}
               </n-button>
-              <n-popconfirm @positive-click="importConfigs('site')">
+              <ConfirmModal @positive-click="importConfigs('site')">
                 <template #trigger>
-                  <n-button style="flex: 1">
-                    {{ t("geo.drawer.import_clipboard") }}
+                  <n-button>
+                    <template #icon><n-icon><Paste /></n-icon></template>
+                    {{ t("common.paste") }}
                   </n-button>
                 </template>
                 {{ t("geo.drawer.confirm_import") }}
-              </n-popconfirm>
-              <n-popconfirm @positive-click="forceRefresh('site')">
+              </ConfirmModal>
+              <ConfirmModal @positive-click="forceRefresh('site')">
                 <template #trigger>
-                  <n-button :loading="refreshing === 'site'" style="flex: 1">
-                    {{ t("common.force_refresh_all") }}
+                  <n-button :loading="refreshing === 'site'">
+                    <template #icon><n-icon><Renew /></n-icon></template>
+                    {{ t("geo.database.refresh_all") }}
                   </n-button>
                 </template>
-                {{ t("common.force_refresh_confirm_long") }}
-              </n-popconfirm>
+                {{ t("geo.database.update_all_confirm") }}
+              </ConfirmModal>
             </n-flex>
             <n-scrollbar class="config-list">
-              <n-flex vertical>
-                <GeoSiteItemCard
-                  v-for="rule in siteConfigs"
-                  :key="rule.id ?? rule.name"
-                  :geo_site="rule"
-                  @refresh="refreshSite"
-                  @refresh:keys="emit('refresh')"
-                />
-              </n-flex>
+              <StandardDataTable
+                :columns="siteColumns"
+                :data="siteConfigs"
+                :row-key="siteRowKey"
+                :scroll-x="790"
+                size="small"
+              />
             </n-scrollbar>
           </n-flex>
         </n-tab-pane>
 
         <n-tab-pane name="ip" :tab="t('geo.database.geoip_data')">
           <n-flex vertical>
-            <n-flex :wrap="false">
-              <n-button style="flex: 1" @click="showIpModal = true">
-                {{ t("geo.drawer.add_rule") }}
+            <n-flex :wrap="true" size="small">
+              <n-button type="primary" @click="showIpModal = true">
+                <template #icon><n-icon><Add /></n-icon></template>
+                {{ t("common.add_new") }}
               </n-button>
-              <n-button style="flex: 1" @click="exportConfigs('ip')">
-                {{ t("geo.drawer.export_clipboard") }}
+              <n-button @click="exportConfigs('ip')">
+                <template #icon><n-icon><Copy /></n-icon></template>
+                {{ t("common.copy") }}
               </n-button>
-              <n-popconfirm @positive-click="importConfigs('ip')">
+              <ConfirmModal @positive-click="importConfigs('ip')">
                 <template #trigger>
-                  <n-button style="flex: 1">
-                    {{ t("geo.drawer.import_clipboard") }}
+                  <n-button>
+                    <template #icon><n-icon><Paste /></n-icon></template>
+                    {{ t("common.paste") }}
                   </n-button>
                 </template>
                 {{ t("geo.drawer.confirm_import") }}
-              </n-popconfirm>
-              <n-popconfirm @positive-click="forceRefresh('ip')">
+              </ConfirmModal>
+              <ConfirmModal @positive-click="forceRefresh('ip')">
                 <template #trigger>
-                  <n-button :loading="refreshing === 'ip'" style="flex: 1">
-                    {{ t("common.force_refresh_all") }}
+                  <n-button :loading="refreshing === 'ip'">
+                    <template #icon><n-icon><Renew /></n-icon></template>
+                    {{ t("geo.database.refresh_all") }}
                   </n-button>
                 </template>
-                {{ t("common.force_refresh_confirm_long") }}
-              </n-popconfirm>
+                {{ t("geo.database.update_all_confirm") }}
+              </ConfirmModal>
             </n-flex>
             <n-scrollbar class="config-list">
-              <n-flex vertical>
-                <GeoIpItemCard
-                  v-for="rule in ipConfigs"
-                  :key="rule.id ?? rule.name"
-                  :geo_ip_source="rule"
-                  @refresh="refreshIp"
-                  @refresh:keys="emit('refresh')"
-                />
-              </n-flex>
+              <StandardDataTable
+                :columns="ipColumns"
+                :data="ipConfigs"
+                :row-key="ipRowKey"
+                :scroll-x="710"
+                size="small"
+              />
             </n-scrollbar>
           </n-flex>
         </n-tab-pane>
@@ -212,12 +250,19 @@ async function forceRefresh(source: Source) {
         v-model:show="showIpModal"
         @refresh="refreshIp"
       />
-    </n-drawer-content>
-  </n-drawer>
+    </n-card>
+  </n-modal>
 </template>
 
 <style scoped>
 .config-list {
-  max-height: calc(100vh - 180px);
+  max-height: calc(100vh - 250px);
+  margin-top: var(--app-space-sm);
+}
+:deep(.geo-database-card > .n-card-header) {
+  padding-bottom: 8px;
+}
+:deep(.geo-database-card > .n-card-content) {
+  padding-top: 0;
 }
 </style>

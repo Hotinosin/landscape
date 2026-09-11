@@ -41,6 +41,17 @@ const columns = computed<DataTableColumns<FirewallBlacklistConfig>>(() => [
     render: (rule) => h(FirewallBlacklistListRow, { rule, cell: "count" }),
   },
   {
+    title: t("common.enable"),
+    key: "enable",
+    width: 80,
+    render: (rule) =>
+      h(FirewallBlacklistListRow, {
+        rule,
+        cell: "enable",
+        onRefresh: read_configs,
+      }),
+  },
+  {
     title: t("common.actions"),
     key: "actions",
     align: "left",

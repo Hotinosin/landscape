@@ -46,8 +46,7 @@ const targetLabel = computed(() => {
 </script>
 
 <template>
-  <n-flex align="center" size="small">
-    <n-text depth="3">{{ t("flow.list.egress_label") }}</n-text>
+  <n-flex align="center" size="small" :wrap="false">
     <n-tag class="semantic-tag--egress" :bordered="false">
       {{ actionLabel }}
     </n-tag>

@@ -21,7 +21,7 @@ export interface PluginInfo {
 }
 
 export async function listPlugins(): Promise<PluginInfo[]> {
-  return client.get("");
+  return client.get("", { silent: true } as any);
 }
 
 export async function importPlugin(file: File): Promise<PluginInfo> {

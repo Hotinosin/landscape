@@ -63,7 +63,9 @@ const details = computed(() => [
   { label: "DNS", status: dnsStore.dns_status, count: 1 },
   {
     label: t("sysinfo.metrics"),
-    status: metricStore.metric_status,
+    status: metricStore.statusState.hasSucceeded
+      ? metricStore.metric_status
+      : undefined,
     count: 1,
   },
   ...serviceGroups.map((group) => {
@@ -118,7 +120,13 @@ const healthy = computed(
 );
 
 const healthType = computed(() =>
-  summary.value.failed ? "error" : healthy.value ? "success" : "warning",
+  metricStore.statusState.error
+    ? "warning"
+    : summary.value.failed
+      ? "error"
+      : healthy.value
+        ? "success"
+        : "warning",
 );
 
 const serviceCardContentStyle = {
@@ -135,24 +143,28 @@ const serviceCardContentStyle = {
     :header-style="overviewCardStyles.header"
     :content-style="serviceCardContentStyle"
   >
-    <template #header>{{ t("sysinfo.service_health") }}</template>
+    <template #header>
+      <span class="service-title">{{ t("sysinfo.service_health") }}</span>
+    </template>
     <template #header-extra>
       <n-tag size="small" :bordered="false" :type="healthType">
-        {{ healthy ? t("sysinfo.healthy") : t("sysinfo.needs_attention") }}
+        {{
+          metricStore.statusState.error
+            ? t("common.load_failed")
+            : healthy
+              ? t("sysinfo.healthy")
+              : t("sysinfo.needs_attention")
+        }}
       </n-tag>
     </template>
 
-    <n-flex
-      vertical
-      justify="end"
-      class="overview-card__primary"
-      :style="overviewCardStyles.primary"
-    >
-      <n-statistic :label="t('sysinfo.running_services')">
+    <n-flex vertical justify="end" :style="overviewCardStyles.primary">
+      <n-flex justify="space-between" align="center">
+        <n-text depth="3">{{ t("sysinfo.running_services") }}</n-text>
         <n-text :type="healthy ? 'success' : 'default'" strong>
           {{ summary.running }} / {{ summary.total }}
         </n-text>
-      </n-statistic>
+      </n-flex>
       <n-progress
         type="line"
         :show-indicator="false"
@@ -196,6 +208,12 @@ const serviceCardContentStyle = {
 </template>
 
 <style scoped>
+.service-title {
+  display: block;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
 .status-dot {
   width: 7px;
   height: 7px;

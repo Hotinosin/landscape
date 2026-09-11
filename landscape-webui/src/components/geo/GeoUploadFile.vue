@@ -39,7 +39,7 @@ async function handle_upload(options: UploadCustomRequestOptions) {
 }
 </script>
 <template>
-  <n-modal style="max-width: 500px" v-model:show="show">
+  <n-modal style="width: var(--app-compact-modal-width)" v-model:show="show">
     <n-card size="small">
       <n-spin :show="loading">
         <n-upload

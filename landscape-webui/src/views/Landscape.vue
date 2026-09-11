@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
-
 import CPUUsage from "@/components/sysinfo/CPUUsage.vue";
 import MemUsage from "@/components/sysinfo/MemUsage.vue";
 import DnsStatusCard from "@/components/dns/DnsStatusCard.vue";
 import SystemInfo from "@/components/sysinfo/SystemInfo.vue";
 import RealtimeNetwork from "@/components/sysinfo/RealtimeNetwork.vue";
 import ServiceHealth from "@/components/sysinfo/ServiceHealth.vue";
-import NetFlow from "@/components/topology/NetFlow.vue";
-
-const { t } = useI18n({ useScope: "global" });
+import DhcpLeaseSummary from "@/components/sysinfo/DhcpLeaseSummary.vue";
 </script>
 
 <template>
@@ -33,10 +29,9 @@ const { t } = useI18n({ useScope: "global" });
       <n-gi style="display: flex; height: 280px" :span="1">
         <ServiceHealth />
       </n-gi>
+      <n-gi style="display: flex; height: 280px" :span="1">
+        <DhcpLeaseSummary />
+      </n-gi>
     </n-grid>
-    <n-divider style="margin: 0px 0" title-placement="left">
-      {{ t("common.topology_divider") }}
-    </n-divider>
-    <NetFlow style="flex: 1; min-height: 550px; min-width: 100%"></NetFlow>
   </n-flex>
 </template>

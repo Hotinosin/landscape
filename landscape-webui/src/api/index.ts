@@ -4,11 +4,12 @@ import i18n from "@/i18n";
 import {
   clearLandscapeSession,
   LANDSCAPE_TOKEN_KEY,
+  landscapeSessionGeneration,
   syncPluginSessionCookie,
 } from "@/lib/common";
 import { useHistoryRouteStore } from "@/stores/history_route";
 
-export function isCurrentSessionUnauthorized(
+export function isCurrentSessionRequest(
   requestAuthorization: unknown,
   currentToken: string | null,
 ): boolean {
@@ -33,8 +34,10 @@ function formatApiErrorTemplate(
  * to any axios instance.
  */
 export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
+  const requestSessions = new WeakMap<object, number>();
   instance.interceptors.request.use(
     (config) => {
+      requestSessions.set(config, landscapeSessionGeneration);
       const token = localStorage.getItem(LANDSCAPE_TOKEN_KEY);
       if (token) {
         config.headers["Authorization"] = `Bearer ${token}`;
@@ -49,7 +52,14 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
   instance.interceptors.response.use(
     (response) => {
       const newToken = response.headers["x-refresh-token"];
-      if (newToken) {
+      if (
+        newToken &&
+        requestSessions.get(response.config) === landscapeSessionGeneration &&
+        isCurrentSessionRequest(
+          response.config.headers.Authorization,
+          localStorage.getItem(LANDSCAPE_TOKEN_KEY),
+        )
+      ) {
         localStorage.setItem(LANDSCAPE_TOKEN_KEY, newToken);
         syncPluginSessionCookie();
       }
@@ -63,7 +73,8 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
         const authenticatedRequest = Boolean(requestAuthorization);
         const currentSessionUnauthorized =
           code === 401 &&
-          isCurrentSessionUnauthorized(
+          requestSessions.get(error.config) === landscapeSessionGeneration &&
+          isCurrentSessionRequest(
             requestAuthorization,
             localStorage.getItem(LANDSCAPE_TOKEN_KEY),
           );

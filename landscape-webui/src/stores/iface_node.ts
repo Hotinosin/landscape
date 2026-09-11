@@ -52,14 +52,14 @@ function sort_devices(devs: NetDev[]) {
   });
 }
 
-function get_visible_devices(devs: NetDev[], hide_down: boolean) {
+export function get_visible_devices(devs: NetDev[], hide_down: boolean) {
   return sort_devices(
     devs.filter((each) => {
       if (each.dev_type === "Loopback") {
         return false;
       }
 
-      if (hide_down && each.dev_status.t === DevStateType.Down) {
+      if (hide_down && each.dev_status.t !== DevStateType.Up) {
         return false;
       }
 

@@ -1,16 +1,24 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import type { DNSRuleConfig } from "@landscape-router/types/api/schemas";
-import { delDnsRules } from "@landscape-router/types/api/dns-rules/dns-rules";
+import type {
+  DNSRuleConfig,
+  FlowConfig,
+} from "@landscape-router/types/api/schemas";
+import {
+  addDnsRules,
+  delDnsRules,
+} from "@landscape-router/types/api/dns-rules/dns-rules";
 import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   rule: DNSRuleConfig;
-  cell: "status" | "action" | "upstream" | "sources" | "actions";
+  flows: FlowConfig[];
+  cell: "status" | "enable" | "action" | "upstream" | "sources" | "actions";
 }>();
 const emit = defineEmits(["refresh"]);
 const { t } = useI18n();
 const showEdit = ref(false);
+const enableLoading = ref(false);
 
 const title = computed(() => props.rule.name || t("common.no_remark"));
 
@@ -19,18 +27,25 @@ async function remove() {
   await delDnsRules(props.rule.id);
   emit("refresh");
 }
+async function updateEnabled(enable: boolean) {
+  enableLoading.value = true;
+  try {
+    await addDnsRules({ ...props.rule, enable });
+    emit("refresh");
+  } finally {
+    enableLoading.value = false;
+  }
+}
 </script>
 
 <template>
-  <StatusTitle
-    v-if="cell === 'status'"
-    :enable="rule.enable"
-    :remark="`${rule.index}: ${title}`"
-  />
-  <FlowMarkExhibit
+  <StatusTitle v-if="cell === 'status'" :enable="rule.enable" :remark="`${rule.index}: ${title}`" />
+  <StandardEnableSwitch v-else-if="cell === 'enable'" :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" />
+  <FlowRuleEgress
     v-else-if="cell === 'action'"
     :mark="rule.mark"
-    :flow_id="rule.flow_id"
+    :flow-id="rule.flow_id"
+    :flows="flows"
   />
   <UpstreamExhibit
     v-else-if="cell === 'upstream'"
@@ -48,14 +63,7 @@ async function remove() {
   </n-text>
   <n-flex v-else-if="cell === 'actions'" size="small" :wrap="false">
     <EditButton @click="showEdit = true" />
-    <n-popconfirm @positive-click="remove">
-      <template #trigger>
-        <n-button size="small" type="error" secondary>
-          {{ t("common.delete") }}
-        </n-button>
-      </template>
-      {{ t("common.confirm_delete") }}
-    </n-popconfirm>
+    <DeleteButton :item="`${rule.index}: ${title}`" :on-confirm="remove" />
   </n-flex>
 
   <DnsRuleEditModal
@@ -63,6 +71,7 @@ async function remove() {
     v-model:show="showEdit"
     :flow_id="rule.flow_id"
     :rule_id="rule.id"
+    :show-switch="false"
     @refresh="emit('refresh')"
   />
 </template>

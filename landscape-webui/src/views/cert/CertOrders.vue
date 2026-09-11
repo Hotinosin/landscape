@@ -14,12 +14,13 @@ import {
   NButton,
   NTag,
   NFlex,
-  NPopconfirm,
   type DataTableColumns,
 } from "naive-ui";
 import CertOrderEditModal from "@/components/cert/order/CertOrderEditModal.vue";
+import ConfirmModal from "@/components/common/ConfirmModal.vue";
 import CertInfoModal from "@/components/cert/order/CertInfoModal.vue";
 import EditButton from "@/components/common/EditButton.vue";
+import DeleteButton from "@/components/common/DeleteButton.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { Add } from "@vicons/carbon";
 import { usePageRequest } from "@/composables/usePageRequest";
@@ -361,7 +362,7 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
       if (is_acme(row) && row.status === "processing") {
         btns.push(
           h(
-            NPopconfirm,
+            ConfirmModal,
             { onPositiveClick: () => do_cancel(id) },
             {
               trigger: () =>
@@ -385,7 +386,7 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
       if (is_acme(row) && row.status === "valid") {
         btns.push(
           h(
-            NPopconfirm,
+            ConfirmModal,
             { onPositiveClick: () => do_revoke(id) },
             {
               trigger: () =>
@@ -407,19 +408,10 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
 
       // Delete: always (with confirmation)
       btns.push(
-        h(
-          NPopconfirm,
-          { onPositiveClick: () => do_delete(id) },
-          {
-            trigger: () =>
-              h(
-                NButton,
-                { size: "small", type: "error", secondary: true },
-                () => t("common.delete"),
-              ),
-            default: () => t("common.confirm_delete"),
-          },
-        ),
+        h(DeleteButton, {
+          item: frontEndStore.MASK_INFO(row.name),
+          onConfirm: () => do_delete(id),
+        }),
       );
 
       return h(NFlex, { size: "small", wrap: false }, () => btns);

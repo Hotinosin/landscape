@@ -18,31 +18,54 @@ const edit_range = computed({
 </script>
 
 <template>
-  <n-flex style="flex: 1" vertical>
+  <div class="port-range">
+    <n-input-number
+      v-model:value="range.start"
+      class="port-range__input"
+      size="small"
+      :min="1"
+      :max="65535"
+      :show-button="false"
+      placeholder="Start"
+    />
     <n-slider
+      v-model:value="edit_range"
+      class="port-range__slider"
       :max="65535"
       :min="1"
-      v-model:value="edit_range"
       range
       :step="1"
     />
-    <n-flex style="flex: 1">
-      <n-input-number
-        style="flex: 1"
-        v-model:value="range.start"
-        size="small"
-        :min="1"
-        :max="65535"
-        placeholder="Start"
-      />
-      <n-input-number
-        style="flex: 1"
-        v-model:value="range.end"
-        size="small"
-        :min="1"
-        :max="65535"
-        placeholder="End"
-      />
-    </n-flex>
-  </n-flex>
+    <n-input-number
+      v-model:value="range.end"
+      class="port-range__input"
+      size="small"
+      :min="1"
+      :max="65535"
+      :show-button="false"
+      placeholder="End"
+    />
+  </div>
 </template>
+
+<style scoped>
+.port-range {
+  display: grid;
+  grid-template-columns:
+    var(--app-range-input-width) minmax(80px, 1fr)
+    var(--app-range-input-width);
+  align-items: center;
+  gap: var(--app-space-sm);
+  width: 100%;
+  min-width: 0;
+}
+
+.port-range__input {
+  width: var(--app-range-input-width);
+}
+
+.port-range__slider {
+  align-self: center;
+  min-width: 80px;
+}
+</style>

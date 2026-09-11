@@ -52,16 +52,17 @@ pub async fn test_doh3_upstream(
         DnsUpstreamError, DnsUpstreamH3TestAttempt, DnsUpstreamH3TestResult,
     };
 
-    let landscape_common::dns::upstream::DnsUpstreamMode::Https { http3, .. } = &mut config.mode
+    let landscape_common::dns::upstream::DnsUpstreamMode::Https { domain, http3, .. } =
+        &mut config.mode
     else {
         return Err(DnsUpstreamError::H3TestRequiresHttps);
     };
+    let query_domain = format!("{}.", domain.trim_end_matches('.'));
     *http3 = true;
 
     let Some(resolver) = connection::create_resolver(0, 0x8000, config) else {
         return Err(DnsUpstreamError::H3TestResolverFailed);
     };
-    let query_domain = "example.com.".to_string();
     let mut attempts = Vec::with_capacity(5);
 
     for _ in 0..5 {

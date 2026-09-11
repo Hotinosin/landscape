@@ -28,6 +28,7 @@ export default {
   realtime_network: "实时网络",
   upload_rate: "上传速率",
   download_rate: "下载速率",
+  collecting_network_trend: "正在采集趋势",
   active_connections: "活跃连接",
   packet_rate: "数据包速率",
   service_health: "服务健康",
@@ -40,4 +41,9 @@ export default {
   firewall: "防火墙",
   routing: "路由",
   metrics: "指标",
+  dhcp_leases: "DHCP 租约",
+  online_devices: "在线设备",
+  active_leases: "有效租约",
+  pool_remaining: "地址池剩余",
+  dhcp_load_failed: "DHCP 租约信息加载失败",
 };

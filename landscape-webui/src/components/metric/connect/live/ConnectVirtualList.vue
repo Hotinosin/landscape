@@ -43,6 +43,7 @@ const emit = defineEmits(["search:tuple", "search:src", "search:dst"]);
 <template>
   <n-virtual-list
     class="list"
+    :style="{ height: `${virtualItems.length * 44}px` }"
     :item-size="44"
     :items="virtualItems"
     key-field="virtual_key"
@@ -71,7 +72,7 @@ const emit = defineEmits(["search:tuple", "search:src", "search:dst"]);
 
 <style scoped>
 .list {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
 }
 </style>

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, h, onMounted, ref } from "vue";
-import { Add, Launch, Renew, TrashCan } from "@vicons/carbon";
+import { Add, Launch, Renew } from "@vicons/carbon";
 import type { DataTableColumns, UploadCustomRequestOptions } from "naive-ui";
-import { NButton, NIcon, NPopconfirm, NSpace, useMessage } from "naive-ui";
+import { NButton, NIcon, NSpace, useMessage } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import {
   importPlugin,
@@ -11,11 +11,11 @@ import {
   type PluginInfo,
 } from "@/api/plugins";
 import { syncPluginSessionCookie } from "@/lib/common";
+import { usePageRequest } from "@/composables/usePageRequest";
+import DeleteButton from "@/components/common/DeleteButton.vue";
 
 const { t } = useI18n();
 const message = useMessage();
-const plugins = ref<PluginInfo[]>([]);
-const loading = ref(false);
 const activeTab = ref("manage");
 
 const columns = computed<DataTableColumns<PluginInfo>>(() => [
@@ -70,34 +70,25 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
             default: () => t("plugin.open_panel"),
           },
         ),
-        h(
-          NPopconfirm,
-          { onPositiveClick: () => deletePlugin(row) },
-          {
-            trigger: () =>
-              h(
-                NButton,
-                { size: "small", type: "error", secondary: true },
-                {
-                  icon: () => h(NIcon, null, { default: () => h(TrashCan) }),
-                  default: () => t("common.delete"),
-                },
-              ),
-            default: () => t("common.confirm_delete"),
-          },
-        ),
+        h(DeleteButton, {
+          item: row.name,
+          onConfirm: () => deletePlugin(row),
+        }),
       ]),
   },
 ]);
 
-async function refresh() {
-  loading.value = true;
-  try {
-    plugins.value = await listPlugins();
-  } finally {
-    loading.value = false;
-  }
-}
+const listRequest = usePageRequest(listPlugins, {
+  initialData: [] as PluginInfo[],
+});
+const {
+  data: plugins,
+  loading,
+  error,
+  hasSucceeded,
+  lastSuccessAt,
+  execute: refresh,
+} = listRequest;
 
 async function upload({ file, onFinish, onError }: UploadCustomRequestOptions) {
   try {
@@ -176,12 +167,20 @@ onMounted(() => {
           </n-button>
         </n-flex>
 
-        <StandardDataTable
-          :columns="columns"
-          :data="plugins"
+        <StandardRequestStatus
+          :has-succeeded="hasSucceeded"
           :loading="loading"
-          :row-key="(row: PluginInfo) => row.id"
-        />
+          :error="error"
+          :last-success-at="lastSuccessAt"
+          @retry="refresh"
+        >
+          <StandardDataTable
+            :columns="columns"
+            :data="plugins"
+            :loading="loading"
+            :row-key="(row: PluginInfo) => row.id"
+          />
+        </StandardRequestStatus>
       </n-flex>
     </n-tab-pane>
     <n-tab-pane

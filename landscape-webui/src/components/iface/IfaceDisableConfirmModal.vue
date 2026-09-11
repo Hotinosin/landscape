@@ -47,7 +47,7 @@ function handleConfirm() {
   <n-modal
     :show="show"
     preset="card"
-    style="width: min(92vw, 560px)"
+    style="width: var(--app-compact-modal-width)"
     :title="t('network.iface_risk_guard.title')"
     :mask-closable="!loading"
     :closable="!loading"
