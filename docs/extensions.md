@@ -13,7 +13,7 @@
 
 - 支持按域名反查 GeoSite 数据及匹配规则。
 - 支持按 IP 地址反查 GeoIP 数据及匹配网段。
-- GeoSite 查询不带 `.` 时按域名关键词匹配，不按分类名称匹配。
+- GeoSite 查询统一使用运行时 DNS 规则语义，只匹配分组内规则，不匹配分类名称。
 - 主要入口：`/api/v1/geo/sites/cache/lookup`、`/api/v1/geo/ips/cache/lookup` 和 Geo 数据页面的查询区域。
 
 ## DoH3

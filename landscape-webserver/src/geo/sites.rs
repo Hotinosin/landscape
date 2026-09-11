@@ -35,7 +35,10 @@ pub fn get_geo_site_config_paths() -> OpenApiRouter<LandscapeApp> {
     path = "/sites/cache/lookup",
     tag = "Geo Sites",
     params(("domain" = String, Query, description = "Domain to reverse lookup")),
-    responses((status = 200, body = CommonApiResp<Vec<GeoSiteLookupResult>>))
+    responses(
+        (status = 200, body = CommonApiResp<Vec<GeoSiteLookupResult>>),
+        (status = 400, description = "Invalid domain")
+    )
 )]
 async fn lookup_geo_site_domain(
     State(state): State<LandscapeApp>,

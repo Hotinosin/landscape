@@ -77,13 +77,8 @@ fn domain_match_type_tag(match_type: &DomainMatchType) -> u8 {
 fn geo_value_matches_lookup(
     value: &GeoSiteFileConfig,
     normalized: &str,
-    keyword_lookup: bool,
 ) -> bool {
-    if keyword_lookup {
-        value.value.to_ascii_lowercase().contains(normalized)
-    } else {
-        domain_rule_matches_normalized(&value.match_type, &value.value, normalized)
-    }
+    domain_rule_matches_normalized(&value.match_type, &value.value, normalized)
 }
 
 #[derive(Debug, Default)]
@@ -449,7 +444,6 @@ impl GeoSiteService {
     pub async fn lookup_domain(&self, domain: &str) -> Result<Vec<GeoSiteLookupResult>, GeoError> {
         let normalized = normalize_domain_name(domain)
             .map_err(|_| GeoError::SiteInvalidLookupDomain(domain.to_string()))?;
-        let keyword_lookup = !normalized.contains('.');
         let mut lock = self.file_cache.lock().await;
         let mut result = Vec::new();
 
@@ -459,7 +453,7 @@ impl GeoSiteService {
             let values = config
                 .values
                 .into_iter()
-                .filter(|value| geo_value_matches_lookup(value, &normalized, keyword_lookup))
+                .filter(|value| geo_value_matches_lookup(value, &normalized))
                 .collect::<Vec<_>>();
             if !values.is_empty() {
                 result.push(GeoSiteLookupResult { key, values });
@@ -593,15 +587,22 @@ mod tests {
     }
 
     #[test]
-    fn keyword_lookup_matches_domain_values_without_matching_generic_regexes() {
-        let domain = geo_value("www.cloudflare.com", &[]);
+    fn lookup_uses_dns_rule_matching_semantics() {
+        let plain = GeoSiteFileConfig {
+            match_type: DomainMatchType::Plain,
+            value: "cloudflare".to_string(),
+            attributes: HashSet::new(),
+        };
+        let domain = geo_value("cloudflare.com", &[]);
         let generic_regex = GeoSiteFileConfig {
             match_type: DomainMatchType::Regex,
             value: "^[a-z][a-z0-9-]+$".to_string(),
             attributes: HashSet::new(),
         };
 
-        assert!(geo_value_matches_lookup(&domain, "cloudflare", true));
-        assert!(!geo_value_matches_lookup(&generic_regex, "cloudflare", true));
+        assert!(geo_value_matches_lookup(&plain, "cloudflare"));
+        assert!(!geo_value_matches_lookup(&domain, "cloudflare"));
+        assert!(geo_value_matches_lookup(&domain, "www.cloudflare.com"));
+        assert!(geo_value_matches_lookup(&generic_regex, "cloudflare"));
     }
 }
