@@ -10,11 +10,12 @@ use libbpf_rs::{
     skel::{OpenSkel, SkelBuilder as _},
     MapCore, MapFlags, ProgramInput,
 };
-use zerocopy::IntoBytes;
+use zerocopy::{FromBytes, IntoBytes};
 
 use crate::{
-    map_setting::{add_wan_ip, nat::StaticNatMappingV6Item},
-    stages::nat::tc_nat_skel::{types, TcNatSkelBuilder},
+    maps::{nat::StaticNatMappingV6Item, wan::add_wan_ip},
+    maps::{Nat6TimerKey, Nat6TimerValue},
+    stages::nat::tc_nat_skel::TcNatSkelBuilder,
     tests::TestSkb,
 };
 
@@ -49,16 +50,11 @@ fn npt_id_mask(prefix_len: u8) -> u8 {
     }
 }
 
-fn egress_ct6_key(
-    src: Ipv6Addr,
-    src_port: u16,
-    l4proto: u8,
-    prefix_len: u8,
-) -> types::nat6_timer_key {
+fn egress_ct6_key(src: Ipv6Addr, src_port: u16, l4proto: u8, prefix_len: u8) -> Nat6TimerKey {
     let bytes = src.octets();
     let mut suffix = [0u8; 8];
     suffix.copy_from_slice(&bytes[8..]);
-    types::nat6_timer_key {
+    Nat6TimerKey {
         client_suffix: suffix,
         client_port: src_port.to_be(),
         id_byte: bytes[7] & npt_id_mask(prefix_len),
@@ -66,16 +62,11 @@ fn egress_ct6_key(
     }
 }
 
-fn ingress_ct6_key(
-    dst: Ipv6Addr,
-    dst_port: u16,
-    l4proto: u8,
-    prefix_len: u8,
-) -> types::nat6_timer_key {
+fn ingress_ct6_key(dst: Ipv6Addr, dst_port: u16, l4proto: u8, prefix_len: u8) -> Nat6TimerKey {
     let bytes = dst.octets();
     let mut suffix = [0u8; 8];
     suffix.copy_from_slice(&bytes[8..]);
-    types::nat6_timer_key {
+    Nat6TimerKey {
         client_suffix: suffix,
         client_port: dst_port.to_be(),
         id_byte: bytes[7] & npt_id_mask(prefix_len),
@@ -83,9 +74,9 @@ fn ingress_ct6_key(
     }
 }
 
-fn lookup_ct6<T: MapCore>(map: &T, key: &types::nat6_timer_key) -> Option<types::nat6_timer_value> {
-    let raw = map.lookup(unsafe { plain::as_bytes(key) }, MapFlags::ANY).ok()??;
-    Some(unsafe { std::ptr::read_unaligned(raw.as_ptr().cast::<types::nat6_timer_value>()) })
+fn lookup_ct6<T: MapCore>(map: &T, key: &Nat6TimerKey) -> Option<Nat6TimerValue> {
+    let raw = map.lookup(key.as_bytes(), MapFlags::ANY).ok()??;
+    Nat6TimerValue::read_from_bytes(&raw).ok()
 }
 
 fn build_ipv6_udp(src: Ipv6Addr, dst: Ipv6Addr, src_port: u16, dst_port: u16) -> Vec<u8> {
@@ -105,7 +96,7 @@ fn build_ipv6_udp(src: Ipv6Addr, dst: Ipv6Addr, src_port: u16, dst_port: u16) ->
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::map_setting::nat::add_static_nat6_mapping;
+    use crate::maps::nat::add_static_nat6_mapping;
 
     const LAN_CLIENT_SUFFIX: [u8; 8] = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00];
     const LAN_CLIENT_PREFIX: [u8; 8] = [0xfd, 0x00, 0x12, 0x34, 0x56, 0x78, 0xab, 0xc5];

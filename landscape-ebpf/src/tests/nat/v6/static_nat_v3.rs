@@ -13,8 +13,9 @@ use libbpf_rs::{
 use zerocopy::IntoBytes;
 
 use crate::{
-    map_setting::{add_wan_ip, nat::StaticNatMappingV6Item},
-    stages::nat::tc_nat_skel::{types, TcNatSkelBuilder},
+    maps::{nat::StaticNatMappingV6Item, wan::add_wan_ip},
+    maps::{Nat6TimerKey, Nat6TimerValue},
+    stages::nat::tc_nat_skel::TcNatSkelBuilder,
     tests::TestSkb,
 };
 
@@ -88,33 +89,33 @@ fn add_ct6_entry<T: MapCore>(
     trigger_port: u16,
     need_prefix_replace: bool,
 ) {
-    let key = types::nat6_timer_key {
+    let key = Nat6TimerKey {
         client_suffix,
         client_port: client_port.to_be(),
         id_byte,
         l4_protocol: l4proto,
     };
-    let value = types::nat6_timer_value {
+    let value = Nat6TimerValue {
         server_status: 1,
         client_status: 1,
         is_allow_reuse: 1,
         is_static: 1,
         need_prefix_replace: need_prefix_replace as u8,
-        trigger_addr: types::u_inet6_addr { bytes: trigger_addr.octets() },
+        trigger_addr: trigger_addr.octets(),
         trigger_port: trigger_port.to_be(),
         client_prefix,
         ..Default::default()
     };
 
     timer_map
-        .update(unsafe { plain::as_bytes(&key) }, unsafe { plain::as_bytes(&value) }, MapFlags::ANY)
+        .update(key.as_bytes(), value.as_bytes(), MapFlags::ANY)
         .expect("failed to insert v3 v6 CT entry");
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::map_setting::nat::add_static_nat6_mapping;
+    use crate::maps::nat::add_static_nat6_mapping;
 
     const TC_ACT_SHOT: i32 = 2;
     const LAN_CLIENT_SUFFIX: [u8; 8] = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00];
