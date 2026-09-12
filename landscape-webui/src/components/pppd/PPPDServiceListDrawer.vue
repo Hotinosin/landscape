@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import CreatePPPDConfigModal from "@/components/pppd/CreatePPPDConfigModal.vue";
 import PPPDCard from "@/components/pppd/PPPDCard.vue";
-import { get_attach_iface_pppd_config } from "@/api/service_pppd";
+import {
+  get_attach_iface_pppd_config,
+  update_iface_pppd_config,
+} from "@/api/service_pppd";
 import { PPPDServiceConfig } from "@/lib/pppd";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -15,6 +18,10 @@ const props = defineProps<{
 }>();
 
 const pppd_configs = ref<PPPDServiceConfig[]>([]);
+const switching = ref(false);
+const pppd_enabled = computed(() =>
+  pppd_configs.value.some((config) => config.enable),
+);
 async function inti_drawer() {
   pppd_configs.value = await get_attach_iface_pppd_config(
     props.attach_iface_name,
@@ -28,20 +35,45 @@ async function refreshDrawer() {
 
 const show_create_pppd_modal = ref(false);
 
+async function togglePppd(enabled: boolean) {
+  if (enabled && !pppd_configs.value.length) {
+    show_create_pppd_modal.value = true;
+    return;
+  }
+  switching.value = true;
+  try {
+    await Promise.all(
+      pppd_configs.value.map((config) =>
+        update_iface_pppd_config(
+          new PPPDServiceConfig({ ...config, enable: enabled }),
+          config.iface_name,
+        ),
+      ),
+    );
+    await refreshDrawer();
+  } finally {
+    switching.value = false;
+  }
+}
+
 onMounted(() => {
   if (props.presentation === "embedded") inti_drawer();
 });
 </script>
 <template>
   <section v-if="props.presentation === 'embedded'">
-    <h3 class="pppd-section-title">
-      {{
-        t("pppoe.pppd_drawer.configure_pppd", {
-          iface_name: props.attach_iface_name,
-        })
-      }}
-    </h3>
-    <n-flex vertical>
+    <StandardSettingRow
+      :label="t('network.settings.pppd')"
+      control-width="auto"
+    >
+      <n-switch
+        :value="pppd_enabled"
+        :loading="switching"
+        size="medium"
+        @update:value="togglePppd"
+      />
+    </StandardSettingRow>
+    <n-flex v-if="pppd_enabled" vertical>
       <n-button
         style="align-self: flex-start"
         @click="show_create_pppd_modal = true"

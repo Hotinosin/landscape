@@ -1,7 +1,7 @@
 export default {
   editor: {
     title: "Edit PPPD Service",
-    default_route: "Set as Default Route",
+    default_route: "Default Route",
     ppp_iface_name: "PPP Interface Name",
     iface_required: "Interface name is required",
     iface_invalid_format:
@@ -12,10 +12,9 @@ export default {
       "PPPoE interface name cannot conflict with an existing interface",
     username: "Username",
     password: "Password",
-    ac_name:
-      "Requested AC name (leave empty unless needed, otherwise dialing may fail)",
+    ac_name: "AC Name",
     ac_name_tip:
-      "When set, connection is limited to servers with matching AC name",
+      "Leave empty unless required. When set, only servers with a matching AC name are used and dialing may otherwise fail.",
     plugin: "PPPoE Plugin",
   },
   pppd_card: {

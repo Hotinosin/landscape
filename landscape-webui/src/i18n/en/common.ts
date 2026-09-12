@@ -65,6 +65,7 @@ export default {
   enable: "Enable",
   disable: "Disable",
   cancel: "Cancel",
+  next: "Next",
   save: "Save",
   update: "Update",
   login: "Login",

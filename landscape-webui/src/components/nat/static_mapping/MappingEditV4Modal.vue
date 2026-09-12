@@ -20,7 +20,6 @@ import { useI18n } from "vue-i18n";
 type Props = {
   rule_id?: string;
   initialFocusIndex?: number;
-  showSwitch?: boolean;
 };
 
 const props = defineProps<Props>();
@@ -341,7 +340,7 @@ const mappingPortsRule = {
     v-model:show="show"
     v-model:enabled="rule_enabled"
     :title="t('nat.mapping.edit_title')"
-    :show-switch="showSwitch !== false"
+    :show-switch="false"
     width="var(--app-secondary-modal-width)"
     @after-enter="enter"
   >

@@ -16,7 +16,6 @@ import { useI18n } from "vue-i18n";
 
 type Props = {
   rule_id: string | null;
-  showSwitch?: boolean;
 };
 
 const props = defineProps<Props>();
@@ -169,7 +168,7 @@ async function append_import_rules() {
   <ConfigModal
     v-model:show="show"
     v-model:enabled="rule_enabled"
-    :show-switch="showSwitch !== false"
+    :show-switch="false"
     :title="t('dns.redirect_edit.title')"
     :switch-disabled="!rule"
     width="var(--app-secondary-modal-width)"
@@ -206,7 +205,7 @@ async function append_import_rules() {
             </Notice>
           </template>
 
-          <n-switch v-model:value="rule.block_metadata_queries">
+          <n-switch v-model:value="rule.block_metadata_queries" size="medium">
             <template #checked>
               {{ t("dns.redirect_edit.block_metadata_queries_on") }}
             </template>

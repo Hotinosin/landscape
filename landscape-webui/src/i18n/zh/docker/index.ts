@@ -27,10 +27,6 @@ export default {
     edge_label_not_added: "未添加 edge 标签",
     entrypoint_params_placeholder: "请输入entrypoint params (可选)",
   },
-  docker_container: {
-    no_other_tags: "无其他标签",
-    other_tags: "其他标签",
-  },
   docker_image: {
     history_tasks: "历史任务",
   },

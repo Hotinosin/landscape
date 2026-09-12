@@ -54,7 +54,6 @@ async function updateEnabled(enable: boolean) {
   <FirewallBlacklistEditModal
     v-model:show="show"
     :id="rule.id ?? null"
-    :show-switch="false"
     @refresh="emit('refresh')"
   />
 </template>

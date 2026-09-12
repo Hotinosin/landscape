@@ -59,6 +59,7 @@ export default {
   enable: "启用",
   disable: "禁用",
   cancel: "取消",
+  next: "下一步",
   save: "保存",
   update: "更新",
   login: "登录",

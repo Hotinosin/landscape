@@ -12,7 +12,7 @@ function railStyle({ checked }: { checked: boolean }) {
   <n-switch
     v-model:value="value"
     v-bind="$attrs"
-    size="small"
+    size="medium"
     :rail-style="railStyle"
   />
 </template>

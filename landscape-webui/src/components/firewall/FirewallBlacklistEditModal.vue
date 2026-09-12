@@ -19,7 +19,6 @@ import { useI18n } from "vue-i18n";
 
 interface Props {
   id: string | null;
-  showSwitch?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -134,7 +133,7 @@ async function saveConfig() {
   <ConfigModal
     v-model:show="show"
     v-model:enabled="config_enabled"
-    :show-switch="showSwitch !== false"
+    :show-switch="false"
     :title="t('firewall.blacklist_edit.title')"
     :switch-disabled="!config"
     width="var(--app-secondary-modal-width)"

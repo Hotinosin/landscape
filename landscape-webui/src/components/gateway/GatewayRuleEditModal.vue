@@ -19,7 +19,6 @@ import { useI18n } from "vue-i18n";
 
 type Props = {
   rule_id?: string;
-  showSwitch?: boolean;
 };
 
 const props = defineProps<Props>();
@@ -422,7 +421,7 @@ async function saveRule() {
   <ConfigModal
     v-model:show="show"
     v-model:enabled="rule_enabled"
-    :show-switch="showSwitch !== false"
+    :show-switch="false"
     :title="t('gateway.edit_title')"
     :switch-disabled="!rule || isLegacyRule"
     width="min(900px, calc(100vw - 32px))"
@@ -635,6 +634,7 @@ async function saveRule() {
                           :value="rule.upstream.client_ip_headers !== 'none'"
                           @update:value="updateRuleClientIp"
                           :disabled="isLegacyRule"
+                          size="medium"
                         >
                           <template #checked>
                             {{ t("gateway.client_ip_standard") }}
@@ -721,6 +721,7 @@ async function saveRule() {
                         :value="!!rule.upstream.health_check"
                         @update:value="updateRuleHealthCheck"
                         :disabled="isLegacyRule"
+                        size="medium"
                       >
                         <template #checked> {{ t("common.enable") }} </template>
                         <template #unchecked>
@@ -988,6 +989,7 @@ async function saveRule() {
             <n-switch
               :value="pathGroupDraft.upstream.client_ip_headers !== 'none'"
               @update:value="updateDraftClientIp"
+              size="medium"
             >
               <template #checked>
                 {{ t("gateway.client_ip_standard") }}
@@ -1058,6 +1060,7 @@ async function saveRule() {
             <n-switch
               :value="!!pathGroupDraft.upstream.health_check"
               @update:value="updateDraftHealthCheck"
+              size="medium"
             >
               <template #checked> {{ t("common.enable") }} </template>
               <template #unchecked> {{ t("common.disable") }} </template>

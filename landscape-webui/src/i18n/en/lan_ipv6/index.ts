@@ -292,6 +292,8 @@ export default {
   mac_hint: "MAC address used for request",
   mac_hint_desc: "PPP interfaces use a generated virtual MAC address",
   expected_pd_len: "Expected Upstream PD Prefix Length",
+  expected_pd_len_desc:
+    "Enter the prefix length expected from your ISP (56–64). A smaller number provides more /64 subnets: /56 provides 256, /60 provides 16, and /64 provides 1. Match the value your ISP delegates; this setting does not request or force that length.",
   expected_pd_len_invalid:
     "Expected upstream PD prefix length must be an integer from 56 to 64",
 

@@ -44,7 +44,7 @@ export default {
       "端口 {port} 与 {iface} 上的动态 {protocol} 端口范围 {start}-{end} 冲突",
   },
   service_edit: {
-    title: "网卡NAT配置",
+    title: "NAT",
     tcp_port_range: "TCP 端口范围",
     udp_port_range: "UDP 端口范围",
     icmp_id_range: "ICMP ID 范围",

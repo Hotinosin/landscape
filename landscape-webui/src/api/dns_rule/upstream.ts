@@ -13,8 +13,11 @@ export type DnsUpstreamH3TestResult = {
   attempts: Array<{
     latency_ms: number;
     answers: string[];
+    connection_reused?: boolean | null;
+    error_kind?: "timeout" | "network" | "tls" | "resolve" | null;
     error?: string | null;
   }>;
+  connection_count: number;
   reuse_average_ms?: number | null;
 };
 

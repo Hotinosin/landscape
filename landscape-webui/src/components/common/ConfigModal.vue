@@ -13,12 +13,14 @@ const modalDepth = inject("app-modal-depth", 1);
 const props = withDefaults(
   defineProps<{
     title: string;
+    titleTip?: string;
     width?: string | number;
     maxHeight?: string;
     closable?: boolean;
     switchDisabled?: boolean;
     showSwitch?: boolean;
     embedded?: boolean;
+    fixedTop?: boolean;
   }>(),
   {
     width: "var(--app-secondary-modal-width)",
@@ -27,6 +29,7 @@ const props = withDefaults(
     switchDisabled: false,
     showSwitch: true,
     embedded: false,
+    fixedTop: false,
   },
 );
 
@@ -43,6 +46,14 @@ const cardStyle = computed<CSSProperties>(() => {
 
   if (!props.embedded && props.maxHeight) {
     style.maxHeight = props.maxHeight;
+  }
+
+  if (!props.embedded && props.fixedTop && modalDepth === 1) {
+    style.marginTop = "var(--app-modal-top-offset)";
+    style.marginBottom = "auto";
+  } else if (!props.embedded && modalDepth > 1) {
+    style.marginTop = "auto";
+    style.marginBottom = "auto";
   }
 
   return style;
@@ -79,11 +90,18 @@ onMounted(() => {
     @change.capture="emit('dirty')"
     @input.capture="emit('dirty')"
   >
-    <StandardSettingRow v-if="showSwitch" :label="title" control-width="auto">
+    <StandardSettingRow v-if="showSwitch" control-width="auto">
+      <template #label>
+        <Notice v-if="titleTip">
+          {{ title }}
+          <template #msg>{{ titleTip }}</template>
+        </Notice>
+        <template v-else>{{ title }}</template>
+      </template>
       <n-switch
         v-model:value="enabled"
         :disabled="switchDisabled"
-        size="small"
+        size="medium"
       />
     </StandardSettingRow>
     <slot v-if="$slots.default" :enabled="enabled" :disabled="!enabled" />
@@ -98,6 +116,7 @@ onMounted(() => {
     @after-enter="emit('after-enter')"
   >
     <n-card
+      class="standard-config-modal"
       :style="cardStyle"
       :bordered="false"
       :closable="closable"
@@ -109,12 +128,16 @@ onMounted(() => {
     >
       <template #header>
         <div :style="headerStyle">
-          <span>{{ title }}</span>
+          <Notice v-if="titleTip">
+            {{ title }}
+            <template #msg>{{ titleTip }}</template>
+          </Notice>
+          <span v-else>{{ title }}</span>
           <n-switch
             v-if="showSwitch"
             v-model:value="enabled"
             :disabled="switchDisabled"
-            size="small"
+            size="medium"
           />
         </div>
       </template>

@@ -1,11 +1,11 @@
 export default {
-  title: "Interface IPv4 Configuration Mode",
+  title: "IPv4 Protocol",
   mode_none: "None",
   mode_static: "Static IP",
   mode_pppoe_native: "PPPoE (Native)",
   mode_dhcp_client: "DHCP Client",
   static_ip: "Static IP",
-  set_default_route: "Set default route",
+  set_default_route: "Default route",
   yes: "Yes",
   no: "No",
   route_ip: "Route IP",
@@ -18,7 +18,7 @@ export default {
     "When set, connection is limited to servers with matching AC name",
   dhcp_warn:
     "If firewall is enabled on this interface, configure rules to allow port 68",
-  dhcp_hostname: "Hostname used in DHCP request",
+  dhcp_hostname: "DHCP hostname",
   update: "Update",
   change_zone_title: "Change Interface Zone",
   change_zone_warning_1:

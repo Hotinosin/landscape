@@ -23,7 +23,7 @@ export class PPPDServiceConfig {
       `ppp-${obj.attach_iface_name}-${date_str}`.substring(0, 15);
     this.enable = obj?.enable ?? true;
     this.pppd_config = {
-      default_route: obj.pppd_config?.default_route ?? true,
+      default_route: obj.pppd_config?.default_route ?? false,
       peer_id: obj.pppd_config?.peer_id ?? "",
       password: obj.pppd_config?.password ?? "",
       ac: obj.pppd_config?.ac ?? null,

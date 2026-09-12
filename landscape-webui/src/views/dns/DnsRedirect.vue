@@ -5,7 +5,6 @@ import { computed, h, ref, onMounted } from "vue";
 import type { DataTableColumns } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { Add } from "@vicons/carbon";
-import { useFrontEndStore } from "@/stores/front_end_config";
 import DnsRedirectListRow from "@/components/dns/redirect/DnsRedirectListRow.vue";
 import { usePageRequest } from "@/composables/usePageRequest";
 
@@ -13,13 +12,11 @@ const {
   data: redirect_rules,
   error,
   loading,
-  state,
   refresh: refresh_rules,
 } = usePageRequest(get_dns_redirects, {
   initialData: [] as DNSRedirectRule[],
 });
 const { t } = useI18n();
-const frontEndStore = useFrontEndStore();
 const columns = computed<DataTableColumns<DNSRedirectRule>>(() =>
   [
     [`${t("common.status")} / ${t("common.remark")}`, "status"],
@@ -61,7 +58,6 @@ const show_edit_modal = ref(false);
       </n-button>
     </n-flex>
     <StandardDataTable
-      v-if="frontEndStore.display_style === 'list'"
       :columns="columns"
       :data="redirect_rules"
       :loading="loading"
@@ -69,15 +65,6 @@ const show_edit_modal = ref(false);
       :row-key="rowKey"
       @retry="refresh_rules"
     />
-    <StandardPageState v-else :state="state" @retry="refresh_rules">
-      <n-grid x-gap="12" y-gap="10" cols="1 600:2 1200:3 1600:3">
-        <n-grid-item v-for="rule in redirect_rules" :key="rule.id">
-          <DnsRedirectCard @refresh="refresh_rules()" :rule="rule">
-          </DnsRedirectCard>
-        </n-grid-item>
-      </n-grid>
-    </StandardPageState>
-
     <DnsRedirectEditModal
       :rule_id="null"
       @refresh="refresh_rules"

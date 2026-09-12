@@ -38,7 +38,7 @@ async function handleSaveLanHostname() {
     </template>
     <n-form label-placement="left" label-width="160">
       <n-form-item :label="t('config.lan_hostname_enable')">
-        <n-switch v-model:value="lanHostnameStore.enabled" />
+        <n-switch v-model:value="lanHostnameStore.enabled" size="medium" />
       </n-form-item>
       <n-form-item :label="t('config.lan_suffix')">
         <n-input

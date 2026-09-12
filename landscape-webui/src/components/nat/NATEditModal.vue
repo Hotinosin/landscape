@@ -47,7 +47,34 @@ async function save_config() {
   show_model.value = false;
 }
 
-defineExpose({ save: save_config });
+function getSummary() {
+  const range = (value: { start: number; end: number }) =>
+    `${value.start}–${value.end}`;
+  return [
+    {
+      label: t("nat.service_edit.title"),
+      value: t(
+        nat_service_config.value.enable
+          ? "network.settings.enabled"
+          : "network.settings.disabled",
+      ),
+    },
+    {
+      label: t("nat.service_edit.tcp_port_range"),
+      value: range(nat_service_config.value.nat_config.tcp_range),
+    },
+    {
+      label: t("nat.service_edit.udp_port_range"),
+      value: range(nat_service_config.value.nat_config.udp_range),
+    },
+    {
+      label: t("nat.service_edit.icmp_id_range"),
+      value: range(nat_service_config.value.nat_config.icmp_in_range),
+    },
+  ];
+}
+
+defineExpose({ save: save_config, getSummary });
 </script>
 
 <template>

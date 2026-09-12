@@ -81,7 +81,6 @@ async function updateEnabled(enable: boolean) {
     :flow_id="rule.flow_id"
     :id="rule.id ?? null"
     :rule="rule"
-    :show-switch="false"
     @refresh="emit('refresh')"
   />
 </template>

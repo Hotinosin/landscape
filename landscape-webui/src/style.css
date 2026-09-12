@@ -2,7 +2,10 @@
   --app-secondary-modal-width: min(720px, calc(100vw - 32px));
   --app-tertiary-modal-width: min(680px, calc(100vw - 48px));
   --app-compact-modal-width: min(520px, calc(100vw - 32px));
-  --app-secondary-modal-max-height: calc(100vh - 48px);
+  --app-modal-top-offset: clamp(120px, 24vh, 220px);
+  --app-secondary-modal-max-height: calc(
+    100vh - var(--app-modal-top-offset) - 24px
+  );
   --app-setting-control-width: 320px;
   --app-setting-control-width-wide: 440px;
   --app-range-input-width: 72px;
@@ -16,6 +19,42 @@
   width: 100%;
   height: 100%;
   background: var(--app-canvas-color);
+}
+
+/* Configuration dialogs keep their controls anchored while content changes. */
+.standard-config-modal {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+.standard-config-modal > .n-card-header,
+.standard-config-modal > .n-card__footer {
+  flex: none;
+}
+
+.standard-config-modal > .n-card__content {
+  min-height: 0;
+  overflow: auto;
+}
+
+.network-settings__save-summary dl {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(100px, auto);
+  gap: 8px 16px;
+  align-items: baseline;
+  margin: 12px 0 0;
+}
+
+.network-settings__save-summary dt {
+  color: var(--app-text-muted-color);
+}
+
+.network-settings__save-summary dd {
+  margin: 0;
+  color: var(--app-brand-active-color);
+  font-weight: 500;
+  overflow-wrap: anywhere;
 }
 
 body {
@@ -43,7 +82,21 @@ body {
 }
 
 .n-alert {
+  --n-padding: 6px 10px !important;
+  --n-icon-margin-left: 8px !important;
+  --n-icon-margin-right: 8px !important;
   border-radius: var(--app-radius-control);
+}
+
+.n-alert .n-alert__icon {
+  top: 50%;
+  margin: 0 0 0 8px;
+  transform: translateY(-50%);
+}
+
+.n-alert .n-alert-body__content {
+  min-height: 22px;
+  line-height: 22px;
 }
 
 .n-button--error-type.n-button--secondary {
@@ -66,6 +119,11 @@ body {
 
 .n-dynamic-input-item__action .n-button {
   --n-border-radius: var(--app-radius-control) !important;
+}
+
+.standard-operation-button {
+  min-width: 56px;
+  box-sizing: border-box;
 }
 
 .semantic-tag--entry {
@@ -236,6 +294,7 @@ body {
 
 .standard-setting-row__control--auto {
   width: auto;
+  padding-right: 4px;
 }
 
 .standard-setting-row__control--wide {

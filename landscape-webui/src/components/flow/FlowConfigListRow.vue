@@ -167,7 +167,6 @@ async function updateEnabled(value: boolean) {
     v-if="cell === 'actions'"
     v-model:show="showEdit"
     :rule_id="config.id"
-    :show-switch="false"
     @refresh="emit('refresh')"
   />
 </template>

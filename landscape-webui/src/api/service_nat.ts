@@ -21,7 +21,7 @@ export async function get_all_nat_status(): Promise<
 export async function get_iface_nat_config(
   iface_name: string,
 ): Promise<NatServiceConfig> {
-  const data = await getIfaceNatConfig(iface_name);
+  const data = await getIfaceNatConfig(iface_name, { silent: true });
   return new NatServiceConfig(data as any);
 }
 

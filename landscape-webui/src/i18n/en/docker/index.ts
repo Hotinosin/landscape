@@ -27,10 +27,6 @@ export default {
     edge_label_not_added: "Edge label not added",
     entrypoint_params_placeholder: "Enter entrypoint params (optional)",
   },
-  docker_container: {
-    no_other_tags: "No other tags",
-    other_tags: "Other tags",
-  },
   docker_image: {
     history_tasks: "History Tasks",
   },

@@ -5,7 +5,6 @@ import { computed, h, ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import type { DataTableColumns } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import { useFrontEndStore } from "@/stores/front_end_config";
 import DnsUpstreamListRow from "@/components/dns/upstream/DnsUpstreamListRow.vue";
 import { Add } from "@vicons/carbon";
 import { usePageRequest } from "@/composables/usePageRequest";
@@ -14,13 +13,11 @@ const {
   data: redirect_rules,
   error,
   loading,
-  state,
   refresh: refresh_rules,
 } = usePageRequest(get_dns_upstreams, {
   initialData: [] as DnsUpstreamConfig[],
 });
 const { t } = useI18n();
-const frontEndStore = useFrontEndStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -88,7 +85,6 @@ function modalVisibleChanged(show: boolean) {
       </n-button>
     </n-flex>
     <StandardDataTable
-      v-if="frontEndStore.display_style === 'list'"
       :columns="columns"
       :data="redirect_rules"
       :loading="loading"
@@ -96,15 +92,6 @@ function modalVisibleChanged(show: boolean) {
       :row-key="rowKey"
       @retry="refresh_rules"
     />
-    <StandardPageState v-else :state="state" @retry="refresh_rules">
-      <n-grid x-gap="12" y-gap="10" cols="1 600:2 1200:3 1600:3">
-        <n-grid-item v-for="rule in redirect_rules" :key="rule.id">
-          <DnsUpstreamCard @refresh="refresh_rules()" :rule="rule">
-          </DnsUpstreamCard>
-        </n-grid-item>
-      </n-grid>
-    </StandardPageState>
-
     <UpstreamEditModal
       :rule_id="edit_rule_id"
       @refresh="refresh_rules"

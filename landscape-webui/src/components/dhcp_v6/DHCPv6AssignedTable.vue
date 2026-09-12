@@ -12,6 +12,7 @@ import { usePreferenceStore } from "@/stores/preference";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import { useI18n } from "vue-i18n";
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
+import MacAddress from "@/components/common/MacAddress.vue";
 
 const { t } = useI18n();
 const prefStore = usePreferenceStore();
@@ -77,8 +78,7 @@ const addressColumns = computed<DataTableColumns<AddressRow>>(() => [
   {
     title: t("dhcp_v6.mac"),
     key: "mac",
-    render: (item) =>
-      item.mac_str ? frontEndStore.MASK_INFO(item.mac_str) : "-",
+    render: (item) => h(MacAddress, { value: item.mac_str, emptyText: "-" }),
   },
   {
     title: t("dhcp_v6.ipv6_address"),

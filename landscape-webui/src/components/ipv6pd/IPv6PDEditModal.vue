@@ -12,7 +12,6 @@ import {
 import { useIPv6PDStore } from "@/stores/status_ipv6pd";
 import { generateValidMAC, formatMacAddress } from "@/lib/util";
 import { IfaceZoneType } from "@landscape-router/types/api/schemas";
-import { Information } from "@vicons/carbon";
 
 let ipv6PDStore = useIPv6PDStore();
 const message = useMessage();
@@ -43,7 +42,7 @@ async function on_modal_enter() {
     // iface_service_type.value = config.t;
     service_config.value = config;
   } catch (e) {
-    new IPV6PDServiceConfig({
+    service_config.value = new IPV6PDServiceConfig({
       iface_name: iface_info.iface_name,
       config: new IPV6PDConfig({
         mac: iface_info.mac ?? generateValidMAC(),
@@ -86,19 +85,10 @@ defineExpose({ save: save_config });
     <n-form :model="service_config">
       <StandardSettingRow>
         <template #label>
-          <n-flex align="center" :wrap="false" size="small">
-            <span>{{ t("lan_ipv6.mac_hint") }}</span>
-            <n-popover trigger="hover">
-              <template #trigger>
-                <n-button text>
-                  <template #icon>
-                    <n-icon><Information /></n-icon>
-                  </template>
-                </n-button>
-              </template>
-              {{ t("lan_ipv6.mac_hint_desc") }}
-            </n-popover>
-          </n-flex>
+          <Notice>
+            {{ t("lan_ipv6.mac_hint") }}
+            <template #msg>{{ t("lan_ipv6.mac_hint_desc") }}</template>
+          </Notice>
         </template>
         <n-input
           :value="service_config.config.mac"
@@ -107,7 +97,13 @@ defineExpose({ save: save_config });
           "
         ></n-input>
       </StandardSettingRow>
-      <StandardSettingRow :label="t('lan_ipv6.expected_pd_len')">
+      <StandardSettingRow>
+        <template #label>
+          <Notice>
+            {{ t("lan_ipv6.expected_pd_len") }}
+            <template #msg>{{ t("lan_ipv6.expected_pd_len_desc") }}</template>
+          </Notice>
+        </template>
         <n-input-number
           v-model:value="service_config.config.expected_pd_len"
           style="flex: 1"

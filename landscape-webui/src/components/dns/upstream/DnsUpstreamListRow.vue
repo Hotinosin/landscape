@@ -39,9 +39,17 @@ async function remove() {
     front.MASK_INFO(rule.port?.toString())
   }}</template>
   <template v-else-if="cell === 'domain'">{{ domain }}</template>
-  <template v-else-if="cell === 'mode'">{{
-    upstream_mode_exhibit_name(rule.mode.t)
-  }}</template>
+  <template v-else-if="cell === 'mode'"
+    >{{ upstream_mode_exhibit_name(rule.mode.t)
+    }}<n-tag
+      v-if="rule.mode.t === DnsUpstreamModeTsEnum.Https && rule.mode.http3"
+      size="small"
+      type="primary"
+      :bordered="false"
+      style="margin-left: 6px"
+      >H3</n-tag
+    ></template
+  >
   <template v-else-if="cell === 'remark'">
     <n-text strong>{{
       rule.remark || t("dns.upstream_card.no_remark")

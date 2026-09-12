@@ -34,7 +34,12 @@ function confirmDelete() {
 </script>
 
 <template>
-  <n-button size="small" type="error" @click="confirmDelete">
+  <n-button
+    class="standard-operation-button"
+    size="small"
+    type="error"
+    @click="confirmDelete"
+  >
     {{ label ?? t("common.delete") }}
   </n-button>
 </template>

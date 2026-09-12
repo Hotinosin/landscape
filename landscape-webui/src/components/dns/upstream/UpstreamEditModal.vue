@@ -67,33 +67,34 @@ const http3Enabled = computed({
     }
   },
 });
-const h3TestSucceeded = computed(() =>
-  h3TestResult.value?.attempts.some((attempt) => !attempt.error),
+const h3SuccessCount = computed(
+  () =>
+    h3TestResult.value?.attempts.filter((attempt) => !attempt.error).length ??
+    0,
+);
+const h3TestSucceeded = computed(
+  () =>
+    Boolean(h3TestResult.value?.attempts.length) &&
+    h3SuccessCount.value === h3TestResult.value?.attempts.length,
+);
+const h3TestPartial = computed(
+  () => h3SuccessCount.value > 0 && !h3TestSucceeded.value,
 );
 const h3TestMessage = computed(() => {
   if (h3TestSucceeded.value) return t("dns.upstream_edit.h3_test_success");
+  if (h3TestPartial.value) return t("dns.upstream_edit.h3_test_partial");
   if (h3TestError.value) return t("dns.upstream_edit.h3_test_request_failed");
 
-  const errors = h3TestResult.value?.attempts
-    .map((attempt) => attempt.error?.toLowerCase() || "")
+  const errorKinds = h3TestResult.value?.attempts
+    .map((attempt) => attempt.error_kind)
     .filter(Boolean);
-  if (errors?.some((error) => error.includes("timed out"))) {
+  if (errorKinds?.includes("timeout")) {
     return t("dns.upstream_edit.h3_test_timeout");
   }
-  if (
-    errors?.some(
-      (error) =>
-        error.includes("network is unreachable") ||
-        error.includes("no route to host"),
-    )
-  ) {
+  if (errorKinds?.includes("network")) {
     return t("dns.upstream_edit.h3_test_network_unreachable");
   }
-  if (
-    errors?.some(
-      (error) => error.includes("tls") || error.includes("certificate"),
-    )
-  ) {
+  if (errorKinds?.includes("tls")) {
     return t("dns.upstream_edit.h3_test_tls_failed");
   }
   return t("dns.upstream_edit.h3_test_failed");
@@ -111,6 +112,19 @@ const h3AttemptColumns = computed<DataTableColumns<H3Attempt>>(() => [
     key: "latency",
     width: 110,
     render: (attempt) => `${attempt.latency_ms.toFixed(2)} ms`,
+  },
+  {
+    title: t("dns.upstream_edit.connection"),
+    key: "connection",
+    width: 110,
+    render: (attempt, index) =>
+      attempt.error
+        ? "-"
+        : index === 0
+          ? t("dns.upstream_edit.connection_new")
+          : attempt.connection_reused
+            ? t("dns.upstream_edit.connection_reused")
+            : t("dns.upstream_edit.connection_reconnected"),
   },
   {
     title: t("dns.upstream_edit.result"),
@@ -306,7 +320,7 @@ async function import_rules() {
             </Notice>
           </template>
 
-          <n-switch v-model:value="rule.enable_ip_validation" />
+          <n-switch v-model:value="rule.enable_ip_validation" size="medium" />
         </n-form-item-gi>
 
         <n-form-item-gi :span="12" :label="t('dns.upstream_edit.preset_fill')">
@@ -321,7 +335,7 @@ async function import_rules() {
           <n-radio-group
             v-model:value="rule.mode.t"
             name="dns_server_upstream_mode"
-            size="small"
+            size="medium"
           >
             <n-radio-button
               v-for="mode in UPSTREAM_OPTIONS"
@@ -342,8 +356,8 @@ async function import_rules() {
 
         <n-form-item-gi :span="3" :label="t('dns.upstream_edit.port')">
           <n-input-number
-            style="width: 100%"
-            size="small"
+            class="dns-upstream-port"
+            size="medium"
             :min="1"
             :max="65535"
             :placeholder="t('dns.upstream_edit.port_placeholder')"
@@ -353,8 +367,8 @@ async function import_rules() {
 
         <n-form-item-gi v-if="supportsHttp3" :span="3" label="HTTP/3">
           <n-flex align="center" :wrap="false" :size="8">
-            <n-switch v-model:value="http3Enabled" />
-            <n-button size="small" :loading="h3TestLoading" @click="testH3">
+            <n-switch v-model:value="http3Enabled" size="medium" />
+            <n-button size="medium" :loading="h3TestLoading" @click="testH3">
               {{ t("dns.upstream_edit.test_h3") }}
             </n-button>
           </n-flex>
@@ -367,7 +381,7 @@ async function import_rules() {
         >
           <n-input
             style="width: 100%"
-            size="small"
+            size="medium"
             :placeholder="t('dns.upstream_edit.domain_placeholder')"
             v-model:value="rule.mode.domain"
           >
@@ -436,7 +450,12 @@ async function import_rules() {
   >
     <n-spin v-if="h3TestLoading" style="display: block; padding: 32px" />
     <template v-else>
-      <n-alert :type="h3TestSucceeded ? 'success' : 'error'" :bordered="false">
+      <n-alert
+        :type="
+          h3TestSucceeded ? 'success' : h3TestPartial ? 'warning' : 'error'
+        "
+        :bordered="false"
+      >
         {{ h3TestMessage }}
       </n-alert>
       <n-text
@@ -462,6 +481,9 @@ async function import_rules() {
               : `${h3TestResult.reuse_average_ms.toFixed(2)} ms`
           }}
         </n-descriptions-item>
+        <n-descriptions-item :label="t('dns.upstream_edit.connection_count')">
+          {{ h3TestResult.connection_count }}
+        </n-descriptions-item>
       </n-descriptions>
       <StandardDataTable
         v-if="h3TestResult"
@@ -481,5 +503,9 @@ async function import_rules() {
 
 .h3-attempt-result {
   overflow-wrap: anywhere;
+}
+
+.dns-upstream-port {
+  width: 120px;
 }
 </style>

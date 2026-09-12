@@ -19,14 +19,12 @@ import type { DataTableColumns } from "naive-ui";
 import { computed, h, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { usePageRequest } from "@/composables/usePageRequest";
-import { useFrontEndStore } from "@/stores/front_end_config";
 import GatewayRuleListRow from "@/components/gateway/GatewayRuleListRow.vue";
 
 const {
   data: rules,
   error: rulesError,
   loading: rulesLoading,
-  state: rulesState,
   refresh: refresh_rules,
 } = usePageRequest(get_gateway_rules, {
   initialData: [] as HttpUpstreamRuleConfig[],
@@ -43,7 +41,6 @@ const show_settings = ref(false);
 let status_poll_timer: ReturnType<typeof setInterval> | null = null;
 const { t } = useI18n();
 const message = useMessage();
-const frontEndStore = useFrontEndStore();
 
 const columns = computed<DataTableColumns<HttpUpstreamRuleConfig>>(() =>
   [
@@ -62,7 +59,13 @@ const columns = computed<DataTableColumns<HttpUpstreamRuleConfig>>(() =>
       h(GatewayRuleListRow, {
         rule,
         cell: cell as
-          "name" | "enable" | "type" | "domains" | "upstream" | "paths" | "actions",
+          | "name"
+          | "enable"
+          | "type"
+          | "domains"
+          | "upstream"
+          | "paths"
+          | "actions",
         ...(cell === "actions" ? { onRefresh: refreshAll } : {}),
       }),
   })),
@@ -241,7 +244,7 @@ watch(
             <n-text strong>{{ t("gateway.runtime_title") }}</n-text>
             <n-form label-placement="top">
               <n-form-item :label="t('gateway.enabled')">
-                <n-switch v-model:value="gatewayEnabled" />
+                <n-switch v-model:value="gatewayEnabled" size="medium" />
                 <template #feedback>
                   {{ t("gateway.enabled_desc") }}
                 </template>
@@ -301,7 +304,6 @@ watch(
       </n-flex>
     </n-flex>
     <StandardDataTable
-      v-if="frontEndStore.display_style === 'list'"
       :columns="columns"
       :data="rules"
       :loading="rulesLoading"
@@ -310,19 +312,6 @@ watch(
       :row-key="rowKey"
       @retry="refreshAll"
     />
-    <StandardPageState
-      v-else
-      :state="rulesState"
-      :empty-text="t('gateway.no_rules')"
-      @retry="refreshAll"
-    >
-      <n-grid x-gap="12" y-gap="10" cols="1 600:2 1200:3 1600:3">
-        <n-grid-item v-for="rule in rules" :key="rule.id">
-          <GatewayRuleCard @refresh="refreshAll" :rule="rule" />
-        </n-grid-item>
-      </n-grid>
-    </StandardPageState>
-
     <GatewayRuleEditModal
       @refresh="refreshAll"
       v-model:show="show_edit_modal"

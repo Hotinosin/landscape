@@ -21,7 +21,7 @@ export async function get_all_route_wan_status(): Promise<
 export async function get_route_wan_config(
   id: string,
 ): Promise<RouteWanServiceConfig> {
-  return await getRouteWanConfig(id);
+  return await getRouteWanConfig(id, { silent: true });
 }
 
 export async function update_route_wans_config(

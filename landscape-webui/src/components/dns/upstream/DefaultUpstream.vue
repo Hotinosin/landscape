@@ -174,10 +174,10 @@ function replace_default(config: DefaultDnsConfig) {
   };
 }
 
-const btn_size = "small";
+const btn_size = "medium";
 </script>
 <template>
-  <n-flex justify="space-between" :size="[12, 8]">
+  <div class="default-upstream">
     <n-flex vertical :size="8">
       <n-input-group>
         <n-input-group-label :size="btn_size" class="label-len">
@@ -293,9 +293,16 @@ const btn_size = "small";
         >
       </n-input-group>
     </n-flex>
-  </n-flex>
+  </div>
 </template>
 <style scoped>
+.default-upstream {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  width: 100%;
+}
+
 .label-len {
   width: 90px;
   text-align: center;

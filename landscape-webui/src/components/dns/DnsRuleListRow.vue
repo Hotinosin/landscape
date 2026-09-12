@@ -71,7 +71,6 @@ async function updateEnabled(enable: boolean) {
     v-model:show="showEdit"
     :flow_id="rule.flow_id"
     :rule_id="rule.id"
-    :show-switch="false"
     @refresh="emit('refresh')"
   />
 </template>

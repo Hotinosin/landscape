@@ -474,16 +474,24 @@ async function handleDeleteBridge() {
             </n-button>
           </div>
           <n-flex size="small" wrap>
-            <n-tag size="small" :type="statusTagType(node.dev_status.t)" round>
-              {{ node.dev_status.t }}
+            <n-tag
+              size="small"
+              :type="statusTagType(node.dev_status.t)"
+              :bordered="false"
+            >
+              {{ node.dev_status.t.toUpperCase() }}
             </n-tag>
-            <n-tag size="small" :type="zoneTagType(node.zone_type)" round>
+            <n-tag
+              size="small"
+              :type="zoneTagType(node.zone_type)"
+              :bordered="false"
+            >
               {{ node.zone_type }}
             </n-tag>
-            <n-tag size="small" tertiary>
+            <n-tag size="small" :bordered="false">
               {{ node.dev_kind || node.dev_type }}
             </n-tag>
-            <n-tag v-if="node.wifi_info" size="small" tertiary>
+            <n-tag v-if="node.wifi_info" size="small" :bordered="false">
               {{ node.wifi_info.wifi_type.t }}
             </n-tag>
           </n-flex>
@@ -522,10 +530,10 @@ async function handleDeleteBridge() {
                   {{ node.zone_type }}
                 </n-descriptions-item>
                 <n-descriptions-item :label="t('topology.node.mac_addr')">
-                  {{ maskValue(node.mac) }}
+                  <MacAddress :value="node.mac" />
                 </n-descriptions-item>
                 <n-descriptions-item :label="t('topology.node.perm_mac')">
-                  {{ maskValue(node.perm_mac) }}
+                  <MacAddress :value="node.perm_mac" />
                 </n-descriptions-item>
                 <n-descriptions-item :label="t('topology.panel.wifi_type')">
                   {{
@@ -572,7 +580,7 @@ async function handleDeleteBridge() {
                         v-for="child in child_devices"
                         :key="child.index"
                         size="small"
-                        tertiary
+                        :bordered="false"
                       >
                         {{ child.name }}
                       </n-tag>

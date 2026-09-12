@@ -9,6 +9,7 @@ import type { IPv6NAInfo } from "@landscape-router/types/api/schemas";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { usePreferenceStore } from "@/stores/preference";
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
+import MacAddress from "@/components/common/MacAddress.vue";
 const prefStore = usePreferenceStore();
 const { t } = useI18n();
 
@@ -67,7 +68,7 @@ const columns = computed<DataTableColumns<TableItem>>(() => [
   {
     title: "Mac",
     key: "mac",
-    render: (row) => frontEndStore.MASK_INFO(row.mac),
+    render: (row) => h(MacAddress, { value: row.mac }),
   },
   {
     title: t("common.time"),

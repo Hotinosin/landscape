@@ -74,10 +74,7 @@ fn domain_match_type_tag(match_type: &DomainMatchType) -> u8 {
     }
 }
 
-fn geo_value_matches_lookup(
-    value: &GeoSiteFileConfig,
-    normalized: &str,
-) -> bool {
+fn geo_value_matches_lookup(value: &GeoSiteFileConfig, normalized: &str) -> bool {
     domain_rule_matches_normalized(&value.match_type, &value.value, normalized)
 }
 

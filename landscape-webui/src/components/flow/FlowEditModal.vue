@@ -22,7 +22,6 @@ import WanIpRulePanel from "@/components/flow/wan/WanIpRulePanel.vue";
 interface Props {
   rule_id?: string;
   default_flow?: boolean;
-  showSwitch?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -157,9 +156,10 @@ function normalizeFlowTargets(
   <ConfigModal
     v-model:show="show"
     v-model:enabled="rule_enabled"
+    fixed-top
     :title="t('flow.edit.title')"
     :switch-disabled="!rule"
-    :show-switch="showSwitch !== false && !default_flow"
+    :show-switch="false"
     :width="modalWidth"
     @after-enter="enter"
     @after-leave="exit"

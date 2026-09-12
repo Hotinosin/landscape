@@ -46,7 +46,7 @@ const service_config = ref<DHCPv4ServiceConfig>(
 
 async function on_modal_enter() {
   try {
-    let config = await get_iface_dhcp_v4_config(iface_info.iface_name);
+    let config = await get_iface_dhcp_v4_config(iface_info.iface_name, true);
     console.log(config);
     // iface_service_type.value = config.t;
     service_config.value = config;
@@ -83,7 +83,30 @@ async function save_config() {
   await action();
 }
 
-defineExpose({ save: save_config });
+function getSummary() {
+  const config = service_config.value.config;
+  return [
+    {
+      label: t("dhcp_v4.service.title"),
+      value: t(
+        service_config.value.enable
+          ? "network.settings.enabled"
+          : "network.settings.disabled",
+      ),
+    },
+    {
+      label: t("dhcp_v4.service.server_ip"),
+      value: `${config.server_ip_addr}/${config.network_mask}`,
+    },
+    { label: t("dhcp_v4.service.range_start"), value: config.ip_range_start },
+    {
+      label: t("dhcp_v4.service.range_end"),
+      value: config.ip_range_end ?? "—",
+    },
+  ];
+}
+
+defineExpose({ save: save_config, getSummary });
 
 async function persist_config() {
   commit_loading.value = true;

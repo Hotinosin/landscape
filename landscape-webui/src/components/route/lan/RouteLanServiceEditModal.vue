@@ -59,7 +59,29 @@ async function save_config() {
   }
 }
 
-defineExpose({ save: save_config });
+function getSummary() {
+  const route = service_config.value?.static_routes?.[0];
+  return [
+    {
+      label: t("network.route_lan.title"),
+      value: t(
+        service_enabled.value
+          ? "network.settings.enabled"
+          : "network.settings.disabled",
+      ),
+    },
+    ...(route
+      ? [
+          {
+            label: t("network.route_lan.subnet_range"),
+            value: `${route.subnet}/${route.sub_prefix} → ${route.next_hop}`,
+          },
+        ]
+      : []),
+  ];
+}
+
+defineExpose({ save: save_config, getSummary });
 
 function onCreate(): StaticRouteConfig {
   return {

@@ -25,7 +25,11 @@ pub fn get_dns_upstream_config_paths() -> OpenApiRouter<LandscapeApp> {
     path = "/upstreams/test-h3",
     tag = "DNS Upstreams",
     request_body = DnsUpstreamConfig,
-    responses((status = 200, body = CommonApiResp<DnsUpstreamH3TestResult>))
+    responses(
+        (status = 200, body = CommonApiResp<DnsUpstreamH3TestResult>),
+        (status = 400, description = "Invalid DoH upstream configuration"),
+        (status = 500, description = "H3 resolver could not be created")
+    )
 )]
 async fn test_dns_upstream_h3(
     JsonBody(config): JsonBody<DnsUpstreamConfig>,

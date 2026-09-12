@@ -105,7 +105,6 @@ async function updateEnabled(enable: boolean) {
     <DnsRedirectEditModal
       v-model:show="showEditModal"
       :rule_id="rule.id"
-      :show-switch="false"
       @refresh="emit('refresh')"
     />
   </template>

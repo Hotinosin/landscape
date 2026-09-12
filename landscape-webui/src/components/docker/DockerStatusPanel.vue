@@ -15,10 +15,6 @@ const dockerStatus = useDockerStore();
 const themeVars = ref(useThemeVars());
 const show_image_drawer = ref(false);
 const { t } = useI18n();
-withDefaults(defineProps<{ display_style?: "card" | "list" }>(), {
-  display_style: "card",
-});
-
 const is_down = computed(() => {
   return (
     dockerStatus.docker_status.t == ServiceStatusType.Stop ||
@@ -34,12 +30,7 @@ async function stop() {
 }
 </script>
 <template>
-  <n-flex
-    v-if="display_style === 'list'"
-    justify="space-between"
-    align="center"
-    class="docker-list-toolbar"
-  >
+  <n-flex justify="space-between" align="center" class="docker-list-toolbar">
     <n-flex align="center" size="small">
       <n-icon
         :color="get_service_status_color(dockerStatus.docker_status, themeVars)"
@@ -65,47 +56,6 @@ async function stop() {
     </n-flex>
     <DockerImageDrawer v-model:show="show_image_drawer" />
   </n-flex>
-  <n-card v-else content-style="display: flex;">
-    <template #header>
-      <n-icon
-        :color="get_service_status_color(dockerStatus.docker_status, themeVars)"
-        size="16"
-      >
-        <DotMark />
-      </n-icon>
-      Docker
-    </template>
-    <template #header-extra>
-      <n-flex>
-        <n-button
-          :focusable="false"
-          size="small"
-          @click="show_image_drawer = true"
-        >
-          {{ t("common.image") }}
-        </n-button>
-        <n-button :focusable="false" size="small" @click="start" v-if="is_down">
-          {{ t("common.open") }}
-        </n-button>
-        <ConfirmModal v-else @positive-click="stop">
-          <template #trigger>
-            <n-button :focusable="false" size="small" @click="">
-              {{ t("common.close_listener") }}
-            </n-button>
-          </template>
-          {{ t("common.confirm_stop") }}
-        </ConfirmModal>
-      </n-flex>
-    </template>
-    <n-flex justify="center" align="center" style="flex: 1">
-      <n-empty description="TODO"> </n-empty>
-    </n-flex>
-    <!-- // TODO 展示使用资源
-    {{ dockerStatus.docker_status }} -->
-    <!-- <template #footer> #footer </template>
-    <template #action> #action </template> -->
-    <DockerImageDrawer v-model:show="show_image_drawer" />
-  </n-card>
 </template>
 <style scoped>
 .docker-list-toolbar {

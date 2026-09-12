@@ -45,7 +45,18 @@ async function save_config() {
   show_model.value = false;
 }
 
-defineExpose({ save: save_config });
+const getSummary = () => [
+  {
+    label: t("firewall.service_edit.title"),
+    value: t(
+      service_config.value.enable
+        ? "network.settings.enabled"
+        : "network.settings.disabled",
+    ),
+  },
+];
+
+defineExpose({ save: save_config, getSummary });
 </script>
 
 <template>

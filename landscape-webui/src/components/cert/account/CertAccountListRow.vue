@@ -12,11 +12,10 @@ import { useI18n } from "vue-i18n";
 
 type Props = {
   rule: CertAccountConfig;
-  display_style?: "card" | "list";
-  cell?: "name" | "provider" | "email" | "status" | "staging" | "actions";
+  cell: "name" | "provider" | "email" | "status" | "staging" | "actions";
 };
 
-const props = withDefaults(defineProps<Props>(), { display_style: "card" });
+const props = defineProps<Props>();
 const emit = defineEmits(["refresh"]);
 const { t } = useI18n();
 const frontEndStore = useFrontEndStore();
@@ -110,26 +109,26 @@ async function deactivate() {
 </script>
 
 <template>
-  <template v-if="display_style === 'list' && cell === 'name'">
+  <template v-if="cell === 'name'">
     <n-text strong>{{ frontEndStore.MASK_INFO(rule.name) }}</n-text>
   </template>
-  <template v-else-if="display_style === 'list' && cell === 'provider'">{{
+  <template v-else-if="cell === 'provider'">{{
     provider_label(rule.provider_config)
   }}</template>
-  <template v-else-if="display_style === 'list' && cell === 'email'">{{
+  <template v-else-if="cell === 'email'">{{
     frontEndStore.MASK_INFO(rule.email)
   }}</template>
-  <template v-else-if="display_style === 'list' && cell === 'status'">
+  <template v-else-if="cell === 'status'">
     <n-tag size="small" :type="status_type(rule.status)">{{
       status_label(rule.status)
     }}</n-tag>
   </template>
-  <template v-else-if="display_style === 'list' && cell === 'staging'">
+  <template v-else-if="cell === 'staging'">
     <n-tag size="small" :type="rule.use_staging ? 'warning' : 'default'">{{
       rule.use_staging ? t("common.enable") : t("common.disable")
     }}</n-tag>
   </template>
-  <template v-else-if="display_style === 'list'">
+  <template v-else>
     <n-flex size="small" :wrap="false">
       <n-button
         v-if="rule.status === 'unregistered' || rule.status === 'error'"
@@ -161,85 +160,8 @@ async function deactivate() {
       <DeleteButton :item="rule.name" :on-confirm="del" />
     </n-flex>
   </template>
-  <n-card v-else-if="display_style === 'card'" size="small">
-    <template #header>
-      <n-ellipsis>{{ frontEndStore.MASK_INFO(rule.name) }}</n-ellipsis>
-    </template>
-
-    <n-descriptions
-      label-style="width: 90px"
-      bordered
-      label-placement="left"
-      :column="1"
-      size="small"
-    >
-      <n-descriptions-item :label="t('cert.account_provider')">
-        {{ provider_label(rule.provider_config) }}
-      </n-descriptions-item>
-
-      <n-descriptions-item :label="t('cert.account_email')">
-        {{ frontEndStore.MASK_INFO(rule.email) }}
-      </n-descriptions-item>
-
-      <n-descriptions-item :label="t('cert.account_status')">
-        <n-tag size="small" :type="status_type(rule.status)">
-          {{ status_label(rule.status) }}
-        </n-tag>
-      </n-descriptions-item>
-
-      <n-descriptions-item :label="t('cert.account_staging')">
-        <n-tag size="small" :type="rule.use_staging ? 'warning' : 'default'">
-          {{ rule.use_staging ? t("common.enable") : t("common.disable") }}
-        </n-tag>
-      </n-descriptions-item>
-    </n-descriptions>
-
-    <template #header-extra>
-      <n-flex>
-        <n-button
-          v-if="rule.status === 'unregistered' || rule.status === 'error'"
-          size="small"
-          type="success"
-          secondary
-          :loading="register_spin"
-          @click="register()"
-        >
-          {{ t("cert.action_register") }}
-        </n-button>
-        <n-button
-          v-if="rule.status === 'registered'"
-          size="small"
-          type="info"
-          secondary
-          :loading="verify_spin"
-          @click="verify()"
-        >
-          {{ t("cert.action_verify") }}
-        </n-button>
-        <ConfirmModal
-          v-if="rule.status === 'registered'"
-          @positive-click="deactivate()"
-        >
-          <template #trigger>
-            <n-button
-              size="small"
-              type="warning"
-              secondary
-              :loading="deactivate_spin"
-            >
-              {{ t("cert.action_deactivate") }}
-            </n-button>
-          </template>
-          {{ t("cert.confirm_deactivate") }}
-        </ConfirmModal>
-        <EditButton @click="show_edit_modal = true" />
-        <DeleteButton :item="rule.name" :on-confirm="del" />
-      </n-flex>
-    </template>
-  </n-card>
-
   <CertAccountEditModal
-    v-if="display_style === 'card' || cell === 'actions'"
+    v-if="cell === 'actions'"
     @refresh="emit('refresh')"
     :rule_id="rule.id ?? null"
     v-model:show="show_edit_modal"

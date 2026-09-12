@@ -42,10 +42,17 @@ async function updateEnabled(enable: boolean) {
 </script>
 <template>
   <template v-if="cell === 'status'">
-    <StatusTitle :enable="rule.enable" :remark="rule.remark || t('common.no_remark')" />
+    <StatusTitle
+      :enable="rule.enable"
+      :remark="rule.remark || t('common.no_remark')"
+    />
   </template>
   <template v-else-if="cell === 'enable'">
-    <StandardEnableSwitch :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" />
+    <StandardEnableSwitch
+      :value="rule.enable"
+      :loading="enableLoading"
+      @update:value="updateEnabled"
+    />
   </template>
   <template v-else-if="cell === 'target'">{{ target }}</template>
   <template v-else-if="cell === 'protocol'">

@@ -95,47 +95,68 @@ async function confirm_config() {
     v-model:show="show"
     v-model:enabled="value.enable"
     :title="t('pppoe.editor.title')"
+    :show-switch="false"
     width="var(--app-secondary-modal-width)"
     @after-enter="init_conf_value"
   >
-    <!-- <template #header-extra> 噢! </template> -->
-    <!-- {{ origin_value }} -->
+    <n-form
+      class="pppd-config-form"
+      ref="formRef"
+      :model="value"
+      autocomplete="off"
+    >
+      <StandardSettingRow control-width="auto">
+        <template #label>
+          <Notice>
+            {{ t("pppoe.editor.default_route") }}
+            <template #msg>{{
+              t("network.settings.default_route_tip")
+            }}</template>
+          </Notice>
+        </template>
+        <n-switch
+          v-model:value="value.pppd_config.default_route"
+          size="medium"
+        />
+      </StandardSettingRow>
 
-    <n-form style="flex: 1" ref="formRef" :model="value" :cols="4">
-      <n-grid :cols="5">
-        <n-form-item-gi :span="2" :label="t('pppoe.editor.default_route')">
-          <n-switch v-model:value="value.pppd_config.default_route">
-            <template #checked> {{ t("common.enable") }} </template>
-            <template #unchecked> {{ t("common.disable") }} </template>
-          </n-switch>
-        </n-form-item-gi>
+      <StandardSettingRow :label="t('pppoe.editor.ppp_iface_name')">
+        <n-input
+          v-model:value="value.iface_name"
+          clearable
+          :disabled="isEditing"
+        />
+      </StandardSettingRow>
 
-        <n-form-item-gi :label="t('pppoe.editor.ppp_iface_name')" :span="2">
-          <n-input
-            v-model:value="value.iface_name"
-            clearable
-            :disabled="isEditing"
-          />
-        </n-form-item-gi>
-      </n-grid>
-
-      <n-form-item :label="t('pppoe.editor.username')">
+      <StandardSettingRow :label="t('pppoe.editor.username')">
         <n-input
           :type="frontEndStore.presentation_mode ? 'password' : 'text'"
           show-password-on="click"
           v-model:value="value.pppd_config.peer_id"
+          :input-props="{
+            name: 'pppd-username',
+            autocomplete: 'one-time-code',
+            'data-1p-ignore': 'true',
+            'data-lpignore': 'true',
+          }"
         />
-      </n-form-item>
+      </StandardSettingRow>
 
-      <n-form-item :label="t('pppoe.editor.password')">
+      <StandardSettingRow :label="t('pppoe.editor.password')">
         <n-input
           :type="frontEndStore.presentation_mode ? 'password' : 'text'"
           show-password-on="click"
           v-model:value="value.pppd_config.password"
+          :input-props="{
+            name: 'pppd-password',
+            autocomplete: 'new-password',
+            'data-1p-ignore': 'true',
+            'data-lpignore': 'true',
+          }"
         />
-      </n-form-item>
+      </StandardSettingRow>
 
-      <n-form-item>
+      <StandardSettingRow>
         <template #label>
           <Notice>
             {{ t("pppoe.editor.ac_name") }}
@@ -147,21 +168,21 @@ async function confirm_config() {
           show-password-on="click"
           v-model:value="value.pppd_config.ac"
         />
-      </n-form-item>
+      </StandardSettingRow>
 
-      <n-form-item :label="t('pppoe.editor.plugin')">
+      <StandardSettingRow :label="t('pppoe.editor.plugin')">
         <n-select
           v-model:value="value.pppd_config.plugin"
           :options="pluginOptions"
         />
-      </n-form-item>
+      </StandardSettingRow>
     </n-form>
     <template #footer>
       <n-flex justify="space-between">
         <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
         <n-button
           @click="confirm_config()"
-          type="success"
+          type="primary"
           :disabled="!isModified"
         >
           {{ t("common.save") }}

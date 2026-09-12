@@ -93,6 +93,11 @@ const menuOptions = computed<MenuOption[]>(() => [
     icon: renderIcon(CicsSystemGroup),
   },
   {
+    label: t("routes.network-settings"),
+    key: "network/settings",
+    icon: renderIcon(Settings),
+  },
+  {
     label: t("routes.flow"),
     key: "flow",
     icon: renderIcon(ModelBuilder),
@@ -122,11 +127,6 @@ const menuOptions = computed<MenuOption[]>(() => [
         disabled: false,
       },
     ],
-  },
-  {
-    label: t("routes.network-settings"),
-    key: "network/settings",
-    icon: renderIcon(Settings),
   },
   {
     label: t("routes.firewall-nat"),

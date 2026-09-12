@@ -1,4 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{atomic::AtomicUsize, Arc},
+    time::Duration,
+};
 
 use hickory_resolver::{
     config::{ConnectionConfig, NameServerConfig, ProtocolConfig, ResolverConfig, ResolverOpts},
@@ -18,7 +21,25 @@ pub(crate) type LandscapeMarkDNSResolver = Resolver<MarkConnectionProvider>;
 pub(crate) fn create_resolver(
     flow_id: u32,
     mark_value: u32,
+    config: DnsUpstreamConfig,
+) -> Option<LandscapeMarkDNSResolver> {
+    create_resolver_inner(flow_id, mark_value, config, None)
+}
+
+pub(crate) fn create_resolver_with_quic_counter(
+    flow_id: u32,
+    mark_value: u32,
+    config: DnsUpstreamConfig,
+    connection_counter: Arc<AtomicUsize>,
+) -> Option<LandscapeMarkDNSResolver> {
+    create_resolver_inner(flow_id, mark_value, config, Some(connection_counter))
+}
+
+fn create_resolver_inner(
+    flow_id: u32,
+    mark_value: u32,
     DnsUpstreamConfig { mode, ips, port, bind_config, .. }: DnsUpstreamConfig,
+    connection_counter: Option<Arc<AtomicUsize>>,
 ) -> Option<LandscapeMarkDNSResolver> {
     let name_server: Vec<NameServerConfig> = match mode {
         DnsUpstreamMode::Plaintext => ips
@@ -92,7 +113,7 @@ pub(crate) fn create_resolver(
     options.attempts = 3;
     let resolver = match Resolver::builder_with_config(
         resolve,
-        MarkRuntimeProvider::new(mark_value, bind_config),
+        MarkRuntimeProvider::new_with_quic_counter(mark_value, bind_config, connection_counter),
     )
     .with_options(options)
     .build()

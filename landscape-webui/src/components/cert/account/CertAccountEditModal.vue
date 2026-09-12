@@ -208,7 +208,11 @@ async function save() {
       </template>
 
       <n-form-item :label="t('cert.account_staging')">
-        <n-switch v-model:value="rule.use_staging" :disabled="is_zerossl">
+        <n-switch
+          v-model:value="rule.use_staging"
+          :disabled="is_zerossl"
+          size="medium"
+        >
           <template #checked>{{ t("common.enable") }}</template>
           <template #unchecked>{{ t("common.disable") }}</template>
         </n-switch>

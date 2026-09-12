@@ -102,6 +102,7 @@ export default {
     test_h3: "Test H3",
     h3_test_title: "DoH3 Connection Test",
     h3_test_success: "H3 connected and returned a DNS response",
+    h3_test_partial: "H3 connection is unstable; only some queries succeeded",
     h3_test_failed: "H3 connection failed; see each attempt below",
     h3_test_timeout:
       "H3 connection timed out; check whether UDP/443 is allowed",
@@ -112,7 +113,12 @@ export default {
     h3_test_request_failed:
       "The test request failed; check the backend service and retry",
     test_domain: "Test Domain",
-    reuse_average: "Reused Average Latency",
+    reuse_average: "Average Reused-request Latency",
+    connection_count: "H3 Connections Created",
+    connection: "Connection",
+    connection_new: "New",
+    connection_reused: "Reused",
+    connection_reconnected: "Reconnected",
     latency: "Latency",
     result: "Result",
   },

@@ -47,7 +47,7 @@ export default {
       "Port {port} conflicts with dynamic {protocol} range {start}-{end} on {iface}",
   },
   service_edit: {
-    title: "Interface NAT Config",
+    title: "NAT",
     tcp_port_range: "TCP Port Range",
     udp_port_range: "UDP Port Range",
     icmp_id_range: "ICMP ID Range",

@@ -29,6 +29,7 @@ import {
 import ConfigModal from "@/components/common/ConfigModal.vue";
 import EditButton from "@/components/common/EditButton.vue";
 import DeleteButton from "@/components/common/DeleteButton.vue";
+import StandardEnableSwitch from "@/components/common/StandardEnableSwitch.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import { useI18n } from "vue-i18n";
@@ -58,6 +59,7 @@ const showProviderCreateModal = ref(false);
 const showDetailDrawer = ref(false);
 const saving = ref(false);
 const syncingIds = ref<Set<string>>(new Set());
+const enablingIds = ref<Set<string>>(new Set());
 const editingId = ref<string | null>(null);
 const detailJobId = ref<string | null>(null);
 const formRef = ref();
@@ -546,6 +548,19 @@ async function syncNow(id: string) {
   }
 }
 
+async function updateEnabled(job: DdnsJob, enable: boolean) {
+  if (!job.id) return;
+  enablingIds.value.add(job.id);
+  try {
+    await push_ddns_job({ ...job, enable });
+    await refresh();
+  } catch (e: any) {
+    message.error(e?.response?.data || e?.message || "Operation failed");
+  } finally {
+    enablingIds.value.delete(job.id);
+  }
+}
+
 function openDetailDrawer(job: DdnsJob) {
   detailJobId.value = job.id ?? null;
   showDetailDrawer.value = true;
@@ -603,11 +618,11 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
     key: "enable",
     width: 90,
     render: (row) =>
-      h(
-        NTag,
-        { size: "small", type: row.enable ? "success" : "default" },
-        () => (row.enable ? t("common.enable") : t("common.disable")),
-      ),
+      h(StandardEnableSwitch, {
+        value: row.enable ?? true,
+        loading: row.id ? enablingIds.value.has(row.id) : false,
+        "onUpdate:value": (enable: boolean) => updateEnabled(row, enable),
+      }),
   },
   {
     title: t("common.actions"),
@@ -698,9 +713,7 @@ onMounted(async () => {
       @retry="listRequest.retry"
     />
 
-    <n-modal
-      v-model:show="showDetailDrawer"
-    >
+    <n-modal v-model:show="showDetailDrawer">
       <n-card
         style="width: min(900px, calc(100vw - 32px))"
         :title="detailDrawerTitle"
@@ -784,9 +797,10 @@ onMounted(async () => {
       </n-card>
     </n-modal>
 
-    <ConfigModal
-      v-model:show="showModal"
-      v-model:enabled="formEnabled"
+  <ConfigModal
+    v-model:show="showModal"
+    v-model:enabled="formEnabled"
+    :show-switch="false"
       :title="t('ddns.ddns_jobs')"
       width="var(--app-secondary-modal-width)"
     >
@@ -878,7 +892,7 @@ onMounted(async () => {
         <n-form-item :label="t('ddns.ttl')">
           <n-flex vertical style="width: 100%" :size="8">
             <n-flex :wrap="false" align="center" style="width: 100%" :size="8">
-              <n-switch v-model:value="useProfileDefaultTtl">
+              <n-switch v-model:value="useProfileDefaultTtl" size="medium">
                 <template #checked>{{ t("ddns.follow_profile_ttl") }}</template>
                 <template #unchecked>{{ t("ddns.custom_ttl") }}</template>
               </n-switch>

@@ -15,7 +15,10 @@ use moka::future::Cache;
 use std::{
     collections::HashSet,
     path::PathBuf,
-    sync::Arc,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
     time::{Duration, Instant},
 };
 
@@ -49,23 +52,45 @@ pub async fn test_doh3_upstream(
 > {
     use hickory_proto::rr::RecordType;
     use landscape_common::dns::upstream::{
-        DnsUpstreamError, DnsUpstreamH3TestAttempt, DnsUpstreamH3TestResult,
+        DnsUpstreamError, DnsUpstreamH3TestAttempt, DnsUpstreamH3TestErrorKind,
+        DnsUpstreamH3TestResult,
     };
 
-    let landscape_common::dns::upstream::DnsUpstreamMode::Https { domain, http3, .. } =
+    let landscape_common::dns::upstream::DnsUpstreamMode::Https { domain, http_endpoint, http3 } =
         &mut config.mode
     else {
         return Err(DnsUpstreamError::H3TestRequiresHttps);
     };
+    let domain = domain.trim();
+    if domain.is_empty() || hickory_proto::rr::Name::from_ascii(domain).is_err() {
+        return Err(DnsUpstreamError::H3TestInvalidConfig("invalid upstream domain".into()));
+    }
+    if config.ips.is_empty() {
+        return Err(DnsUpstreamError::H3TestInvalidConfig(
+            "at least one upstream IP is required".into(),
+        ));
+    }
+    if http_endpoint.as_deref().is_some_and(|path| !path.is_empty() && !path.starts_with('/')) {
+        return Err(DnsUpstreamError::H3TestInvalidConfig(
+            "HTTP endpoint must start with '/'".into(),
+        ));
+    }
     let query_domain = format!("{}.", domain.trim_end_matches('.'));
     *http3 = true;
 
-    let Some(resolver) = connection::create_resolver(0, 0x8000, config) else {
+    let connection_counter = Arc::new(AtomicUsize::new(0));
+    let Some(resolver) = connection::create_resolver_with_quic_counter(
+        0,
+        0x8000,
+        config,
+        connection_counter.clone(),
+    ) else {
         return Err(DnsUpstreamError::H3TestResolverFailed);
     };
     let mut attempts = Vec::with_capacity(5);
 
     for _ in 0..5 {
+        let connections_before = connection_counter.load(Ordering::Relaxed);
         let started = Instant::now();
         let result = tokio::time::timeout(
             Duration::from_secs(3),
@@ -73,20 +98,43 @@ pub async fn test_doh3_upstream(
         )
         .await;
         let latency_ms = started.elapsed().as_secs_f64() * 1000.0;
+        let connection_reused = (!attempts.is_empty())
+            .then(|| connection_counter.load(Ordering::Relaxed) == connections_before);
         attempts.push(match result {
             Ok(Ok(lookup)) => DnsUpstreamH3TestAttempt {
                 latency_ms,
                 answers: lookup.answers().iter().map(|record| record.data.to_string()).collect(),
+                connection_reused,
+                error_kind: None,
                 error: None,
             },
-            Ok(Err(error)) => DnsUpstreamH3TestAttempt {
-                latency_ms,
-                answers: vec![],
-                error: Some(error.to_string()),
-            },
+            Ok(Err(error)) => {
+                let error = error.to_string();
+                let normalized = error.to_ascii_lowercase();
+                let error_kind = if normalized.contains("timed out") {
+                    DnsUpstreamH3TestErrorKind::Timeout
+                } else if normalized.contains("network is unreachable")
+                    || normalized.contains("no route to host")
+                {
+                    DnsUpstreamH3TestErrorKind::Network
+                } else if normalized.contains("tls") || normalized.contains("certificate") {
+                    DnsUpstreamH3TestErrorKind::Tls
+                } else {
+                    DnsUpstreamH3TestErrorKind::Resolve
+                };
+                DnsUpstreamH3TestAttempt {
+                    latency_ms,
+                    answers: vec![],
+                    connection_reused: None,
+                    error_kind: Some(error_kind),
+                    error: Some(error),
+                }
+            }
             Err(_) => DnsUpstreamH3TestAttempt {
                 latency_ms,
                 answers: vec![],
+                connection_reused: None,
+                error_kind: Some(DnsUpstreamH3TestErrorKind::Timeout),
                 error: Some("request timed out after 3 seconds".into()),
             },
         });
@@ -95,13 +143,18 @@ pub async fn test_doh3_upstream(
     let reused: Vec<f64> = attempts
         .iter()
         .skip(1)
-        .filter(|attempt| attempt.error.is_none())
+        .filter(|attempt| attempt.error.is_none() && attempt.connection_reused == Some(true))
         .map(|attempt| attempt.latency_ms)
         .collect();
     let reuse_average_ms =
         (!reused.is_empty()).then(|| reused.iter().sum::<f64>() / reused.len() as f64);
 
-    Ok(DnsUpstreamH3TestResult { query_domain, attempts, reuse_average_ms })
+    Ok(DnsUpstreamH3TestResult {
+        query_domain,
+        attempts,
+        connection_count: connection_counter.load(Ordering::Relaxed),
+        reuse_average_ms,
+    })
 }
 
 static RESOLVER_CONF: &str = "/etc/resolv.conf";

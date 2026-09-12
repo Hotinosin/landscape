@@ -1,6 +1,6 @@
 export default {
   service_edit: {
-    title: "防火墙服务配置",
+    title: "防火墙",
   },
   blacklist_edit: {
     title: "防火墙黑名单编辑",

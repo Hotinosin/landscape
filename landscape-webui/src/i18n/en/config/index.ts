@@ -42,12 +42,6 @@ export default {
   radius_small: "Small",
   radius_medium: "Medium",
   radius_large: "Large",
-  display_style: "Display Style",
-  display_style_placeholder: "Select a content display style",
-  display_style_card: "Cards",
-  display_style_list: "List",
-  display_style_tip:
-    "Cards emphasize individual details; lists use shared columns for scanning and comparison.",
   timezone: "System Timezone",
   timezone_placeholder: "Select or search, e.g.: Asia/Shanghai",
 

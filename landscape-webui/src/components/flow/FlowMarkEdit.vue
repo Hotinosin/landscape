@@ -66,7 +66,11 @@ function mark_action_update(value: FlowMarkType) {
 
     <n-flex align="center">
       <span>&nbsp;{{ t("flow.mark_edit.nat1_label") }}</span>
-      <n-switch v-model:value="mark.allow_reuse_port" :round="false" />
+      <n-switch
+        v-model:value="mark.allow_reuse_port"
+        :round="false"
+        size="medium"
+      />
     </n-flex>
   </n-flex>
   <n-input-group v-else-if="mark.action.t === FlowMarkType.Redirect">

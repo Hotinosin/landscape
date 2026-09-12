@@ -50,10 +50,17 @@ async function updateEnabled(enable: boolean) {
 </script>
 <template>
   <template v-if="cell === 'status'">
-    <StatusTitle :enable="rule.enable" :remark="rule.remark || t('common.no_remark')" />
+    <StatusTitle
+      :enable="rule.enable"
+      :remark="rule.remark || t('common.no_remark')"
+    />
   </template>
   <template v-else-if="cell === 'enable'">
-    <StandardEnableSwitch :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" />
+    <StandardEnableSwitch
+      :value="rule.enable"
+      :loading="enableLoading"
+      @update:value="updateEnabled"
+    />
   </template>
   <template v-else-if="cell === 'target'">{{ target }}</template>
   <template v-else-if="cell === 'protocol'">
@@ -69,9 +76,13 @@ async function updateEnabled(enable: boolean) {
   </template>
   <template v-else-if="cell === 'ports'">
     <n-flex size="small"
-      ><n-tag v-for="(p, i) in ports" :key="i" size="small" :bordered="false">{{
-        typeof p === "number" ? front.MASK_PORT(p) : p
-      }}</n-tag></n-flex
+      ><n-tag
+        v-for="(p, i) in ports"
+        :key="i"
+        size="small"
+        :bordered="false"
+        >{{ typeof p === "number" ? front.MASK_PORT(p) : p }}</n-tag
+      ></n-flex
     >
   </template>
   <template v-else>

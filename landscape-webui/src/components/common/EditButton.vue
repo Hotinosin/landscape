@@ -9,7 +9,7 @@ function clearPointerFocus(event: PointerEvent) {
 <template>
   <n-button
     v-bind="$attrs"
-    class="edit-button"
+    class="standard-operation-button edit-button"
     size="small"
     @pointerup="clearPointerFocus"
   >

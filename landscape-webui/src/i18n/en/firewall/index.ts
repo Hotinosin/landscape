@@ -1,6 +1,6 @@
 export default {
   service_edit: {
-    title: "Firewall Service Config",
+    title: "Firewall",
   },
   blacklist_edit: {
     title: "Firewall Blacklist Editor",

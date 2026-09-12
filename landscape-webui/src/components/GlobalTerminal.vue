@@ -626,7 +626,7 @@ onUnmounted(cleanupTerminal);
         />
       </n-form-item>
       <n-form-item :label="t('terminal.keep_alive')">
-        <n-switch v-model:value="keepAlive" />
+        <n-switch v-model:value="keepAlive" size="medium" />
       </n-form-item>
     </n-form>
     <n-text depth="3">{{ t("terminal.shell_reconnect_tip") }}</n-text>

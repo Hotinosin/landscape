@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { usePreferenceStore } from "@/stores/preference";
-import { useFrontEndStore } from "@/stores/front_end_config";
 import { useMessage } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { Help as HelpCircleOutline } from "@vicons/carbon";
 import {
   selectThemePreset,
   themePresets,
@@ -16,7 +14,6 @@ import {
 } from "@/themes";
 
 const prefStore = usePreferenceStore();
-const frontEndStore = useFrontEndStore();
 const message = useMessage();
 const { t } = useI18n();
 
@@ -98,11 +95,6 @@ function updateThemeValue<K extends keyof ThemeStyle>(
     [key]: value,
   };
 }
-
-const displayStyleOptions = computed(() => [
-  { label: t("config.display_style_card"), value: "card" },
-  { label: t("config.display_style_list"), value: "list" },
-]);
 
 const timezoneOptions = (Intl as any)
   .supportedValuesOf("timeZone")
@@ -208,24 +200,6 @@ async function handleSave() {
             </label>
           </div>
         </div>
-      </n-form-item>
-      <n-form-item :label="t('config.display_style')">
-        <n-flex align="center" :wrap="false" size="small">
-          <n-select
-            class="preference-control"
-            v-model:value="frontEndStore.display_style"
-            :options="displayStyleOptions"
-            :placeholder="t('config.display_style_placeholder')"
-          />
-          <n-tooltip trigger="hover">
-            <template #trigger>
-              <n-icon size="16" style="cursor: help"
-                ><HelpCircleOutline
-              /></n-icon>
-            </template>
-            {{ t("config.display_style_tip") }}
-          </n-tooltip>
-        </n-flex>
       </n-form-item>
       <n-form-item :label="t('config.timezone')">
         <n-select

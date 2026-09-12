@@ -25,8 +25,8 @@ import { formatPackets, formatRate } from "@/lib/util";
 import {
   ServiceExhibitSwitch,
   ServiceStatus,
-  get_service_status_color,
   get_service_status_label,
+  get_service_status_tag_type,
 } from "@/lib/services";
 import { useDHCPv4ConfigStore } from "@/stores/status_dhcp_v4";
 import { useFirewallConfigStore } from "@/stores/status_firewall";
@@ -39,7 +39,6 @@ import { useRouteLanConfigStore } from "@/stores/status_route_lan";
 import { useRouteWanConfigStore } from "@/stores/status_route_wan";
 import { useWifiConfigStore } from "@/stores/status_wifi";
 import { useIfaceNodeStore } from "@/stores/iface_node";
-import { useFrontEndStore } from "@/stores/front_end_config";
 import type { IfaceRealtimeStat } from "@landscape-router/types/api/schemas";
 
 const props = withDefaults(
@@ -63,7 +62,6 @@ const { t } = useI18n();
 const themeVars = useThemeVars();
 const show_switch = computed(() => new ServiceExhibitSwitch(props.node));
 const ifaceNodeStore = useIfaceNodeStore();
-const frontEndStore = useFrontEndStore();
 const show_mss_clamp_edit = ref(false);
 const iface_dhcp_v4_service_edit_show = ref(false);
 const iface_wifi_edit_show = ref(false);
@@ -177,20 +175,6 @@ function displayValue(value?: string | number | null) {
 
 function serviceStatusText(status?: ServiceStatus) {
   return get_service_status_label(status, t);
-}
-
-function serviceStatusColor(status?: ServiceStatus) {
-  return get_service_status_color(status, themeVars.value);
-}
-
-function serviceStatusStyle(status?: ServiceStatus) {
-  const color = serviceStatusColor(status);
-
-  return {
-    borderColor: changeColor(color, { alpha: status ? 0.45 : 0.22 }),
-    backgroundColor: changeColor(color, { alpha: status ? 0.12 : 0.06 }),
-    color,
-  };
 }
 
 async function refreshGraph() {
@@ -409,8 +393,8 @@ const node_style = computed(() => ({
                       <n-icon><Link /></n-icon>
                     </template>
                   </n-button>
-                  <n-tag size="tiny" :type="status_type">
-                    {{ node.dev_status.t }}
+                  <n-tag size="small" :type="status_type" :bordered="false">
+                    {{ node.dev_status.t.toUpperCase() }}
                   </n-tag>
                 </div>
               </div>
@@ -418,12 +402,18 @@ const node_style = computed(() => ({
               <div class="topology-node__tags">
                 <n-tag
                   v-if="node.zone_type !== IfaceZoneType.undefined"
-                  size="tiny"
+                  size="small"
                   :type="zone_type"
+                  :bordered="false"
                 >
                   {{ zone_label }}
                 </n-tag>
-                <n-tag v-for="tag in role_tags" :key="tag" size="tiny" tertiary>
+                <n-tag
+                  v-for="tag in role_tags"
+                  :key="tag"
+                  size="small"
+                  :bordered="false"
+                >
                   {{ tag }}
                 </n-tag>
               </div>
@@ -466,9 +456,7 @@ const node_style = computed(() => ({
               }}
             </n-descriptions-item>
             <n-descriptions-item :label="t('topology.node.perm_mac')">
-              {{
-                node.perm_mac ? frontEndStore.MASK_INFO(node.perm_mac) : "N/A"
-              }}
+              <MacAddress :value="node.perm_mac" empty-text="N/A" />
             </n-descriptions-item>
             <n-descriptions-item :label="t('topology.panel.peer_link')">
               {{ displayValue(node.peer_link_id) }}
@@ -494,18 +482,19 @@ const node_style = computed(() => ({
           trigger="hover"
         >
           <template #trigger>
-            <span
-              class="topology-node__service-pill"
+            <n-tag
               role="button"
               tabindex="0"
+              size="small"
+              :type="get_service_status_tag_type(item.status)"
+              :bordered="false"
               :data-testid="`topology-node-${node.index}-service-${item.key}`"
-              :style="serviceStatusStyle(item.status)"
               @click.stop="openServiceEditor(item.key)"
               @keydown.enter.stop.prevent="openServiceEditor(item.key)"
               @keydown.space.stop.prevent="openServiceEditor(item.key)"
             >
-              <span>{{ item.short_label }}</span>
-            </span>
+              {{ item.short_label }}
+            </n-tag>
           </template>
           {{ item.label }} · {{ serviceStatusText(item.status) }}
         </n-tooltip>
@@ -724,30 +713,13 @@ const node_style = computed(() => ({
   box-sizing: border-box;
 }
 
-.topology-node__service-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 7px;
-  border-radius: var(--app-radius-pill);
-  border: 1px solid var(--topology-node-service-border);
-  background: var(--topology-node-service-bg);
-  color: var(--topology-node-service-text);
-  font-size: var(--app-font-size-detail);
-  font-weight: 600;
-  line-height: 1;
+.topology-node__services .n-tag {
   cursor: pointer;
-  transition:
-    background-color var(--app-motion-normal, 180ms) ease,
-    border-color var(--app-motion-normal, 180ms) ease,
-    transform var(--app-motion-normal, 180ms) ease;
+  transition: transform var(--app-motion-normal, 180ms) ease;
 }
 
-.topology-node__service-pill:hover {
+.topology-node__services .n-tag:hover {
   transform: translateY(-1px);
-}
-
-.topology-node__service-pill--muted {
-  opacity: 0.78;
 }
 
 .topology-node__handle {

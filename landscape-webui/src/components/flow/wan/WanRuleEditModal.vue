@@ -26,7 +26,6 @@ import { useI18n } from "vue-i18n";
 interface Props {
   flow_id: number;
   id: string | null;
-  showSwitch?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -166,7 +165,7 @@ async function append_import_rules() {
   <ConfigModal
     v-model:show="show"
     v-model:enabled="rule_enabled"
-    :show-switch="showSwitch !== false"
+    :show-switch="false"
     :title="t('flow.wan_rule_edit.title')"
     :switch-disabled="!rule"
     width="var(--app-secondary-modal-width)"
@@ -179,7 +178,7 @@ async function append_import_rules() {
           <n-input-number v-model:value="rule.index" clearable />
         </n-form-item-gi>
         <!-- <n-form-item-gi label="覆盖 DNS 配置" :span="1">
-          <n-switch v-model:value="rule.override_dns">
+          <n-switch v-model:value="rule.override_dns" size="medium">
             <template #checked> 覆盖 </template>
             <template #unchecked> 不覆盖 </template>
           </n-switch>

@@ -57,7 +57,7 @@ const config_dirty = computed(
 function default_config(): LanIPv6ServiceConfigV2 {
   return {
     iface_name: iface_info.iface_name,
-    enable: true,
+    enable: false,
     config: {
       mode: "slaac" as IPv6ServiceMode,
       ad_interval: 300,
@@ -419,6 +419,7 @@ function replace_group_sources(
                   v-model:value="
                     service_config.config.ra_flag.managed_address_config
                   "
+                  size="medium"
                 />
               </n-form-item-gi>
               <n-form-item-gi span="2">
@@ -432,6 +433,7 @@ function replace_group_sources(
                 </template>
                 <n-switch
                   v-model:value="service_config.config.ra_flag.other_config"
+                  size="medium"
                 />
               </n-form-item-gi>
             </template>

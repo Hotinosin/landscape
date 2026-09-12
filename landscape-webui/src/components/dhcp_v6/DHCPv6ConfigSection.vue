@@ -67,7 +67,7 @@ const showMFlagWarning = computed(() => {
 <template>
   <n-grid :x-gap="12" :y-gap="8" cols="4" item-responsive>
     <n-form-item-gi span="2" :label="t('dhcp_v6.enable_dhcpv6')">
-      <n-switch v-model:value="enabled">
+      <n-switch v-model:value="enabled" size="medium">
         <template #checked> {{ t("common.enable") }} </template>
         <template #unchecked> {{ t("common.disable") }} </template>
       </n-switch>
@@ -82,7 +82,7 @@ const showMFlagWarning = computed(() => {
     <template v-if="enabled && config">
       <!-- IA_NA Section -->
       <n-form-item-gi span="4" :label="t('dhcp_v6.ia_na')">
-        <n-switch v-model:value="ia_na_enabled">
+        <n-switch v-model:value="ia_na_enabled" size="medium">
           <template #checked> {{ t("common.enable") }} </template>
           <template #unchecked> {{ t("common.disable") }} </template>
         </n-switch>
@@ -143,7 +143,7 @@ const showMFlagWarning = computed(() => {
 
       <!-- IA_PD Section -->
       <n-form-item-gi span="4" :label="t('dhcp_v6.ia_pd')">
-        <n-switch v-model:value="ia_pd_enabled">
+        <n-switch v-model:value="ia_pd_enabled" size="medium">
           <template #checked> {{ t("common.enable") }} </template>
           <template #unchecked> {{ t("common.disable") }} </template>
         </n-switch>

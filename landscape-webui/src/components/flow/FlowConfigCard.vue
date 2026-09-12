@@ -20,12 +20,10 @@ const { t } = useI18n();
 interface Props {
   config: FlowConfig;
   show_action?: boolean;
-  display_style?: "card" | "list";
 }
 
 const props = withDefaults(defineProps<Props>(), {
   show_action: true,
-  display_style: "card",
 });
 
 const emit = defineEmits(["refresh"]);
@@ -62,11 +60,8 @@ const show_remark = computed(
 
 <template>
   <n-card
-    :class="[
-      'flow-config-card',
-      { 'flow-config-card--list': display_style === 'list' },
-    ]"
-    :style="display_style === 'card' ? 'min-height: 224px' : undefined"
+    class="flow-config-card"
+    style="min-height: 224px"
     content-style="display: flex"
     size="small"
     :hoverable="true"
@@ -81,7 +76,10 @@ const show_remark = computed(
     <template v-if="show_action" #header-extra>
       <n-flex>
         <EditButton @click="show_edit = true" />
-        <DeleteButton :item="`${config.flow_id}: ${title_name}`" :on-confirm="del" />
+        <DeleteButton
+          :item="`${config.flow_id}: ${title_name}`"
+          :on-confirm="del"
+        />
       </n-flex>
     </template>
 
@@ -191,22 +189,3 @@ const show_remark = computed(
     </FlowEditModal>
   </n-card>
 </template>
-
-<style scoped>
-.flow-config-card--list :deep(.n-card-header) {
-  padding: 10px var(--app-space-section);
-}
-
-.flow-config-card--list :deep(.n-card__content) {
-  min-width: 220px;
-  padding: 8px var(--app-space-section);
-}
-
-.flow-config-card--list :deep(.n-card__action) {
-  padding: 8px var(--app-space-section);
-}
-
-.flow-config-card--list :deep(.n-card-header__extra) {
-  margin-left: auto;
-}
-</style>

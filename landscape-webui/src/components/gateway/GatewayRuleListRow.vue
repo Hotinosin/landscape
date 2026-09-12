@@ -89,7 +89,6 @@ async function updateEnabled(enable: boolean) {
     <GatewayRuleEditModal
       v-model:show="showEdit"
       :rule_id="rule.id"
-      :show-switch="false"
       @refresh="emit('refresh')"
     />
   </template>

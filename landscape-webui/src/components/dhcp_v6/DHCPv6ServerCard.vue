@@ -118,6 +118,7 @@ function update_ia_pd_field(field: string, value: number | null) {
         <n-switch
           style="margin-left: auto"
           :value="!!config?.config.dhcpv6?.enable"
+          size="medium"
           @update:value="
             (val: boolean) => {
               initialize_dhcpv6_if_needed();
@@ -144,6 +145,7 @@ function update_ia_pd_field(field: string, value: number | null) {
             <n-switch
               :value="!!config?.config.dhcpv6?.ia_na"
               @update:value="initialize_ia_na"
+              size="medium"
             />
           </n-form-item-gi>
           <template v-if="config?.config.dhcpv6?.ia_na">
@@ -199,6 +201,7 @@ function update_ia_pd_field(field: string, value: number | null) {
             <n-switch
               :value="!!config?.config.dhcpv6?.ia_pd"
               @update:value="initialize_ia_pd"
+              size="medium"
             />
           </n-form-item-gi>
           <template v-if="config?.config.dhcpv6?.ia_pd">

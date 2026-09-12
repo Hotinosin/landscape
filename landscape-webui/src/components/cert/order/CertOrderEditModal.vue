@@ -322,14 +322,14 @@ async function save() {
       </n-form-item>
 
       <n-form-item :label="t('cert.for_api')">
-        <n-switch v-model:value="rule.for_api">
+        <n-switch v-model:value="rule.for_api" size="medium">
           <template #checked>{{ t("common.enable") }}</template>
           <template #unchecked>{{ t("common.disable") }}</template>
         </n-switch>
       </n-form-item>
 
       <n-form-item :label="t('cert.for_gateway')">
-        <n-switch v-model:value="rule.for_gateway">
+        <n-switch v-model:value="rule.for_gateway" size="medium">
           <template #checked>{{ t("common.enable") }}</template>
           <template #unchecked>{{ t("common.disable") }}</template>
         </n-switch>
@@ -412,6 +412,7 @@ async function save() {
         <n-form-item :label="t('cert.acme_auto_renew')">
           <n-switch
             :value="rule.cert_type.auto_renew"
+            size="medium"
             @update:value="(v: boolean) => setAcmeField('auto_renew', v)"
           >
             <template #checked>{{ t("common.enable") }}</template>

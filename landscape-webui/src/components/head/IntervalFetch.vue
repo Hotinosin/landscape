@@ -46,7 +46,7 @@ function confirmChangeInterval() {
           <n-icon size="17"><Renew /></n-icon>
           <n-switch
             v-model:value="fetchIntervalStore.enable_interval"
-            size="small"
+            size="medium"
           />
         </n-flex>
       </template>

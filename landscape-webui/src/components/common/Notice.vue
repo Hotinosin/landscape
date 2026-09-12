@@ -4,7 +4,11 @@ import { HelpFilled } from "@vicons/carbon";
 <template>
   <n-flex :size="[5, 0]" justify="start" align="center">
     <slot></slot>
-    <n-popover trigger="hover">
+    <n-popover
+      trigger="hover"
+      placement="top-start"
+      :style="{ maxWidth: '360px', whiteSpace: 'normal', lineHeight: '1.6' }"
+    >
       <template #trigger>
         <n-button text>
           <template #icon>

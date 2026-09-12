@@ -156,7 +156,7 @@ const has_edge_label = computed({
             :label="t('docker.docker_run.flow_egress')"
             path="imageName"
           >
-            <n-switch v-model:value="has_edge_label"> </n-switch>
+            <n-switch v-model:value="has_edge_label" size="medium"> </n-switch>
           </n-form-item-gi>
           <n-form-item-gi
             :span="6"
@@ -253,7 +253,7 @@ const has_edge_label = computed({
                     position: absolute;
                   "
                 ></button>
-                <n-switch v-model:value="has_edge_label">
+                <n-switch v-model:value="has_edge_label" size="medium">
                   <template #checked> {{ t("docker.docker_run.edge_label_added") }} </template>
                   <template #unchecked> {{ t("docker.docker_run.edge_label_not_added") }} </template>
                 </n-switch>

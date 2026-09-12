@@ -41,12 +41,6 @@ export default {
   radius_small: "小",
   radius_medium: "中",
   radius_large: "大",
-  display_style: "展示样式",
-  display_style_placeholder: "请选择内容展示样式",
-  display_style_card: "卡片",
-  display_style_list: "列表",
-  display_style_tip:
-    "卡片适合逐项查看详情；列表使用统一表头，适合批量浏览和横向比较。",
   timezone: "系统时区",
   timezone_placeholder: "请选择或搜索，例如: Asia/Shanghai",
 
