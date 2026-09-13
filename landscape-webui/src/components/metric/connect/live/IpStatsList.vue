@@ -32,6 +32,10 @@ type SortKey = "ip" | keyof FlowIpRealtimeStat["stats"];
 const sortKey = ref<SortKey>("egress_bps");
 const sortOrder = ref<"asc" | "desc">("desc");
 
+function rowKey(row: FlowIpRealtimeStat) {
+  return row.ip;
+}
+
 const columns = computed(() => [
   {
     title: props.ipLabel,
@@ -254,6 +258,8 @@ const processedData = computed(() => {
         :columns="columns"
         :data="processedData"
         :pagination="false"
+        :row-key="rowKey"
+        :scroll-x="900"
         @update:sorter="handleSort"
       />
     </div>

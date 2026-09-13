@@ -13,7 +13,7 @@ import {
   get_service_status_tag_type,
 } from "@/lib/services";
 import type { HttpUpstreamRuleConfig } from "@landscape-router/types/api/schemas";
-import { Add, Settings } from "@vicons/carbon";
+import { Add, Renew, Settings } from "@vicons/carbon";
 import { useMessage } from "naive-ui";
 import type { DataTableColumns } from "naive-ui";
 import { computed, h, onMounted, onUnmounted, ref, watch } from "vue";
@@ -234,6 +234,12 @@ watch(
                 <n-icon :component="Settings" />
               </template>
             </n-button>
+            <n-button :loading="rulesLoading" secondary @click="refreshAll">
+              <template #icon
+                ><n-icon><Renew /></n-icon
+              ></template>
+              {{ t("common.refresh") }}
+            </n-button>
           </template>
 
           <n-flex
@@ -310,6 +316,7 @@ watch(
       :error="rulesError"
       :empty-text="t('gateway.no_rules')"
       :row-key="rowKey"
+      :scroll-x="1100"
       @retry="refreshAll"
     />
     <GatewayRuleEditModal

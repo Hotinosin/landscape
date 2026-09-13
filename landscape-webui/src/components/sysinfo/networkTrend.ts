@@ -40,9 +40,8 @@ export function addNetworkTrendSample(
     state.wanSignature = sample.wanSignature;
   }
   if (
-    sample.reportKey === state.lastReportKey ||
-    (state.lastReportTime !== undefined &&
-      sample.reportTime < state.lastReportTime)
+    state.lastReportTime !== undefined &&
+    sample.reportTime < state.lastReportTime
   ) {
     return false;
   }

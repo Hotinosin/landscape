@@ -2,7 +2,7 @@
 import { computed, h, nextTick, onMounted, provide, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { Add } from "@vicons/carbon";
+import { Add, Renew } from "@vicons/carbon";
 import {
   NButton,
   NFlex,
@@ -938,19 +938,27 @@ onMounted(refresh);
     />
 
     <div v-if="!loadError" class="network-settings__toolbar">
-      <n-dropdown
-        trigger="hover"
-        placement="right-start"
-        :options="createMenuOptions"
-        @select="startCreate"
-      >
-        <n-button type="primary">
+      <n-flex>
+        <n-dropdown
+          trigger="hover"
+          placement="right-start"
+          :options="createMenuOptions"
+          @select="startCreate"
+        >
+          <n-button type="primary">
+            <template #icon
+              ><n-icon><Add /></n-icon
+            ></template>
+            {{ t("network.settings.create") }}
+          </n-button>
+        </n-dropdown>
+        <n-button :loading="loading" secondary @click="refresh">
           <template #icon
-            ><n-icon><Add /></n-icon
+            ><n-icon><Renew /></n-icon
           ></template>
-          {{ t("network.settings.create") }}
+          {{ t("common.refresh") }}
         </n-button>
-      </n-dropdown>
+      </n-flex>
       <n-input
         v-model:value="search"
         clearable

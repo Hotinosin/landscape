@@ -100,6 +100,9 @@ const h3TestMessage = computed(() => {
   return t("dns.upstream_edit.h3_test_failed");
 });
 type H3Attempt = DnsUpstreamH3TestResult["attempts"][number];
+function h3AttemptRowKey(attempt: H3Attempt) {
+  return JSON.stringify(attempt);
+}
 const h3AttemptColumns = computed<DataTableColumns<H3Attempt>>(() => [
   {
     title: "#",
@@ -490,6 +493,8 @@ async function import_rules() {
         class="h3-attempt-table"
         :columns="h3AttemptColumns"
         :data="h3TestResult.attempts"
+        :row-key="h3AttemptRowKey"
+        :scroll-x="500"
         size="small"
       />
     </template>

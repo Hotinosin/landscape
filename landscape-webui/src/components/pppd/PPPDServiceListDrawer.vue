@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import CreatePPPDConfigModal from "@/components/pppd/CreatePPPDConfigModal.vue";
-import PPPDCard from "@/components/pppd/PPPDCard.vue";
+import PPPDServiceTable from "@/components/pppd/PPPDServiceTable.vue";
 import {
   get_attach_iface_pppd_config,
   update_iface_pppd_config,
@@ -79,10 +79,9 @@ onMounted(() => {
         @click="show_create_pppd_modal = true"
         >{{ t("pppoe.pppd_drawer.add_pppd") }}</n-button
       >
-      <PPPDCard
-        v-for="each in pppd_configs"
-        :key="each.iface_name"
-        :config="each"
+      <PPPDServiceTable
+        :configs="pppd_configs"
+        :attach-iface-name="props.attach_iface_name"
         @refresh="refreshDrawer"
       />
     </n-flex>
@@ -123,10 +122,9 @@ onMounted(() => {
           @click="show_create_pppd_modal = true"
           >{{ t("pppoe.pppd_drawer.add_pppd") }}</n-button
         >
-        <PPPDCard
-          v-for="each in pppd_configs"
-          :key="each.iface_name"
-          :config="each"
+        <PPPDServiceTable
+          :configs="pppd_configs"
+          :attach-iface-name="props.attach_iface_name"
           @refresh="refreshDrawer"
         />
         <CreatePPPDConfigModal
@@ -153,18 +151,13 @@ onMounted(() => {
         </n-button>
 
         <n-scrollbar>
-          <n-flex vertical>
-            <PPPDCard
-              @refresh="refreshDrawer"
-              :config="each"
-              v-for="each in pppd_configs"
-            >
-            </PPPDCard>
-          </n-flex>
+          <PPPDServiceTable
+            :configs="pppd_configs"
+            :attach-iface-name="props.attach_iface_name"
+            @refresh="refreshDrawer"
+          />
         </n-scrollbar>
       </n-flex>
-
-      <!-- {{ pppd_configs }} -->
 
       <CreatePPPDConfigModal
         @refresh="refreshDrawer"

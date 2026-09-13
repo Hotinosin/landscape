@@ -106,6 +106,7 @@ const columns = computed<DataTableColumns<TableItem>>(() => [
       :data="info"
       size="small"
       :row-key="(row) => row.ip"
+      :scroll-x="680"
     />
     <n-flex
       align="center"

@@ -112,26 +112,33 @@ const dnsRuleColumns = computed<DataTableColumns<DNSRuleConfig>>(() => [
   {
     title: `${t("common.status")} / ${t("common.priority")}`,
     key: "status",
-    render: (rule) => h(DnsRuleListRow, { rule, flows: flows.value, cell: "status" }),
+    render: (rule) =>
+      h(DnsRuleListRow, { rule, flows: flows.value, cell: "status" }),
   },
   {
     title: t("dns.rule_card.match_rules"),
     key: "sources",
-    render: (rule) => h(DnsRuleListRow, { rule, flows: flows.value, cell: "sources" }),
+    render: (rule) =>
+      h(DnsRuleListRow, { rule, flows: flows.value, cell: "sources" }),
   },
   {
     title: t("dns.rule_card.upstream_config"),
     key: "upstream",
-    render: (rule) => h(DnsRuleListRow, { rule, flows: flows.value, cell: "upstream" }),
+    render: (rule) =>
+      h(DnsRuleListRow, { rule, flows: flows.value, cell: "upstream" }),
   },
   {
     title: t("dns.rule_card.traffic_action"),
     key: "action",
-    render: (rule) => h(DnsRuleListRow, { rule, flows: flows.value, cell: "action" }),
+    render: (rule) =>
+      h(DnsRuleListRow, { rule, flows: flows.value, cell: "action" }),
   },
 ]);
+type RedirectCell = "status" | "flows" | "rules" | "mode" | "response";
 const redirectColumns = computed<DataTableColumns<DNSRedirectRule>>(() =>
-  ["status", "flows", "rules", "mode", "response"].map((cell) => ({
+  (
+    ["status", "flows", "rules", "mode", "response"] satisfies RedirectCell[]
+  ).map((cell) => ({
     title: t(
       cell === "status"
         ? "common.status"
@@ -144,8 +151,7 @@ const redirectColumns = computed<DataTableColumns<DNSRedirectRule>>(() =>
               : "dns.redirect_card.response_info",
     ),
     key: cell,
-    render: (rule: DNSRedirectRule) =>
-      h(DnsRedirectListRow, { rule, cell: cell as any }),
+    render: (rule: DNSRedirectRule) => h(DnsRedirectListRow, { rule, cell }),
   })),
 );
 const busy = computed(
@@ -398,7 +404,11 @@ async function quick_btn(record_type: LandscapeDnsRecordType, domain: string) {
               </n-flex>
             </n-flex>
             <n-text v-else depth="3">
-              {{ result.records ? '上游返回空记录' : '未返回上游记录；当前接口未提供查询失败原因，无法区分超时、解析失败或无有效响应。' }}
+              {{
+                result.records
+                  ? "上游返回空记录"
+                  : "未返回上游记录；当前接口未提供查询失败原因，无法区分超时、解析失败或无有效响应。"
+              }}
             </n-text>
             <n-divider title-placement="left">
               {{ t("dns.check_domain.cache_result") }}

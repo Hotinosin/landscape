@@ -30,16 +30,20 @@ const rules = ref<DNSRuleConfig[]>([]);
 const loading = ref(false);
 const showCreateModal = ref(false);
 const showQueryModal = ref(false);
+type DnsRuleCell =
+  "status" | "sources" | "upstream" | "action" | "enable" | "actions";
 
 const columns = computed<DataTableColumns<DNSRuleConfig>>(() =>
-  [
-    [`${t("common.status")} / ${t("common.priority")}`, "status", "18%"],
-    [t("dns.rule_card.match_rules"), "sources", "24%"],
-    [t("dns.rule_card.upstream_config"), "upstream", "18%"],
-    [t("dns.rule_card.traffic_action"), "action", "20%"],
-    [t("common.enable"), "enable", "8%"],
-    [t("common.actions"), "actions", "12%"],
-  ].map(([title, cell, width]) => ({
+  (
+    [
+      [`${t("common.status")} / ${t("common.priority")}`, "status", "18%"],
+      [t("dns.rule_card.match_rules"), "sources", "24%"],
+      [t("dns.rule_card.upstream_config"), "upstream", "18%"],
+      [t("dns.rule_card.traffic_action"), "action", "20%"],
+      [t("common.enable"), "enable", "8%"],
+      [t("common.actions"), "actions", "12%"],
+    ] satisfies Array<[string, DnsRuleCell, string]>
+  ).map(([title, cell, width]) => ({
     title,
     key: cell,
     width,
@@ -47,7 +51,7 @@ const columns = computed<DataTableColumns<DNSRuleConfig>>(() =>
       h(DnsRuleListRow, {
         rule,
         flows: props.flows,
-        cell: cell as any,
+        cell,
         onRefresh: handleRulesChanged,
       }),
   })),
@@ -99,24 +103,32 @@ watch(() => props.flow_id, readRules);
     <n-flex vertical class="rule-panel">
       <n-flex>
         <n-button type="primary" @click="showCreateModal = true">
-          <template #icon><n-icon><Add /></n-icon></template>
+          <template #icon
+            ><n-icon><Add /></n-icon
+          ></template>
           {{ t("common.add_new") }}
         </n-button>
         <n-button @click="exportConfig">
-          <template #icon><n-icon><Copy /></n-icon></template>
+          <template #icon
+            ><n-icon><Copy /></n-icon
+          ></template>
           {{ t("common.copy") }}
         </n-button>
         <ConfirmModal @positive-click="importRules">
           <template #trigger>
             <n-button>
-              <template #icon><n-icon><Paste /></n-icon></template>
+              <template #icon
+                ><n-icon><Paste /></n-icon
+              ></template>
               {{ t("common.paste") }}
             </n-button>
           </template>
           {{ t("dns.rule_drawer.confirm_import") }}
         </ConfirmModal>
         <n-button @click="showQueryModal = true">
-          <template #icon><n-icon><SearchLocate /></n-icon></template>
+          <template #icon
+            ><n-icon><SearchLocate /></n-icon
+          ></template>
           {{ t("common.query") }}
         </n-button>
       </n-flex>

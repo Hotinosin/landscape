@@ -235,6 +235,10 @@ const items = computed(() => listRequest.data.value.jobs);
 const loading = listRequest.loading;
 const refresh = listRequest.refresh;
 
+function rowKey(row: DdnsJob) {
+  return row.id ?? row.name;
+}
+
 function providerName(id: string) {
   return providerProfiles.value.find((item) => item.id === id)?.name ?? id;
 }
@@ -710,6 +714,8 @@ onMounted(async () => {
       :data="items"
       :loading="loading"
       :error="listRequest.error.value"
+      :row-key="rowKey"
+      :scroll-x="1200"
       @retry="listRequest.retry"
     />
 
@@ -797,10 +803,10 @@ onMounted(async () => {
       </n-card>
     </n-modal>
 
-  <ConfigModal
-    v-model:show="showModal"
-    v-model:enabled="formEnabled"
-    :show-switch="false"
+    <ConfigModal
+      v-model:show="showModal"
+      v-model:enabled="formEnabled"
+      :show-switch="false"
       :title="t('ddns.ddns_jobs')"
       width="var(--app-secondary-modal-width)"
     >

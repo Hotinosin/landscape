@@ -33,6 +33,10 @@ const emit = defineEmits(["update:sort", "search:ip"]);
 
 const themeVars = useThemeVars();
 
+function rowKey(row: IpHistoryStat) {
+  return row.ip;
+}
+
 // 使用 computed 确保当 props.sortKey 或 props.sortOrder 改变时，列定义会更新
 const columns = computed(() => [
   {
@@ -252,6 +256,8 @@ const handleSort = (sorter: DataTableSortState | null) => {
         :columns="columns"
         :data="stats"
         :pagination="false"
+        :row-key="rowKey"
+        :scroll-x="900"
         @update:sorter="handleSort"
       />
     </div>

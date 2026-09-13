@@ -150,6 +150,7 @@ const prefixColumns = computed<DataTableColumns<PrefixRow>>(() => [
         :data="show_addresses"
         size="small"
         :row-key="(row) => `${row.ip}-${row.real_active_time}`"
+        :scroll-x="720"
       />
     </template>
 
@@ -163,6 +164,7 @@ const prefixColumns = computed<DataTableColumns<PrefixRow>>(() => [
         :data="show_prefixes"
         size="small"
         :row-key="(row) => `${row.duid}-${row.prefix}`"
+        :scroll-x="720"
       />
     </template>
 

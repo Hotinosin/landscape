@@ -5,7 +5,7 @@ import type { FirewallBlacklistConfig } from "@landscape-router/types/api/schema
 import { computed, h, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import FirewallBlacklistListRow from "@/components/firewall/FirewallBlacklistListRow.vue";
-import { Add } from "@vicons/carbon";
+import { Add, Renew } from "@vicons/carbon";
 import type { DataTableColumns } from "naive-ui";
 import { usePageRequest } from "@/composables/usePageRequest";
 
@@ -61,19 +61,29 @@ const columns = computed<DataTableColumns<FirewallBlacklistConfig>>(() => [
 ]);
 
 function rowKey(row: FirewallBlacklistConfig) {
-  return row.id ?? row.remark ?? `firewall-${row.source.length}`;
+  return row.id ?? JSON.stringify(row.source);
 }
 
 onMounted(read_configs);
 </script>
 <template>
   <n-flex vertical class="standard-content-page">
-    <n-flex align="center" class="standard-list-toolbar">
+    <n-flex
+      align="center"
+      justify="space-between"
+      class="standard-list-toolbar"
+    >
       <n-button type="primary" @click="show_create_modal = true">
         <template #icon
           ><n-icon><Add /></n-icon
         ></template>
         {{ t("common.create") }}
+      </n-button>
+      <n-button :loading="loading" secondary @click="read_configs">
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
       </n-button>
       <n-text depth="3">
         {{ t("firewall.card.ip_blacklist_desc") }}
@@ -86,6 +96,7 @@ onMounted(read_configs);
       :loading="loading"
       :error="error"
       :row-key="rowKey"
+      :scroll-x="760"
       @retry="read_configs"
     />
     <FirewallBlacklistEditModal

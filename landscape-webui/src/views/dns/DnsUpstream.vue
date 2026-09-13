@@ -6,7 +6,7 @@ import { useRoute, useRouter } from "vue-router";
 import type { DataTableColumns } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import DnsUpstreamListRow from "@/components/dns/upstream/DnsUpstreamListRow.vue";
-import { Add } from "@vicons/carbon";
+import { Add, Renew } from "@vicons/carbon";
 import { usePageRequest } from "@/composables/usePageRequest";
 
 const {
@@ -76,12 +76,18 @@ function modalVisibleChanged(show: boolean) {
 </script>
 <template>
   <n-flex vertical class="standard-content-page">
-    <n-flex class="standard-list-toolbar">
+    <n-flex justify="space-between" class="standard-list-toolbar">
       <n-button type="primary" @click="createUpstream">
         <template #icon
           ><n-icon><Add /></n-icon
         ></template>
         {{ t("common.create") }}
+      </n-button>
+      <n-button :loading="loading" secondary @click="refresh_rules">
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
       </n-button>
     </n-flex>
     <StandardDataTable
@@ -90,6 +96,7 @@ function modalVisibleChanged(show: boolean) {
       :loading="loading"
       :error="error"
       :row-key="rowKey"
+      :scroll-x="900"
       @retry="refresh_rules"
     />
     <UpstreamEditModal

@@ -30,15 +30,18 @@ const message = useMessage();
 const rules = ref<WanIpRuleConfig[]>([]);
 const loading = ref(false);
 const showCreateModal = ref(false);
+type WanRuleCell = "status" | "sources" | "action" | "enable" | "actions";
 
 const columns = computed<DataTableColumns<WanIpRuleConfig>>(() =>
-  [
-    [`${t("common.status")} / ${t("common.priority")}`, "status", "22%"],
-    [t("flow.wan_rule_card.match_rules"), "sources", "30%"],
-    [t("flow.wan_rule_edit.egress_select"), "action", "25%"],
-    [t("common.enable"), "enable", "8%"],
-    [t("common.actions"), "actions", "15%"],
-  ].map(([title, cell, width]) => ({
+  (
+    [
+      [`${t("common.status")} / ${t("common.priority")}`, "status", "22%"],
+      [t("flow.wan_rule_card.match_rules"), "sources", "30%"],
+      [t("flow.wan_rule_edit.egress_select"), "action", "25%"],
+      [t("common.enable"), "enable", "8%"],
+      [t("common.actions"), "actions", "15%"],
+    ] satisfies Array<[string, WanRuleCell, string]>
+  ).map(([title, cell, width]) => ({
     title,
     key: cell,
     width,
@@ -46,7 +49,7 @@ const columns = computed<DataTableColumns<WanIpRuleConfig>>(() =>
       h(WanRuleListRow, {
         rule,
         flows: props.flows,
-        cell: cell as any,
+        cell,
         onRefresh: handleRulesChanged,
       }),
   })),
@@ -98,17 +101,23 @@ watch(() => props.flow_id, readRules);
     <n-flex vertical class="rule-panel">
       <n-flex>
         <n-button type="primary" @click="showCreateModal = true">
-          <template #icon><n-icon><Add /></n-icon></template>
+          <template #icon
+            ><n-icon><Add /></n-icon
+          ></template>
           {{ t("common.add_new") }}
         </n-button>
         <n-button @click="exportConfig">
-          <template #icon><n-icon><Copy /></n-icon></template>
+          <template #icon
+            ><n-icon><Copy /></n-icon
+          ></template>
           {{ t("common.copy") }}
         </n-button>
         <ConfirmModal @positive-click="importRules">
           <template #trigger>
             <n-button>
-              <template #icon><n-icon><Paste /></n-icon></template>
+              <template #icon
+                ><n-icon><Paste /></n-icon
+              ></template>
               {{ t("common.paste") }}
             </n-button>
           </template>

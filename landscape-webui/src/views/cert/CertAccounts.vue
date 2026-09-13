@@ -5,7 +5,7 @@ import { computed, h, ref, onMounted } from "vue";
 import type { DataTableColumns } from "naive-ui";
 import CertAccountListRow from "@/components/cert/account/CertAccountListRow.vue";
 import { useI18n } from "vue-i18n";
-import { Add } from "@vicons/carbon";
+import { Add, Renew } from "@vicons/carbon";
 import { usePageRequest } from "@/composables/usePageRequest";
 
 const {
@@ -18,22 +18,26 @@ const {
 });
 const { t } = useI18n();
 const show_edit_modal = ref(false);
+type AccountCell =
+  "name" | "provider" | "email" | "status" | "staging" | "actions";
 const columns = computed<DataTableColumns<CertAccountConfig>>(() =>
-  [
-    [t("common.name"), "name", "18%"],
-    [t("cert.account_provider"), "provider", "14%"],
-    [t("cert.account_email"), "email", "24%"],
-    [t("cert.account_status"), "status", "14%"],
-    [t("cert.account_staging"), "staging", "12%"],
-    [t("common.actions"), "actions", "18%"],
-  ].map(([title, cell, width]) => ({
+  (
+    [
+      [t("common.name"), "name", "18%"],
+      [t("cert.account_provider"), "provider", "14%"],
+      [t("cert.account_email"), "email", "24%"],
+      [t("cert.account_status"), "status", "14%"],
+      [t("cert.account_staging"), "staging", "12%"],
+      [t("common.actions"), "actions", "18%"],
+    ] satisfies Array<[string, AccountCell, string]>
+  ).map(([title, cell, width]) => ({
     title,
     key: cell,
     width,
     render: (rule: CertAccountConfig) =>
       h(CertAccountListRow, {
         rule,
-        cell: cell as any,
+        cell,
         ...(cell === "actions" ? { onRefresh: refresh } : {}),
       }),
   })),
@@ -47,12 +51,18 @@ onMounted(refresh);
 
 <template>
   <n-flex vertical class="standard-content-page">
-    <n-flex class="standard-list-toolbar">
+    <n-flex justify="space-between" class="standard-list-toolbar">
       <n-button type="primary" @click="show_edit_modal = true">
         <template #icon
           ><n-icon><Add /></n-icon
         ></template>
         {{ t("common.create") }}
+      </n-button>
+      <n-button :loading="loading" secondary @click="refresh">
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
       </n-button>
     </n-flex>
     <StandardDataTable
@@ -61,6 +71,7 @@ onMounted(refresh);
       :loading="loading"
       :error="error"
       :row-key="rowKey"
+      :scroll-x="900"
       :empty-text="t('cert.no_accounts')"
       @retry="refresh"
     />

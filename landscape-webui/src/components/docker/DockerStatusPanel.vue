@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-import { DotMark } from "@vicons/carbon";
+import { DotMark, Renew } from "@vicons/carbon";
 import { useThemeVars } from "naive-ui";
 
 import { ServiceStatusType, get_service_status_color } from "@/lib/services";
@@ -40,6 +40,16 @@ async function stop() {
       <n-text strong>Docker</n-text>
     </n-flex>
     <n-flex size="small">
+      <n-button
+        size="small"
+        :loading="dockerStatus.loading"
+        @click="dockerStatus.UPDATE_INFO()"
+      >
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
+      </n-button>
       <n-button size="small" @click="show_image_drawer = true">{{
         t("common.image")
       }}</n-button>

@@ -23,7 +23,7 @@ const sample = (
 const state = (): NetworkTrendState => ({ upload: [], download: [] });
 
 describe("realtime network trend", () => {
-  it("keeps valid zero samples and ignores duplicate or stale reports", () => {
+  it("keeps every successful poll and ignores stale reports", () => {
     const trend = state();
 
     expect(
@@ -33,9 +33,12 @@ describe("realtime network trend", () => {
         1_000,
       ),
     ).toBe(true);
-    expect(addNetworkTrendSample(trend, sample(2_000, 100), 1_000)).toBe(false);
+    expect(addNetworkTrendSample(trend, sample(2_000, 100), 1_000)).toBe(true);
     expect(addNetworkTrendSample(trend, sample(3_000, 99), 1_000)).toBe(false);
-    expect(trend.upload).toEqual([[1_000, 0]]);
+    expect(trend.upload).toEqual([
+      [1_000, 0],
+      [2_000, 10],
+    ]);
   });
 
   it("breaks the line after a refresh-sized gap", () => {

@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import type { EnrolledDevice } from "@landscape-router/types/api/schemas";
-import {
-  delete_enrolled_device,
-  validate_enrolled_device_ip,
-} from "@/api/enrolled_device";
+import { delete_enrolled_device } from "@/api/enrolled_device";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
 import EnrolledDeviceEditModal from "./EnrolledDeviceEditModal.vue";
@@ -15,8 +12,6 @@ const enrolledDeviceStore = useEnrolledDeviceStore();
 
 const { t } = useI18n();
 const frontEndStore = useFrontEndStore();
-const isValid = ref<boolean | null>(null);
-
 const displayName = computed(() => {
   if (frontEndStore.presentation_mode && props.rule.fake_name) {
     return props.rule.fake_name;
@@ -26,41 +21,21 @@ const displayName = computed(() => {
 
 type Props = {
   rule: EnrolledDevice;
+  valid?: boolean | null;
   cell:
     "name" | "mac" | "iface" | "ipv4" | "ipv6" | "tags" | "remark" | "actions";
 };
 
 const props = defineProps<Props>();
+const emit = defineEmits<{ refresh: [] }>();
 
 const show_edit_modal = ref(false);
-
-async function validate() {
-  if (props.rule.iface_name && props.rule.ipv4) {
-    try {
-      isValid.value = await validate_enrolled_device_ip(
-        props.rule.iface_name,
-        props.rule.ipv4,
-      );
-    } catch (e) {
-      console.error("Async validation failed", e);
-    }
-  } else {
-    isValid.value = true;
-  }
-}
-
-watch(
-  () => [props.rule.iface_name, props.rule.ipv4],
-  () => {
-    void validate();
-  },
-  { immediate: true },
-);
 
 async function del() {
   if (props.rule.id) {
     await delete_enrolled_device(props.rule.id);
     await enrolledDeviceStore.UPDATE_INFO();
+    emit("refresh");
   }
 }
 </script>
@@ -69,7 +44,7 @@ async function del() {
   <template v-if="cell === 'name'">
     <n-flex vertical align="start" size="small">
       <n-ellipsis style="max-width: 160px">{{ displayName }}</n-ellipsis>
-      <n-tag v-if="isValid === false" size="small" type="error" round>
+      <n-tag v-if="valid === false" size="small" type="error" round>
         {{ t("device.invalid_status") }}
       </n-tag>
     </n-flex>
@@ -124,6 +99,7 @@ async function del() {
     v-if="cell === 'actions'"
     :rule_id="rule.id ?? null"
     v-model:show="show_edit_modal"
+    @refresh="emit('refresh')"
   />
 </template>
 

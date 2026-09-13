@@ -582,12 +582,7 @@ onMounted(() => {
         />
         <n-tooltip trigger="hover">
           <template #trigger>
-            <n-button
-              strong
-              secondary
-              @click="syncToNow"
-              type="info"
-            >
+            <n-button strong secondary @click="syncToNow" type="info">
               <template #icon>
                 <n-icon><TimeOutline /></n-icon>
               </template>
@@ -667,12 +662,7 @@ onMounted(() => {
         />
         <n-tooltip trigger="hover">
           <template #trigger>
-            <n-button
-              strong
-              secondary
-              @click="syncToNow"
-              type="info"
-            >
+            <n-button strong secondary @click="syncToNow" type="info">
               <template #icon>
                 <n-icon><TimeOutline /></n-icon>
               </template>
@@ -719,6 +709,7 @@ onMounted(() => {
               :row-key="
                 (row: DnsMetric) => row.report_time + row.domain + row.flow_id
               "
+              :scroll-x="1100"
             />
           </div>
           <n-flex justify="end" class="dns-history-pagination">

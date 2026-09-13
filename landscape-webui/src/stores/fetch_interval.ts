@@ -83,7 +83,7 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
         () => firewallConfigStore.UPDATE_INFO(),
         () => wifiConfigStore.UPDATE_INFO(),
         () => dhcpv4ConfigStore.UPDATE_INFO(),
-        () => metricStore.UPDATE_INFO(),
+        () => metricStore.UPDATE_INFO(interval_time.value),
         () => mssclampConfigStore.UPDATE_INFO(),
         () => routeLanConfigStore.UPDATE_INFO(),
         () => routeWanConfigStore.UPDATE_INFO(),

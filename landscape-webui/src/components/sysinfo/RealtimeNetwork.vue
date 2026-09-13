@@ -6,18 +6,16 @@ import { ArrowDown, ArrowUp } from "@vicons/carbon";
 import { IfaceZoneType } from "@landscape-router/types/api/schemas";
 import { useIfaceNodeStore } from "@/stores/iface_node";
 import { useMetricStore } from "@/stores/status_metric";
-import { useFetchIntervalStore } from "@/stores/fetch_interval";
 import { useSysInfo } from "@/stores/systeminfo";
 import { formatPackets, formatRate } from "@/lib/util";
 import { overviewCardStyles } from "@/components/overviewCardStyle";
 import MetricLineChart from "@/components/metric/connect/MetricLineChart.vue";
-import { addNetworkTrendSample, resetNetworkTrend } from "./networkTrend";
+import { resetNetworkTrend } from "./networkTrend";
 
 const { t } = useI18n();
 const themeVars = useThemeVars();
 const ifaceStore = useIfaceNodeStore();
 const metricStore = useMetricStore();
-const fetchIntervalStore = useFetchIntervalStore();
 const sysInfo = useSysInfo();
 const ifaceState = computed(() => metricStore.resourceStates.iface);
 const connectionState = computed(() => metricStore.resourceStates.connections);
@@ -34,12 +32,7 @@ const wanIndexes = computed(() =>
     .map((iface) => iface.index)
     .sort((left, right) => left - right),
 );
-const wanSignature = computed(() => wanIndexes.value.join(","));
 const wanIndexSet = computed(() => new Set(wanIndexes.value));
-const wanStats = computed(() =>
-  metricStore.iface_stats.filter((item) => wanIndexSet.value.has(item.ifindex)),
-);
-
 const stats = computed(() => {
   return metricStore.iface_stats
     .filter((item) => wanIndexSet.value.has(item.ifindex))
@@ -67,40 +60,6 @@ const trendSeries = computed(() => ({
     { name: t("sysinfo.download_rate"), data: trend.download },
   ],
 }));
-
-watch(wanSignature, (signature) => {
-  if (trend.wanSignature === undefined) trend.wanSignature = signature;
-  else if (trend.wanSignature !== signature) {
-    resetNetworkTrend(trend);
-    trend.wanSignature = signature;
-  }
-});
-
-watch(
-  () => ifaceState.value.lastSuccessAt,
-  (timestamp) => {
-    if (!timestamp || !wanStats.value.length) return;
-    if (document.hidden) return;
-    const reports = wanStats.value
-      .map(
-        ({ ifindex, last_report_time }) => [ifindex, last_report_time] as const,
-      )
-      .sort(([left], [right]) => left - right);
-    if (reports.some(([, reportTime]) => !reportTime)) return;
-    addNetworkTrendSample(
-      trend,
-      {
-        timestamp,
-        reportKey: reports.map((report) => report.join(":")).join("|"),
-        reportTime: Math.max(...reports.map(([, reportTime]) => reportTime)),
-        wanSignature: wanSignature.value,
-        upload: stats.value.egressBps,
-        download: stats.value.ingressBps,
-      },
-      fetchIntervalStore.interval_time,
-    );
-  },
-);
 
 watch(
   () => sysInfo.router_status.uptime,

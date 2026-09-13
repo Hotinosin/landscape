@@ -10,6 +10,7 @@ import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import { useFetchIntervalStore } from "@/stores/fetch_interval";
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
 import { usePageRequest } from "@/composables/usePageRequest";
+import { validate_enrolled_device_ip } from "@/api/enrolled_device";
 
 const { t } = useI18n();
 const enrolledDeviceStore = useEnrolledDeviceStore();
@@ -25,6 +26,7 @@ const deviceRequest = usePageRequest(
 
 onMounted(async () => {
   await deviceRequest.execute();
+  await validateDevices(deviceRequest.data.value);
   fetchIntervalStore.enable_interval = false;
 });
 
@@ -33,13 +35,40 @@ onUnmounted(() => {
 });
 
 const show_edit_modal = ref(false);
+const validity = ref<Record<string, boolean | null>>({});
+
+function deviceKey(device: EnrolledDevice) {
+  return String(device.id ?? device.mac);
+}
+
+async function validateDevices(devices: EnrolledDevice[]) {
+  const entries = await Promise.all(
+    devices.map(async (device): Promise<[string, boolean | null]> => {
+      if (!device.iface_name || !device.ipv4) return [deviceKey(device), true];
+      try {
+        return [
+          deviceKey(device),
+          await validate_enrolled_device_ip(device.iface_name, device.ipv4),
+        ];
+      } catch {
+        return [deviceKey(device), null];
+      }
+    }),
+  );
+  validity.value = Object.fromEntries(entries);
+}
 
 const columns = computed<DataTableColumns<EnrolledDevice>>(() => [
   {
     title: t("device.name"),
     key: "name",
     width: "18%",
-    render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "name" }),
+    render: (rule) =>
+      h(EnrolledDeviceListRow, {
+        rule,
+        cell: "name",
+        valid: validity.value[deviceKey(rule)],
+      }),
   },
   {
     title: t("device.mac"),
@@ -82,12 +111,18 @@ const columns = computed<DataTableColumns<EnrolledDevice>>(() => [
     key: "actions",
     width: 120,
     align: "left",
-    render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "actions" }),
+    render: (rule) =>
+      h(EnrolledDeviceListRow, {
+        rule,
+        cell: "actions",
+        onRefresh: manualRefresh,
+      }),
   },
 ]);
 
 async function manualRefresh() {
   await deviceRequest.refresh();
+  await validateDevices(deviceRequest.data.value);
 }
 </script>
 

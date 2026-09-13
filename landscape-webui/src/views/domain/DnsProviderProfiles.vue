@@ -44,6 +44,10 @@ const form = ref<DnsProviderProfile>({
 });
 const providerType = ref("cloudflare");
 
+function rowKey(row: DnsProviderProfile) {
+  return row.id ?? row.name;
+}
+
 const providerOptions = [
   { label: "Cloudflare", value: "cloudflare" },
   { label: "Aliyun", value: "aliyun" },
@@ -334,6 +338,8 @@ onMounted(refresh);
       :data="items"
       :loading="loading"
       :error="listError"
+      :row-key="rowKey"
+      :scroll-x="900"
       @retry="refresh"
     />
 
