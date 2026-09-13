@@ -72,7 +72,9 @@ export default {
     access_dhcp_server: "DHCP server",
     access_unconfigured: "Not configured",
     related_interfaces: "Related interfaces",
-    ip_address: "IP address",
+    ip_address: "Current IP addresses",
+    runtime_address_failed:
+      "Runtime IP address refresh failed. The last result is still shown.",
     configure_title: "Configure interface {name}",
     managed_readonly:
       "This interface is managed by Docker or a plugin. Open its owner to make changes.",

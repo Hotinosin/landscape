@@ -44,8 +44,14 @@ export async function change_iface_boot_status(
   );
 }
 
+export interface RuntimeIpAddress {
+  address: string;
+  prefix_length: number;
+  is_permanent: boolean;
+}
+
 export async function get_runtime_ip_addresses(): Promise<
-  Record<string, string>
+  Record<string, RuntimeIpAddress[]>
 > {
   return servicesAxios.get("/ip/runtime-addresses", { silent: true } as any);
 }

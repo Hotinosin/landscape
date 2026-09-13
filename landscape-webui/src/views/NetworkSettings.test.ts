@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   changeStatus: vi.fn(),
   changeZone: vi.fn(),
   runtimeIps: vi.fn(),
+  pppdConfigs: vi.fn(),
   ipConfig: vi.fn(),
   dhcpConfig: vi.fn(),
   dialogWarning: vi.fn(),
@@ -36,6 +37,9 @@ vi.mock("@/api/docker/network", () => ({
   get_all_docker_networks: mocks.dockerNetworks,
 }));
 vi.mock("@/api/plugins", () => ({ listPlugins: mocks.plugins }));
+vi.mock("@/api/service_pppd", () => ({
+  get_all_iface_pppd_config: mocks.pppdConfigs,
+}));
 vi.mock("@/api/service_ipconfig", () => ({
   get_iface_server_config: mocks.ipConfig,
 }));
@@ -83,7 +87,16 @@ beforeEach(() => {
   mocks.ifaces.mockResolvedValue([device("wanA"), device("wanB")]);
   mocks.dockerNetworks.mockResolvedValue([]);
   mocks.plugins.mockResolvedValue([]);
-  mocks.runtimeIps.mockResolvedValue({ wanA: "192.0.2.10" });
+  mocks.runtimeIps.mockResolvedValue({
+    wanA: [
+      {
+        address: "192.0.2.10",
+        prefix_length: 24,
+        is_permanent: false,
+      },
+    ],
+  });
+  mocks.pppdConfigs.mockResolvedValue([]);
   mocks.ipConfig.mockImplementation(async (name: string) => ({
     iface_name: name,
     ip_model: { t: "dhcpclient" },
@@ -247,6 +260,30 @@ describe("NetworkSettings", () => {
     vm.openConfig(vm.devices[0]);
     await flushPromises();
     expect(vm.hasService("pppd")).toBe(true);
+  });
+
+  it("associates PPPD runtime addresses with its attached interface", async () => {
+    mocks.runtimeIps.mockResolvedValueOnce({
+      "ppp-wanA": [
+        {
+          address: "198.51.100.8",
+          prefix_length: 32,
+          is_permanent: false,
+        },
+      ],
+    });
+    mocks.pppdConfigs.mockResolvedValueOnce([
+      { attach_iface_name: "wanA", iface_name: "ppp-wanA" },
+    ]);
+    const vm = await mountPage();
+
+    expect(vm.addressesFor(vm.devices[0])).toMatchObject([
+      {
+        address: "198.51.100.8",
+        prefix_length: 32,
+        ifaceName: "ppp-wanA",
+      },
+    ]);
   });
 
   it("warns before closing dirty basic settings and refreshes after save", async () => {

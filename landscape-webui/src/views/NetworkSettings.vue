@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { computed, h, nextTick, onMounted, provide, ref, watch } from "vue";
+import {
+  computed,
+  h,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  provide,
+  ref,
+  watch,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { Add, Renew } from "@vicons/carbon";
@@ -38,7 +47,10 @@ import {
   create_bridge,
   delete_bridge,
   get_runtime_ip_addresses,
+  type RuntimeIpAddress,
 } from "@/api/network";
+import { get_all_iface_pppd_config } from "@/api/service_pppd";
+import type { PPPDServiceConfig } from "@/lib/pppd";
 import { useIfaceNodeStore } from "@/stores/iface_node";
 import { useIpConfigStore } from "@/stores/status_ipconfig";
 import { useDHCPv4ConfigStore } from "@/stores/status_dhcp_v4";
@@ -128,8 +140,12 @@ const firstWanPreset = ref(false);
 const createName = ref("");
 const createMembers = ref<number[]>([]);
 const bridgeTarget = ref<number | null>(null);
-const runtimeIpAddresses = ref<Record<string, string>>({});
-const projectDetails = ref<Record<string, { access: string; ip?: string }>>({});
+const runtimeIpAddresses = ref<Record<string, RuntimeIpAddress[]>>({});
+const pppdConfigs = ref<PPPDServiceConfig[]>([]);
+const runtimeAddressError = ref(false);
+let runtimeAddressRefreshRunning = false;
+let runtimeAddressRefreshTimer: ReturnType<typeof setInterval> | undefined;
+const projectDetails = ref<Record<string, { access: string }>>({});
 const invalidLocation = ref(false);
 const draftEnabled = ref(false);
 const draftBoot = ref(false);
@@ -194,6 +210,23 @@ const projectGroups = computed(() =>
 const selected = computed(() =>
   devices.value.find((item) => item.name === selectedName.value),
 );
+function addressesFor(device: NetDev) {
+  const ifaceNames = [
+    device.name,
+    ...pppdConfigs.value
+      .filter((config) => config.attach_iface_name === device.name)
+      .map((config) => config.iface_name),
+  ];
+  const seen = new Set<string>();
+  return ifaceNames.flatMap((ifaceName) =>
+    (runtimeIpAddresses.value[ifaceName] ?? []).flatMap((address) => {
+      const value = `${address.address}/${address.prefix_length}`;
+      if (seen.has(value)) return [];
+      seen.add(value);
+      return [{ ...address, ifaceName, value }];
+    }),
+  );
+}
 const serviceDevice = computed(() =>
   selected.value && creatingNetwork.value && networkCreateRole.value
     ? { ...selected.value, zone_type: networkCreateRole.value }
@@ -409,12 +442,27 @@ const projectColumns = computed<DataTableColumns<NetDev>>(() => [
   {
     title: t("network.settings.ip_address"),
     key: "ip",
-    width: 150,
-    render: (item) =>
-      frontEndStore.MASK_INFO(
-        runtimeIpAddresses.value[item.name] ||
-          projectDetails.value[item.name]?.ip,
-      ) || "—",
+    width: 210,
+    render: (item) => {
+      const addresses = addressesFor(item);
+      if (!addresses.length) return "—";
+      return h(
+        NFlex,
+        { vertical: true, size: 2 },
+        {
+          default: () =>
+            addresses.map((address) =>
+              h(
+                "span",
+                { key: `${address.ifaceName}-${address.value}` },
+                `${address.ifaceName === item.name ? "" : "PPPD · "}${
+                  frontEndStore.MASK_INFO(address.value) || "—"
+                }`,
+              ),
+            ),
+        },
+      );
+    },
   },
   {
     title: t("common.status"),
@@ -460,7 +508,7 @@ const projectColumns = computed<DataTableColumns<NetDev>>(() => [
   },
 ]);
 async function loadProjectDetails() {
-  const details: Record<string, { access: string; ip?: string }> = {};
+  const details: Record<string, { access: string }> = {};
   await Promise.all(
     projects.value.map(async (device) => {
       try {
@@ -468,16 +516,11 @@ async function loadProjectDetails() {
           const config = await get_iface_server_config(device.name, true);
           details[device.name] = {
             access: t(`network.settings.access_${config.ip_model.t}`),
-            ip:
-              config.ip_model.t === "static"
-                ? config.ip_model.ipv4 || undefined
-                : undefined,
           };
         } else if (device.zone_type === IfaceZoneType.lan) {
           const config = await get_iface_dhcp_v4_config(device.name, true);
           details[device.name] = {
             access: t("network.settings.access_dhcp_server"),
-            ip: config.config.server_ip_addr,
           };
         }
       } catch {
@@ -610,25 +653,40 @@ async function guarded(action: () => Promise<void>) {
   if (disableGuard.value) await disableGuard.value.check_and_execute(action);
   else await action();
 }
+async function refreshRuntimeAddresses() {
+  if (runtimeAddressRefreshRunning) return;
+  runtimeAddressRefreshRunning = true;
+  try {
+    const [addresses, configs] = await Promise.all([
+      get_runtime_ip_addresses(),
+      get_all_iface_pppd_config(),
+    ]);
+    runtimeIpAddresses.value = addresses;
+    pppdConfigs.value = configs;
+    runtimeAddressError.value = false;
+  } catch {
+    runtimeAddressError.value = true;
+  } finally {
+    runtimeAddressRefreshRunning = false;
+  }
+}
 async function refresh() {
   loading.value = true;
   loadError.value = undefined;
   sourceErrors.value = [];
   try {
     await ifaceStore.UPDATE_INFO();
-    const [docker, plugin, runtimeIps] = await Promise.allSettled([
+    const [docker, plugin] = await Promise.allSettled([
       get_all_docker_networks(),
       listPlugins(),
-      get_runtime_ip_addresses(),
     ]);
+    await refreshRuntimeAddresses();
     await Promise.allSettled(
       Object.values(statusStores).map((store) => store.UPDATE_INFO()),
     );
     dockerNetworks.value =
       docker.status === "fulfilled" ? docker.value : undefined;
     plugins.value = plugin.status === "fulfilled" ? plugin.value : undefined;
-    runtimeIpAddresses.value =
-      runtimeIps.status === "fulfilled" ? runtimeIps.value : {};
     if (docker.status === "rejected") sourceErrors.value.push("Docker");
     if (plugin.status === "rejected")
       sourceErrors.value.push(t("network.settings.plugin"));
@@ -775,6 +833,7 @@ function requestSaveConfiguration() {
 async function afterSaved(key?: Editor) {
   await Promise.all([
     ifaceStore.UPDATE_INFO(),
+    refreshRuntimeAddresses(),
     key && key !== "pppd"
       ? statusStores[key as keyof typeof statusStores]?.UPDATE_INFO()
       : Promise.resolve(),
@@ -903,7 +962,13 @@ async function createBridge() {
 }
 
 watch(() => route.query, restoreUrl);
-onMounted(refresh);
+onMounted(() => {
+  refresh();
+  runtimeAddressRefreshTimer = setInterval(refreshRuntimeAddresses, 15_000);
+});
+onUnmounted(() => {
+  if (runtimeAddressRefreshTimer) clearInterval(runtimeAddressRefreshTimer);
+});
 </script>
 
 <template>
@@ -927,6 +992,14 @@ onMounted(refresh);
         sources: sourceErrors.join(", "),
       })
     }}</n-alert>
+    <n-alert v-if="runtimeAddressError" type="warning" :show-icon="false">
+      <n-flex justify="space-between">
+        <span>{{ t("network.settings.runtime_address_failed") }}</span>
+        <n-button size="small" @click="refreshRuntimeAddresses">{{
+          t("common.retry")
+        }}</n-button>
+      </n-flex>
+    </n-alert>
 
     <NetFlow
       v-if="!loadError"

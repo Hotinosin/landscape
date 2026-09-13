@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, net::IpAddr};
 
 use axum::extract::{Path, State};
 use landscape_common::api_response::LandscapeApiResp as CommonApiResp;
@@ -9,10 +9,20 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use landscape_common::service::ServiceConfigError;
+use landscape::netlink::address::all_addresses_by_iface_name;
+use serde::Serialize;
 
 use crate::api::JsonBody;
 use crate::LandscapeApp;
 use crate::{api::LandscapeApiResp, error::LandscapeApiResult};
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+struct RuntimeIpAddress {
+    #[schema(value_type = String)]
+    address: IpAddr,
+    prefix_length: u8,
+    is_permanent: bool,
+}
 
 async fn validate_ip_config(
     state: &LandscapeApp,
@@ -48,18 +58,28 @@ pub fn get_iface_ipconfig_paths() -> OpenApiRouter<LandscapeApp> {
     get,
     path = "/ip/runtime-addresses",
     tag = "IP Config",
-    responses((status = 200, body = CommonApiResp<HashMap<String, String>>))
+    responses((status = 200, body = CommonApiResp<HashMap<String, Vec<RuntimeIpAddress>>>))
 )]
 async fn get_runtime_ip_addresses(
-    State(state): State<LandscapeApp>,
-) -> LandscapeApiResult<HashMap<String, String>> {
+    State(_state): State<LandscapeApp>,
+) -> LandscapeApiResult<HashMap<String, Vec<RuntimeIpAddress>>> {
     LandscapeApiResp::success(
-        state
-            .route_service
-            .get_all_ipv4_wan_routes()
+        all_addresses_by_iface_name()
             .await
             .into_iter()
-            .map(|(name, route)| (name, route.iface_ip.to_string()))
+            .map(|(name, addresses)| {
+                (
+                    name,
+                    addresses
+                        .into_iter()
+                        .map(|address| RuntimeIpAddress {
+                            address: address.address,
+                            prefix_length: address.prefix_len,
+                            is_permanent: address.is_permanent,
+                        })
+                        .collect(),
+                )
+            })
             .collect(),
     )
 }
