@@ -194,7 +194,12 @@ function select_ip_model(value: IfaceIpMode) {
     @after-enter="on_modal_enter"
     @dirty="emit('dirty')"
   >
-    <n-flex style="flex: 1" vertical v-if="iface_data.ip_model !== undefined">
+    <n-flex
+      v-if="iface_data.ip_model !== undefined"
+      style="flex: 1"
+      vertical
+      :size="0"
+    >
       <StandardSettingRow :label="t('interface.title')">
         <n-select
           :value="iface_data.ip_model.t"
@@ -357,7 +362,7 @@ function select_ip_model(value: IfaceIpMode) {
 
     <template #footer>
       <n-flex justify="end">
-        <n-button round type="primary" @click="update_mode">
+        <n-button type="primary" @click="update_mode">
           {{ t("interface.update") }}
         </n-button>
       </n-flex>

@@ -283,20 +283,27 @@ body {
 }
 .app-setting-switch-row,
 .standard-setting-row {
-  align-items: center;
   gap: var(--app-space-lg);
   min-height: var(--app-control-height);
   font-size: var(--app-font-size-body);
 }
 
 .app-setting-switch-row {
+  align-items: center;
   display: flex;
   justify-content: space-between;
 }
 
 .standard-setting-row {
+  align-items: start;
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--app-setting-control-width);
+}
+
+.standard-setting-row--stacked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-sm);
 }
 
 .standard-setting-row--wide {
@@ -316,6 +323,16 @@ body {
   white-space: nowrap;
 }
 
+.standard-setting-row__label {
+  display: flex;
+  align-items: center;
+  min-height: var(--app-control-height);
+}
+
+.standard-setting-row--stacked .standard-setting-row__label {
+  min-height: auto;
+}
+
 .standard-setting-row {
   margin-bottom: var(--app-space-section);
 }
@@ -332,6 +349,10 @@ body {
 
 .standard-setting-row__control--wide {
   width: var(--app-setting-control-width-wide);
+}
+
+.standard-setting-row__control--stacked {
+  width: 100%;
 }
 
 .standard-setting-row__control:not(.standard-setting-row__control--auto) > * {

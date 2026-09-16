@@ -4,6 +4,7 @@ import { useMessage } from "naive-ui";
 import type { FormInst, FormRules } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 const metricStore = useMetricConfigStore();
 const message = useMessage();
@@ -65,16 +66,16 @@ async function handleSaveMetric() {
       label-placement="left"
       label-width="160"
     >
-      <n-form-item :label="t('config.metric_mode')" path="mode">
+      <StandardSettingRow
+        :label="t('config.metric_mode')"
+        path="mode"
+        :feedback="t('config.metric_mode_desc')"
+      >
         <n-select
           v-model:value="metricStore.mode"
           :options="modeOptions"
-          style="width: 240px"
         />
-        <template #feedback>
-          {{ t("config.metric_mode_desc") }}
-        </template>
-      </n-form-item>
+      </StandardSettingRow>
 
       <n-divider title-placement="left">
         {{ t("config.conn_retention_mins") }}
@@ -192,18 +193,17 @@ async function handleSaveMetric() {
       <n-divider title-placement="left">
         {{ t("config.dns_retention_days") }}
       </n-divider>
-      <n-form-item :label="t('config.dns_retention_days')">
+      <StandardSettingRow
+        :label="t('config.dns_retention_days')"
+        :feedback="t('config.dns_retention_days_desc')"
+      >
         <n-input-number
           v-model:value="metricStore.dnsRetentionDays"
           :min="1"
           :max="365"
           placeholder="7"
-          style="width: 200px"
         />
-        <template #feedback>
-          {{ t("config.dns_retention_days_desc") }}
-        </template>
-      </n-form-item>
+      </StandardSettingRow>
       <n-grid x-gap="12" :cols="2">
         <n-gi>
           <n-form-item :label="t('config.dns_1m_retention_days')">

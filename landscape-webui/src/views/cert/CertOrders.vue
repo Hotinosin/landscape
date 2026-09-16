@@ -17,7 +17,7 @@ import CertInfoModal from "@/components/cert/order/CertInfoModal.vue";
 import EditButton from "@/components/common/EditButton.vue";
 import DeleteButton from "@/components/common/DeleteButton.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
-import { Add, Renew } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import { usePageRequest } from "@/composables/usePageRequest";
 
 const certRequest = usePageRequest(get_certs, {
@@ -423,9 +423,6 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
   <n-flex vertical class="standard-content-page">
     <n-flex justify="space-between" class="standard-list-toolbar">
       <n-button type="primary" @click="open_edit(null)">
-        <template #icon
-          ><n-icon><Add /></n-icon
-        ></template>
         {{ t("common.create") }}
       </n-button>
       <n-button :loading="certRequest.loading.value" secondary @click="refresh">

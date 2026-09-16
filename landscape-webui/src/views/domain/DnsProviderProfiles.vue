@@ -20,7 +20,7 @@ import {
 } from "naive-ui";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
-import { Add, Renew } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import { usePageRequest } from "@/composables/usePageRequest";
 import EditButton from "@/components/common/EditButton.vue";
 import DeleteButton from "@/components/common/DeleteButton.vue";
@@ -333,8 +333,6 @@ onMounted(refresh);
           resetForm();
           showModal = true;
         "
-        ><template #icon
-          ><n-icon><Add /></n-icon></template
         >{{ t("common.create") }}</n-button
       >
       <n-button :loading="loading" secondary @click="refresh">

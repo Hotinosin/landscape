@@ -145,26 +145,32 @@ const contentStyle = computed(() => {
             <n-flex align="center" :size="[5, 0]">
               <LanguageSetting />
               <PresentationMode></PresentationMode>
-              <n-flex
-                class="header-account"
-                align="center"
-                :size="6"
-                :wrap="false"
+              <n-popover
+                trigger="hover"
+                placement="bottom-end"
+                :show-arrow="false"
+                style="padding: 4px"
               >
-                <n-avatar round :size="22">{{ accountInitial }}</n-avatar>
-                <n-text>{{ accountName }}</n-text>
-              </n-flex>
-              <n-button
-                quaternary
-                size="small"
-                style="font-size: var(--app-font-size-caption)"
-                @click="logout"
-              >
-                <template #icon>
-                  <n-icon><Logout /></n-icon>
+                <template #trigger>
+                  <n-button quaternary size="small" class="header-account">
+                    <n-flex align="center" :size="6" :wrap="false">
+                      <n-avatar round :size="22">{{ accountInitial }}</n-avatar>
+                      <n-text>{{ accountName }}</n-text>
+                    </n-flex>
+                  </n-button>
                 </template>
-                {{ t("common.logout") }}
-              </n-button>
+                <n-button
+                  quaternary
+                  size="small"
+                  style="font-size: var(--app-font-size-caption)"
+                  @click="logout"
+                >
+                  <template #icon>
+                    <n-icon><Logout /></n-icon>
+                  </template>
+                  {{ t("common.logout") }}
+                </n-button>
+              </n-popover>
               <IntervalFetch />
             </n-flex>
           </n-flex>

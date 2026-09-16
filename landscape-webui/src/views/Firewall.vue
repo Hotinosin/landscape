@@ -5,7 +5,7 @@ import type { FirewallBlacklistConfig } from "@landscape-router/types/api/schema
 import { computed, h, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import FirewallBlacklistListRow from "@/components/firewall/FirewallBlacklistListRow.vue";
-import { Add, Renew } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import type { DataTableColumns } from "naive-ui";
 import { usePageRequest } from "@/composables/usePageRequest";
 
@@ -74,9 +74,6 @@ onMounted(read_configs);
       class="standard-list-toolbar"
     >
       <n-button type="primary" @click="show_create_modal = true">
-        <template #icon
-          ><n-icon><Add /></n-icon
-        ></template>
         {{ t("common.create") }}
       </n-button>
       <n-button :loading="loading" secondary @click="read_configs">

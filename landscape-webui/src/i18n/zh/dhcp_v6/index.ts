@@ -14,7 +14,7 @@ export default {
   duid: "DUID",
   no_records: "暂无 DHCPv6 分配记录",
 
-  // DHCPv6ConfigSection
+  // DHCPv6 服务设置
   enable_dhcpv6: "启用 DHCPv6",
   m_flag_warning:
     "DHCPv6 已启用但 RA M 标志未设置，客户端可能不会请求 DHCPv6 地址",

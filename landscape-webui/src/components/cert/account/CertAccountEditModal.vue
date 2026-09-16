@@ -4,6 +4,7 @@ import type { CertAccountConfig } from "@landscape-router/types/api/schemas";
 import { get_cert_account, push_cert_account } from "@/api/cert/account";
 import { useI18n } from "vue-i18n";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardEnableSwitch from "@/components/common/StandardEnableSwitch.vue";
 
 type Props = {
   rule_id: string | null;
@@ -209,14 +210,11 @@ async function save() {
       </template>
 
       <n-form-item :label="t('cert.account_staging')">
-        <n-switch
-          v-model:value="rule.use_staging"
+        <StandardEnableSwitch
+          :value="!!rule.use_staging"
+          @update:value="(value: boolean) => (rule!.use_staging = value)"
           :disabled="is_zerossl"
-          size="medium"
-        >
-          <template #checked>{{ t("common.enable") }}</template>
-          <template #unchecked>{{ t("common.disable") }}</template>
-        </n-switch>
+        />
       </n-form-item>
     </n-form>
 

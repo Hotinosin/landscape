@@ -17,7 +17,7 @@ import {
   refresh_geo_cache_key as refreshIpCache,
 } from "@/api/geo/ip";
 import { copy_context_to_clipboard } from "@/lib/common";
-import { Add, Copy, Paste, Renew } from "@vicons/carbon";
+import { Copy, Paste, Renew } from "@vicons/carbon";
 import GeoSiteItemCard from "@/components/geo/site/config/GeoSiteItemCard.vue";
 import GeoIpItemCard from "@/components/geo/ip/config/GeoIpItemCard.vue";
 import ConfigModal from "@/components/common/ConfigModal.vue";
@@ -179,9 +179,6 @@ async function forceRefresh(source: Source) {
         <n-flex vertical>
           <n-flex class="standard-list-align" :wrap="true" size="small">
             <n-button type="primary" @click="showSiteModal = true">
-              <template #icon
-                ><n-icon><Add /></n-icon
-              ></template>
               {{ t("common.add_new") }}
             </n-button>
             <n-button @click="exportConfigs('site')">
@@ -231,9 +228,6 @@ async function forceRefresh(source: Source) {
         <n-flex vertical>
           <n-flex class="standard-list-align" :wrap="true" size="small">
             <n-button type="primary" @click="showIpModal = true">
-              <template #icon
-                ><n-icon><Add /></n-icon
-              ></template>
               {{ t("common.add_new") }}
             </n-button>
             <n-button @click="exportConfigs('ip')">

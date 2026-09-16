@@ -15,7 +15,7 @@ import {
   push_many_dst_ip_rule,
 } from "@/api/dst_ip_rule";
 import { copy_context_to_clipboard } from "@/lib/common";
-import { Add, Copy, Paste } from "@vicons/carbon";
+import { Copy, Paste } from "@vicons/carbon";
 
 const props = withDefaults(
   defineProps<{ flow_id?: number; flows?: FlowConfig[] }>(),
@@ -96,13 +96,14 @@ watch(() => props.flow_id, readRules);
   <n-spin :show="loading">
     <n-flex vertical class="rule-panel">
       <n-flex class="standard-list-align">
-        <n-button type="primary" @click="showCreateModal = true">
-          <template #icon
-            ><n-icon><Add /></n-icon
-          ></template>
+        <n-button
+          size="small"
+          type="primary"
+          @click="showCreateModal = true"
+        >
           {{ t("common.add_new") }}
         </n-button>
-        <n-button @click="exportConfig">
+        <n-button size="small" @click="exportConfig">
           <template #icon
             ><n-icon><Copy /></n-icon
           ></template>
@@ -110,7 +111,7 @@ watch(() => props.flow_id, readRules);
         </n-button>
         <ClipboardImportModal :on-confirm="importRules">
           <template #trigger>
-            <n-button>
+            <n-button size="small">
               <template #icon
                 ><n-icon><Paste /></n-icon
               ></template>

@@ -4,6 +4,7 @@ import { ref } from "vue";
 import { useMessage } from "naive-ui";
 
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import FlowMarkEdit from "@/components/flow/FlowMarkEdit.vue";
 import IpEdit from "@/components/IpEdit.vue";
 import type {
@@ -167,94 +168,66 @@ async function append_import_rules(rules: any[]) {
     @after-enter="enter"
   >
     <!-- {{ isModified }} -->
-    <n-form v-if="rule" style="flex: 1" ref="formRef" :model="rule" :cols="5">
-      <n-grid :cols="5">
-        <n-form-item-gi :label="t('flow.wan_rule_edit.priority')" :span="2">
-          <n-input-number v-model:value="rule.index" clearable />
-        </n-form-item-gi>
-        <!-- <n-form-item-gi label="覆盖 DNS 配置" :span="1">
-          <n-switch v-model:value="rule.override_dns" size="medium">
-            <template #checked> 覆盖 </template>
-            <template #unchecked> 不覆盖 </template>
-          </n-switch>
-        </n-form-item-gi> -->
-
-        <n-form-item-gi
-          :span="5"
-          :label="t('flow.wan_rule_edit.egress_select')"
-        >
-          <FlowMarkEdit v-model:mark="rule.mark"></FlowMarkEdit>
-        </n-form-item-gi>
-      </n-grid>
-      <n-form-item :label="t('flow.wan_rule_edit.remark')">
+    <n-form v-if="rule" style="flex: 1" ref="formRef" :model="rule">
+      <StandardSettingRow :label="t('flow.wan_rule_edit.priority')">
+        <n-input-number v-model:value="rule.index" clearable />
+      </StandardSettingRow>
+      <StandardSettingRow :label="t('flow.wan_rule_edit.egress_select')">
+        <FlowMarkEdit v-model:mark="rule.mark"></FlowMarkEdit>
+      </StandardSettingRow>
+      <StandardSettingRow :label="t('flow.wan_rule_edit.remark')">
         <n-input v-model:value="rule.remark" type="text" />
-      </n-form-item>
-      <n-form-item>
+      </StandardSettingRow>
+      <StandardSettingRow control-width="wide">
         <template #label>
-          <n-flex
-            align="center"
-            justify="space-between"
-            :wrap="false"
-            @click.stop
-          >
-            <n-flex> {{ t("flow.wan_rule_edit.matched_ips") }} </n-flex>
-            <n-flex>
-              <!-- 不确定为什么点击 label 会触发第一个按钮, 所以放置一个不可见的按钮 -->
-              <button
-                style="
-                  width: 0;
-                  height: 0;
-                  overflow: hidden;
-                  opacity: 0;
-                  position: absolute;
-                "
-              ></button>
-
-              <n-button :focusable="false" size="tiny" @click="export_config">
-                {{ t("flow.wan_rule_edit.copy") }}
-              </n-button>
-              <ClipboardImportModal :on-confirm="import_rules">
-                <template #trigger>
-                  <n-button :focusable="false" size="tiny">
-                    {{ t("flow.wan_rule_edit.paste_replace") }}
-                  </n-button>
-                </template>
-              </ClipboardImportModal>
-              <ClipboardImportModal :on-confirm="append_import_rules">
-                <template #trigger>
-                  <n-button :focusable="false" size="tiny">
-                    {{ t("flow.wan_rule_edit.paste_append") }}
-                  </n-button>
-                </template>
-              </ClipboardImportModal>
-            </n-flex>
-          </n-flex>
+          {{ t("flow.wan_rule_edit.matched_ips") }}
         </template>
-        <n-dynamic-input v-model:value="rule.source" :on-create="onCreate">
-          <template #create-button-default>
-            {{ t("flow.wan_rule_edit.add_wan_rule") }}
-          </template>
-          <template #default="{ value, index }">
-            <n-flex class="rule-source-row" :wrap="false">
-              <n-select
-                class="rule-source-type"
-                :value="value.t"
-                :options="sourceTypeOptions"
-                @update:value="changeCurrentRuleType($event, index)"
-              />
-              <GeoIpKeySelect
-                class="rule-source-value"
-                v-model:geo_key="value.key"
-                v-model:geo_name="value.name"
-                v-if="value.t === 'geo_key'"
-              />
-              <div v-else class="rule-source-value">
-                <IpEdit v-model:ip="value.ip" v-model:mask="value.prefix" />
-              </div>
-            </n-flex>
-          </template>
-        </n-dynamic-input>
-      </n-form-item>
+        <n-flex vertical style="width: 100%">
+          <n-flex justify="end">
+            <n-button :focusable="false" size="tiny" @click="export_config">
+              {{ t("flow.wan_rule_edit.copy") }}
+            </n-button>
+            <ClipboardImportModal :on-confirm="import_rules">
+              <template #trigger>
+                <n-button :focusable="false" size="tiny">
+                  {{ t("flow.wan_rule_edit.paste_replace") }}
+                </n-button>
+              </template>
+            </ClipboardImportModal>
+            <ClipboardImportModal :on-confirm="append_import_rules">
+              <template #trigger>
+                <n-button :focusable="false" size="tiny">
+                  {{ t("flow.wan_rule_edit.paste_append") }}
+                </n-button>
+              </template>
+            </ClipboardImportModal>
+          </n-flex>
+          <n-dynamic-input v-model:value="rule.source" :on-create="onCreate">
+            <template #create-button-default>
+              {{ t("flow.wan_rule_edit.add_wan_rule") }}
+            </template>
+            <template #default="{ value, index }">
+              <n-flex class="rule-source-row" :wrap="false">
+                <n-select
+                  class="rule-source-type"
+                  :value="value.t"
+                  :options="sourceTypeOptions"
+                  @update:value="changeCurrentRuleType($event, index)"
+                />
+                <GeoIpKeySelect
+                  class="rule-source-value"
+                  v-model:geo_key="value.key"
+                  v-model:geo_name="value.name"
+                  v-if="value.t === 'geo_key'"
+                />
+                <div v-else class="rule-source-value">
+                  <IpEdit v-model:ip="value.ip" v-model:mask="value.prefix" />
+                </div>
+              </n-flex>
+            </template>
+          </n-dynamic-input>
+        </n-flex>
+      </StandardSettingRow>
     </n-form>
     <template #footer>
       <n-flex justify="space-between">

@@ -76,8 +76,8 @@ export default {
   service_kind_pd: "DHCPv6 PD",
   source_type_static: "静态前缀",
   source_type_pd: "IPv6 PD",
-  add_static_prefix: "新增静态前缀",
-  add_pd_prefix: "新增上游 PD 前缀",
+  add_static_prefix: "新建静态前缀",
+  add_pd_prefix: "新建上游 PD 前缀",
   delete: "删除",
   prefix_overview: "前缀结果总览",
   prefix_overview_desc:

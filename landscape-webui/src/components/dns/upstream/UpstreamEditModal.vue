@@ -15,6 +15,7 @@ import { copy_context_to_clipboard } from "@/lib/common";
 import { useI18n } from "vue-i18n";
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 type Props = {
   rule_id: string | null;
@@ -301,52 +302,52 @@ async function import_rules(rules: DnsUpstreamConfig) {
       style="flex: 1"
       ref="formRef"
       :model="rule"
-      :cols="12"
     >
-      <n-grid :cols="12" :x-gap="12">
-        <n-form-item-gi :span="6" :label="t('dns.upstream_edit.remark')">
-          <n-input
-            :placeholder="t('dns.upstream_edit.remark_placeholder')"
-            v-model:value="rule.remark"
-          />
-        </n-form-item-gi>
+      <StandardSettingRow :label="t('dns.upstream_edit.remark')">
+        <n-input
+          :placeholder="t('dns.upstream_edit.remark_placeholder')"
+          v-model:value="rule.remark"
+        />
+      </StandardSettingRow>
 
-        <n-form-item-gi :span="6">
-          <template #label>
-            <Notice>
-              {{ t("dns.upstream_edit.ip_validation") }}
-              <template #msg>
-                {{ t("dns.upstream_edit.ip_validation_desc_1") }} <br />
-                {{ t("dns.upstream_edit.ip_validation_desc_2") }}
-              </template>
-            </Notice>
-          </template>
+      <StandardSettingRow control-width="auto">
+        <template #label>
+          <Notice>
+            {{ t("dns.upstream_edit.ip_validation") }}
+            <template #msg>
+              {{ t("dns.upstream_edit.ip_validation_desc_1") }} <br />
+              {{ t("dns.upstream_edit.ip_validation_desc_2") }}
+            </template>
+          </Notice>
+        </template>
 
-          <n-switch v-model:value="rule.enable_ip_validation" size="medium" />
-        </n-form-item-gi>
+        <n-switch v-model:value="rule.enable_ip_validation" size="medium" />
+      </StandardSettingRow>
 
-        <n-form-item-gi :span="12" :label="t('dns.upstream_edit.preset_fill')">
-          <DefaultUpstream v-model:rule="rule"></DefaultUpstream>
-        </n-form-item-gi>
+      <StandardSettingRow
+        :label="t('dns.upstream_edit.preset_fill')"
+        layout="stacked"
+      >
+        <DefaultUpstream v-model:rule="rule"></DefaultUpstream>
+      </StandardSettingRow>
 
-        <n-form-item-gi
-          :span="6"
-          :label="t('dns.upstream_edit.request_mode')"
-          path="mode.domain"
+      <StandardSettingRow
+        :label="t('dns.upstream_edit.request_mode')"
+        path="mode.domain"
+      >
+        <n-radio-group
+          v-model:value="rule.mode.t"
+          name="dns_server_upstream_mode"
+          size="medium"
         >
-          <n-radio-group
-            v-model:value="rule.mode.t"
-            name="dns_server_upstream_mode"
-            size="medium"
-          >
-            <n-radio-button
-              v-for="mode in UPSTREAM_OPTIONS"
-              :key="mode.value"
-              :value="mode.value"
-              :label="mode.label"
-            />
-          </n-radio-group>
-          <!-- <n-select
+          <n-radio-button
+            v-for="mode in UPSTREAM_OPTIONS"
+            :key="mode.value"
+            :value="mode.value"
+            :label="mode.label"
+          />
+        </n-radio-group>
+        <!-- <n-select
             v-else
             style="width: 25%"
             v-model:value="rule.mode.t"
@@ -354,82 +355,78 @@ async function import_rules(rules: DnsUpstreamConfig) {
             placeholder="上游请求模式"
             :options="UPSTREAM_OPTIONS"
           /> -->
-        </n-form-item-gi>
+      </StandardSettingRow>
 
-        <n-form-item-gi :span="3" :label="t('dns.upstream_edit.port')">
-          <n-input-number
-            class="dns-upstream-port"
-            size="medium"
-            :min="1"
-            :max="65535"
-            :placeholder="t('dns.upstream_edit.port_placeholder')"
-            v-model:value="rule.port"
-          />
-        </n-form-item-gi>
+      <StandardSettingRow
+        v-if="supportsHttp3"
+        label="HTTP/3"
+        control-width="auto"
+      >
+        <n-flex align="center" :wrap="false" :size="8">
+          <n-switch v-model:value="http3Enabled" size="medium" />
+          <n-button size="small" :loading="h3TestLoading" @click="testH3">
+            {{ t("dns.upstream_edit.test_h3") }}
+          </n-button>
+        </n-flex>
+      </StandardSettingRow>
 
-        <n-form-item-gi v-if="supportsHttp3" :span="3" label="HTTP/3">
-          <n-flex align="center" :wrap="false" :size="8">
-            <n-switch v-model:value="http3Enabled" size="medium" />
-            <n-button size="medium" :loading="h3TestLoading" @click="testH3">
-              {{ t("dns.upstream_edit.test_h3") }}
-            </n-button>
-          </n-flex>
-        </n-form-item-gi>
-
-        <n-form-item-gi
-          :span="6"
-          v-if="rule.mode.t !== DnsUpstreamModeTsEnum.Plaintext"
-          :label="t('dns.upstream_edit.domain')"
+      <StandardSettingRow
+        v-if="rule.mode.t !== DnsUpstreamModeTsEnum.Plaintext"
+        :label="t('dns.upstream_edit.domain')"
+      >
+        <n-input
+          style="width: 100%"
+          size="medium"
+          :placeholder="t('dns.upstream_edit.domain_placeholder')"
+          v-model:value="rule.mode.domain"
         >
-          <n-input
-            style="width: 100%"
-            size="medium"
-            :placeholder="t('dns.upstream_edit.domain_placeholder')"
-            v-model:value="rule.mode.domain"
-          >
-          </n-input>
-        </n-form-item-gi>
+        </n-input>
+      </StandardSettingRow>
 
-        <n-form-item-gi
-          :span="6"
-          path="mode.http_endpoint"
-          v-if="rule.mode.t === DnsUpstreamModeTsEnum.Https"
-          :label="t('dns.upstream_edit.url')"
+      <StandardSettingRow
+        path="mode.http_endpoint"
+        v-if="rule.mode.t === DnsUpstreamModeTsEnum.Https"
+        :label="t('dns.upstream_edit.url')"
+      >
+        <n-input
+          :placeholder="t('dns.upstream_edit.url_placeholder')"
+          v-model:value="rule.mode.http_endpoint"
         >
-          <n-input
-            :placeholder="t('dns.upstream_edit.url_placeholder')"
-            v-model:value="rule.mode.http_endpoint"
-          >
-          </n-input>
-        </n-form-item-gi>
+        </n-input>
+      </StandardSettingRow>
 
-        <n-form-item-gi
-          :span="12"
-          :label="t('dns.upstream_edit.server_ips')"
-          path="ips"
+      <StandardSettingRow :label="t('dns.upstream_edit.port')">
+        <n-input-number
+          size="medium"
+          :min="1"
+          :max="65535"
+          :placeholder="t('dns.upstream_edit.port_placeholder')"
+          v-model:value="rule.port"
+        />
+      </StandardSettingRow>
+
+      <StandardSettingRow :label="t('dns.upstream_edit.server_ips')" path="ips">
+        <n-dynamic-input
+          v-model:value="rule.ips"
+          :placeholder="t('dns.upstream_edit.enter_ip')"
+          #="{ index }"
         >
-          <n-dynamic-input
-            v-model:value="rule.ips"
-            :placeholder="t('dns.upstream_edit.enter_ip')"
-            #="{ index }"
+          <n-form-item
+            :path="`ips[${index}]`"
+            :rule="ipRule"
+            ignore-path-change
+            :show-label="false"
+            :show-feedback="false"
+            style="margin-bottom: 0; flex: 1"
           >
-            <n-form-item
-              :path="`ips[${index}]`"
-              :rule="ipRule"
-              ignore-path-change
-              :show-label="false"
-              :show-feedback="false"
-              style="margin-bottom: 0; flex: 1"
-            >
-              <n-input
-                v-model:value="rule.ips[index]"
-                :placeholder="t('dns.upstream_edit.enter_ip_v46')"
-                @keydown.enter.prevent
-              />
-            </n-form-item>
-          </n-dynamic-input>
-        </n-form-item-gi>
-      </n-grid>
+            <n-input
+              v-model:value="rule.ips[index]"
+              :placeholder="t('dns.upstream_edit.enter_ip_v46')"
+              @keydown.enter.prevent
+            />
+          </n-form-item>
+        </n-dynamic-input>
+      </StandardSettingRow>
     </n-form>
     <template #footer>
       <n-flex justify="space-between">
@@ -507,9 +504,5 @@ async function import_rules(rules: DnsUpstreamConfig) {
 
 .h3-attempt-result {
   overflow-wrap: anywhere;
-}
-
-.dns-upstream-port {
-  width: 120px;
 }
 </style>

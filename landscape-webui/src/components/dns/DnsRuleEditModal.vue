@@ -9,6 +9,7 @@ import { useMessage } from "naive-ui";
 import { computed, onMounted } from "vue";
 import { ref } from "vue";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import FlowMarkEdit from "@/components/flow/FlowMarkEdit.vue";
 import { copy_context_to_clipboard } from "@/lib/common";
 import { useI18n } from "vue-i18n";
@@ -125,94 +126,71 @@ async function append_import_rules(rules: any[]) {
     @after-enter="enter"
   >
     <!-- {{ isModified }} -->
-    <n-form style="flex: 1" ref="formRef" :model="rule" :cols="5">
-      <n-grid x-gap="10" :cols="5">
-        <n-form-item-gi :span="2">
-          <template #label>
-            <Notice>
-              {{ t("dns.rule_edit.priority") }}
-              <template #msg>
-                {{ t("dns.rule_edit.priority_help") }}
-              </template>
-            </Notice>
-          </template>
-          <n-input-number v-model:value="rule.index" clearable />
-        </n-form-item-gi>
-
-        <n-form-item-gi
-          :offset="1"
-          :span="2"
-          :label="t('dns.rule_edit.filter_result')"
-        >
-          <!-- {{ rule }} -->
-          <n-radio-group v-model:value="rule.filter" name="filter">
-            <n-radio-button
-              v-for="opt in filter_options"
-              :key="opt.value"
-              :value="opt.value"
-              :label="opt.label"
-            />
-          </n-radio-group>
-        </n-form-item-gi>
-        <n-form-item-gi :span="5" :label="t('dns.rule_edit.name')">
-          <n-input v-model:value="rule.name" type="text" />
-        </n-form-item-gi>
-
-        <n-form-item-gi :span="5" :label="t('dns.rule_edit.flow_action')">
-          <FlowMarkEdit v-model:mark="rule.mark"></FlowMarkEdit>
-        </n-form-item-gi>
-
-        <n-form-item-gi :span="5" :label="t('dns.rule_edit.upstream_select')">
-          <div style="width: 50%">
-            <SelectUpstream v-model:upstream_id="rule.upstream_id" />
-          </div>
-        </n-form-item-gi>
-      </n-grid>
-      <n-form-item :show-feedback="false">
+    <n-form style="flex: 1" ref="formRef" :model="rule">
+      <StandardSettingRow>
         <template #label>
-          <n-flex
-            align="center"
-            justify="space-between"
-            :wrap="false"
-            @click.stop
-          >
-            <n-flex>
-              {{ t("dns.rule_edit.source_rules_title") }}
-            </n-flex>
-            <n-flex>
-              <!-- 不确定为什么点击 label 会触发第一个按钮, 所以放置一个不可见的按钮 -->
-              <button
-                style="
-                  width: 0;
-                  height: 0;
-                  overflow: hidden;
-                  opacity: 0;
-                  position: absolute;
-                "
-              ></button>
-
-              <n-button :focusable="false" size="tiny" @click="export_config">
-                {{ t("dns.rule_edit.copy") }}
-              </n-button>
-              <ClipboardImportModal :on-confirm="import_rules">
-                <template #trigger>
-                  <n-button :focusable="false" size="tiny">
-                    {{ t("dns.rule_edit.paste_replace") }}
-                  </n-button>
-                </template>
-              </ClipboardImportModal>
-              <ClipboardImportModal :on-confirm="append_import_rules">
-                <template #trigger>
-                  <n-button :focusable="false" size="tiny">
-                    {{ t("dns.rule_edit.paste_append") }}
-                  </n-button>
-                </template>
-              </ClipboardImportModal>
-            </n-flex>
-          </n-flex>
+          <Notice>
+            {{ t("dns.rule_edit.priority") }}
+            <template #msg>
+              {{ t("dns.rule_edit.priority_help") }}
+            </template>
+          </Notice>
         </template>
-        <DomainMatchInput v-model:source="rule.source" />
-      </n-form-item>
+        <n-input-number v-model:value="rule.index" clearable />
+      </StandardSettingRow>
+
+      <StandardSettingRow :label="t('dns.rule_edit.filter_result')">
+        <!-- {{ rule }} -->
+        <n-radio-group v-model:value="rule.filter" name="filter">
+          <n-radio-button
+            v-for="opt in filter_options"
+            :key="opt.value"
+            :value="opt.value"
+            :label="opt.label"
+          />
+        </n-radio-group>
+      </StandardSettingRow>
+      <StandardSettingRow :label="t('dns.rule_edit.name')">
+        <n-input v-model:value="rule.name" type="text" />
+      </StandardSettingRow>
+
+      <StandardSettingRow
+        :label="t('dns.rule_edit.flow_action')"
+        control-width="wide"
+      >
+        <FlowMarkEdit v-model:mark="rule.mark"></FlowMarkEdit>
+      </StandardSettingRow>
+
+      <StandardSettingRow :label="t('dns.rule_edit.upstream_select')">
+        <SelectUpstream v-model:upstream_id="rule.upstream_id" />
+      </StandardSettingRow>
+      <StandardSettingRow control-width="wide">
+        <template #label>
+          {{ t("dns.rule_edit.source_rules_title") }}
+        </template>
+        <n-flex vertical style="width: 100%">
+          <n-flex justify="end">
+            <n-button :focusable="false" size="tiny" @click="export_config">
+              {{ t("dns.rule_edit.copy") }}
+            </n-button>
+            <ClipboardImportModal :on-confirm="import_rules">
+              <template #trigger>
+                <n-button :focusable="false" size="tiny">
+                  {{ t("dns.rule_edit.paste_replace") }}
+                </n-button>
+              </template>
+            </ClipboardImportModal>
+            <ClipboardImportModal :on-confirm="append_import_rules">
+              <template #trigger>
+                <n-button :focusable="false" size="tiny">
+                  {{ t("dns.rule_edit.paste_append") }}
+                </n-button>
+              </template>
+            </ClipboardImportModal>
+          </n-flex>
+          <DomainMatchInput v-model:source="rule.source" />
+        </n-flex>
+      </StandardSettingRow>
     </n-form>
     <template #footer>
       <n-flex justify="space-between">

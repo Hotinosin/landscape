@@ -3,6 +3,7 @@ import { useLanHostnameConfigStore } from "@/stores/lan_hostname_config";
 import { useMessage } from "naive-ui";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 const lanHostnameStore = useLanHostnameConfigStore();
 const message = useMessage();
@@ -36,22 +37,24 @@ async function handleSaveLanHostname() {
         {{ t("config.save_lan_hostname") }}
       </n-button>
     </template>
-    <n-form label-placement="left" label-width="160">
-      <n-form-item :label="t('config.lan_hostname_enable')">
+    <n-form>
+      <StandardSettingRow
+        :label="t('config.lan_hostname_enable')"
+        control-width="auto"
+      >
         <n-switch v-model:value="lanHostnameStore.enabled" size="medium" />
-      </n-form-item>
-      <n-form-item :label="t('config.lan_suffix')">
+      </StandardSettingRow>
+      <StandardSettingRow
+        :label="t('config.lan_suffix')"
+        :feedback="t('config.lan_suffix_desc')"
+      >
         <n-input
           v-model:value="lanHostnameStore.lanSuffix"
           clearable
           :disabled="!lanHostnameStore.enabled"
           :placeholder="t('config.lan_suffix_placeholder')"
-          style="width: 240px"
         />
-        <template #feedback>
-          {{ t("config.lan_suffix_desc") }}
-        </template>
-      </n-form-item>
+      </StandardSettingRow>
     </n-form>
   </n-card>
 </template>

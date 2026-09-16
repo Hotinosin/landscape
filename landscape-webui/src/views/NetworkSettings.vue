@@ -11,7 +11,7 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { Add, Renew } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import {
   NButton,
   NFlex,
@@ -208,7 +208,7 @@ const projectGroups = computed(() => {
   const types =
     viewMode.value === "network"
       ? (["wan", "lan"] as const)
-      : (["interface", "bridge"] as const);
+      : (["bridge", "interface"] as const);
   return types.map((type) => ({
     type,
     label: t(`network.settings.project_${type}`),
@@ -384,14 +384,6 @@ const createMemberOptions = computed(() =>
       disabled: Boolean(issue),
     };
   }),
-);
-const createMenuOptions = computed(() =>
-  viewMode.value === "network"
-    ? [
-        { label: t("network.settings.create_wan"), key: "wan" },
-        { label: t("network.settings.create_lan"), key: "lan" },
-      ]
-    : [{ label: t("network.settings.create_bridge"), key: "bridge" }],
 );
 function carrierLabel(node: NetDev) {
   return t(
@@ -1176,19 +1168,6 @@ onUnmounted(() => {
             t("network.settings.view_interface")
           }}</n-tab>
         </n-tabs>
-        <n-dropdown
-          trigger="hover"
-          placement="right-start"
-          :options="createMenuOptions"
-          @select="startCreate"
-        >
-          <n-button type="primary">
-            <template #icon
-              ><n-icon><Add /></n-icon
-            ></template>
-            {{ t("network.settings.create") }}
-          </n-button>
-        </n-dropdown>
       </n-flex>
       <n-button :loading="loading" secondary @click="refresh">
         <template #icon
@@ -1206,6 +1185,30 @@ onUnmounted(() => {
       >
         <div class="network-settings__group-heading standard-list-title">
           <strong>{{ group.label }}</strong>
+          <n-button
+            v-if="group.type !== 'interface'"
+            size="small"
+            type="primary"
+            @click="
+              startCreate(
+                group.type === 'bridge'
+                  ? 'bridge'
+                  : group.type === 'wan'
+                    ? 'wan'
+                    : 'lan',
+              )
+            "
+          >
+            {{
+              t(
+                group.type === "bridge"
+                  ? "network.settings.create_bridge"
+                  : group.type === "wan"
+                    ? "network.settings.create_wan"
+                    : "network.settings.create_lan",
+              )
+            }}
+          </n-button>
         </div>
         <StandardDataTable
           :columns="visibleColumns"
@@ -1235,7 +1238,7 @@ onUnmounted(() => {
           viewMode === 'network'
             ? 'network.settings.configure_network_title'
             : 'network.settings.configure_interface_title',
-          { name: selected.name },
+          { name: selected.name, role: zoneLabel(selected.zone_type) },
         )
       "
       @update:show="(show: boolean) => !show && updateUrl()"
@@ -1243,6 +1246,7 @@ onUnmounted(() => {
       <n-tabs
         v-model:value="activeConfigTab"
         type="line"
+        :animated="false"
         pane-class="network-settings__tab-pane"
       >
         <n-tab-pane
@@ -1386,6 +1390,7 @@ onUnmounted(() => {
           "
           name="ipv6"
           :tab="t('network.settings.tab_ipv6')"
+          display-directive="show"
         >
           <IPv6PDEditModal
             v-if="hasService('ipv6pd')"

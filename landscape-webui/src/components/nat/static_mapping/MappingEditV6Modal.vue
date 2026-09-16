@@ -7,6 +7,7 @@ import type {
 
 import { computed, ref } from "vue";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import {
   get_static_nat_mapping_v6,
   push_static_nat_mapping_v6,
@@ -256,129 +257,135 @@ const isIndeterminate = computed(() => {
         style="flex: 1"
         ref="formRef"
         :model="rule"
-        :cols="5"
       >
-        <n-grid :cols="2">
-          <n-form-item-gi :label="t('nat.mapping.allowed_protocols')" :span="2">
-            <n-flex justify="space-between" style="flex: 1">
-              <n-flex>
-                <n-checkbox
-                  v-model:checked="allSelected"
-                  :indeterminate="isIndeterminate"
-                >
-                  {{ t("nat.mapping.select_all") }}
-                </n-checkbox>
-              </n-flex>
-              <n-flex>
-                <n-checkbox-group v-model:value="rule.l4_protocols">
-                  <n-space item-style="display: flex;">
-                    <n-checkbox :value="6" label="TCP" />
-                    <n-checkbox :value="17" label="UDP" />
-                  </n-space>
-                </n-checkbox-group>
-              </n-flex>
-            </n-flex>
-          </n-form-item-gi>
-
-          <n-form-item-gi :span="2" :label="t('nat.mapping.port_config_label')">
-            <n-flex vertical style="width: 100%; gap: var(--app-space-sm)">
-              <n-radio-group v-model:value="portMode">
-                <n-radio-button value="ports">
-                  {{ t("nat.mapping.port_mode_specific") }}
-                </n-radio-button>
-                <n-radio-button value="all" :disabled="targetMode === 'local'">
-                  {{ t("nat.mapping.port_mode_all") }}
-                </n-radio-button>
-              </n-radio-group>
-
-              <n-dynamic-tags
-                v-if="portMode === 'ports'"
-                v-model:value="portTags"
-                :input-style="{ width: '100px' }"
-              />
-
-              <n-alert
-                v-if="portMode === 'all'"
-                type="success"
-                :show-icon="false"
-                style="width: 100%"
+        <StandardSettingRow
+          :label="t('nat.mapping.allowed_protocols')"
+          control-width="wide"
+        >
+          <n-flex justify="space-between" style="flex: 1">
+            <n-flex>
+              <n-checkbox
+                v-model:checked="allSelected"
+                :indeterminate="isIndeterminate"
               >
-                {{ t("nat.mapping.port_mode_all_hint") }}
-              </n-alert>
+                {{ t("nat.mapping.select_all") }}
+              </n-checkbox>
             </n-flex>
-          </n-form-item-gi>
+            <n-flex>
+              <n-checkbox-group v-model:value="rule.l4_protocols">
+                <n-space item-style="display: flex;">
+                  <n-checkbox :value="6" label="TCP" />
+                  <n-checkbox :value="17" label="UDP" />
+                </n-space>
+              </n-checkbox-group>
+            </n-flex>
+          </n-flex>
+        </StandardSettingRow>
 
-          <n-form-item-gi :span="2" :label="t('nat.mapping.target_type')">
-            <n-radio-group
-              v-model:value="targetMode"
-              @update:value="syncRuleTarget"
-            >
-              <n-radio-button value="device">
-                {{ t("nat.mapping.target_type_device") }}
+        <StandardSettingRow
+          :label="t('nat.mapping.port_config_label')"
+          control-width="wide"
+        >
+          <n-flex vertical style="width: 100%; gap: var(--app-space-sm)">
+            <n-radio-group v-model:value="portMode">
+              <n-radio-button value="ports">
+                {{ t("nat.mapping.port_mode_specific") }}
               </n-radio-button>
-              <n-radio-button value="local" :disabled="portMode === 'all'">
-                {{ t("nat.mapping.target_type_local") }}
-              </n-radio-button>
-              <n-radio-button value="address">
-                {{ t("nat.mapping.target_type_address") }}
+              <n-radio-button value="all" :disabled="targetMode === 'local'">
+                {{ t("nat.mapping.port_mode_all") }}
               </n-radio-button>
             </n-radio-group>
-          </n-form-item-gi>
 
-          <n-form-item-gi
-            v-if="targetMode === 'address'"
-            :span="2"
-            :label="t('nat.mapping.target_ipv6')"
-          >
-            <n-input
-              :placeholder="t('nat.mapping.target_ipv6_hint')"
-              :value="addressTarget.ipv6 || null"
-              @update:value="
-                (v: string | null) => {
-                  if (rule) {
-                    rule.lan_target = {
-                      t: 'address',
-                      ipv6: v || '',
-                    };
-                    syncRuleTarget();
-                  }
-                }
-              "
+            <n-dynamic-tags
+              v-if="portMode === 'ports'"
+              v-model:value="portTags"
+              :input-style="{ width: '100px' }"
             />
-          </n-form-item-gi>
 
-          <n-form-item-gi
-            v-if="targetMode === 'local'"
-            :span="2"
-            :label="t('nat.mapping.target_local')"
-          >
-            <n-alert type="info" :show-icon="false" style="width: 100%">
-              {{ t("nat.mapping.target_local_hint") }}
+            <n-alert
+              v-if="portMode === 'all'"
+              type="success"
+              :show-icon="false"
+              style="width: 100%"
+            >
+              {{ t("nat.mapping.port_mode_all_hint") }}
             </n-alert>
-          </n-form-item-gi>
+          </n-flex>
+        </StandardSettingRow>
 
-          <n-form-item-gi
-            v-if="targetMode === 'device'"
-            :span="2"
-            :label="t('nat.mapping.target_device')"
+        <StandardSettingRow
+          :label="t('nat.mapping.target_type')"
+          control-width="wide"
+        >
+          <n-radio-group
+            v-model:value="targetMode"
+            @update:value="syncRuleTarget"
           >
-            <n-flex vertical style="width: 100%">
-              <n-select
-                v-model:value="selectedDeviceIds"
-                :options="deviceOptions"
-                :placeholder="t('nat.mapping.select_device_placeholder')"
-                clearable
-                filterable
-                multiple
-                @update:value="syncRuleTarget"
-              />
-            </n-flex>
-          </n-form-item-gi>
+            <n-radio-button value="device">
+              {{ t("nat.mapping.target_type_device") }}
+            </n-radio-button>
+            <n-radio-button value="local" :disabled="portMode === 'all'">
+              {{ t("nat.mapping.target_type_local") }}
+            </n-radio-button>
+            <n-radio-button value="address">
+              {{ t("nat.mapping.target_type_address") }}
+            </n-radio-button>
+          </n-radio-group>
+        </StandardSettingRow>
 
-          <n-form-item-gi :span="2" :label="t('nat.mapping.remark')">
-            <n-input v-model:value="rule.remark" type="textarea" />
-          </n-form-item-gi>
-        </n-grid>
+        <StandardSettingRow
+          v-if="targetMode === 'address'"
+          :label="t('nat.mapping.target_ipv6')"
+        >
+          <n-input
+            :placeholder="t('nat.mapping.target_ipv6_hint')"
+            :value="addressTarget.ipv6 || null"
+            @update:value="
+              (v: string | null) => {
+                if (rule) {
+                  rule.lan_target = {
+                    t: 'address',
+                    ipv6: v || '',
+                  };
+                  syncRuleTarget();
+                }
+              }
+            "
+          />
+        </StandardSettingRow>
+
+        <StandardSettingRow
+          v-if="targetMode === 'local'"
+          :label="t('nat.mapping.target_local')"
+        >
+          <n-alert type="info" :show-icon="false" style="width: 100%">
+            {{ t("nat.mapping.target_local_hint") }}
+          </n-alert>
+        </StandardSettingRow>
+
+        <StandardSettingRow
+          v-if="targetMode === 'device'"
+          :label="t('nat.mapping.target_device')"
+        >
+          <n-flex vertical style="width: 100%">
+            <n-select
+              v-model:value="selectedDeviceIds"
+              :options="deviceOptions"
+              :placeholder="t('nat.mapping.select_device_placeholder')"
+              clearable
+              filterable
+              multiple
+              @update:value="syncRuleTarget"
+            />
+          </n-flex>
+        </StandardSettingRow>
+
+        <StandardSettingRow
+          :label="t('nat.mapping.remark')"
+          control-width="wide"
+        >
+          <n-input v-model:value="rule.remark" type="textarea" />
+        </StandardSettingRow>
       </n-form>
     </n-flex>
 

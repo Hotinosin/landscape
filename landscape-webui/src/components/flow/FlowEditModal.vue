@@ -9,6 +9,7 @@ import { computed } from "vue";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import FlowMatchRule from "./match/FlowMatchRule.vue";
 import { flow_config_default } from "@/lib/default_value";
 import type {
@@ -155,8 +156,6 @@ function normalizeFlowTargets(
   <ConfigModal
     v-model:show="show"
     v-model:enabled="rule_enabled"
-    fixed-top
-    top-offset="max(24px, calc((100vh - var(--app-secondary-modal-max-height)) / 2))"
     :title="t('flow.edit.title')"
     :switch-disabled="!rule"
     :show-switch="false"
@@ -170,37 +169,29 @@ function normalizeFlowTargets(
         name="flow"
         :tab="t('flow.edit.tab_flow')"
       >
-        <n-form
-          v-if="rule"
-          style="flex: 1"
-          ref="formRef"
-          :model="rule"
-          :cols="5"
-        >
-          <n-grid :cols="5" :x-gap="10">
-            <n-form-item-gi :label="t('flow.edit.flow_id_label')" :span="2">
-              <n-input-number
-                :min="1"
-                :max="255"
-                v-model:value="rule.flow_id"
-                clearable
-              />
-            </n-form-item-gi>
-            <n-form-item-gi :span="3" :label="t('flow.edit.name')">
-              <n-input
-                :type="frontEndStore.presentation_mode ? 'password' : 'text'"
-                v-model:value="rule.name"
-                :placeholder="t('flow.edit.name_placeholder')"
-              />
-            </n-form-item-gi>
-            <n-form-item-gi :span="5" :label="t('flow.edit.remark')">
-              <n-input
-                :type="frontEndStore.presentation_mode ? 'password' : 'text'"
-                v-model:value="rule.remark"
-              />
-            </n-form-item-gi>
-          </n-grid>
-          <n-form-item>
+        <n-form v-if="rule" style="flex: 1" ref="formRef" :model="rule">
+          <StandardSettingRow :label="t('flow.edit.flow_id_label')">
+            <n-input-number
+              :min="1"
+              :max="255"
+              v-model:value="rule.flow_id"
+              clearable
+            />
+          </StandardSettingRow>
+          <StandardSettingRow :label="t('flow.edit.name')">
+            <n-input
+              :type="frontEndStore.presentation_mode ? 'password' : 'text'"
+              v-model:value="rule.name"
+              :placeholder="t('flow.edit.name_placeholder')"
+            />
+          </StandardSettingRow>
+          <StandardSettingRow :label="t('flow.edit.remark')">
+            <n-input
+              :type="frontEndStore.presentation_mode ? 'password' : 'text'"
+              v-model:value="rule.remark"
+            />
+          </StandardSettingRow>
+          <StandardSettingRow layout="stacked">
             <template #label>
               <Notice
                 >{{ t("flow.edit.entry_rules_title") }}
@@ -213,8 +204,8 @@ function normalizeFlowTargets(
             </template>
             <FlowMatchRule v-model:match_rules="rule.flow_match_rules">
             </FlowMatchRule>
-          </n-form-item>
-          <n-form-item label="">
+          </StandardSettingRow>
+          <StandardSettingRow layout="stacked">
             <template #label>
               <Notice>
                 {{ t("flow.edit.target_rules_title") }}
@@ -227,7 +218,7 @@ function normalizeFlowTargets(
 
             <FlowTargetRule v-model:target_rules="rule.flow_targets">
             </FlowTargetRule>
-          </n-form-item>
+          </StandardSettingRow>
         </n-form>
       </n-tab-pane>
       <n-tab-pane name="dns" :tab="t('flow.edit.tab_dns')">

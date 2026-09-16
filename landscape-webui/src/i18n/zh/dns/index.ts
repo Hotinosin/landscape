@@ -77,7 +77,7 @@ export default {
       "假设你使用你自定的上游, 如果有返回私有地址, 就不要开启",
     ip_validation_on: "过滤",
     ip_validation_off: "不过滤",
-    preset_fill: "点击按钮可以使用预设填充",
+    preset_fill: "DNS 预设",
     request_mode: "上游请求模式",
     type_plaintext: "无加密",
     port: "端口",
@@ -175,6 +175,6 @@ export default {
   select_upstream: {
     redirect_flow_id: "重定向的流 ID",
     default_ali: "阿里",
-    create: "+ 新增 DNS 配置",
+    create: "新建 DNS 配置",
   },
 };

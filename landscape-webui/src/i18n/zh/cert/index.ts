@@ -46,7 +46,7 @@ export default {
   generated_validity_days_invalid: "有效期必须大于 0 天",
 
   acme_account: "ACME 账户",
-  add_account: "添加账户",
+  add_account: "新建账户",
   acme_account_required: "请选择 ACME 账户",
   acme_challenge: "验证方式",
   acme_key_type: "密钥类型",

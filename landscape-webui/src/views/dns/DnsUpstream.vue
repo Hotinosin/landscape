@@ -6,7 +6,7 @@ import { useRoute, useRouter } from "vue-router";
 import type { DataTableColumns } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import DnsUpstreamListRow from "@/components/dns/upstream/DnsUpstreamListRow.vue";
-import { Add, Renew } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import { usePageRequest } from "@/composables/usePageRequest";
 
 const {
@@ -78,9 +78,6 @@ function modalVisibleChanged(show: boolean) {
   <n-flex vertical class="standard-content-page">
     <n-flex justify="space-between" class="standard-list-toolbar">
       <n-button type="primary" @click="createUpstream">
-        <template #icon
-          ><n-icon><Add /></n-icon
-        ></template>
         {{ t("common.create") }}
       </n-button>
       <n-button :loading="loading" secondary @click="refresh_rules">

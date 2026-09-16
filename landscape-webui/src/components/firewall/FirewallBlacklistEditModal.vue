@@ -4,6 +4,7 @@ import { useMessage } from "naive-ui";
 import { WarningAlt } from "@vicons/carbon";
 
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import IpEdit from "@/components/IpEdit.vue";
 import GeoIpKeySelect from "@/components/geo/ip/GeoIpKeySelect.vue";
 
@@ -140,10 +141,13 @@ async function saveConfig() {
     @after-enter="enter"
   >
     <n-form v-if="config" style="flex: 1" :model="config">
-      <n-form-item :label="t('firewall.blacklist_edit.remark')">
+      <StandardSettingRow :label="t('firewall.blacklist_edit.remark')">
         <n-input v-model:value="config.remark" type="text" />
-      </n-form-item>
-      <n-form-item :label="t('firewall.blacklist_edit.source')">
+      </StandardSettingRow>
+      <StandardSettingRow
+        :label="t('firewall.blacklist_edit.source')"
+        layout="stacked"
+      >
         <n-dynamic-input v-model:value="config.source" :on-create="onCreate">
           <template #create-button-default>
             {{ t("firewall.blacklist_edit.add_source") }}
@@ -180,7 +184,7 @@ async function saveConfig() {
             </n-flex>
           </template>
         </n-dynamic-input>
-      </n-form-item>
+      </StandardSettingRow>
     </n-form>
     <template #footer>
       <n-flex justify="space-between">

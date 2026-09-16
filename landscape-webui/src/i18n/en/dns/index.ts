@@ -79,7 +79,7 @@ export default {
       "If your custom upstream intentionally returns private IPs, keep it disabled.",
     ip_validation_on: "Filter",
     ip_validation_off: "Do not filter",
-    preset_fill: "Click buttons to apply presets",
+    preset_fill: "DNS Presets",
     request_mode: "Upstream request mode",
     type_plaintext: "Plaintext",
     port: "Port",
@@ -186,6 +186,6 @@ export default {
   select_upstream: {
     redirect_flow_id: "Redirect Flow ID",
     default_ali: "Aliyun",
-    create: "+ Add DNS configuration",
+    create: "New DNS configuration",
   },
 };

@@ -8,7 +8,7 @@ export default {
   ddns_default_ttl_hint:
     "DDNS 默认 TTL 在服务商配置上统一设置。不同 DNS 服务商可能有不同的 TTL 范围限制。",
   provider_profile: "服务商配置",
-  add_profile: "添加配置",
+  add_profile: "新建配置",
   provider_profile_required: "请选择 DNS 服务商配置",
   provider_validation_failed: "DNS 服务商凭据校验失败",
 };

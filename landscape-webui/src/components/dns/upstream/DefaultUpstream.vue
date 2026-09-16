@@ -174,7 +174,7 @@ function replace_default(config: DefaultDnsConfig) {
   };
 }
 
-const btn_size = "medium";
+const btn_size = "small";
 </script>
 <template>
   <div class="default-upstream">
@@ -298,13 +298,20 @@ const btn_size = "medium";
 <style scoped>
 .default-upstream {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 12px;
+  grid-template-columns: repeat(2, max-content);
+  gap: var(--app-space-sm) var(--app-space-lg);
+  justify-content: start;
   width: 100%;
 }
 
 .label-len {
   width: 90px;
   text-align: center;
+}
+
+@media (max-width: 640px) {
+  .default-upstream {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 </style>

@@ -9,13 +9,14 @@ import {
 } from "@/api/gateway";
 import { ServiceStatusType } from "@/lib/services";
 import type { HttpUpstreamRuleConfig } from "@landscape-router/types/api/schemas";
-import { Add, Renew, Settings } from "@vicons/carbon";
+import { Renew, Settings } from "@vicons/carbon";
 import { useMessage } from "naive-ui";
 import type { DataTableColumns } from "naive-ui";
 import { computed, h, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { usePageRequest } from "@/composables/usePageRequest";
 import GatewayRuleListRow from "@/components/gateway/GatewayRuleListRow.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 const {
   data: rules,
@@ -198,8 +199,6 @@ watch(
           type="primary"
           :disabled="status?.supported === false"
           @click="show_edit_modal = true"
-          ><template #icon
-            ><n-icon><Add /></n-icon></template
           >{{ t("common.create") }}</n-button
         >
         <StandardServiceStatusTag v-if="status" :status="status.status" />
@@ -234,41 +233,27 @@ watch(
             style="padding: 4px; min-width: 320px; max-width: 360px"
           >
             <n-text strong>{{ t("gateway.runtime_title") }}</n-text>
-            <n-form label-placement="top">
-              <n-form-item :label="t('gateway.enabled')">
+            <n-form>
+              <StandardSettingRow
+                :label="t('gateway.enabled')"
+                control-width="auto"
+              >
                 <n-switch v-model:value="gatewayEnabled" size="medium" />
-                <template #feedback>
-                  {{ t("gateway.enabled_desc") }}
-                </template>
-              </n-form-item>
-              <n-grid x-gap="12" cols="2">
-                <n-grid-item>
-                  <n-form-item :label="t('gateway.http_port')">
-                    <n-input-number
-                      v-model:value="httpPort"
-                      :min="1"
-                      :max="65535"
-                      style="width: 100%"
-                    />
-                    <template #feedback>
-                      {{ t("gateway.http_port_desc") }}
-                    </template>
-                  </n-form-item>
-                </n-grid-item>
-                <n-grid-item>
-                  <n-form-item :label="t('gateway.https_port')">
-                    <n-input-number
-                      v-model:value="httpsPort"
-                      :min="1"
-                      :max="65535"
-                      style="width: 100%"
-                    />
-                    <template #feedback>
-                      {{ t("gateway.https_port_desc") }}
-                    </template>
-                  </n-form-item>
-                </n-grid-item>
-              </n-grid>
+              </StandardSettingRow>
+              <StandardSettingRow :label="t('gateway.http_port')">
+                <n-input-number
+                  v-model:value="httpPort"
+                  :min="1"
+                  :max="65535"
+                />
+              </StandardSettingRow>
+              <StandardSettingRow :label="t('gateway.https_port')">
+                <n-input-number
+                  v-model:value="httpsPort"
+                  :min="1"
+                  :max="65535"
+                />
+              </StandardSettingRow>
             </n-form>
 
             <n-alert type="info" :show-icon="false">

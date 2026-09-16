@@ -2,6 +2,7 @@
 import { useDnsConfigStore } from "@/stores/dns_config";
 import { useMessage } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 const dnsStore = useDnsConfigStore();
 const message = useMessage();
@@ -28,39 +29,40 @@ async function handleSaveDns() {
         {{ t("config.save_dns") }}
       </n-button>
     </template>
-    <n-form label-placement="left" label-width="160">
-      <n-form-item :label="t('config.cache_capacity')">
+    <n-form>
+      <StandardSettingRow
+        :label="t('config.cache_capacity')"
+        :feedback="t('config.cache_capacity_desc')"
+      >
         <n-input-number
           v-model:value="dnsStore.cacheCapacity"
           :min="1024"
           :max="1048576"
           placeholder="4096"
-          style="width: 200px"
         />
-        <template #feedback> {{ t("config.cache_capacity_desc") }} </template>
-      </n-form-item>
-      <n-form-item :label="t('config.cache_ttl')">
+      </StandardSettingRow>
+      <StandardSettingRow
+        :label="t('config.cache_ttl')"
+        :feedback="t('config.cache_ttl_desc')"
+      >
         <n-input-number
           v-model:value="dnsStore.cacheTtl"
           :min="60"
           :max="2592000"
           placeholder="86400"
-          style="width: 200px"
         />
-        <template #feedback> {{ t("config.cache_ttl_desc") }} </template>
-      </n-form-item>
-      <n-form-item :label="t('config.cache_negative_ttl')">
+      </StandardSettingRow>
+      <StandardSettingRow
+        :label="t('config.cache_negative_ttl')"
+        :feedback="t('config.cache_negative_ttl_desc')"
+      >
         <n-input-number
           v-model:value="dnsStore.cacheNegativeTtl"
           :min="5"
           :max="3600"
           placeholder="60"
-          style="width: 200px"
         />
-        <template #feedback>
-          {{ t("config.cache_negative_ttl_desc") }}
-        </template>
-      </n-form-item>
+      </StandardSettingRow>
     </n-form>
   </n-card>
 </template>

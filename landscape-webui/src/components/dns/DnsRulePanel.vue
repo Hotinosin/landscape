@@ -5,7 +5,7 @@ import type {
   DNSRuleConfig,
   FlowConfig,
 } from "@landscape-router/types/api/schemas";
-import { Add, Copy, Paste, SearchLocate } from "@vicons/carbon";
+import { Copy, Paste, SearchLocate } from "@vicons/carbon";
 import { useI18n } from "vue-i18n";
 import { useMessage } from "naive-ui";
 import DnsRuleListRow from "@/components/dns/DnsRuleListRow.vue";
@@ -98,13 +98,14 @@ watch(() => props.flow_id, readRules);
   <n-spin :show="loading">
     <n-flex vertical class="rule-panel">
       <n-flex class="standard-list-align">
-        <n-button type="primary" @click="showCreateModal = true">
-          <template #icon
-            ><n-icon><Add /></n-icon
-          ></template>
+        <n-button
+          size="small"
+          type="primary"
+          @click="showCreateModal = true"
+        >
           {{ t("common.add_new") }}
         </n-button>
-        <n-button @click="exportConfig">
+        <n-button size="small" @click="exportConfig">
           <template #icon
             ><n-icon><Copy /></n-icon
           ></template>
@@ -112,7 +113,7 @@ watch(() => props.flow_id, readRules);
         </n-button>
         <ClipboardImportModal :on-confirm="importRules">
           <template #trigger>
-            <n-button>
+            <n-button size="small">
               <template #icon
                 ><n-icon><Paste /></n-icon
               ></template>
@@ -121,7 +122,7 @@ watch(() => props.flow_id, readRules);
           </template>
           {{ t("dns.rule_drawer.confirm_import") }}
         </ClipboardImportModal>
-        <n-button @click="showQueryModal = true">
+        <n-button size="small" @click="showQueryModal = true">
           <template #icon
             ><n-icon><SearchLocate /></n-icon
           ></template>

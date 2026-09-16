@@ -81,8 +81,8 @@ export default {
   service_kind_pd: "DHCPv6 PD",
   source_type_static: "Static Prefix",
   source_type_pd: "IPv6 PD",
-  add_static_prefix: "Add Static Prefix",
-  add_pd_prefix: "Add Upstream PD",
+  add_static_prefix: "New Static Prefix",
+  add_pd_prefix: "New Upstream PD",
   delete: "Delete",
   prefix_overview: "Prefix Overview",
   prefix_overview_desc:

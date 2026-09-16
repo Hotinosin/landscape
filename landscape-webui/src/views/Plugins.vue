@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, h, onMounted, ref } from "vue";
-import { Add, Launch, Renew } from "@vicons/carbon";
+import { Launch, Renew } from "@vicons/carbon";
 import type { DataTableColumns, UploadCustomRequestOptions } from "naive-ui";
 import { NButton, NIcon, NSpace, useMessage } from "naive-ui";
 import { useI18n } from "vue-i18n";
@@ -177,9 +177,6 @@ onMounted(() => {
             :custom-request="upload"
           >
             <n-button type="primary">
-              <template #icon
-                ><n-icon><Add /></n-icon
-              ></template>
               {{ t("plugin.import") }}
             </n-button>
           </n-upload>

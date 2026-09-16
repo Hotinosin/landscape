@@ -335,10 +335,14 @@ function replace_group_sources(
         </template>
         <template #actions>
           <n-flex :size="8">
-            <n-button @click="show_static_source_add = true">
+            <n-button size="small" @click="show_static_source_add = true">
               {{ t("lan_ipv6.add_static_prefix") }}
             </n-button>
-            <n-button type="primary" @click="show_pd_source_add = true">
+            <n-button
+              size="small"
+              type="primary"
+              @click="show_pd_source_add = true"
+            >
               {{ t("lan_ipv6.add_pd_prefix") }}
             </n-button>
           </n-flex>
@@ -445,7 +449,7 @@ function replace_group_sources(
     </n-form>
     <template #footer>
       <n-flex justify="end">
-        <n-button round type="primary" @click="save_config">
+        <n-button type="primary" @click="save_config">
           {{ t("lan_ipv6.update") }}
         </n-button>
       </n-flex>
@@ -455,6 +459,6 @@ function replace_group_sources(
 
 <style scoped>
 .network-settings__divider {
-  margin: 0;
+  margin: var(--app-space-lg) 0 0;
 }
 </style>

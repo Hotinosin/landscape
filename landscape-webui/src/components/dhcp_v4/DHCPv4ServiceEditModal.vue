@@ -264,28 +264,26 @@ const network_mask = computed({
             placeholder="86400"
           />
         </StandardSettingRow>
-        <n-form-item :label="t('dhcp_v4.custom_options')">
+        <StandardSettingRow
+          :label="t('dhcp_v4.custom_options')"
+          layout="stacked"
+        >
           <div class="custom-options-scroll">
             <CustomDhcpOptionEditor
               ref="optionEditorRef"
               v-model="service_config.config.custom_options"
             />
           </div>
-        </n-form-item>
+        </StandardSettingRow>
       </n-form>
     </div>
 
     <template #footer>
       <n-flex justify="space-between" align="center">
-        <n-button round @click="show_model = false">
+        <n-button @click="show_model = false">
           {{ t("common.cancel") }}
         </n-button>
-        <n-button
-          :loading="commit_loading"
-          round
-          type="primary"
-          @click="save_config"
-        >
+        <n-button :loading="commit_loading" type="primary" @click="save_config">
           {{ t("common.update") }}
         </n-button>
       </n-flex>
@@ -303,7 +301,6 @@ const network_mask = computed({
 .custom-options-scroll {
   box-sizing: border-box;
   max-height: calc(80vh - 220px);
-  min-height: 120px;
   overflow-y: auto;
   padding-right: 6px;
   width: 100%;

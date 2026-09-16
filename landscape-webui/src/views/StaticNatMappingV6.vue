@@ -5,7 +5,7 @@ import { computed, h, ref, onMounted } from "vue";
 import type { DataTableColumns } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import StaticMappingV6ListRow from "@/components/nat/static_mapping/StaticMappingV6ListRow.vue";
-import { Add, Renew } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import { usePageRequest } from "@/composables/usePageRequest";
 
 const {
@@ -57,9 +57,6 @@ const show_edit_modal = ref(false);
   <n-flex vertical class="standard-content-page">
     <n-flex justify="space-between" class="standard-list-toolbar">
       <n-button type="primary" @click="show_edit_modal = true">
-        <template #icon
-          ><n-icon><Add /></n-icon
-        ></template>
         {{ t("common.create") }}
       </n-button>
       <n-button :loading="loading" secondary @click="refresh_rules">

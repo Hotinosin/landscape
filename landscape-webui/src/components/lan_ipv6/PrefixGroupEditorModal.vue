@@ -25,6 +25,7 @@ import type {
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 const { t } = useI18n({ useScope: "global" });
 
@@ -778,9 +779,13 @@ function cancelEmptyDraftAction() {
   <ConfigModal
     v-model:show="show"
     :show-switch="false"
-    width="var(--app-tertiary-modal-width)"
+    width="var(--app-compact-modal-width)"
     :title="
-      t('lan_ipv6.prefix_group_editor_title', { parent: displayParentLabel })
+      group
+        ? t('lan_ipv6.prefix_group_editor_title', {
+            parent: displayParentLabel,
+          })
+        : parentLabel
     "
     @after-enter="enter"
   >
@@ -791,16 +796,10 @@ function cancelEmptyDraftAction() {
 
       <n-card size="small" :bordered="false">
         <n-flex vertical :size="10">
-          <n-flex align="center" justify="space-between">
-            <div>
-              <strong>{{ t("lan_ipv6.prefix_group_editor_parent") }}</strong>
-              {{ displayParentLabel }}
-            </div>
-          </n-flex>
-
-          <n-form-item
+          <StandardSettingRow
             v-if="sourceType === 'static'"
             :label="t('lan_ipv6.source_base_prefix')"
+            layout="stacked"
           >
             <n-flex style="flex: 1" :gap="8">
               <n-input
@@ -816,8 +815,12 @@ function cancelEmptyDraftAction() {
                 @update:value="syncParentIntoDraftGroup"
               />
             </n-flex>
-          </n-form-item>
-          <n-form-item v-else :label="t('lan_ipv6.source_depend_iface')">
+          </StandardSettingRow>
+          <StandardSettingRow
+            v-else
+            :label="t('lan_ipv6.source_depend_iface')"
+            layout="stacked"
+          >
             <n-select
               v-model:value="dependIface"
               filterable
@@ -828,7 +831,7 @@ function cancelEmptyDraftAction() {
               @update:value="onDependIfaceChange"
               @search="searchIpv6Pd"
             />
-          </n-form-item>
+          </StandardSettingRow>
 
           <n-grid cols="1 l:3" responsive="screen" :x-gap="12" :y-gap="12">
             <n-gi>

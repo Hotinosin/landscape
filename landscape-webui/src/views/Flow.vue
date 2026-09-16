@@ -13,7 +13,7 @@ import RouteTraceDrawer from "@/components/flow/RouteTraceDrawer.vue";
 import { reset_cache } from "@/api/route/cache";
 import { getDnsRules } from "@landscape-router/types/api/dns-rules/dns-rules";
 import { get_all_dst_ip_rules } from "@/api/dst_ip_rule";
-import { Add, Clean, Renew, Search } from "@vicons/carbon";
+import { Clean, Renew, Search } from "@vicons/carbon";
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
 import { useI18n } from "vue-i18n";
 import { usePageRequest } from "@/composables/usePageRequest";
@@ -164,10 +164,7 @@ onMounted(refresh);
       align="center"
     >
       <n-button type="primary" @click="show_edit = true">
-        <template #icon
-          ><n-icon><Add /></n-icon
-        ></template>
-        {{ $t("flow.default_card.create_new") }}
+        {{ t("common.create") }}
       </n-button>
       <n-flex size="small">
         <n-button secondary @click="reset_cache">

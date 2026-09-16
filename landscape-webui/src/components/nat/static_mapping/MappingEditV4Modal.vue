@@ -8,6 +8,7 @@ import type {
 import { computed, ref, watch } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import {
   get_static_nat_mapping_v4,
   push_static_nat_mapping_v4,
@@ -351,188 +352,188 @@ const mappingPortsRule = {
         style="flex: 1"
         ref="formRef"
         :model="rule"
-        :cols="5"
       >
-        <n-grid :cols="2">
-          <n-form-item-gi :label="t('nat.mapping.allowed_protocols')" :span="2">
-            <n-flex justify="space-between" style="flex: 1">
-              <n-flex>
-                <n-checkbox
-                  v-model:checked="allSelected"
-                  :indeterminate="isIndeterminate"
-                >
-                  {{ t("nat.mapping.select_all") }}
-                </n-checkbox>
-              </n-flex>
-              <n-flex>
-                <n-checkbox-group v-model:value="rule.l4_protocols">
-                  <n-space item-style="display: flex;">
-                    <n-checkbox :value="6" label="TCP" />
-                    <n-checkbox :value="17" label="UDP" />
-                  </n-space>
-                </n-checkbox-group>
-              </n-flex>
-            </n-flex>
-          </n-form-item-gi>
-
-          <n-form-item-gi
-            :span="2"
-            :label="t('nat.mapping.port_mappings_label')"
-            path="mapping_pair_ports"
-            :rule="mappingPortsRule"
-          >
-            <n-flex vertical style="width: 100%; gap: var(--app-space-sm)">
-              <template
-                v-for="(pair, index) in rule.mapping_pair_ports"
-                :key="index"
+        <StandardSettingRow
+          :label="t('nat.mapping.allowed_protocols')"
+          control-width="wide"
+        >
+          <n-flex justify="space-between" style="flex: 1">
+            <n-flex>
+              <n-checkbox
+                v-model:checked="allSelected"
+                :indeterminate="isIndeterminate"
               >
-                <n-flex align="center" style="gap: var(--app-space-sm)">
-                  <n-form-item
-                    style="flex: 1; margin-bottom: 0"
-                    :show-label="false"
-                    :show-feedback="false"
-                    :path="`mapping_pair_ports[${index}].wan_port`"
-                    :rule="wanPortRule"
-                  >
-                    <n-input-number
-                      :ref="
-                        (el: any) => {
-                          if (el) portInputRefs[index] = el;
-                        }
-                      "
-                      v-model:value="pair.wan_port"
-                      :min="1"
-                      :max="65535"
-                      :placeholder="t('nat.mapping.public_port_placeholder')"
-                      style="width: 100%"
-                    />
-                  </n-form-item>
-                  <span style="color: var(--app-text-muted-color)">&rarr;</span>
-                  <n-form-item
-                    style="flex: 1; margin-bottom: 0"
-                    :show-label="false"
-                    :show-feedback="false"
-                    :path="`mapping_pair_ports[${index}].lan_port`"
-                    :rule="lanPortRule"
-                  >
-                    <n-input-number
-                      v-model:value="pair.lan_port"
-                      :min="1"
-                      :max="65535"
-                      :placeholder="t('nat.mapping.private_port_placeholder')"
-                      style="width: 100%"
-                    />
-                  </n-form-item>
-                  <n-button
-                    v-if="rule.mapping_pair_ports.length > 1"
-                    size="small"
-                    @click="removePortPair(index)"
-                    secondary
-                    type="error"
-                  >
-                    {{ t("nat.mapping.delete") }}
-                  </n-button>
-                </n-flex>
-                <n-alert
-                  v-if="conflictMap[pair.wan_port]"
-                  type="warning"
-                  style="margin-top: 4px"
-                >
-                  {{
-                    t("nat.mapping.port_conflict_warning", {
-                      port: pair.wan_port,
-                      protocol:
-                        conflictMap[pair.wan_port].protocol === 6
-                          ? "TCP"
-                          : "UDP",
-                      start: conflictMap[pair.wan_port].start!,
-                      end: conflictMap[pair.wan_port].end!,
-                      iface: conflictMap[pair.wan_port].iface_name!,
-                    })
-                  }}
-                </n-alert>
-              </template>
-              <n-button @click="addPortPair" dashed block size="small">
-                {{ t("nat.mapping.add_port_pair") }}
-              </n-button>
+                {{ t("nat.mapping.select_all") }}
+              </n-checkbox>
             </n-flex>
-          </n-form-item-gi>
+            <n-flex>
+              <n-checkbox-group v-model:value="rule.l4_protocols">
+                <n-space item-style="display: flex;">
+                  <n-checkbox :value="6" label="TCP" />
+                  <n-checkbox :value="17" label="UDP" />
+                </n-space>
+              </n-checkbox-group>
+            </n-flex>
+          </n-flex>
+        </StandardSettingRow>
 
-          <n-form-item-gi :span="2" :label="t('nat.mapping.target_type')">
-            <n-radio-group
-              v-model:value="targetMode"
-              @update:value="syncRuleTarget"
+        <StandardSettingRow
+          :label="t('nat.mapping.port_mappings_label')"
+          path="mapping_pair_ports"
+          :rule="mappingPortsRule"
+        >
+          <n-flex vertical style="width: 100%; gap: var(--app-space-sm)">
+            <template
+              v-for="(pair, index) in rule.mapping_pair_ports"
+              :key="index"
             >
-              <n-radio-button value="device">
-                {{ t("nat.mapping.target_type_device") }}
-              </n-radio-button>
-              <n-radio-button value="local">
-                {{ t("nat.mapping.target_type_local") }}
-              </n-radio-button>
-              <n-radio-button value="address">
-                {{ t("nat.mapping.target_type_address") }}
-              </n-radio-button>
-            </n-radio-group>
-          </n-form-item-gi>
+              <n-flex align="center" style="gap: var(--app-space-sm)">
+                <n-form-item
+                  style="flex: 1; margin-bottom: 0"
+                  :show-label="false"
+                  :show-feedback="false"
+                  :path="`mapping_pair_ports[${index}].wan_port`"
+                  :rule="wanPortRule"
+                >
+                  <n-input-number
+                    :ref="
+                      (el: any) => {
+                        if (el) portInputRefs[index] = el;
+                      }
+                    "
+                    v-model:value="pair.wan_port"
+                    :min="1"
+                    :max="65535"
+                    :placeholder="t('nat.mapping.public_port_placeholder')"
+                    style="width: 100%"
+                  />
+                </n-form-item>
+                <span style="color: var(--app-text-muted-color)">&rarr;</span>
+                <n-form-item
+                  style="flex: 1; margin-bottom: 0"
+                  :show-label="false"
+                  :show-feedback="false"
+                  :path="`mapping_pair_ports[${index}].lan_port`"
+                  :rule="lanPortRule"
+                >
+                  <n-input-number
+                    v-model:value="pair.lan_port"
+                    :min="1"
+                    :max="65535"
+                    :placeholder="t('nat.mapping.private_port_placeholder')"
+                    style="width: 100%"
+                  />
+                </n-form-item>
+                <n-button
+                  v-if="rule.mapping_pair_ports.length > 1"
+                  size="small"
+                  @click="removePortPair(index)"
+                  secondary
+                  type="error"
+                >
+                  {{ t("nat.mapping.delete") }}
+                </n-button>
+              </n-flex>
+              <n-alert
+                v-if="conflictMap[pair.wan_port]"
+                type="warning"
+                style="margin-top: 4px"
+              >
+                {{
+                  t("nat.mapping.port_conflict_warning", {
+                    port: pair.wan_port,
+                    protocol:
+                      conflictMap[pair.wan_port].protocol === 6 ? "TCP" : "UDP",
+                    start: conflictMap[pair.wan_port].start!,
+                    end: conflictMap[pair.wan_port].end!,
+                    iface: conflictMap[pair.wan_port].iface_name!,
+                  })
+                }}
+              </n-alert>
+            </template>
+            <n-button @click="addPortPair" dashed block size="small">
+              {{ t("nat.mapping.add_port_pair") }}
+            </n-button>
+          </n-flex>
+        </StandardSettingRow>
 
-          <n-form-item-gi
-            v-if="targetMode === 'address'"
-            :span="2"
-            :label="t('nat.mapping.target_ipv4')"
+        <StandardSettingRow
+          :label="t('nat.mapping.target_type')"
+          control-width="wide"
+        >
+          <n-radio-group
+            v-model:value="targetMode"
+            @update:value="syncRuleTarget"
           >
-            <n-input
-              :placeholder="t('nat.mapping.target_ipv4_hint')"
-              :value="addressTarget.ipv4 || null"
-              @update:value="
-                (v: string | null) => {
-                  if (rule) {
-                    rule.lan_target = {
-                      t: 'address',
-                      ipv4: v || '',
-                    };
-                    syncRuleTarget();
-                  }
+            <n-radio-button value="device">
+              {{ t("nat.mapping.target_type_device") }}
+            </n-radio-button>
+            <n-radio-button value="local">
+              {{ t("nat.mapping.target_type_local") }}
+            </n-radio-button>
+            <n-radio-button value="address">
+              {{ t("nat.mapping.target_type_address") }}
+            </n-radio-button>
+          </n-radio-group>
+        </StandardSettingRow>
+
+        <StandardSettingRow
+          v-if="targetMode === 'address'"
+          :label="t('nat.mapping.target_ipv4')"
+        >
+          <n-input
+            :placeholder="t('nat.mapping.target_ipv4_hint')"
+            :value="addressTarget.ipv4 || null"
+            @update:value="
+              (v: string | null) => {
+                if (rule) {
+                  rule.lan_target = {
+                    t: 'address',
+                    ipv4: v || '',
+                  };
+                  syncRuleTarget();
                 }
-              "
+              }
+            "
+          />
+        </StandardSettingRow>
+
+        <StandardSettingRow
+          v-if="targetMode === 'local'"
+          :label="t('nat.mapping.target_local')"
+        >
+          <n-alert type="info" :show-icon="false" style="width: 100%">
+            {{ t("nat.mapping.target_local_hint") }}
+          </n-alert>
+        </StandardSettingRow>
+
+        <StandardSettingRow
+          v-if="targetMode === 'device'"
+          :label="t('nat.mapping.target_device')"
+        >
+          <n-flex vertical style="width: 100%">
+            <n-select
+              v-model:value="selectedDeviceId"
+              :options="deviceOptions"
+              :placeholder="t('nat.mapping.select_device_placeholder')"
+              clearable
+              filterable
+              @update:value="syncRuleTarget"
             />
-          </n-form-item-gi>
+            <n-text v-if="selectedDevice" depth="3">
+              {{ selectedDevice.iface_name || "-" }} /
+              {{ selectedDevice.ipv4 || "-" }} /
+              {{ selectedDevice.ipv6 || "-" }}
+            </n-text>
+          </n-flex>
+        </StandardSettingRow>
 
-          <n-form-item-gi
-            v-if="targetMode === 'local'"
-            :span="2"
-            :label="t('nat.mapping.target_local')"
-          >
-            <n-alert type="info" :show-icon="false" style="width: 100%">
-              {{ t("nat.mapping.target_local_hint") }}
-            </n-alert>
-          </n-form-item-gi>
-
-          <n-form-item-gi
-            v-if="targetMode === 'device'"
-            :span="2"
-            :label="t('nat.mapping.target_device')"
-          >
-            <n-flex vertical style="width: 100%">
-              <n-select
-                v-model:value="selectedDeviceId"
-                :options="deviceOptions"
-                :placeholder="t('nat.mapping.select_device_placeholder')"
-                clearable
-                filterable
-                @update:value="syncRuleTarget"
-              />
-              <n-text v-if="selectedDevice" depth="3">
-                {{ selectedDevice.iface_name || "-" }} /
-                {{ selectedDevice.ipv4 || "-" }} /
-                {{ selectedDevice.ipv6 || "-" }}
-              </n-text>
-            </n-flex>
-          </n-form-item-gi>
-
-          <n-form-item-gi :span="2" :label="t('nat.mapping.remark')">
-            <n-input v-model:value="rule.remark" type="textarea" />
-          </n-form-item-gi>
-        </n-grid>
+        <StandardSettingRow
+          :label="t('nat.mapping.remark')"
+          control-width="wide"
+        >
+          <n-input v-model:value="rule.remark" type="textarea" />
+        </StandardSettingRow>
       </n-form>
     </n-flex>
 

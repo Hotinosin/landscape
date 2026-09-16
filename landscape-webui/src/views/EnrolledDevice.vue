@@ -5,7 +5,7 @@ import type { EnrolledDevice } from "@landscape-router/types/api/schemas";
 import { useI18n } from "vue-i18n";
 import EnrolledDeviceListRow from "@/components/device/EnrolledDeviceListRow.vue";
 import EnrolledDeviceEditModal from "@/components/device/EnrolledDeviceEditModal.vue";
-import { Add, Renew } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
 import { usePageRequest } from "@/composables/usePageRequest";
@@ -127,10 +127,7 @@ async function manualRefresh() {
       class="standard-list-toolbar"
     >
       <n-button type="primary" @click="show_edit_modal = true">
-        <template #icon>
-          <n-icon><Add /></n-icon>
-        </template>
-        {{ t("device.add_btn") }}
+        {{ t("common.create") }}
       </n-button>
       <n-button
         :loading="deviceRequest.refreshing.value"

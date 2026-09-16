@@ -207,7 +207,7 @@ describe("NetworkSettings", () => {
     await flushPromises();
     expect(
       vm.projectGroups.map((group: { type: string }) => group.type),
-    ).toEqual(["interface", "bridge"]);
+    ).toEqual(["bridge", "interface"]);
     expect(
       vm.projectGroups.flatMap((group: { items: NetDev[] }) =>
         group.items.map((item) => item.name),

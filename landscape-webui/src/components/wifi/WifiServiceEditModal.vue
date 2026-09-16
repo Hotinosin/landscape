@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import { WifiServiceConfig } from "@/lib/wifi";
 import { useWifiConfigStore } from "@/stores/status_wifi";
 import { get_iface_wifi_config, update_wifi_config } from "@/api/service_wifi";
@@ -54,19 +55,19 @@ defineExpose({ save: save_config });
     @after-enter="on_modal_enter"
   >
     <n-form :model="service_config">
-      <n-form-item :label="t('wifi.config')">
+      <StandardSettingRow :label="t('wifi.config')" layout="stacked">
         <n-input
           v-model:value="service_config.config"
           type="textarea"
           rows="10"
           :placeholder="t('wifi.hostapd_config')"
         />
-      </n-form-item>
+      </StandardSettingRow>
     </n-form>
 
     <template #footer>
       <n-flex justify="end">
-        <n-button round type="primary" @click="save_config">
+        <n-button type="primary" @click="save_config">
           {{ t("common.update") }}
         </n-button>
       </n-flex>

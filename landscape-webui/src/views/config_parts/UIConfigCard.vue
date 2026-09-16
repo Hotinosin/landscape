@@ -12,6 +12,7 @@ import {
   type ThemeRadius,
   type ThemeStyle,
 } from "@/themes";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 const prefStore = usePreferenceStore();
 const message = useMessage();
@@ -125,23 +126,26 @@ async function handleSave() {
       </n-button>
     </template>
 
-    <n-form label-placement="left" label-width="160">
-      <n-form-item :label="t('config.language')">
+    <n-form>
+      <StandardSettingRow :label="t('config.language')">
         <n-select
           class="preference-control"
           v-model:value="prefStore.language"
           :options="languageOptions"
         />
-      </n-form-item>
-      <n-form-item :label="t('config.theme')">
+      </StandardSettingRow>
+      <StandardSettingRow :label="t('config.theme')">
         <n-select
           class="preference-control"
           v-model:value="prefStore.theme"
           :options="themeOptions"
           :placeholder="t('config.theme_placeholder')"
         />
-      </n-form-item>
-      <n-form-item :label="t('config.theme_preset')">
+      </StandardSettingRow>
+      <StandardSettingRow
+        :label="t('config.theme_preset')"
+        control-width="wide"
+      >
         <div class="theme-editor">
           <div class="preset-row">
             <n-select
@@ -200,8 +204,8 @@ async function handleSave() {
             </label>
           </div>
         </div>
-      </n-form-item>
-      <n-form-item :label="t('config.timezone')">
+      </StandardSettingRow>
+      <StandardSettingRow :label="t('config.timezone')">
         <n-select
           class="preference-control"
           v-model:value="prefStore.timezone"
@@ -209,7 +213,7 @@ async function handleSave() {
           :options="timezoneOptions"
           :placeholder="t('config.timezone_placeholder')"
         />
-      </n-form-item>
+      </StandardSettingRow>
     </n-form>
   </n-card>
 </template>

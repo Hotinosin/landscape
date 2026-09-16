@@ -162,6 +162,7 @@ defineExpose({ save: save_config });
       </template>
       <template #actions>
         <n-button
+          size="small"
           secondary
           :loading="statusLoading"
           @click="refreshPrefixStatus"
@@ -228,7 +229,7 @@ defineExpose({ save: save_config });
 
     <template #footer>
       <n-flex justify="end">
-        <n-button round type="primary" @click="save_config">
+        <n-button type="primary" @click="save_config">
           {{ t("common.update") }}
         </n-button>
       </n-flex>

@@ -13,6 +13,8 @@ import { useI18n } from "vue-i18n";
 import CertAccountEditModal from "@/components/cert/account/CertAccountEditModal.vue";
 import DnsProviderQuickCreateModal from "@/components/domain/DnsProviderQuickCreateModal.vue";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardEnableSwitch from "@/components/common/StandardEnableSwitch.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 type Props = {
   rule_id: string | null;
@@ -113,7 +115,7 @@ function setAcmeField(key: string, val: any) {
 
 const account_options = computed(() => [
   ...accounts.value.map((a) => ({ label: a.name, value: a.id! })),
-  { label: `+ ${t("cert.add_account")}`, value: CREATE_ACCOUNT_OPTION },
+  { label: t("cert.add_account"), value: CREATE_ACCOUNT_OPTION },
 ]);
 
 const provider_profile_options = computed(() => [
@@ -122,7 +124,7 @@ const provider_profile_options = computed(() => [
     value: profile.id!,
   })),
   {
-    label: `+ ${t("dns_provider.add_profile")}`,
+    label: t("dns_provider.add_profile"),
     value: CREATE_PROVIDER_OPTION,
   },
 ]);
@@ -355,17 +357,17 @@ async function save() {
       </n-form-item>
 
       <n-form-item :label="t('cert.for_api')">
-        <n-switch v-model:value="rule.for_api" size="medium">
-          <template #checked>{{ t("common.enable") }}</template>
-          <template #unchecked>{{ t("common.disable") }}</template>
-        </n-switch>
+        <StandardEnableSwitch
+          :value="!!rule.for_api"
+          @update:value="(value: boolean) => (rule!.for_api = value)"
+        />
       </n-form-item>
 
       <n-form-item :label="t('cert.for_gateway')">
-        <n-switch v-model:value="rule.for_gateway" size="medium">
-          <template #checked>{{ t("common.enable") }}</template>
-          <template #unchecked>{{ t("common.disable") }}</template>
-        </n-switch>
+        <StandardEnableSwitch
+          :value="!!rule.for_gateway"
+          @update:value="(value: boolean) => (rule!.for_gateway = value)"
+        />
       </n-form-item>
 
       <n-form-item
@@ -443,14 +445,10 @@ async function save() {
         </template>
 
         <n-form-item :label="t('cert.acme_auto_renew')">
-          <n-switch
-            :value="rule.cert_type.auto_renew"
-            size="medium"
+          <StandardEnableSwitch
+            :value="!!rule.cert_type.auto_renew"
             @update:value="(v: boolean) => setAcmeField('auto_renew', v)"
-          >
-            <template #checked>{{ t("common.enable") }}</template>
-            <template #unchecked>{{ t("common.disable") }}</template>
-          </n-switch>
+          />
         </n-form-item>
 
         <n-form-item
@@ -486,32 +484,32 @@ async function save() {
 
       <!-- ===== Manual mode ===== -->
       <template v-if="!is_acme && !is_generated">
-        <n-form-item :label="t('cert.upload_cert')">
+        <StandardSettingRow :label="t('cert.upload_cert')" layout="stacked">
           <n-input
             v-model:value="rule.certificate"
             type="textarea"
             :rows="5"
             placeholder="-----BEGIN CERTIFICATE-----"
           />
-        </n-form-item>
+        </StandardSettingRow>
 
-        <n-form-item :label="t('cert.upload_key')">
+        <StandardSettingRow :label="t('cert.upload_key')" layout="stacked">
           <n-input
             v-model:value="rule.private_key"
             type="textarea"
             :rows="5"
             placeholder="-----BEGIN PRIVATE KEY-----"
           />
-        </n-form-item>
+        </StandardSettingRow>
 
-        <n-form-item :label="t('cert.upload_chain')">
+        <StandardSettingRow :label="t('cert.upload_chain')" layout="stacked">
           <n-input
             v-model:value="rule.certificate_chain"
             type="textarea"
             :rows="3"
             placeholder="-----BEGIN CERTIFICATE-----"
           />
-        </n-form-item>
+        </StandardSettingRow>
       </template>
     </n-form>
 

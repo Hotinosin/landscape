@@ -6,18 +6,23 @@ withDefaults(
     label?: string;
     controlWidth?: "auto" | "default" | "wide";
     path?: string;
+    rule?: FormItemProps["rule"];
     required?: boolean;
     feedback?: string;
     validationStatus?: FormItemProps["validationStatus"];
+    layout?: "row" | "stacked";
   }>(),
-  { controlWidth: "default" },
+  { controlWidth: "default", layout: "row" },
 );
 </script>
 
 <template>
   <div
     class="standard-setting-row"
-    :class="`standard-setting-row--${controlWidth}`"
+    :class="[
+      `standard-setting-row--${controlWidth}`,
+      { 'standard-setting-row--stacked': layout === 'stacked' },
+    ]"
   >
     <strong class="standard-setting-row__label">
       <slot name="label">{{ label }}</slot>
@@ -25,12 +30,18 @@ withDefaults(
     </strong>
     <div
       class="standard-setting-row__control"
-      :class="`standard-setting-row__control--${controlWidth}`"
+      :class="[
+        `standard-setting-row__control--${controlWidth}`,
+        {
+          'standard-setting-row__control--stacked': layout === 'stacked',
+        },
+      ]"
     >
       <n-form-item
         v-if="path || feedback || validationStatus"
         class="standard-setting-row__form-item"
         :path="path"
+        :rule="rule"
         :show-label="false"
         :feedback="feedback"
         :validation-status="validationStatus"
@@ -48,6 +59,8 @@ withDefaults(
 }
 
 .standard-setting-row__form-item {
+  --n-feedback-height: 0px !important;
+  margin-bottom: 0;
   width: 100%;
 }
 </style>

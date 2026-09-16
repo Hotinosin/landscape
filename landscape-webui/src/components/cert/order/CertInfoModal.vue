@@ -6,6 +6,7 @@ import { get_cert_info } from "@/api/cert/order";
 import { useI18n } from "vue-i18n";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 const show = defineModel<boolean>("show", { required: true });
 
@@ -237,8 +238,8 @@ watch(
 
       <n-collapse v-model:expanded-names="collapse_names">
         <n-collapse-item :title="t('cert.raw_pem_title')" name="raw_pem">
-          <n-flex vertical :size="8">
-            <n-form-item :label="t('cert.upload_cert')">
+          <div>
+            <StandardSettingRow :label="t('cert.upload_cert')" layout="stacked">
               <n-input
                 :value="cert.certificate || ''"
                 type="textarea"
@@ -246,9 +247,12 @@ watch(
                 readonly
                 :placeholder="t('cert.no_cert_content')"
               />
-            </n-form-item>
+            </StandardSettingRow>
 
-            <n-form-item :label="t('cert.upload_chain')">
+            <StandardSettingRow
+              :label="t('cert.upload_chain')"
+              layout="stacked"
+            >
               <n-input
                 :value="cert.certificate_chain || ''"
                 type="textarea"
@@ -256,9 +260,12 @@ watch(
                 readonly
                 :placeholder="t('cert.no_cert_content')"
               />
-            </n-form-item>
+            </StandardSettingRow>
 
-            <n-form-item :label="t('cert.cert_private_key')">
+            <StandardSettingRow
+              :label="t('cert.cert_private_key')"
+              layout="stacked"
+            >
               <n-input
                 :value="cert.private_key || ''"
                 type="textarea"
@@ -266,8 +273,8 @@ watch(
                 readonly
                 :placeholder="t('cert.no_cert_content')"
               />
-            </n-form-item>
-          </n-flex>
+            </StandardSettingRow>
+          </div>
         </n-collapse-item>
       </n-collapse>
 

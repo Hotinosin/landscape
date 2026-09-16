@@ -8,7 +8,7 @@ export default {
   ddns_default_ttl_hint:
     "Configure the default DDNS TTL on the provider profile. Different DNS providers may enforce different TTL ranges.",
   provider_profile: "Provider Profile",
-  add_profile: "Add configuration",
+  add_profile: "New configuration",
   provider_profile_required: "Provider profile is required",
   provider_validation_failed: "DNS provider credential validation failed",
 };

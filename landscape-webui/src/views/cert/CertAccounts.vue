@@ -5,7 +5,7 @@ import { computed, h, ref, onMounted } from "vue";
 import type { DataTableColumns } from "naive-ui";
 import CertAccountListRow from "@/components/cert/account/CertAccountListRow.vue";
 import { useI18n } from "vue-i18n";
-import { Add, Renew } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import { usePageRequest } from "@/composables/usePageRequest";
 
 const {
@@ -62,9 +62,6 @@ onMounted(refresh);
   <n-flex vertical class="standard-content-page">
     <n-flex justify="space-between" class="standard-list-toolbar">
       <n-button type="primary" @click="show_edit_modal = true">
-        <template #icon
-          ><n-icon><Add /></n-icon
-        ></template>
         {{ t("common.create") }}
       </n-button>
       <n-button :loading="loading" secondary @click="refresh">

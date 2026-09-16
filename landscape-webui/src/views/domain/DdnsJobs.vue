@@ -33,7 +33,7 @@ import StandardEnableSwitch from "@/components/common/StandardEnableSwitch.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import { useI18n } from "vue-i18n";
-import { Add, Renew } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import DnsProviderQuickCreateModal from "@/components/domain/DnsProviderQuickCreateModal.vue";
 import { usePageRequest } from "@/composables/usePageRequest";
 
@@ -124,7 +124,7 @@ const providerOptions = computed(() => [
     value: item.id!,
   })),
   {
-    label: `+ ${t("common.create")} ${t("dns_provider.provider_profile")}`,
+    label: `${t("common.create")} ${t("dns_provider.provider_profile")}`,
     value: CREATE_PROVIDER_OPTION,
   },
 ]);
@@ -771,8 +771,6 @@ onMounted(async () => {
           resetForm();
           showModal = true;
         "
-        ><template #icon
-          ><n-icon><Add /></n-icon></template
         >{{ t("common.create") }}</n-button
       >
       <n-button :loading="loading" secondary @click="refresh">

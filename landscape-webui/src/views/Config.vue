@@ -88,7 +88,6 @@ onMounted(async () => {
         <MetricConfigCard />
         <PasswordConfigCard />
         <BackupConfigCard />
-        <div style="height: 400px"></div>
       </n-space>
     </div>
   </div>

@@ -10,6 +10,7 @@ import { FormInst, FormRules } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import AdguardRuleInfo from "./AdguardRuleInfo.vue";
 
 const emit = defineEmits(["refresh"]);
@@ -155,132 +156,131 @@ const matchTypeOptions = [
       ref="formRef"
       :model="rule"
       :rules="rules"
-      :cols="5"
     >
-      <n-grid :cols="5">
-        <n-form-item-gi :label="t('geo.common.source_type')" :span="5">
-          <n-radio-group
-            v-model:value="sourceType"
-            @update:value="switchSourceType"
-          >
-            <n-radio value="url">{{ t("geo.common.source_url_mode") }}</n-radio>
-            <n-radio value="direct">{{
-              t("geo.common.source_direct_mode")
-            }}</n-radio>
-            <n-radio value="adguard_home">
-              {{ t("geo.common.source_adguard_home_mode") }}
-              <span
-                style="
-                  display: inline-flex;
-                  vertical-align: middle;
-                  margin-left: 4px;
-                "
-              >
-                <AdguardRuleInfo />
-              </span>
-            </n-radio>
-          </n-radio-group>
-        </n-form-item-gi>
-
-        <n-form-item-gi
-          :label="t('geo.common.name_unique')"
-          path="name"
-          :span="5"
+      <StandardSettingRow
+        :label="t('geo.common.source_type')"
+        control-width="wide"
+      >
+        <n-radio-group
+          v-model:value="sourceType"
+          @update:value="switchSourceType"
         >
-          <n-input v-model:value="rule.name" clearable />
-        </n-form-item-gi>
+          <n-radio value="url">{{ t("geo.common.source_url_mode") }}</n-radio>
+          <n-radio value="direct">{{
+            t("geo.common.source_direct_mode")
+          }}</n-radio>
+          <n-radio value="adguard_home">
+            {{ t("geo.common.source_adguard_home_mode") }}
+            <span
+              style="
+                display: inline-flex;
+                vertical-align: middle;
+                margin-left: 4px;
+              "
+            >
+              <AdguardRuleInfo />
+            </span>
+          </n-radio>
+        </n-radio-group>
+      </StandardSettingRow>
 
-        <!-- URL mode -->
-        <template v-if="rule.source.t === 'url'">
-          <n-form-item-gi :label="t('geo.common.source_url')" :span="5">
-            <n-input v-model:value="rule.source.url" clearable />
-          </n-form-item-gi>
-        </template>
+      <StandardSettingRow :label="t('geo.common.name_unique')" path="name">
+        <n-input v-model:value="rule.name" clearable />
+      </StandardSettingRow>
 
-        <!-- Direct mode -->
-        <template v-if="rule.source.t === 'direct'">
-          <n-form-item-gi :label="t('geo.geo_site.domain_list')" :span="5">
-            <n-flex vertical style="width: 100%">
-              <n-card
-                v-for="(item, idx) in rule.source.data"
-                :key="idx"
-                size="small"
-              >
-                <template #header>
-                  <n-input
-                    v-model:value="item.key"
-                    :placeholder="t('geo.common.key')"
+      <!-- URL mode -->
+      <template v-if="rule.source.t === 'url'">
+        <StandardSettingRow :label="t('geo.common.source_url')">
+          <n-input v-model:value="rule.source.url" clearable />
+        </StandardSettingRow>
+      </template>
+
+      <!-- Direct mode -->
+      <template v-if="rule.source.t === 'direct'">
+        <StandardSettingRow
+          :label="t('geo.geo_site.domain_list')"
+          control-width="wide"
+        >
+          <n-flex vertical style="width: 100%">
+            <n-card
+              v-for="(item, idx) in rule.source.data"
+              :key="idx"
+              size="small"
+            >
+              <template #header>
+                <n-input
+                  v-model:value="item.key"
+                  :placeholder="t('geo.common.key')"
+                  size="small"
+                />
+              </template>
+              <template #header-extra>
+                <n-button
+                  size="small"
+                  type="error"
+                  secondary
+                  @click="removeDirectItem(idx)"
+                >
+                  {{ t("geo.common.remove") }}
+                </n-button>
+              </template>
+              <n-flex vertical>
+                <n-flex
+                  v-for="(domain, dIdx) in item.values"
+                  :key="dIdx"
+                  :wrap="false"
+                  align="center"
+                >
+                  <n-select
+                    v-model:value="domain.match_type"
+                    :options="matchTypeOptions"
                     size="small"
+                    style="width: 120px"
                   />
-                </template>
-                <template #header-extra>
+                  <n-input
+                    v-model:value="domain.value"
+                    :placeholder="t('geo.geo_site.domain_placeholder')"
+                    size="small"
+                    style="flex: 1"
+                  />
                   <n-button
                     size="small"
                     type="error"
-                    secondary
-                    @click="removeDirectItem(idx)"
+                    quaternary
+                    @click="removeDomainFromItem(item, dIdx)"
                   >
-                    {{ t("geo.common.remove") }}
-                  </n-button>
-                </template>
-                <n-flex vertical>
-                  <n-flex
-                    v-for="(domain, dIdx) in item.values"
-                    :key="dIdx"
-                    :wrap="false"
-                    align="center"
-                  >
-                    <n-select
-                      v-model:value="domain.match_type"
-                      :options="matchTypeOptions"
-                      size="small"
-                      style="width: 120px"
-                    />
-                    <n-input
-                      v-model:value="domain.value"
-                      :placeholder="t('geo.geo_site.domain_placeholder')"
-                      size="small"
-                      style="flex: 1"
-                    />
-                    <n-button
-                      size="small"
-                      type="error"
-                      quaternary
-                      @click="removeDomainFromItem(item, dIdx)"
-                    >
-                      X
-                    </n-button>
-                  </n-flex>
-                  <n-button size="small" dashed @click="addDomainToItem(item)">
-                    {{ t("geo.geo_site.add_domain") }}
+                    X
                   </n-button>
                 </n-flex>
-              </n-card>
-              <n-button dashed @click="addDirectItem">
-                {{ t("geo.common.add_key_group") }}
-              </n-button>
-            </n-flex>
-          </n-form-item-gi>
-        </template>
+                <n-button size="small" dashed @click="addDomainToItem(item)">
+                  {{ t("geo.geo_site.add_domain") }}
+                </n-button>
+              </n-flex>
+            </n-card>
+            <n-button dashed @click="addDirectItem">
+              {{ t("geo.common.add_key_group") }}
+            </n-button>
+          </n-flex>
+        </StandardSettingRow>
+      </template>
 
-        <!-- AdGuard Home mode -->
-        <template v-if="rule.source.t === 'adguard_home'">
-          <n-form-item-gi :label="t('geo.common.source_url')" :span="5">
-            <n-input
-              v-model:value="rule.source.url"
-              clearable
-              placeholder="https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt"
-            />
-          </n-form-item-gi>
-          <n-form-item-gi :label="t('geo.geo_site.adguard_key')" :span="5">
-            <n-input
-              v-model:value="rule.source.key"
-              clearable
-              placeholder="ADGUARD"
-            />
-          </n-form-item-gi>
-        </template>
-      </n-grid>
+      <!-- AdGuard Home mode -->
+      <template v-if="rule.source.t === 'adguard_home'">
+        <StandardSettingRow :label="t('geo.common.source_url')">
+          <n-input
+            v-model:value="rule.source.url"
+            clearable
+            placeholder="https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt"
+          />
+        </StandardSettingRow>
+        <StandardSettingRow :label="t('geo.geo_site.adguard_key')">
+          <n-input
+            v-model:value="rule.source.key"
+            clearable
+            placeholder="ADGUARD"
+          />
+        </StandardSettingRow>
+      </template>
     </n-form>
     <template #footer>
       <n-flex justify="space-between">
