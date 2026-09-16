@@ -39,8 +39,8 @@ impl MigrationTrait for Migration {
 
 async fn add_name<T, C>(manager: &SchemaManager<'_>, table: T, column: C) -> Result<(), DbErr>
 where
-    T: IntoIden,
-    C: IntoIden,
+    T: IntoIden + 'static,
+    C: IntoIden + 'static,
 {
     manager
         .alter_table(Table::alter().table(table).add_column(string_null(column)).to_owned())
@@ -49,8 +49,8 @@ where
 
 async fn drop_name<T, C>(manager: &SchemaManager<'_>, table: T, column: C) -> Result<(), DbErr>
 where
-    T: IntoIden,
-    C: IntoIden,
+    T: IntoIden + 'static,
+    C: IntoIden + 'static,
 {
     manager.alter_table(Table::alter().table(table).drop_column(column).to_owned()).await
 }
