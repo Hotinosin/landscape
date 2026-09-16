@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, h, watch } from "vue";
 import { trace_flow_match, trace_verdict } from "@/api/route/trace";
 import { check_domain } from "@/api/dns_service";
 import { reset_cache } from "@/api/route/cache";
@@ -17,12 +17,10 @@ import type { FlowMatchResult } from "@/api/route/trace";
 import type { FlowVerdictResult } from "@/api/route/trace";
 import type { SingleVerdictResult } from "@landscape-router/types/api/schemas";
 import { useI18n } from "vue-i18n";
-import { NCard, NDrawer, NDrawerContent, NModal } from "naive-ui";
+import { NFlex, NTag, NText, type DataTableColumns } from "naive-ui";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
 const show = defineModel<boolean>("show", { required: true });
-const { presentation = "drawer" } = defineProps<{
-  presentation?: "drawer" | "modal";
-}>();
 
 const enrolledDeviceStore = useEnrolledDeviceStore();
 const frontEndStore = useFrontEndStore();
@@ -38,13 +36,101 @@ const selectedDevice = ref<string | null>(null);
 const srcIpv4 = ref("");
 const srcIpv6 = ref("");
 const srcMac = ref("");
+type ManualSourceType = "ipv4" | "ipv6" | "mac";
+const manualSourceType = ref<ManualSourceType>("ipv4");
+const manualSourceOptions = [
+  { label: "IPv4", value: "ipv4" },
+  { label: "IPv6", value: "ipv6" },
+  { label: "MAC", value: "mac" },
+];
+const manualSourceInput = computed({
+  get: () =>
+    ({ ipv4: srcIpv4.value, ipv6: srcIpv6.value, mac: srcMac.value })[
+      manualSourceType.value
+    ],
+  set: (value: string) => {
+    srcIpv4.value = manualSourceType.value === "ipv4" ? value : "";
+    srcIpv6.value = manualSourceType.value === "ipv6" ? value : "";
+    srcMac.value = manualSourceType.value === "mac" ? value : "";
+  },
+});
 const matchLoading = ref(false);
 const matchResult = ref<FlowMatchResult | null>(null);
+const matchRows = computed(() =>
+  matchResult.value ? [matchResult.value] : [],
+);
+const matchColumns = computed<DataTableColumns<FlowMatchResult>>(() => {
+  const matchedFlow = (flowId?: number | null) =>
+    flowId == null
+      ? h(NTag, { size: "small" }, () => t("flow.trace.no_match"))
+      : h(FlowExhibit, { flow_id: flowId });
+  const effectiveFlow = (flowId: number) =>
+    flowId === 0
+      ? h(NTag, { size: "small", type: "info" }, () =>
+          t("flow.trace.default_flow"),
+        )
+      : h(FlowExhibit, { flow_id: flowId });
+
+  return [
+    {
+      title: t("flow.trace.mac_match"),
+      key: "flow_id_by_mac",
+      width: "20%",
+      render: (row) => matchedFlow(row.flow_id_by_mac),
+    },
+    {
+      title: t("flow.trace.ipv4_match"),
+      key: "flow_id_by_ipv4",
+      width: "20%",
+      render: (row) => matchedFlow(row.flow_id_by_ipv4),
+    },
+    {
+      title: t("flow.trace.ipv6_match"),
+      key: "flow_id_by_ipv6",
+      width: "20%",
+      render: (row) => matchedFlow(row.flow_id_by_ipv6),
+    },
+    {
+      title: t("flow.trace.effective_flow_v4"),
+      key: "effective_flow_id_v4",
+      width: "20%",
+      render: (row) => effectiveFlow(row.effective_flow_id_v4),
+    },
+    {
+      title: t("flow.trace.effective_flow_v6"),
+      key: "effective_flow_id_v6",
+      width: "20%",
+      render: (row) => effectiveFlow(row.effective_flow_id_v6),
+    },
+  ];
+});
 
 // Step 2 state
 const queryMode = ref<"domain" | "ip">("domain");
 const domainInput = ref("");
 const ipInput = ref("");
+const domainPresets = [
+  {
+    label: "Baidu",
+    domain: "www.baidu.com",
+    type: "info" as const,
+  },
+  {
+    label: "WeChat",
+    domain: "weixin.qq.com",
+    type: "success" as const,
+  },
+  {
+    label: "Google",
+    domain: "www.google.com",
+    type: "info" as const,
+  },
+  {
+    label: "Cloudflare",
+    domain: "www.cloudflare.com",
+    type: "warning" as const,
+  },
+];
 const verdictLoading = ref(false);
 const verdictResult = ref<FlowVerdictResult | null>(null);
 const resolvedDomain = ref("");
@@ -107,6 +193,11 @@ function onDeviceSelect(mac: string | null) {
   srcIpv4.value = device.ipv4 || "";
   srcIpv6.value = device.ipv6 || "";
   srcMac.value = device.mac || "";
+}
+
+function setManualSourceType(value: ManualSourceType) {
+  manualSourceType.value = value;
+  manualSourceInput.value = "";
 }
 
 function getSourceAddresses(): TraceSourceAddresses {
@@ -318,6 +409,13 @@ async function doVerdictByIp() {
   }
 }
 
+async function queryPreset(domain: string) {
+  if (verdictLoading.value) return;
+  queryMode.value = "domain";
+  domainInput.value = domain;
+  await doVerdictByDomain();
+}
+
 async function doResetCache() {
   resetCacheLoading.value = true;
   try {
@@ -369,225 +467,239 @@ function actionTagType(
       return "info";
   }
 }
+
+function renderRuleMatch(match: SingleVerdictResult["ip_rule_match"]) {
+  if (!match) {
+    return h(NTag, { size: "small" }, () => t("flow.trace.no_match"));
+  }
+  return h(NFlex, { align: "center", size: 4, wrap: false }, () => [
+    h(NTag, { size: "small", type: actionTagType(match.mark as any) }, () =>
+      formatAction(match.mark as any),
+    ),
+    h(
+      NText,
+      { depth: 3, style: "font-size: var(--app-font-size-caption)" },
+      () => t("flow.trace.priority", { priority: match.priority }),
+    ),
+  ]);
+}
+
+const verdictRows = computed(() => verdictResult.value?.verdicts ?? []);
+const verdictColumns = computed<DataTableColumns<SingleVerdictResult>>(() => [
+  { title: t("flow.trace.target_ip"), key: "dst_ip", width: "18%" },
+  {
+    title: t("flow.trace.ip_rule"),
+    key: "ip_rule_match",
+    width: "23%",
+    render: (row) => renderRuleMatch(row.ip_rule_match),
+  },
+  {
+    title: t("flow.trace.dns_rule"),
+    key: "dns_rule_match",
+    width: "23%",
+    render: (row) => renderRuleMatch(row.dns_rule_match),
+  },
+  {
+    title: t("flow.trace.final_action"),
+    key: "effective_mark",
+    width: "20%",
+    render: (row) =>
+      h(
+        NTag,
+        { size: "small", type: actionTagType(row.effective_mark as any) },
+        () => formatAction(row.effective_mark as any),
+      ),
+  },
+  {
+    title: t("flow.trace.cache"),
+    key: "has_cache",
+    width: "16%",
+    render: (row) =>
+      h(
+        NTag,
+        {
+          size: "small",
+          type: !row.has_cache
+            ? "default"
+            : isCacheConsistent(row)
+              ? "success"
+              : "warning",
+          title:
+            row.has_cache && !isCacheConsistent(row)
+              ? t("flow.trace.cache_mismatch_alert")
+              : undefined,
+        },
+        () =>
+          !row.has_cache
+            ? t("flow.trace.no_cache")
+            : isCacheConsistent(row)
+              ? t("flow.trace.cache_consistent")
+              : t("flow.trace.cache_inconsistent"),
+      ),
+  },
+]);
 </script>
 
 <template>
-  <component
-    :is="presentation === 'modal' ? NModal : NDrawer"
+  <ConfigModal
     v-model:show="show"
-    v-bind="
-      presentation === 'modal'
-        ? {}
-        : { width: '500px', placement: 'right' }
-    "
+    :show-switch="false"
+    width="var(--app-secondary-modal-width)"
+    max-height="calc(100vh - 120px)"
+    :title="t('flow.trace.title')"
     @after-enter="onOpen"
   >
-    <component
-      :is="presentation === 'modal' ? NCard : NDrawerContent"
-      :title="t('flow.trace.title')"
-      closable
-      v-bind="
-        presentation === 'modal'
-          ? {
-              bordered: false,
-              style: 'width: min(900px, calc(100vw - 32px))',
-              contentStyle:
-                'max-height: calc(100vh - 120px); overflow: auto; padding: 14px 16px',
-            }
-          : {
-              nativeScrollbar: false,
-              bodyContentStyle: 'padding: 14px 16px',
-            }
-      "
-      @close="show = false"
-    >
-      <n-flex vertical :size="16">
-        <!-- Step 1: Source client -->
-        <n-card size="small" :title="t('flow.trace.step1_title')">
-          <n-flex vertical :size="8">
-            <n-flex :wrap="false" align="center">
+    <n-flex vertical :size="16">
+      <section class="route-trace-section">
+        <n-divider class="network-settings__divider" title-placement="left">
+          {{ t("flow.list.ingress_match") }}
+        </n-divider>
+        <n-flex vertical :size="8">
+          <n-flex :wrap="false" align="center">
+            <n-select
+              v-model:value="selectMode"
+              :options="sourceModeOptions"
+              style="width: 120px"
+            />
+            <template v-if="selectMode">
               <n-select
-                v-model:value="selectMode"
-                :options="sourceModeOptions"
-                style="width: 120px"
-              />
-              <template v-if="selectMode">
-                <n-select
-                  :options="deviceOptions"
-                  :value="selectedDevice"
-                  @update:value="onDeviceSelect"
-                  :placeholder="t('flow.trace.select_device_placeholder')"
-                  clearable
-                  filterable
-                  style="flex: 1"
-                />
-              </template>
-              <template v-else>
-                <n-input
-                  v-model:value="srcIpv4"
-                  :placeholder="t('flow.trace.src_ipv4_optional')"
-                  style="flex: 1"
-                />
-              </template>
-            </n-flex>
-            <template v-if="!selectMode">
-              <n-input
-                v-model:value="srcIpv6"
-                :placeholder="t('flow.trace.src_ipv6_optional')"
-              />
-              <n-input
-                v-model:value="srcMac"
-                :placeholder="t('flow.trace.src_mac_optional')"
+                :options="deviceOptions"
+                :value="selectedDevice"
+                @update:value="onDeviceSelect"
+                :placeholder="t('flow.trace.select_device_placeholder')"
+                clearable
+                filterable
+                style="flex: 1"
               />
             </template>
-            <n-text
-              v-if="selectMode && (srcIpv4 || srcMac)"
-              depth="3"
-              style="font-size: var(--app-font-size-caption)"
-            >
-              IPv4:
-              {{
-                srcIpv4
-                  ? frontEndStore.MASK_INFO(srcIpv4)
-                  : t("flow.trace.none")
-              }}
-              &nbsp; IPv6:
-              {{
-                srcIpv6
-                  ? frontEndStore.MASK_INFO(srcIpv6)
-                  : t("flow.trace.none")
-              }}
-              &nbsp; MAC:
-              {{
-                srcMac ? frontEndStore.MASK_INFO(srcMac) : t("flow.trace.none")
-              }}
-            </n-text>
+            <template v-else>
+              <n-select
+                :value="manualSourceType"
+                :options="manualSourceOptions"
+                style="width: 100px"
+                @update:value="setManualSourceType"
+              />
+              <n-input
+                v-model:value="manualSourceInput"
+                :placeholder="
+                  t(`flow.trace.src_${manualSourceType}_placeholder`)
+                "
+                style="flex: 1"
+              />
+            </template>
             <n-button
               type="primary"
               :loading="matchLoading"
               :disabled="!canMatch"
               @click="doFlowMatch"
-              block
-              size="small"
             >
               {{ t("flow.trace.match_btn") }}
             </n-button>
           </n-flex>
-        </n-card>
-
-        <!-- Flow match result -->
-        <n-card
-          v-if="matchResult"
-          size="small"
-          :title="t('flow.trace.match_result_title')"
-        >
-          <n-descriptions
-            :column="1"
-            label-placement="left"
-            bordered
-            size="small"
+          <n-text
+            v-if="selectMode && (srcIpv4 || srcMac)"
+            depth="3"
+            style="font-size: var(--app-font-size-caption)"
           >
-            <n-descriptions-item :label="t('flow.trace.mac_match')">
-              <FlowExhibit
-                v-if="matchResult.flow_id_by_mac != null"
-                :flow_id="matchResult.flow_id_by_mac"
-              />
-              <n-tag v-else type="default" size="small">{{
-                t("flow.trace.no_match")
-              }}</n-tag>
-            </n-descriptions-item>
-            <n-descriptions-item :label="t('flow.trace.ipv4_match')">
-              <FlowExhibit
-                v-if="matchResult.flow_id_by_ipv4 != null"
-                :flow_id="matchResult.flow_id_by_ipv4"
-              />
-              <n-tag v-else type="default" size="small">{{
-                t("flow.trace.no_match")
-              }}</n-tag>
-            </n-descriptions-item>
-            <n-descriptions-item :label="t('flow.trace.ipv6_match')">
-              <FlowExhibit
-                v-if="matchResult.flow_id_by_ipv6 != null"
-                :flow_id="matchResult.flow_id_by_ipv6"
-              />
-              <n-tag v-else type="default" size="small">{{
-                t("flow.trace.no_match")
-              }}</n-tag>
-            </n-descriptions-item>
-            <n-descriptions-item :label="t('flow.trace.effective_flow_v4')">
+            IPv4:
+            {{
+              srcIpv4 ? frontEndStore.MASK_INFO(srcIpv4) : t("flow.trace.none")
+            }}
+            &nbsp; IPv6:
+            {{
+              srcIpv6 ? frontEndStore.MASK_INFO(srcIpv6) : t("flow.trace.none")
+            }}
+            &nbsp; MAC:
+            {{
+              srcMac ? frontEndStore.MASK_INFO(srcMac) : t("flow.trace.none")
+            }}
+          </n-text>
+        </n-flex>
+      </section>
+
+      <section v-if="matchResult" class="route-trace-section">
+        <n-divider class="network-settings__divider" title-placement="left">
+          {{ t("flow.trace.match_result_title") }}
+        </n-divider>
+        <StandardDataTable
+          :columns="matchColumns"
+          :data="matchRows"
+          table-layout="fixed"
+          size="small"
+        />
+      </section>
+
+      <section v-if="matchResult" class="route-trace-section">
+        <n-divider class="network-settings__divider" title-placement="left">
+          {{ t("flow.trace.route_decision") }}
+        </n-divider>
+        <n-flex vertical :size="8">
+          <n-tabs
+            v-model:value="queryMode"
+            type="segment"
+            size="small"
+            style="width: 240px"
+          >
+            <n-tab name="domain">{{ t("flow.trace.query_domain") }}</n-tab>
+            <n-tab name="ip">{{ t("flow.trace.query_ip") }}</n-tab>
+          </n-tabs>
+
+          <!-- Domain mode -->
+          <template v-if="queryMode === 'domain'">
+            <n-flex :size="8">
               <n-tag
-                v-if="matchResult.effective_flow_id_v4 === 0"
-                type="info"
+                v-for="preset in domainPresets"
+                :key="preset.domain"
                 size="small"
-                >{{ t("flow.trace.default_flow") }}</n-tag
+                :type="preset.type"
+                role="button"
+                tabindex="0"
+                :style="{ cursor: verdictLoading ? 'wait' : 'pointer' }"
+                @click="queryPreset(preset.domain)"
+                @keydown.enter="queryPreset(preset.domain)"
+                @keydown.space.prevent="queryPreset(preset.domain)"
               >
-              <FlowExhibit v-else :flow_id="matchResult.effective_flow_id_v4" />
-            </n-descriptions-item>
-            <n-descriptions-item :label="t('flow.trace.effective_flow_v6')">
-              <n-tag
-                v-if="matchResult.effective_flow_id_v6 === 0"
-                type="info"
-                size="small"
-                >{{ t("flow.trace.default_flow") }}</n-tag
-              >
-              <FlowExhibit v-else :flow_id="matchResult.effective_flow_id_v6" />
-            </n-descriptions-item>
-          </n-descriptions>
-        </n-card>
-
-        <!-- Step 2: Verdict query (shown after flow match) -->
-        <template v-if="matchResult">
-          <n-card size="small" :title="t('flow.trace.step2_title')">
-            <n-flex vertical :size="8">
-              <n-radio-group v-model:value="queryMode" size="small">
-                <n-radio-button value="domain">{{
-                  t("flow.trace.query_domain")
-                }}</n-radio-button>
-                <n-radio-button value="ip">{{
-                  t("flow.trace.query_ip")
-                }}</n-radio-button>
-              </n-radio-group>
-
-              <!-- Domain mode -->
-              <template v-if="queryMode === 'domain'">
-                <n-input
-                  key="domain"
-                  v-model:value="domainInput"
-                  :placeholder="t('flow.trace.domain_placeholder')"
-                />
-                <n-button
-                  type="primary"
-                  :loading="verdictLoading"
-                  :disabled="!domainInput"
-                  @click="doVerdictByDomain"
-                  block
-                  size="small"
-                >
-                  {{ t("flow.trace.resolve_and_query") }}
-                </n-button>
-              </template>
-
-              <!-- IP mode -->
-              <template v-else>
-                <n-input
-                  key="ip"
-                  v-model:value="ipInput"
-                  :placeholder="t('flow.trace.target_ip_placeholder')"
-                />
-                <n-button
-                  type="primary"
-                  :loading="verdictLoading"
-                  :disabled="!ipInput"
-                  @click="doVerdictByIp"
-                  block
-                  size="small"
-                >
-                  {{ t("flow.trace.query_btn") }}
-                </n-button>
-              </template>
+                {{ preset.label }}
+              </n-tag>
             </n-flex>
-          </n-card>
-        </template>
+            <n-flex :size="8" :wrap="false">
+              <n-input
+                key="domain"
+                v-model:value="domainInput"
+                :placeholder="t('flow.trace.domain_placeholder')"
+                style="min-width: 0; flex: 1"
+              />
+              <n-button
+                type="primary"
+                :loading="verdictLoading"
+                :disabled="!domainInput"
+                @click="doVerdictByDomain"
+              >
+                {{ t("flow.trace.resolve_and_query") }}
+              </n-button>
+            </n-flex>
+          </template>
+
+          <!-- IP mode -->
+          <template v-else>
+            <n-flex :size="8" :wrap="false">
+              <n-input
+                key="ip"
+                v-model:value="ipInput"
+                :placeholder="t('flow.trace.target_ip_placeholder')"
+                style="min-width: 0; flex: 1"
+              />
+              <n-button
+                type="primary"
+                :loading="verdictLoading"
+                :disabled="!ipInput"
+                @click="doVerdictByIp"
+              >
+                {{ t("flow.trace.query_btn") }}
+              </n-button>
+            </n-flex>
+          </template>
+        </n-flex>
 
         <!-- Verdict results -->
         <template v-if="verdictResult">
@@ -615,106 +727,26 @@ function actionTagType(
               {{ t("flow.trace.reset_route_cache") }}
             </n-button>
           </n-flex>
-          <n-card
-            v-for="(v, idx) in verdictResult.verdicts"
-            :key="idx"
+          <StandardDataTable
+            :columns="verdictColumns"
+            :data="verdictRows"
+            table-layout="fixed"
             size="small"
-            :title="v.dst_ip"
-          >
-            <n-descriptions
-              :column="1"
-              label-placement="left"
-              bordered
-              size="small"
-            >
-              <n-descriptions-item :label="t('flow.trace.ip_rule')">
-                <template v-if="v.ip_rule_match">
-                  <n-flex align="center" :size="4">
-                    <n-tag
-                      :type="actionTagType(v.ip_rule_match.mark as any)"
-                      size="small"
-                    >
-                      {{ formatAction(v.ip_rule_match.mark as any) }}
-                    </n-tag>
-                    <n-text
-                      depth="3"
-                      style="font-size: var(--app-font-size-caption)"
-                    >
-                      {{
-                        t("flow.trace.priority", {
-                          priority: v.ip_rule_match.priority,
-                        })
-                      }}
-                    </n-text>
-                  </n-flex>
-                </template>
-                <n-tag v-else type="default" size="small">{{
-                  t("flow.trace.no_match")
-                }}</n-tag>
-              </n-descriptions-item>
-              <n-descriptions-item :label="t('flow.trace.dns_rule')">
-                <template v-if="v.dns_rule_match">
-                  <n-flex align="center" :size="4">
-                    <n-tag
-                      :type="actionTagType(v.dns_rule_match.mark as any)"
-                      size="small"
-                    >
-                      {{ formatAction(v.dns_rule_match.mark as any) }}
-                    </n-tag>
-                    <n-text
-                      depth="3"
-                      style="font-size: var(--app-font-size-caption)"
-                    >
-                      {{
-                        t("flow.trace.priority", {
-                          priority: v.dns_rule_match.priority,
-                        })
-                      }}
-                    </n-text>
-                  </n-flex>
-                </template>
-                <n-tag v-else type="default" size="small">{{
-                  t("flow.trace.no_match")
-                }}</n-tag>
-              </n-descriptions-item>
-              <n-descriptions-item :label="t('flow.trace.final_action')">
-                <n-tag
-                  :type="actionTagType(v.effective_mark as any)"
-                  size="small"
-                >
-                  {{ formatAction(v.effective_mark as any) }}
-                </n-tag>
-              </n-descriptions-item>
-              <n-descriptions-item :label="t('flow.trace.cache')">
-                <template v-if="!v.has_cache">
-                  <n-tag type="default" size="small">{{
-                    t("flow.trace.no_cache")
-                  }}</n-tag>
-                </template>
-                <template v-else>
-                  <n-tag
-                    :type="isCacheConsistent(v) ? 'success' : 'warning'"
-                    size="small"
-                  >
-                    {{
-                      isCacheConsistent(v)
-                        ? t("flow.trace.cache_consistent")
-                        : t("flow.trace.cache_inconsistent")
-                    }}
-                  </n-tag>
-                </template>
-              </n-descriptions-item>
-            </n-descriptions>
-            <n-alert
-              v-if="v.has_cache && !isCacheConsistent(v)"
-              type="warning"
-              style="margin-top: 8px"
-            >
-              {{ t("flow.trace.cache_mismatch_alert") }}
-            </n-alert>
-          </n-card>
+          />
         </template>
-      </n-flex>
-    </component>
-  </component>
+      </section>
+    </n-flex>
+  </ConfigModal>
 </template>
+
+<style scoped>
+.route-trace-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-section);
+}
+
+.network-settings__divider {
+  margin: 0;
+}
+</style>

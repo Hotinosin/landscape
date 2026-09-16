@@ -7,6 +7,7 @@ import { useDockerStore } from "@/stores/status_docker";
 import { useNotification } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
 const show_model = defineModel<boolean>("show", { required: true });
 
@@ -124,117 +125,111 @@ const has_edge_label = computed({
 </script>
 
 <template>
-  <n-modal
-    :auto-focus="false"
+  <ConfigModal
     v-model:show="show_model"
+    :show-switch="false"
+    width="var(--app-secondary-modal-width)"
+    :title="t('docker.docker_run.title', { image: props.image_name })"
     @after-enter="on_modal_enter"
   >
-    <n-card
-      style="width: var(--app-secondary-modal-width)"
-      :title="t('docker.docker_run.title', { image: props.image_name })"
-      :bordered="false"
-      size="small"
-      role="dialog"
-      aria-modal="true"
-    >
-      <n-form v-if="formModel" :model="formModel" label-width="120px">
-        <n-grid :cols="6" :x-gap="12">
-          <n-form-item-gi
-            :span="3"
-            :label="t('docker.docker_run.container_name')"
-            path="containerName"
-          >
-            <n-input
-              v-model:value="formModel.container_name"
-              :placeholder="t('docker.docker_run.container_name_placeholder')"
-            />
-          </n-form-item-gi>
+    <n-form v-if="formModel" :model="formModel" label-width="120px">
+      <n-grid :cols="6" :x-gap="12">
+        <n-form-item-gi
+          :span="3"
+          :label="t('docker.docker_run.container_name')"
+          path="containerName"
+        >
+          <n-input
+            v-model:value="formModel.container_name"
+            :placeholder="t('docker.docker_run.container_name_placeholder')"
+          />
+        </n-form-item-gi>
 
-          <n-form-item-gi
-            :offset="1"
-            :span="2"
-            :label="t('docker.docker_run.flow_egress')"
-            path="imageName"
-          >
-            <n-switch v-model:value="has_edge_label" size="medium"> </n-switch>
-          </n-form-item-gi>
-          <n-form-item-gi
-            :span="6"
-            :label="t('docker.docker_run.restart_policy')"
-            path="containerName"
-          >
-            <n-input-group>
-              <n-select
-                v-model:value="formModel.restart"
-                :options="restrt_options"
-              />
-              <n-input-number
-                v-if="
-                  formModel.restart ===
-                  DockerRestartPolicy.ON_FAILURE_WITH_MAX_RETRIES
-                "
-                v-model:value="formModel.restart_max_retries"
-                placeholder=""
-              />
-            </n-input-group>
-          </n-form-item-gi>
-
-          <n-form-item-gi
-            :span="6"
-            :label="t('docker.docker_run.entrypoint')"
-            path="containerName"
-          >
-            <n-input
-              v-model:value="formModel.entrypoint"
-              :placeholder="t('docker.docker_run.entrypoint_placeholder')"
+        <n-form-item-gi
+          :offset="1"
+          :span="2"
+          :label="t('docker.docker_run.flow_egress')"
+          path="imageName"
+        >
+          <n-switch v-model:value="has_edge_label" size="medium"> </n-switch>
+        </n-form-item-gi>
+        <n-form-item-gi
+          :span="6"
+          :label="t('docker.docker_run.restart_policy')"
+          path="containerName"
+        >
+          <n-input-group>
+            <n-select
+              v-model:value="formModel.restart"
+              :options="restrt_options"
             />
-          </n-form-item-gi>
-          <!-- <n-form-item-gi label="entrypoint params" path="containerName">
+            <n-input-number
+              v-if="
+                formModel.restart ===
+                DockerRestartPolicy.ON_FAILURE_WITH_MAX_RETRIES
+              "
+              v-model:value="formModel.restart_max_retries"
+              placeholder=""
+            />
+          </n-input-group>
+        </n-form-item-gi>
+
+        <n-form-item-gi
+          :span="6"
+          :label="t('docker.docker_run.entrypoint')"
+          path="containerName"
+        >
+          <n-input
+            v-model:value="formModel.entrypoint"
+            :placeholder="t('docker.docker_run.entrypoint_placeholder')"
+          />
+        </n-form-item-gi>
+        <!-- <n-form-item-gi label="entrypoint params" path="containerName">
           <n-input
             v-model:value="formModel.params"
             placeholder="请输入entrypoint params (可选)"
           />
         </n-form-item-gi> -->
-          <n-form-item-gi
-            :span="6"
-            :label="t('docker.docker_run.port_mapping')"
-            path="ports"
-          >
-            <n-dynamic-input
-              v-model:value="formModel.ports"
-              preset="pair"
-              separator=":"
-              :key-placeholder="t('docker.docker_run.host_port')"
-              :value-placeholder="t('docker.docker_run.container_port')"
-            />
-          </n-form-item-gi>
-          <n-form-item-gi
-            :span="6"
-            :label="t('docker.docker_run.env_vars')"
-            path="environment"
-          >
-            <n-dynamic-input
-              v-model:value="formModel.environment"
-              preset="pair"
-              separator=":"
-              :key-placeholder="t('docker.docker_run.env_name')"
-              :value-placeholder="t('docker.docker_run.env_value')"
-            />
-          </n-form-item-gi>
-          <n-form-item-gi
-            :span="6"
-            :label="t('docker.docker_run.volume_mapping')"
-            path="volumes"
-          >
-            <n-dynamic-input
-              v-model:value="formModel.volumes"
-              preset="pair"
-              separator=":"
-              :key-placeholder="t('docker.docker_run.host_dir')"
-              :value-placeholder="t('docker.docker_run.container_dir')"
-            />
-          </n-form-item-gi>
-          <!-- <n-form-item-gi label-style="width: 100%;" content-style="width: 100%;">
+        <n-form-item-gi
+          :span="6"
+          :label="t('docker.docker_run.port_mapping')"
+          path="ports"
+        >
+          <n-dynamic-input
+            v-model:value="formModel.ports"
+            preset="pair"
+            separator=":"
+            :key-placeholder="t('docker.docker_run.host_port')"
+            :value-placeholder="t('docker.docker_run.container_port')"
+          />
+        </n-form-item-gi>
+        <n-form-item-gi
+          :span="6"
+          :label="t('docker.docker_run.env_vars')"
+          path="environment"
+        >
+          <n-dynamic-input
+            v-model:value="formModel.environment"
+            preset="pair"
+            separator=":"
+            :key-placeholder="t('docker.docker_run.env_name')"
+            :value-placeholder="t('docker.docker_run.env_value')"
+          />
+        </n-form-item-gi>
+        <n-form-item-gi
+          :span="6"
+          :label="t('docker.docker_run.volume_mapping')"
+          path="volumes"
+        >
+          <n-dynamic-input
+            v-model:value="formModel.volumes"
+            preset="pair"
+            separator=":"
+            :key-placeholder="t('docker.docker_run.host_dir')"
+            :value-placeholder="t('docker.docker_run.container_dir')"
+          />
+        </n-form-item-gi>
+        <!-- <n-form-item-gi label-style="width: 100%;" content-style="width: 100%;">
           <template #label>
             <n-flex
               align="center"
@@ -270,20 +265,19 @@ const has_edge_label = computed({
             />
           </n-flex>
         </n-form-item-gi> -->
-        </n-grid>
-      </n-form>
-      <template #footer>
-        <n-flex justify="end">
-          <n-button
-            :loading="save_loading"
-            round
-            type="primary"
-            @click="save_config"
-          >
-            {{ t("docker.docker_run.create") }}
-          </n-button>
-        </n-flex>
-      </template>
-    </n-card>
-  </n-modal>
+      </n-grid>
+    </n-form>
+    <template #footer>
+      <n-flex justify="end">
+        <n-button
+          :loading="save_loading"
+          round
+          type="primary"
+          @click="save_config"
+        >
+          {{ t("docker.docker_run.create") }}
+        </n-button>
+      </n-flex>
+    </template>
+  </ConfigModal>
 </template>

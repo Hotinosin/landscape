@@ -59,6 +59,9 @@ export default {
   enable: "启用",
   disable: "禁用",
   cancel: "取消",
+  unsaved_title: "放弃未保存修改？",
+  unsaved_content: "当前设置已有修改，关闭后将丢失。",
+  discard: "放弃修改",
   next: "下一步",
   save: "保存",
   update: "更新",
@@ -76,6 +79,8 @@ export default {
   paste_replace_success: "替换粘贴成功",
   paste_append_success: "增量粘贴成功",
   paste_failed: "粘贴失败，请检查剪贴板内容",
+  paste_confirm_title: "确认粘贴导入",
+  paste_confirm_description: "将导入 {count} 条配置，请确认以下内容：",
 
   username: "用户名",
   password: "密码",

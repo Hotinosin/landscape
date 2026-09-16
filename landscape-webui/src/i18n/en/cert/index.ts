@@ -7,6 +7,7 @@ export default {
   account_terms: "Terms Agreed",
   account_active: "Active",
   account_status: "Status",
+  account_actions: "Account Actions",
   account_private_key: "Account Private Key",
   account_acme_url: "ACME Account URL",
   account_edit_title: "ACME Account",
@@ -45,6 +46,7 @@ export default {
   generated_validity_days_invalid: "Validity must be greater than 0 days",
 
   acme_account: "ACME Account",
+  add_account: "Add account",
   acme_account_required: "ACME account is required",
   acme_challenge: "Challenge Type",
   acme_key_type: "Key Type",

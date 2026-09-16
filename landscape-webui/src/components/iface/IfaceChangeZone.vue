@@ -13,6 +13,8 @@ import { IfaceZoneType } from "@landscape-router/types/api/schemas";
 import IfaceDisableGuardModal from "@/components/iface/IfaceDisableGuardModal.vue";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
+import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 const { t } = useI18n();
 
@@ -60,49 +62,41 @@ function reflush_zone() {
 </script>
 
 <template>
-  <n-modal
+  <ConfigModal
     @after-enter="reflush_zone"
-    :auto-focus="false"
     v-model:show="showModal"
+    :show-switch="false"
+    :dirty="temp_zone !== iface_info.zone"
+    :title="t('interface.change_zone_title')"
   >
     <n-spin :show="spin">
-      <n-card
-        style="width: var(--app-secondary-modal-width); display: flex"
-        :title="t('interface.change_zone_title')"
-        :bordered="false"
-        role="dialog"
-        aria-modal="true"
-      >
-        <n-flex style="flex: 1" vertical>
-          <n-alert style="flex: 1" type="warning">
-            {{ t("interface.change_zone_warning_1") }} <br />
-            {{ t("interface.change_zone_warning_2") }}
-          </n-alert>
-          <n-flex justify="center">
-            <n-radio-group v-model:value="temp_zone" name="iface_service_type">
-              <n-radio-button :value="IfaceZoneType.wan" label="WAN" />
-              <n-radio-button :value="IfaceZoneType.lan" label="LAN" />
-              <n-radio-button
-                :value="IfaceZoneType.undefined"
-                :label="t('interface.zone_undefined')"
-              />
-            </n-radio-group>
-          </n-flex>
-        </n-flex>
-
-        <template #action>
-          <n-flex justify="space-between">
-            <n-button @click="showModal = false">{{
-              t("common.cancel")
-            }}</n-button>
-            <n-button @click="chageIfaceZone" type="primary">{{
-              t("common.confirm")
-            }}</n-button>
-          </n-flex>
-        </template>
-      </n-card>
+      <n-flex style="flex: 1" vertical>
+        <n-alert style="flex: 1" type="warning">
+          {{ t("interface.change_zone_warning_1") }} <br />
+          {{ t("interface.change_zone_warning_2") }}
+        </n-alert>
+        <StandardSettingRow :label="t('topology.panel.zone')">
+          <n-radio-group v-model:value="temp_zone" name="iface_service_type">
+            <n-radio-button :value="IfaceZoneType.wan" label="WAN" />
+            <n-radio-button :value="IfaceZoneType.lan" label="LAN" />
+            <n-radio-button
+              :value="IfaceZoneType.undefined"
+              :label="t('interface.zone_undefined')"
+            />
+          </n-radio-group>
+        </StandardSettingRow>
+      </n-flex>
     </n-spin>
-  </n-modal>
+
+    <template #footer="{ close }">
+      <n-flex justify="space-between">
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
+        <n-button :loading="spin" @click="chageIfaceZone" type="primary">
+          {{ t("common.confirm") }}
+        </n-button>
+      </n-flex>
+    </template>
+  </ConfigModal>
 
   <IfaceDisableGuardModal
     ref="disable_guard_modal"

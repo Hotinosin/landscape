@@ -85,10 +85,11 @@ onMounted(read_configs);
         ></template>
         {{ t("common.refresh") }}
       </n-button>
-      <n-text depth="3">
-        {{ t("firewall.card.ip_blacklist_desc") }}
-      </n-text>
     </n-flex>
+
+    <n-alert type="info">
+      {{ t("firewall.card.ip_blacklist_desc") }}
+    </n-alert>
 
     <StandardDataTable
       :columns="columns"

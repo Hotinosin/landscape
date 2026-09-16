@@ -24,6 +24,7 @@ import type {
 } from "@landscape-router/types/api/schemas";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
 const { t } = useI18n({ useScope: "global" });
 
@@ -774,16 +775,13 @@ function cancelEmptyDraftAction() {
 </script>
 
 <template>
-  <n-modal
-    :auto-focus="false"
-    style="width: var(--app-secondary-modal-width)"
+  <ConfigModal
     v-model:show="show"
-    preset="card"
+    :show-switch="false"
+    width="var(--app-tertiary-modal-width)"
     :title="
       t('lan_ipv6.prefix_group_editor_title', { parent: displayParentLabel })
     "
-    size="small"
-    :bordered="false"
     @after-enter="enter"
   >
     <n-flex vertical :size="12">
@@ -919,35 +917,32 @@ function cancelEmptyDraftAction() {
     </n-flex>
 
     <template #footer>
-      <n-flex justify="space-between">
+      <n-flex class="standard-modal-footer--split" justify="space-between">
+        <DeleteButton
+          v-if="group"
+          :content="t('lan_ipv6.prefix_group_delete_confirm')"
+          :on-confirm="deleteCurrentGroup"
+        />
+        <span v-else />
         <n-flex :size="8">
-          <DeleteButton
-            v-if="group"
-            :content="t('lan_ipv6.prefix_group_delete_confirm')"
-            :on-confirm="deleteCurrentGroup"
-          />
-
           <n-button @click="show = false">{{ t("lan_ipv6.cancel") }}</n-button>
+          <n-button
+            type="primary"
+            :disabled="draftGroupHasResults && !commitSaveState.canSave"
+            @click="commit"
+          >
+            {{ t("lan_ipv6.confirm") }}
+          </n-button>
         </n-flex>
-
-        <n-button
-          type="success"
-          :disabled="draftGroupHasResults && !commitSaveState.canSave"
-          @click="commit"
-        >
-          {{ t("lan_ipv6.confirm") }}
-        </n-button>
       </n-flex>
     </template>
-  </n-modal>
+  </ConfigModal>
 
-  <n-modal
+  <ConfigModal
     v-model:show="emptyDraftActionVisible"
-    preset="card"
-    style="width: var(--app-compact-modal-width)"
+    :show-switch="false"
+    width="var(--app-compact-modal-width)"
     :closable="false"
-    :mask-closable="false"
-    :auto-focus="false"
     :title="t('lan_ipv6.stale_selection_empty_title')"
   >
     <n-text>{{ t("lan_ipv6.stale_selection_empty_description") }}</n-text>
@@ -956,15 +951,15 @@ function cancelEmptyDraftAction() {
         <n-button @click="emptyDraftActionVisible = false">
           {{ t("lan_ipv6.stale_selection_return_edit") }}
         </n-button>
-        <n-button type="error" secondary @click="deleteCurrentGroup">
-          {{ t("lan_ipv6.stale_selection_delete") }}
-        </n-button>
         <n-button @click="cancelEmptyDraftAction">
           {{ t("lan_ipv6.stale_selection_cancel_edit") }}
         </n-button>
+        <n-button type="error" @click="deleteCurrentGroup">
+          {{ t("lan_ipv6.stale_selection_delete") }}
+        </n-button>
       </n-flex>
     </template>
-  </n-modal>
+  </ConfigModal>
 </template>
 
 <style scoped>

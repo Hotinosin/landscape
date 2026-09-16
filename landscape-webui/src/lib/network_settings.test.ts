@@ -62,6 +62,17 @@ describe("network settings selection", () => {
     ).toEqual(["spare0"]);
   });
 
+  it("recognizes ethernet devices as physical but not veth devices", () => {
+    const ethernet = device("eno1", IfaceZoneType.wan);
+    ethernet.dev_kind = "unknown";
+    const veth = device("veth0", IfaceZoneType.undefined);
+    veth.dev_kind = "veth";
+    const sources = buildInterfaceSources([ethernet, veth], [], []);
+
+    expect(sources.get("eno1")?.kind).toBe("physical");
+    expect(sources.get("veth0")?.kind).toBe("unknown");
+  });
+
   it("does not guess physical sources while either source request is unavailable", () => {
     expect(buildInterfaceSources(devices, [], undefined).get("wan0")).toEqual({
       kind: "unknown",

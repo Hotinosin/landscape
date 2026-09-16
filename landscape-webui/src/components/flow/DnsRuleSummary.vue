@@ -22,7 +22,7 @@ const router = useRouter();
 function editUpstream() {
   if (props.rule.upstream_id) {
     router.push({
-      name: "routes.dns-upstream",
+      name: "routes.dns-config",
       query: { edit: props.rule.upstream_id },
     });
   }

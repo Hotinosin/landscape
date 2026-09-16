@@ -4,7 +4,7 @@ export default {
     priority: "Priority",
     priority_help:
       "Lower numbers have higher priority. Rules are evaluated from low to high and stop at the first match; 1 is higher than 1000.",
-    remark: "Remark",
+    name: "Name",
     filter_result: "Filter result",
     flow_action: "Rule Egress",
     upstream_select: "DNS upstream",
@@ -35,7 +35,7 @@ export default {
     resolve_cloudflare: "Cloudflare",
   },
   redirect_edit: {
-    title: "DNS Redirect Config",
+    title: "Redirect & Blocking Configuration",
     remark: "Remark",
     apply_flows: "Applied flows (empty means all flows)",
     apply_flows_placeholder: "Select flow IDs",
@@ -61,13 +61,13 @@ export default {
     copy: "Copy",
     paste_replace: "Paste Replace",
     paste_append: "Paste Append",
-    default_flow: "Default Flow",
+    default_flow: "Default Flow Policy",
     err_ip_required: "IP address is required",
     err_ip_invalid: "Please enter a valid IPv4 or IPv6 address",
     err_match_rules_required: "At least one domain match rule is required",
   },
   upstream_edit: {
-    title: "DNS Upstream Config",
+    title: "DNS Configuration",
     copy: "Copy",
     paste: "Paste",
     remark: "Remark",
@@ -142,7 +142,7 @@ export default {
   },
   rule_drawer: {
     title_default: "Edit Default DNS Rules",
-    title_flow: "Edit DNS Rules for Flow: {flow_id}",
+    title_flow: "Edit DNS Rules for Flow Policy {flow_id}",
     add_rule: "Add Rule",
     export_clipboard: "Export Rules to Clipboard",
     import_clipboard: "Import Rules from Clipboard",
@@ -171,8 +171,8 @@ export default {
   },
   redirect_card: {
     apply_to: "Applied to",
-    default_flow: "Default Flow",
-    all_flows: "All Flows",
+    default_flow: "Default Flow Policy",
+    all_flows: "All Flow Policies",
     answer_mode: "Answer mode",
     answer_mode_static_ips: "Static IP list",
     answer_mode_all_local_ips: "All local IPs",
@@ -186,6 +186,6 @@ export default {
   select_upstream: {
     redirect_flow_id: "Redirect Flow ID",
     default_ali: "Aliyun",
-    create: "+ Add DNS upstream",
+    create: "+ Add DNS configuration",
   },
 };

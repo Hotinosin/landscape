@@ -2,14 +2,20 @@
 import { ref } from "vue";
 import type { ButtonProps } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import { useNeutralDialogButtonProps } from "@/composables/useNeutralDialogButtonProps";
 
 const props = defineProps<{
   onPositiveClick?: () => unknown;
   positiveButtonProps?: ButtonProps;
+  title?: string;
+  positiveText?: string;
+  negativeText?: string;
+  type?: "info" | "success" | "warning" | "error";
 }>();
 const show = defineModel<boolean>("show", { default: false });
 const pending = ref(false);
 const { t } = useI18n();
+const neutralButtonProps = useNeutralDialogButtonProps();
 
 async function confirm() {
   if (pending.value) return false;
@@ -31,13 +37,20 @@ async function confirm() {
   <n-modal
     v-model:show="show"
     preset="dialog"
-    type="warning"
-    :title="t('common.confirm')"
+    :type="type ?? 'warning'"
+    :title="title ?? t('common.confirm')"
     :auto-focus="false"
-    :positive-text="t('common.confirm')"
-    :negative-text="t('common.cancel')"
-    :positive-button-props="{ ...positiveButtonProps, loading: pending || positiveButtonProps?.loading }"
-    :negative-button-props="{ type: 'default', secondary: true, disabled: pending }"
+    :positive-text="positiveText ?? t('common.confirm')"
+    :negative-text="negativeText ?? t('common.cancel')"
+    :positive-button-props="{
+      ...positiveButtonProps,
+      type: type === 'error' ? 'error' : positiveButtonProps?.type,
+      loading: pending || positiveButtonProps?.loading,
+    }"
+    :negative-button-props="{
+      ...neutralButtonProps,
+      disabled: pending,
+    }"
     :mask-closable="!pending"
     :close-on-esc="!pending"
     :closable="!pending"

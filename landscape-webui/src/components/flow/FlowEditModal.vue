@@ -42,8 +42,7 @@ const flows = ref<FlowConfig[]>([]);
 const commit_spin = ref(false);
 const activeTab = ref<"flow" | "dns" | "target_ip">("flow");
 const modalWidth = computed(() => {
-  if (activeTab.value === "dns") return "min(1040px, calc(100vw - 48px))";
-  if (activeTab.value === "target_ip") return "min(900px, calc(100vw - 48px))";
+  if (activeTab.value !== "flow") return "min(1040px, calc(100vw - 48px))";
   return "var(--app-secondary-modal-width)";
 });
 const isModified = computed(() => {
@@ -157,6 +156,7 @@ function normalizeFlowTargets(
     v-model:show="show"
     v-model:enabled="rule_enabled"
     fixed-top
+    top-offset="max(24px, calc((100vh - var(--app-secondary-modal-max-height)) / 2))"
     :title="t('flow.edit.title')"
     :switch-disabled="!rule"
     :show-switch="false"
@@ -164,7 +164,7 @@ function normalizeFlowTargets(
     @after-enter="enter"
     @after-leave="exit"
   >
-    <n-tabs v-model:value="activeTab" type="line" animated>
+    <n-tabs v-model:value="activeTab" type="line">
       <n-tab-pane
         v-if="!default_flow"
         name="flow"

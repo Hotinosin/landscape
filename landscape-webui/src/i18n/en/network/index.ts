@@ -1,11 +1,12 @@
 export default {
   settings: {
-    title: "Network topology",
+    title: "Network Configuration",
+    view_network: "WAN / LAN",
+    view_interface: "Interfaces & Bridges",
     description:
       "Review interface summaries and open existing configuration tools without using the topology.",
     description_v2:
       "Review interface sources, relationships, and configuration in one place. The topology remains available separately.",
-    search: "Search interfaces",
     category_all: "All interfaces",
     category_wan: "WAN",
     category_lan: "LAN",
@@ -36,10 +37,16 @@ export default {
     carrier_connected: "Physical link connected",
     carrier_disconnected: "Physical link disconnected",
     unassigned: "Unassigned",
+    inherited: "Inherited",
+    member_bridge: "Member of bridge",
+    inherited_zone_tip: "Zone inherited from bridge {name}",
     attach_bridge: "Add interface",
     detach: "Detach",
     cpu_balance: "NIC soft load balancing",
     delete_bridge: "Delete bridge",
+    delete_bridge_confirm: "Delete bridge?",
+    delete_bridge_content:
+      'Bridge "{name}" and its configuration will be permanently deleted. This action cannot be undone.',
     delete_network_title: "Delete network configuration?",
     delete_network_content:
       "This will delete the {role} configuration for {name}, return the interface to Unassigned, and remove its related services.",
@@ -60,6 +67,7 @@ export default {
     project_all: "All",
     project_wan: "WAN",
     project_lan: "LAN",
+    project_interface: "Interfaces",
     project_bridge: "Bridges",
     project_other: "Other",
     name_iface: "Name / Interface",
@@ -72,10 +80,12 @@ export default {
     access_dhcp_server: "DHCP server",
     access_unconfigured: "Not configured",
     related_interfaces: "Related interfaces",
-    ip_address: "Current IP addresses",
+    ip_address: "IP",
     runtime_address_failed:
       "Runtime IP address refresh failed. The last result is still shown.",
     configure_title: "Configure interface {name}",
+    configure_network_title: "Configure network {name}",
+    configure_interface_title: "Interface settings for {name}",
     managed_readonly:
       "This interface is managed by Docker or a plugin. Open its owner to make changes.",
     source_readonly:
@@ -95,8 +105,6 @@ export default {
       "Only unassigned interfaces without a parent and allowed by the existing bridge rules can be selected.",
     bridge_partial_failed:
       "The bridge was created, but these members could not be attached: {names}",
-    no_configured_projects:
-      "No configured network projects. Configure an unassigned interface above or create a bridge.",
     no_group_projects: "No configured projects in this group",
     invalid_location_safe:
       "The interface or module in the URL is invalid. No other interface was opened.",
@@ -134,6 +142,8 @@ export default {
     services: "Interface services",
     unknown: "Status unknown",
     wifi_mode: "Change Wi-Fi mode",
+    current_wifi_mode: "Current mode",
+    switch_wifi_mode: "Switch mode",
     configure: "Configure",
     no_services: "This interface has no directly configurable services",
     configure_parent:

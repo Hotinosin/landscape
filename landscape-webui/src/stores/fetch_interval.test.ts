@@ -57,6 +57,15 @@ describe("runRefreshTasks", () => {
     ).resolves.toBeUndefined();
   });
 
+  it("reports duplicate failures once", async () => {
+    await expect(
+      runRefreshTasks([
+        vi.fn().mockRejectedValue(new Error("Network Error")),
+        vi.fn().mockRejectedValue(new Error("Network Error")),
+      ]),
+    ).resolves.toBe("Network Error");
+  });
+
   it("formats structured failures without object coercion", async () => {
     await expect(
       runRefreshTasks([vi.fn().mockRejectedValue({ message: "offline" })]),

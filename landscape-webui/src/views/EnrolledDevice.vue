@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, h, ref, onMounted, onUnmounted } from "vue";
+import { computed, h, ref, onMounted } from "vue";
 import type { DataTableColumns } from "naive-ui";
 import type { EnrolledDevice } from "@landscape-router/types/api/schemas";
 import { useI18n } from "vue-i18n";
@@ -7,14 +7,12 @@ import EnrolledDeviceListRow from "@/components/device/EnrolledDeviceListRow.vue
 import EnrolledDeviceEditModal from "@/components/device/EnrolledDeviceEditModal.vue";
 import { Add, Renew } from "@vicons/carbon";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
-import { useFetchIntervalStore } from "@/stores/fetch_interval";
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
 import { usePageRequest } from "@/composables/usePageRequest";
 import { validate_enrolled_device_ip } from "@/api/enrolled_device";
 
 const { t } = useI18n();
 const enrolledDeviceStore = useEnrolledDeviceStore();
-const fetchIntervalStore = useFetchIntervalStore();
 
 const deviceRequest = usePageRequest(
   async () => {
@@ -27,11 +25,6 @@ const deviceRequest = usePageRequest(
 onMounted(async () => {
   await deviceRequest.execute();
   await validateDevices(deviceRequest.data.value);
-  fetchIntervalStore.enable_interval = false;
-});
-
-onUnmounted(() => {
-  fetchIntervalStore.enable_interval = true;
 });
 
 const show_edit_modal = ref(false);
@@ -128,7 +121,11 @@ async function manualRefresh() {
 
 <template>
   <n-flex vertical class="standard-content-page">
-    <n-flex align="center" class="standard-list-toolbar">
+    <n-flex
+      align="center"
+      justify="space-between"
+      class="standard-list-toolbar"
+    >
       <n-button type="primary" @click="show_edit_modal = true">
         <template #icon>
           <n-icon><Add /></n-icon>

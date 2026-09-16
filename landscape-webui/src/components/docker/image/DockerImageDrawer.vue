@@ -4,6 +4,7 @@ import { ref } from "vue";
 import DockerImageCard from "@/components/docker/image/DockerImageCard.vue";
 import { useMessage } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 const show = defineModel<boolean>("show", { required: true });
 const images = ref<any>([]);
 const message = useMessage();
@@ -30,42 +31,40 @@ const pull_docker_image_name = ref("");
 const show_pull_history = ref(false);
 </script>
 <template>
-  <n-drawer
+  <ConfigModal
     @after-enter="flush_images()"
     v-model:show="show"
-    width="500px"
-    placement="right"
-    responsive
+    :show-switch="false"
+    width="var(--app-compact-modal-width)"
+    :title="t('common.docker_image_list')"
   >
-    <n-drawer-content :title="t('common.docker_image_list')" closable>
-      <n-flex style="height: 100%" vertical>
-        <n-input-group>
-          <n-input v-model:value="pull_docker_image_name" />
-          <n-button @click="pull_image">{{ t("common.pull_image") }}</n-button>
-          <n-button @click="show_pull_history = true">{{
-            t("docker.docker_image.history_tasks")
-          }}</n-button>
-        </n-input-group>
-        <!-- <n-input-group>
+    <n-flex style="height: 100%" vertical>
+      <n-input-group>
+        <n-input v-model:value="pull_docker_image_name" />
+        <n-button @click="pull_image">{{ t("common.pull_image") }}</n-button>
+        <n-button @click="show_pull_history = true">{{
+          t("docker.docker_image.history_tasks")
+        }}</n-button>
+      </n-input-group>
+      <!-- <n-input-group>
           <n-input-group-label>filter</n-input-group-label>
           <n-input />
         </n-input-group> -->
-        <n-scrollbar>
-          <n-flex>
-            <DockerImageCard
-              v-for="image in images"
-              :key="image.index"
-              :image="image"
-              @refresh="flush_images()"
-            >
-            </DockerImageCard>
-          </n-flex>
-        </n-scrollbar>
-      </n-flex>
-      <ImgPullHistory
-        @refresh="flush_images()"
-        v-model:show="show_pull_history"
-      ></ImgPullHistory>
-    </n-drawer-content>
-  </n-drawer>
+      <n-scrollbar>
+        <n-flex>
+          <DockerImageCard
+            v-for="image in images"
+            :key="image.index"
+            :image="image"
+            @refresh="flush_images()"
+          >
+          </DockerImageCard>
+        </n-flex>
+      </n-scrollbar>
+    </n-flex>
+    <ImgPullHistory
+      @refresh="flush_images()"
+      v-model:show="show_pull_history"
+    />
+  </ConfigModal>
 </template>

@@ -9,7 +9,7 @@ export default {
     source_format: "File Format",
     txt_key: "TXT Key",
     txt_key_placeholder: "Defaults to DEFAULT",
-    name_unique: "Name (must be unique for config distinction)",
+    name_unique: "Name",
     name_required: "Name is required",
     name_invalid:
       "Name can only contain letters, numbers, dot, underscore, and hyphen",
@@ -78,6 +78,9 @@ export default {
     geoip_source: "GeoIP (IP Ranges)",
     geosite_data: "GeoSite Data",
     geoip_data: "GeoIP Data",
+    lookup_group: "Group",
+    lookup_source: "Source Name",
+    lookup_value: "Match",
     config_title: "Geo Data Source Configuration",
     refresh_all: "Update All",
     update_all_confirm: "Re-download and update all data sources?",

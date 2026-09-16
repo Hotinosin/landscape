@@ -158,7 +158,11 @@ onMounted(refresh);
 </script>
 <template>
   <n-layout :native-scrollbar="false">
-    <n-flex class="flow-list-toolbar" justify="space-between" align="center">
+    <n-flex
+      class="flow-list-toolbar standard-list-align"
+      justify="space-between"
+      align="center"
+    >
       <n-button type="primary" @click="show_edit = true">
         <template #icon
           ><n-icon><Add /></n-icon
@@ -166,16 +170,6 @@ onMounted(refresh);
         {{ $t("flow.default_card.create_new") }}
       </n-button>
       <n-flex size="small">
-        <n-button
-          :loading="flowRequest.loading.value"
-          secondary
-          @click="refresh"
-        >
-          <template #icon
-            ><n-icon><Renew /></n-icon
-          ></template>
-          {{ t("common.refresh") }}
-        </n-button>
         <n-button secondary @click="reset_cache">
           <template #icon
             ><n-icon><Clean /></n-icon
@@ -187,6 +181,16 @@ onMounted(refresh);
             ><n-icon><Search /></n-icon
           ></template>
           {{ $t("flow.default_card.trace") }}
+        </n-button>
+        <n-button
+          :loading="flowRequest.loading.value"
+          secondary
+          @click="refresh"
+        >
+          <template #icon
+            ><n-icon><Renew /></n-icon
+          ></template>
+          {{ t("common.refresh") }}
         </n-button>
       </n-flex>
     </n-flex>
@@ -204,7 +208,7 @@ onMounted(refresh);
       />
     </n-spin>
     <FlowEditModal @refresh="refresh" v-model:show="show_edit" />
-    <RouteTraceDrawer v-model:show="show_route_trace" presentation="modal" />
+    <RouteTraceDrawer v-model:show="show_route_trace" />
   </n-layout>
 </template>
 

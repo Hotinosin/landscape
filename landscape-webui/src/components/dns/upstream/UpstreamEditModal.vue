@@ -11,12 +11,10 @@ import {
   type DnsUpstreamH3TestResult,
 } from "@/api/dns_rule/upstream";
 import { DnsUpstreamModeTsEnum, UPSTREAM_OPTIONS } from "@/lib/dns";
-import {
-  copy_context_to_clipboard,
-  read_context_from_clipboard,
-} from "@/lib/common";
+import { copy_context_to_clipboard } from "@/lib/common";
 import { useI18n } from "vue-i18n";
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
 type Props = {
   rule_id: string | null;
@@ -264,10 +262,9 @@ async function export_config() {
   }
 }
 
-async function import_rules() {
+async function import_rules(rules: DnsUpstreamConfig) {
   try {
     if (rule.value) {
-      let rules = JSON.parse(await read_context_from_clipboard());
       rule.value = rules;
     }
   } catch (e) {}
@@ -275,24 +272,26 @@ async function import_rules() {
 </script>
 
 <template>
-  <n-modal
-    :auto-focus="false"
+  <ConfigModal
     v-model:show="show"
-    style="width: var(--app-secondary-modal-width)"
-    class="custom-card"
-    preset="card"
+    :show-switch="false"
+    width="var(--app-secondary-modal-width)"
     :title="t('dns.upstream_edit.title')"
+    :dirty="isModified"
     @after-enter="enter"
-    :bordered="false"
   >
     <template #header-extra>
       <n-flex>
         <n-button :focusable="false" @click="export_config" size="small" strong>
           {{ t("dns.upstream_edit.copy") }}
         </n-button>
-        <n-button :focusable="false" @click="import_rules" size="small" strong>
-          {{ t("dns.upstream_edit.paste") }}
-        </n-button>
+        <ClipboardImportModal :on-confirm="import_rules">
+          <template #trigger>
+            <n-button :focusable="false" size="small" strong>
+              {{ t("dns.upstream_edit.paste") }}
+            </n-button>
+          </template>
+        </ClipboardImportModal>
       </n-flex>
     </template>
     <!-- {{ rule }} -->
@@ -444,12 +443,12 @@ async function import_rules() {
         </n-button>
       </n-flex>
     </template>
-  </n-modal>
-  <n-modal
+  </ConfigModal>
+  <ConfigModal
     v-model:show="showH3TestResult"
-    preset="card"
+    :show-switch="false"
     :title="t('dns.upstream_edit.h3_test_title')"
-    style="width: var(--app-tertiary-modal-width)"
+    width="var(--app-tertiary-modal-width)"
   >
     <n-spin v-if="h3TestLoading" style="display: block; padding: 32px" />
     <template v-else>
@@ -498,7 +497,7 @@ async function import_rules() {
         size="small"
       />
     </template>
-  </n-modal>
+  </ConfigModal>
 </template>
 
 <style scoped>

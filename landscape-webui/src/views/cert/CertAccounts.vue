@@ -19,16 +19,23 @@ const {
 const { t } = useI18n();
 const show_edit_modal = ref(false);
 type AccountCell =
-  "name" | "provider" | "email" | "status" | "staging" | "actions";
+  | "name"
+  | "provider"
+  | "email"
+  | "status"
+  | "staging"
+  | "accountActions"
+  | "actions";
 const columns = computed<DataTableColumns<CertAccountConfig>>(() =>
   (
     [
-      [t("common.name"), "name", "18%"],
+      [t("common.name"), "name", "14%"],
       [t("cert.account_provider"), "provider", "14%"],
-      [t("cert.account_email"), "email", "24%"],
-      [t("cert.account_status"), "status", "14%"],
-      [t("cert.account_staging"), "staging", "12%"],
-      [t("common.actions"), "actions", "18%"],
+      [t("cert.account_email"), "email", "22%"],
+      [t("cert.account_status"), "status", "12%"],
+      [t("cert.account_staging"), "staging", "10%"],
+      [t("cert.account_actions"), "accountActions", "16%"],
+      [t("common.actions"), "actions", "12%"],
     ] satisfies Array<[string, AccountCell, string]>
   ).map(([title, cell, width]) => ({
     title,
@@ -38,7 +45,9 @@ const columns = computed<DataTableColumns<CertAccountConfig>>(() =>
       h(CertAccountListRow, {
         rule,
         cell,
-        ...(cell === "actions" ? { onRefresh: refresh } : {}),
+        ...(["accountActions", "actions"].includes(cell)
+          ? { onRefresh: refresh }
+          : {}),
       }),
   })),
 );

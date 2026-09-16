@@ -62,7 +62,9 @@ export function buildInterfaceSources(
         device.name,
         {
           kind:
-            sourcesReady && device.dev_kind === "ether"
+            sourcesReady &&
+            device.dev_type?.toLowerCase() === "ethernet" &&
+            device.dev_kind !== "veth"
               ? "physical"
               : "unknown",
           available: sourcesReady,

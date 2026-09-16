@@ -1,5 +1,5 @@
 export default {
-  "dns_check.flow_not_found": "DNS flow runtime not found (Flow: {0})",
+  "dns_check.flow_not_found": "DNS Flow policy runtime not found (Flow ID: {0})",
   "dns_check.refresh_requires_rule":
     "No upstream DNS rule matched for refresh: {0}",
   "dns_check.refresh_redirected":

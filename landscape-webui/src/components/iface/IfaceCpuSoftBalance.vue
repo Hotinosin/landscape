@@ -5,6 +5,7 @@ import type { IfaceCpuSoftBalance } from "@landscape-router/types/api/schemas";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 const show_model = defineModel<boolean>("show", { required: true });
 const { t } = useI18n();
@@ -13,6 +14,7 @@ const props = defineProps<{
   iface_name: string;
   embedded?: boolean;
 }>();
+const emit = defineEmits(["dirty"]);
 const enabled = ref(true);
 
 const balance_config = ref<IfaceCpuSoftBalance>({
@@ -74,6 +76,7 @@ function toggleCore(core: number, type: "xps" | "rps") {
   } else {
     selected_cores.value.add(core);
   }
+  emit("dirty");
 }
 
 async function get_current_config() {
@@ -120,18 +123,24 @@ defineExpose({ save: save_config });
 
 // 重置配置
 function reset_config() {
+  if (!xps_selected_cores.value.size && !rps_selected_cores.value.size) return;
   xps_selected_cores.value.clear();
   rps_selected_cores.value.clear();
+  emit("dirty");
 }
 
 // 设置 XPS 为 0
 function setXpsToZero() {
+  if (!xps_selected_cores.value.size) return;
   xps_selected_cores.value.clear();
+  emit("dirty");
 }
 
 // 设置 RPS 为 0
 function setRpsToZero() {
+  if (!rps_selected_cores.value.size) return;
   rps_selected_cores.value.clear();
+  emit("dirty");
 }
 </script>
 
@@ -152,82 +161,77 @@ function setRpsToZero() {
         {{ t("network.iface_cpu_balance.hint_suffix") }}
       </n-alert>
 
-      <!-- CPU 核心选择区域 -->
-      <div v-if="cpu_count > 0">
-        <div class="core-selection-section">
-          <h4>{{ t("network.iface_cpu_balance.tx_title") }}</h4>
-          <n-space wrap>
-            <n-tag
-              :type="xps_selected_cores.size === 0 ? 'warning' : 'default'"
+      <template v-if="cpu_count > 0">
+        <StandardSettingRow>
+          <template #label>
+            <div>
+              <div>{{ t("network.iface_cpu_balance.tx_title") }}</div>
+              <n-text depth="3" class="selection-summary">
+                {{ t("network.iface_cpu_balance.selected") }}:
+                {{
+                  Array.from(xps_selected_cores)
+                    .sort((a, b) => a - b)
+                    .join(", ") || t("network.iface_cpu_balance.none")
+                }}
+                ({{ t("network.iface_cpu_balance.bitmask") }}: 0x{{
+                  coresToBitmask(xps_selected_cores)
+                }})
+              </n-text>
+            </div>
+          </template>
+          <n-space justify="end" wrap>
+            <n-button
+              :type="xps_selected_cores.size === 0 ? 'primary' : 'default'"
               @click="setXpsToZero"
-              checkable
-              :checked="xps_selected_cores.size === 0"
             >
               {{ t("network.iface_cpu_balance.set_zero") }}
-            </n-tag>
-            <n-tag
+            </n-button>
+            <n-button
               v-for="core in available_cores"
               :key="`xps-${core}`"
               :type="xps_selected_cores.has(core) ? 'primary' : 'default'"
               @click="toggleCore(core, 'xps')"
-              checkable
-              :checked="xps_selected_cores.has(core)"
             >
               CPU {{ core }}
-            </n-tag>
+            </n-button>
           </n-space>
-          <div class="selection-summary">
-            <n-text depth="3">
-              {{ t("network.iface_cpu_balance.selected") }}:
-              {{
-                Array.from(xps_selected_cores)
-                  .sort((a, b) => a - b)
-                  .join(", ") || t("network.iface_cpu_balance.none")
-              }}
-              ({{ t("network.iface_cpu_balance.bitmask") }}: 0x{{
-                coresToBitmask(xps_selected_cores)
-              }})
-            </n-text>
-          </div>
-        </div>
+        </StandardSettingRow>
 
-        <div class="core-selection-section">
-          <h4>{{ t("network.iface_cpu_balance.rx_title") }}</h4>
-          <n-space wrap>
-            <n-tag
-              :type="rps_selected_cores.size === 0 ? 'warning' : 'default'"
+        <StandardSettingRow>
+          <template #label>
+            <div>
+              <div>{{ t("network.iface_cpu_balance.rx_title") }}</div>
+              <n-text depth="3" class="selection-summary">
+                {{ t("network.iface_cpu_balance.selected") }}:
+                {{
+                  Array.from(rps_selected_cores)
+                    .sort((a, b) => a - b)
+                    .join(", ") || t("network.iface_cpu_balance.none")
+                }}
+                ({{ t("network.iface_cpu_balance.bitmask") }}: 0x{{
+                  coresToBitmask(rps_selected_cores)
+                }})
+              </n-text>
+            </div>
+          </template>
+          <n-space justify="end" wrap>
+            <n-button
+              :type="rps_selected_cores.size === 0 ? 'primary' : 'default'"
               @click="setRpsToZero"
-              checkable
-              :checked="rps_selected_cores.size === 0"
             >
               {{ t("network.iface_cpu_balance.set_zero") }}
-            </n-tag>
-            <n-tag
+            </n-button>
+            <n-button
               v-for="core in available_cores"
               :key="`rps-${core}`"
               :type="rps_selected_cores.has(core) ? 'primary' : 'default'"
               @click="toggleCore(core, 'rps')"
-              checkable
-              :checked="rps_selected_cores.has(core)"
             >
               CPU {{ core }}
-            </n-tag>
+            </n-button>
           </n-space>
-          <div class="selection-summary">
-            <n-text depth="3">
-              {{ t("network.iface_cpu_balance.selected") }}:
-              {{
-                Array.from(rps_selected_cores)
-                  .sort((a, b) => a - b)
-                  .join(", ") || t("network.iface_cpu_balance.none")
-              }}
-              ({{ t("network.iface_cpu_balance.bitmask") }}: 0x{{
-                coresToBitmask(rps_selected_cores)
-              }})
-            </n-text>
-          </div>
-        </div>
-      </div>
+        </StandardSettingRow>
+      </template>
 
       <div v-else>
         <n-spin size="small" />
@@ -244,12 +248,7 @@ function setRpsToZero() {
           <n-button @click="show_model = false">
             {{ t("network.iface_cpu_balance.cancel") }}
           </n-button>
-          <n-button
-            :loading="loading"
-            round
-            type="primary"
-            @click="save_config"
-          >
+          <n-button :loading="loading" type="primary" @click="save_config">
             {{ t("network.iface_cpu_balance.save") }}
           </n-button>
         </n-space>
@@ -259,38 +258,9 @@ function setRpsToZero() {
 </template>
 
 <style scoped>
-.core-selection-section {
-  margin-bottom: 20px;
-}
-
-.core-selection-section h4 {
-  margin-bottom: 12px;
-  font-size: var(--app-font-size-body);
-  font-weight: 600;
-}
-
 .selection-summary {
-  margin-top: 8px;
+  display: block;
   font-size: var(--app-font-size-caption);
-}
-
-/* 标签样式优化 */
-:deep(.n-tag) {
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin: 2px;
-}
-
-:deep(.n-tag:hover) {
-  transform: translateY(-1px);
-}
-
-:deep(.n-tag.n-tag--checkable) {
-  user-select: none;
-}
-
-/* 按钮样式优化 */
-:deep(.n-button) {
-  transition: all 0.2s ease;
+  font-weight: 400;
 }
 </style>

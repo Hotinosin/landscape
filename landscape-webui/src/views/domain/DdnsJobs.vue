@@ -381,6 +381,80 @@ function detailRecords(job: DdnsJob | null) {
   );
 }
 
+type DdnsDetailRecord = ReturnType<typeof detailRecords>[number];
+const detailColumns = computed<DataTableColumns<DdnsDetailRecord>>(() => [
+  {
+    title: t("ddns.record_name"),
+    key: "name",
+    width: 140,
+    render: (row) => frontEndStore.MASK_INFO(row.name),
+  },
+  {
+    title: "IPv4",
+    key: "ipv4_status",
+    width: 100,
+    render: (row) => renderFamilyStatus(row.ipv4.status),
+  },
+  {
+    title: "IPv4 IP",
+    key: "ipv4_ip",
+    width: 180,
+    render: (row) => formatIp(row.ipv4.last_published_ips),
+  },
+  {
+    title: t("cert.cert_status_message"),
+    key: "ipv4_message",
+    width: 220,
+    render: (row) => formatRuntimeSummary(row.ipv4),
+  },
+  {
+    title: t("ddns.next_retry_at"),
+    key: "ipv4_retry",
+    width: 170,
+    render: (row) => formatRetry(row.ipv4),
+  },
+  {
+    title: "IPv4 Error",
+    key: "ipv4_error",
+    width: 180,
+    render: (row) => formatError(row.ipv4.last_error),
+  },
+  {
+    title: "IPv6",
+    key: "ipv6_status",
+    width: 100,
+    render: (row) => renderFamilyStatus(row.ipv6.status),
+  },
+  {
+    title: "IPv6 IP",
+    key: "ipv6_ip",
+    width: 220,
+    render: (row) => formatIp(row.ipv6.last_published_ips),
+  },
+  {
+    title: t("cert.cert_status_message"),
+    key: "ipv6_message",
+    width: 220,
+    render: (row) => formatRuntimeSummary(row.ipv6),
+  },
+  {
+    title: t("ddns.next_retry_at"),
+    key: "ipv6_retry",
+    width: 170,
+    render: (row) => formatRetry(row.ipv6),
+  },
+  {
+    title: "IPv6 Error",
+    key: "ipv6_error",
+    width: 180,
+    render: (row) => formatError(row.ipv6.last_error),
+  },
+]);
+
+function detailRowKey(row: DdnsDetailRecord) {
+  return row.name;
+}
+
 function mergeRecordItems(records: string[], existing: DdnsRecordConfig[]) {
   const byKey = new Map(
     existing.map((record) => [record.name.toLowerCase(), record]),
@@ -719,89 +793,43 @@ onMounted(async () => {
       @retry="listRequest.retry"
     />
 
-    <n-modal v-model:show="showDetailDrawer">
-      <n-card
-        style="width: min(900px, calc(100vw - 32px))"
-        :title="detailDrawerTitle"
-        :bordered="false"
-        closable
-        content-style="max-height: calc(100vh - 120px); overflow: auto"
-        @close="showDetailDrawer = false"
-      >
-        <template v-if="selectedDetailJob">
-          <n-flex vertical :size="12">
-            <n-flex :size="8" wrap>
-              <n-tag size="small">{{
-                frontEndStore.MASK_INFO(selectedDetailJob.zone_name)
-              }}</n-tag>
-              <component :is="() => sourceTags(selectedDetailJob)" />
-              <n-tag
-                size="small"
-                :type="statusType(aggregateStatus(selectedDetailJob))"
-              >
-                {{ aggregateStatus(selectedDetailJob) }}
-              </n-tag>
-            </n-flex>
-
-            <div>
-              {{ formatRuntimeSummary(getJobRuntime(selectedDetailJob)) }}
-            </div>
-
-            <div class="ddns-detail-table-wrapper">
-              <table class="ddns-detail-table">
-                <thead>
-                  <tr>
-                    <th>{{ t("ddns.record_name") }}</th>
-                    <th>IPv4</th>
-                    <th>IPv4 IP</th>
-                    <th>{{ t("cert.cert_status_message") }}</th>
-                    <th>{{ t("ddns.next_retry_at") }}</th>
-                    <th>IPv4 Error</th>
-                    <th>IPv6</th>
-                    <th>IPv6 IP</th>
-                    <th>{{ t("cert.cert_status_message") }}</th>
-                    <th>{{ t("ddns.next_retry_at") }}</th>
-                    <th>IPv6 Error</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="record in detailRecords(selectedDetailJob)"
-                    :key="record.name"
-                  >
-                    <td>{{ frontEndStore.MASK_INFO(record.name) }}</td>
-                    <td>
-                      <n-tag
-                        size="small"
-                        :type="statusType(record.ipv4.status)"
-                      >
-                        {{ record.ipv4.status ?? "idle" }}
-                      </n-tag>
-                    </td>
-                    <td>{{ formatIp(record.ipv4.last_published_ips) }}</td>
-                    <td>{{ formatRuntimeSummary(record.ipv4) }}</td>
-                    <td>{{ formatRetry(record.ipv4) }}</td>
-                    <td>{{ formatError(record.ipv4.last_error) }}</td>
-                    <td>
-                      <n-tag
-                        size="small"
-                        :type="statusType(record.ipv6.status)"
-                      >
-                        {{ record.ipv6.status ?? "idle" }}
-                      </n-tag>
-                    </td>
-                    <td>{{ formatIp(record.ipv6.last_published_ips) }}</td>
-                    <td>{{ formatRuntimeSummary(record.ipv6) }}</td>
-                    <td>{{ formatRetry(record.ipv6) }}</td>
-                    <td>{{ formatError(record.ipv6.last_error) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+    <ConfigModal
+      v-model:show="showDetailDrawer"
+      :show-switch="false"
+      width="min(900px, calc(100vw - 32px))"
+      max-height="calc(100vh - 120px)"
+      :title="detailDrawerTitle"
+    >
+      <template v-if="selectedDetailJob">
+        <n-flex vertical :size="12">
+          <n-flex :size="8" wrap>
+            <n-tag size="small">{{
+              frontEndStore.MASK_INFO(selectedDetailJob.zone_name)
+            }}</n-tag>
+            <component :is="() => sourceTags(selectedDetailJob)" />
+            <n-tag
+              size="small"
+              :type="statusType(aggregateStatus(selectedDetailJob))"
+            >
+              {{ aggregateStatus(selectedDetailJob) }}
+            </n-tag>
           </n-flex>
-        </template>
-      </n-card>
-    </n-modal>
+
+          <div>
+            {{ formatRuntimeSummary(getJobRuntime(selectedDetailJob)) }}
+          </div>
+
+          <StandardDataTable
+            :columns="detailColumns"
+            :data="detailRecords(selectedDetailJob)"
+            :row-key="detailRowKey"
+            :scroll-x="1880"
+            :max-height="480"
+            size="small"
+          />
+        </n-flex>
+      </template>
+    </ConfigModal>
 
     <ConfigModal
       v-model:show="showModal"
@@ -895,31 +923,29 @@ onMounted(async () => {
             @update:value="updateProviderProfile"
           />
         </n-form-item>
-        <n-form-item :label="t('ddns.ttl')">
-          <n-flex vertical style="width: 100%" :size="8">
-            <n-flex :wrap="false" align="center" style="width: 100%" :size="8">
-              <n-switch v-model:value="useProfileDefaultTtl" size="medium">
-                <template #checked>{{ t("ddns.follow_profile_ttl") }}</template>
-                <template #unchecked>{{ t("ddns.custom_ttl") }}</template>
-              </n-switch>
+        <n-form-item>
+          <template #label>
+            <span class="ddns-ttl-label">
+              <span>{{ t("ddns.follow_profile_ttl") }}</span>
+              <small v-if="useProfileDefaultTtl">
+                {{ t("ddns.current_ttl", { ttl: selectedProviderDefaultTtl }) }}
+              </small>
+            </span>
+          </template>
+          <n-flex align="center" :wrap="false" :size="8" style="width: 100%">
+            <n-switch v-model:value="useProfileDefaultTtl" size="medium" />
+            <template v-if="!useProfileDefaultTtl">
+              <n-text style="white-space: nowrap">
+                {{ t("ddns.custom_ttl") }}
+              </n-text>
               <n-input-number
-                :value="
-                  useProfileDefaultTtl ? selectedProviderDefaultTtl : form.ttl
-                "
-                :disabled="useProfileDefaultTtl"
+                :value="form.ttl"
                 :min="1"
                 :precision="0"
                 style="flex: 1"
                 @update:value="form.ttl = $event ?? undefined"
               />
-            </n-flex>
-            <div class="ddns-form-hint">
-              {{
-                useProfileDefaultTtl
-                  ? `${t("ddns.follow_profile_ttl_hint")} ${selectedProviderDefaultTtl}`
-                  : t("ddns.custom_ttl_hint")
-              }}
-            </div>
+            </template>
           </n-flex>
         </n-form-item>
       </n-form>
@@ -947,29 +973,15 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.ddns-detail-table-wrapper {
-  overflow-x: auto;
+.ddns-ttl-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-xs);
 }
 
-.ddns-form-hint {
+.ddns-ttl-label small {
   color: var(--app-text-muted-color);
   font-size: var(--app-font-size-caption);
-}
-
-.ddns-detail-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.ddns-detail-table th,
-.ddns-detail-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--app-border-muted-color);
-  text-align: left;
-  vertical-align: top;
-}
-
-.ddns-detail-table th {
-  font-weight: 600;
+  font-weight: 400;
 }
 </style>

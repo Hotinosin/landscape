@@ -20,7 +20,7 @@ const { t } = useI18n();
 const showEdit = ref(false);
 const enableLoading = ref(false);
 
-const title = computed(() => props.rule.name || t("common.no_remark"));
+const title = computed(() => props.rule.name || t("common.unnamed"));
 
 async function remove() {
   if (!props.rule.id) return;
@@ -39,8 +39,17 @@ async function updateEnabled(enable: boolean) {
 </script>
 
 <template>
-  <StatusTitle v-if="cell === 'status'" :enable="rule.enable" :remark="`${rule.index}: ${title}`" />
-  <StandardEnableSwitch v-else-if="cell === 'enable'" :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" />
+  <StatusTitle
+    v-if="cell === 'status'"
+    :enable="rule.enable"
+    :remark="`${rule.index}: ${title}`"
+  />
+  <StandardEnableSwitch
+    v-else-if="cell === 'enable'"
+    :value="rule.enable"
+    :loading="enableLoading"
+    @update:value="updateEnabled"
+  />
   <FlowRuleEgress
     v-else-if="cell === 'action'"
     :mark="rule.mark"

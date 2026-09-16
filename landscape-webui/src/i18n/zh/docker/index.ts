@@ -3,7 +3,7 @@ export default {
     title: "运行镜像: {image}",
     container_name: "容器名称",
     container_name_placeholder: "请输入容器名称 (可选)",
-    flow_egress: "用作 Flow 出口",
+    flow_egress: "用作 Flow 策略出口",
     restart_policy: "重启策略",
     entrypoint: "entrypoint",
     entrypoint_placeholder: "请输入 entrypoint (可选)",

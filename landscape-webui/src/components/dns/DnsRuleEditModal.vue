@@ -10,10 +10,7 @@ import { computed, onMounted } from "vue";
 import { ref } from "vue";
 import ConfigModal from "@/components/common/ConfigModal.vue";
 import FlowMarkEdit from "@/components/flow/FlowMarkEdit.vue";
-import {
-  copy_context_to_clipboard,
-  read_context_from_clipboard,
-} from "@/lib/common";
+import { copy_context_to_clipboard } from "@/lib/common";
 import { useI18n } from "vue-i18n";
 
 type Props = {
@@ -99,9 +96,8 @@ async function export_config() {
   await copy_context_to_clipboard(message, JSON.stringify(configs, null, 2));
 }
 
-async function import_rules() {
+async function import_rules(rules: any[]) {
   try {
-    let rules = JSON.parse(await read_context_from_clipboard());
     rule.value.source = rules;
     message.success(t("common.paste_replace_success"));
   } catch (e) {
@@ -109,9 +105,8 @@ async function import_rules() {
   }
 }
 
-async function append_import_rules() {
+async function append_import_rules(rules: any[]) {
   try {
-    let rules = JSON.parse(await read_context_from_clipboard());
     rule.value.source.unshift(...rules);
     message.success(t("common.paste_append_success"));
   } catch (e) {
@@ -159,7 +154,7 @@ async function append_import_rules() {
             />
           </n-radio-group>
         </n-form-item-gi>
-        <n-form-item-gi :span="5" :label="t('dns.rule_edit.remark')">
+        <n-form-item-gi :span="5" :label="t('dns.rule_edit.name')">
           <n-input v-model:value="rule.name" type="text" />
         </n-form-item-gi>
 
@@ -199,16 +194,20 @@ async function append_import_rules() {
               <n-button :focusable="false" size="tiny" @click="export_config">
                 {{ t("dns.rule_edit.copy") }}
               </n-button>
-              <n-button :focusable="false" size="tiny" @click="import_rules">
-                {{ t("dns.rule_edit.paste_replace") }}
-              </n-button>
-              <n-button
-                :focusable="false"
-                size="tiny"
-                @click="append_import_rules"
-              >
-                {{ t("dns.rule_edit.paste_append") }}
-              </n-button>
+              <ClipboardImportModal :on-confirm="import_rules">
+                <template #trigger>
+                  <n-button :focusable="false" size="tiny">
+                    {{ t("dns.rule_edit.paste_replace") }}
+                  </n-button>
+                </template>
+              </ClipboardImportModal>
+              <ClipboardImportModal :on-confirm="append_import_rules">
+                <template #trigger>
+                  <n-button :focusable="false" size="tiny">
+                    {{ t("dns.rule_edit.paste_append") }}
+                  </n-button>
+                </template>
+              </ClipboardImportModal>
             </n-flex>
           </n-flex>
         </template>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 defineOptions({ inheritAttrs: false });
 
+defineProps<{ label?: string }>();
+
 function clearPointerFocus(event: PointerEvent) {
   (event.currentTarget as HTMLElement).blur();
 }
@@ -13,7 +15,7 @@ function clearPointerFocus(event: PointerEvent) {
     size="small"
     @pointerup="clearPointerFocus"
   >
-    {{ $t("common.config") }}
+    {{ label ?? $t("common.config") }}
   </n-button>
 </template>
 

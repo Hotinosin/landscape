@@ -22,6 +22,7 @@ import { get_dns_redirect } from "@/api/dns_rule/redirect";
 import { getFlowRules } from "@landscape-router/types/api/flow-rules/flow-rules";
 import DnsRuleListRow from "@/components/dns/DnsRuleListRow.vue";
 import DnsRedirectListRow from "@/components/dns/redirect/DnsRedirectListRow.vue";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 const message = useMessage();
 const { t } = useI18n();
 
@@ -254,192 +255,182 @@ async function quick_btn(record_type: LandscapeDnsRecordType, domain: string) {
 </script>
 
 <template>
-  <n-modal
+  <ConfigModal
     @after-enter="init_req(true)"
     @after-leave="init_req(false)"
     v-model:show="show"
-    :mask-closable="false"
+    :show-switch="false"
+    width="min(900px, calc(100vw - 32px))"
+    max-height="min(680px, calc(100vh - 120px))"
+    :title="t('dns.check_domain.test_flow_query', { flow_id })"
   >
-    <n-card
-      style="width: min(900px, calc(100vw - 32px))"
-      :title="t('dns.check_domain.test_flow_query', { flow_id })"
-      closable
-      :bordered="false"
-      content-style="height: min(680px, calc(100vh - 120px)); overflow: hidden"
-      @close="show = false"
-    >
-      <n-flex style="height: 100%" vertical>
-        <n-flex :wrap="true" size="small">
-          <n-button
-            size="small"
-            :loading="quickLoading === 'A:www.baidu.com'"
-            :disabled="busy"
-            type="info"
-            ghost
-            @click="quick_btn('A', 'www.baidu.com')"
-          >
-            IPv4 Baidu
-          </n-button>
-          <n-button
-            size="small"
-            ghost
-            :loading="quickLoading === 'AAAA:www.baidu.com'"
-            :disabled="busy"
-            type="success"
-            @click="quick_btn('AAAA', 'www.baidu.com')"
-          >
-            IPv6 Baidu
-          </n-button>
-          <n-button
-            size="small"
-            :loading="quickLoading === 'HTTPS:crypto.cloudflare.com'"
-            :disabled="busy"
-            type="info"
-            ghost
-            @click="quick_btn('HTTPS', 'crypto.cloudflare.com')"
-          >
-            HTTPS CF
-          </n-button>
-          <n-button
-            size="small"
-            :loading="quickLoading === 'A:test.ustc.edu.cn'"
-            :disabled="busy"
-            type="info"
-            ghost
-            @click="quick_btn('A', 'test.ustc.edu.cn')"
-          >
-            IPv4 USTC
-          </n-button>
-          <n-button
-            size="small"
-            ghost
-            :loading="quickLoading === 'AAAA:test6.ustc.edu.cn'"
-            :disabled="busy"
-            type="success"
-            @click="quick_btn('AAAA', 'test6.ustc.edu.cn')"
-          >
-            IPv6 USTC
-          </n-button>
-        </n-flex>
-        <n-spin :show="loading">
-          <n-input-group>
-            <n-select
-              :style="{ width: '33%' }"
-              v-model:value="req.record_type"
-              :options="options"
-            />
-            <n-input
-              :placeholder="t('dns.check_domain.query_instruction')"
-              @keyup.enter="query"
-              v-model:value="req.domain"
-            />
-
-            <n-button @click="query">
-              <template #icon>
-                <n-icon>
-                  <SearchLocate />
-                </n-icon>
-              </template>
-            </n-button>
-          </n-input-group>
-          <n-flex
-            justify="space-between"
-            align="center"
-            style="margin-top: 10px"
-          >
-            <n-text depth="3">
-              {{ t("dns.check_domain.diagnostic_hint") }}
-            </n-text>
-            <n-flex>
-              <DeleteButton
-                :disabled="!canDeleteCache"
-                :loading="deleteCacheLoading"
-                :label="t('dns.check_domain.delete_cache')"
-                :content="t('dns.check_domain.confirm_delete_cache')"
-                :on-confirm="deleteCache"
-              />
-              <ConfirmModal
-                :positive-button-props="{ loading: refreshCacheLoading }"
-                @positive-click="refreshCache"
-              >
-                <template #trigger>
-                  <n-button
-                    size="small"
-                    type="warning"
-                    :disabled="!canRefreshCache"
-                  >
-                    {{ t("dns.check_domain.refresh_cache") }}
-                  </n-button>
-                </template>
-                {{ t("dns.check_domain.confirm_refresh_cache") }}
-              </ConfirmModal>
-            </n-flex>
-          </n-flex>
-          <n-alert
-            v-if="result.query_filtered"
-            type="warning"
-            :show-icon="false"
-            style="margin-top: 10px"
-          >
-            {{ t("dns.check_domain.query_filtered_hint") }}
-          </n-alert>
-        </n-spin>
-
-        <n-scrollbar>
-          <n-flex v-if="config_rule" vertical>
-            <StandardDataTable
-              :columns="dnsRuleColumns"
-              :data="[config_rule]"
-              :row-key="(rule: DNSRuleConfig) => rule.id ?? rule.index"
-              :scroll-x="760"
-              size="small"
-            />
-
-            <n-divider title-placement="left">
-              {{ t("dns.check_domain.upstream_result") }}
-            </n-divider>
-            <n-flex v-if="result.records?.length">
-              <n-flex v-for="each in result.records">
-                {{ each }}
-              </n-flex>
-            </n-flex>
-            <n-text v-else depth="3">
-              {{
-                result.records
-                  ? "上游返回空记录"
-                  : "未返回上游记录；当前接口未提供查询失败原因，无法区分超时、解析失败或无有效响应。"
-              }}
-            </n-text>
-            <n-divider title-placement="left">
-              {{ t("dns.check_domain.cache_result") }}
-            </n-divider>
-            <n-flex v-if="result.cache_records?.length">
-              <n-flex v-for="each in result.cache_records">
-                {{ each }}
-              </n-flex>
-            </n-flex>
-            <n-text v-else depth="3">当前没有缓存记录</n-text>
-          </n-flex>
-
-          <n-flex v-if="redirect_rule" vertical>
-            <StandardDataTable
-              :columns="redirectColumns"
-              :data="[redirect_rule]"
-              :row-key="(rule: DNSRedirectRule) => rule.id ?? rule.remark"
-              :scroll-x="760"
-              size="small"
-            />
-            <n-divider title-placement="left">
-              {{ t("dns.check_domain.redirect_result") }}
-            </n-divider>
-            <n-flex v-if="result.records">
-              <n-flex v-for="each in result.records">
-                {{ each }}
-              </n-flex>
-            </n-flex>
-          </n-flex>
-        </n-scrollbar>
+    <n-flex style="height: 100%" vertical>
+      <n-flex :wrap="true" size="small">
+        <n-button
+          size="small"
+          :loading="quickLoading === 'A:www.baidu.com'"
+          :disabled="busy"
+          type="info"
+          ghost
+          @click="quick_btn('A', 'www.baidu.com')"
+        >
+          IPv4 Baidu
+        </n-button>
+        <n-button
+          size="small"
+          ghost
+          :loading="quickLoading === 'AAAA:www.baidu.com'"
+          :disabled="busy"
+          type="success"
+          @click="quick_btn('AAAA', 'www.baidu.com')"
+        >
+          IPv6 Baidu
+        </n-button>
+        <n-button
+          size="small"
+          :loading="quickLoading === 'HTTPS:crypto.cloudflare.com'"
+          :disabled="busy"
+          type="info"
+          ghost
+          @click="quick_btn('HTTPS', 'crypto.cloudflare.com')"
+        >
+          HTTPS CF
+        </n-button>
+        <n-button
+          size="small"
+          :loading="quickLoading === 'A:test.ustc.edu.cn'"
+          :disabled="busy"
+          type="info"
+          ghost
+          @click="quick_btn('A', 'test.ustc.edu.cn')"
+        >
+          IPv4 USTC
+        </n-button>
+        <n-button
+          size="small"
+          ghost
+          :loading="quickLoading === 'AAAA:test6.ustc.edu.cn'"
+          :disabled="busy"
+          type="success"
+          @click="quick_btn('AAAA', 'test6.ustc.edu.cn')"
+        >
+          IPv6 USTC
+        </n-button>
       </n-flex>
-    </n-card>
-  </n-modal>
+      <n-spin :show="loading">
+        <n-input-group>
+          <n-select
+            :style="{ width: '33%' }"
+            v-model:value="req.record_type"
+            :options="options"
+          />
+          <n-input
+            :placeholder="t('dns.check_domain.query_instruction')"
+            @keyup.enter="query"
+            v-model:value="req.domain"
+          />
+
+          <n-button @click="query">
+            <template #icon>
+              <n-icon>
+                <SearchLocate />
+              </n-icon>
+            </template>
+          </n-button>
+        </n-input-group>
+        <n-flex justify="space-between" align="center" style="margin-top: 10px">
+          <n-text depth="3">
+            {{ t("dns.check_domain.diagnostic_hint") }}
+          </n-text>
+          <n-flex>
+            <DeleteButton
+              :disabled="!canDeleteCache"
+              :loading="deleteCacheLoading"
+              :label="t('dns.check_domain.delete_cache')"
+              :content="t('dns.check_domain.confirm_delete_cache')"
+              :on-confirm="deleteCache"
+            />
+            <ConfirmModal
+              :positive-button-props="{ loading: refreshCacheLoading }"
+              @positive-click="refreshCache"
+            >
+              <template #trigger>
+                <n-button
+                  size="small"
+                  type="warning"
+                  :disabled="!canRefreshCache"
+                >
+                  {{ t("dns.check_domain.refresh_cache") }}
+                </n-button>
+              </template>
+              {{ t("dns.check_domain.confirm_refresh_cache") }}
+            </ConfirmModal>
+          </n-flex>
+        </n-flex>
+        <n-alert
+          v-if="result.query_filtered"
+          type="warning"
+          :show-icon="false"
+          style="margin-top: 10px"
+        >
+          {{ t("dns.check_domain.query_filtered_hint") }}
+        </n-alert>
+      </n-spin>
+
+      <n-scrollbar>
+        <n-flex v-if="config_rule" vertical>
+          <StandardDataTable
+            :columns="dnsRuleColumns"
+            :data="[config_rule]"
+            :row-key="(rule: DNSRuleConfig) => rule.id ?? rule.index"
+            :scroll-x="760"
+            size="small"
+          />
+
+          <n-divider title-placement="left">
+            {{ t("dns.check_domain.upstream_result") }}
+          </n-divider>
+          <n-flex v-if="result.records?.length">
+            <n-flex v-for="each in result.records">
+              {{ each }}
+            </n-flex>
+          </n-flex>
+          <n-text v-else depth="3">
+            {{
+              result.records
+                ? "上游返回空记录"
+                : "未返回上游记录；当前接口未提供查询失败原因，无法区分超时、解析失败或无有效响应。"
+            }}
+          </n-text>
+          <n-divider title-placement="left">
+            {{ t("dns.check_domain.cache_result") }}
+          </n-divider>
+          <n-flex v-if="result.cache_records?.length">
+            <n-flex v-for="each in result.cache_records">
+              {{ each }}
+            </n-flex>
+          </n-flex>
+          <n-text v-else depth="3">当前没有缓存记录</n-text>
+        </n-flex>
+
+        <n-flex v-if="redirect_rule" vertical>
+          <StandardDataTable
+            :columns="redirectColumns"
+            :data="[redirect_rule]"
+            :row-key="(rule: DNSRedirectRule) => rule.id ?? rule.remark"
+            :scroll-x="760"
+            size="small"
+          />
+          <n-divider title-placement="left">
+            {{ t("dns.check_domain.redirect_result") }}
+          </n-divider>
+          <n-flex v-if="result.records">
+            <n-flex v-for="each in result.records">
+              {{ each }}
+            </n-flex>
+          </n-flex>
+        </n-flex>
+      </n-scrollbar>
+    </n-flex>
+  </ConfigModal>
 </template>

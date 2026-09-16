@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { computed, inject, onMounted } from "vue";
 import type { CSSProperties } from "vue";
+import { useDialog } from "naive-ui";
+import { useI18n } from "vue-i18n";
 import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
+import { useNeutralDialogButtonProps } from "@/composables/useNeutralDialogButtonProps";
 
 defineOptions({ inheritAttrs: false });
 
 const show = defineModel<boolean>("show", { required: true });
-const enabled = defineModel<boolean>("enabled", { required: true });
+const enabled = defineModel<boolean>("enabled", { default: true });
 const emit = defineEmits(["after-enter", "dirty"]);
 const modalDepth = inject("app-modal-depth", 1);
+const dialog = useDialog();
+const { t } = useI18n();
+const neutralButtonProps = useNeutralDialogButtonProps();
 
 const props = withDefaults(
   defineProps<{
@@ -21,6 +27,8 @@ const props = withDefaults(
     showSwitch?: boolean;
     embedded?: boolean;
     fixedTop?: boolean;
+    topOffset?: string;
+    dirty?: boolean;
   }>(),
   {
     width: "var(--app-secondary-modal-width)",
@@ -30,6 +38,8 @@ const props = withDefaults(
     showSwitch: true,
     embedded: false,
     fixedTop: false,
+    topOffset: "var(--app-modal-top-offset)",
+    dirty: false,
   },
 );
 
@@ -49,7 +59,7 @@ const cardStyle = computed<CSSProperties>(() => {
   }
 
   if (!props.embedded && props.fixedTop && modalDepth === 1) {
-    style.marginTop = "var(--app-modal-top-offset)";
+    style.marginTop = props.topOffset;
     style.marginBottom = "auto";
   } else if (!props.embedded && modalDepth > 1) {
     style.marginTop = "auto";
@@ -76,6 +86,23 @@ const headerStyle = computed<CSSProperties>(() => {
 
 function closeModal() {
   show.value = false;
+}
+
+function requestClose() {
+  if (!props.dirty) {
+    closeModal();
+    return;
+  }
+
+  dialog.warning({
+    title: t("common.unsaved_title"),
+    content: t("common.unsaved_content"),
+    positiveText: t("common.discard"),
+    negativeText: t("common.cancel"),
+    positiveButtonProps: { type: "error" },
+    negativeButtonProps: neutralButtonProps.value,
+    onPositiveClick: closeModal,
+  });
 }
 
 onMounted(() => {
@@ -112,7 +139,7 @@ onMounted(() => {
     v-bind="$attrs"
     :show="show"
     :auto-focus="false"
-    @update:show="(value: boolean) => (show = value)"
+    @update:show="(value: boolean) => !value && requestClose()"
     @after-enter="emit('after-enter')"
   >
     <n-card
@@ -124,7 +151,7 @@ onMounted(() => {
       content-style="min-height: 0; overflow: auto"
       role="dialog"
       :aria-modal="true"
-      @close="closeModal"
+      @close="requestClose"
     >
       <template #header>
         <div :style="headerStyle">
@@ -145,7 +172,12 @@ onMounted(() => {
       <slot v-if="$slots.default" :enabled="enabled" :disabled="!enabled" />
 
       <template v-if="$slots.footer" #footer>
-        <slot name="footer" :enabled="enabled" :disabled="!enabled" />
+        <slot
+          name="footer"
+          :enabled="enabled"
+          :disabled="!enabled"
+          :close="requestClose"
+        />
       </template>
     </n-card>
   </n-modal>
@@ -155,5 +187,15 @@ onMounted(() => {
 .config-modal--embedded {
   width: 100%;
   min-width: 0;
+}
+
+:deep(.standard-config-modal > .n-card__footer > .n-flex) {
+  justify-content: flex-end !important;
+}
+
+:deep(
+  .standard-config-modal > .n-card__footer > .standard-modal-footer--split
+) {
+  justify-content: space-between !important;
 }
 </style>

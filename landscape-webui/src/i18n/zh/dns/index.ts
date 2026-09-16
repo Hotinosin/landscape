@@ -4,7 +4,7 @@ export default {
     priority: "优先级",
     priority_help:
       "数值越小优先级越高，规则按数值从小到大匹配，命中后停止。例如 1 高于 1000。",
-    remark: "备注",
+    name: "名称",
     filter_result: "是否过滤结果",
     flow_action: "规则出口",
     upstream_select: "DNS 上游选择",
@@ -34,9 +34,9 @@ export default {
     resolve_cloudflare: "Cloudflare",
   },
   redirect_edit: {
-    title: "DNS 重定向配置",
+    title: "重定向与拦截配置",
     remark: "备注",
-    apply_flows: "选择应用的 Flow, 为空时全部 Flow 应用",
+    apply_flows: "选择应用的 Flow 策略，为空时应用于全部 Flow 策略",
     apply_flows_placeholder: "选择应用的流 ID",
     answer_mode: "回答模式",
     answer_mode_static_ips: "静态 IP 列表",
@@ -59,13 +59,13 @@ export default {
     copy: "复制",
     paste_replace: "替换粘贴",
     paste_append: "增量粘贴",
-    default_flow: "默认流",
+    default_flow: "默认 Flow 策略",
     err_ip_required: "IP 地址不能为空",
     err_ip_invalid: "请输入有效的 IPv4 或 IPv6 地址",
     err_match_rules_required: "至少需要添加一条匹配域名规则",
   },
   upstream_edit: {
-    title: "DNS 上游配置",
+    title: "DNS 配置",
     copy: "复制",
     paste: "粘贴",
     remark: "备注",
@@ -135,7 +135,7 @@ export default {
   },
   rule_drawer: {
     title_default: "编辑默认 DNS 规则",
-    title_flow: "编辑 Flow: {flow_id} DNS 规则",
+    title_flow: "编辑 Flow 策略 {flow_id} 的 DNS 规则",
     add_rule: "增加规则",
     export_clipboard: "导出规则至剪贴板",
     import_clipboard: "从剪贴板导入规则",
@@ -160,8 +160,8 @@ export default {
   },
   redirect_card: {
     apply_to: "应用于",
-    default_flow: "默认流",
-    all_flows: "全部 Flow",
+    default_flow: "默认 Flow 策略",
+    all_flows: "全部 Flow 策略",
     answer_mode: "回答模式",
     answer_mode_static_ips: "静态 IP 列表",
     answer_mode_all_local_ips: "全部本机 IP",
@@ -175,6 +175,6 @@ export default {
   select_upstream: {
     redirect_flow_id: "重定向的流 ID",
     default_ali: "阿里",
-    create: "+ 新增 DNS 上游",
+    create: "+ 新增 DNS 配置",
   },
 };

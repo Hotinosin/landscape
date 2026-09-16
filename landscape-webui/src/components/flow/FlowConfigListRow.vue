@@ -83,9 +83,7 @@ async function updateEnabled(value: boolean) {
         :rule="rule"
       />
     </n-flex>
-    <n-text v-else depth="3">
-      {{ t("flow.config_card.no_ingress_rules") }}
-    </n-text>
+    <n-text v-else depth="3">—</n-text>
   </template>
   <template v-else-if="cell === 'dns'">
     <n-flex v-if="dns_rules?.length" vertical size="small">
@@ -98,7 +96,7 @@ async function updateEnabled(value: boolean) {
         :upstreams="upstreams"
       />
     </n-flex>
-    <n-text v-else depth="3">{{ t("flow.list.no_dns_rules") }}</n-text>
+    <n-text v-else depth="3">—</n-text>
   </template>
   <template v-else-if="cell === 'targetIp'">
     <n-flex v-if="target_ip_rules?.length" vertical size="small">
@@ -110,7 +108,7 @@ async function updateEnabled(value: boolean) {
         :flows="flows"
       />
     </n-flex>
-    <n-text v-else depth="3">{{ t("flow.list.no_target_ip_rules") }}</n-text>
+    <n-text v-else depth="3">—</n-text>
   </template>
   <template v-else-if="cell === 'egress'">
     <n-flex size="small" justify="start">

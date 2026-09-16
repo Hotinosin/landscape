@@ -16,12 +16,14 @@ import {
   NButton,
   NFlex,
   NTag,
+  NTooltip,
   useDialog,
   useMessage,
   type DataTableColumns,
+  type SelectRenderTag,
 } from "naive-ui";
 import { IfaceZoneType } from "@landscape-router/types/api/schemas";
-import { DevStateType, WLANTypeTag, type NetDev } from "@/lib/dev";
+import { DevStateType, WifiMode, WLANTypeTag, type NetDev } from "@/lib/dev";
 import {
   ServiceExhibitSwitch,
   get_service_status_tag_type,
@@ -32,7 +34,6 @@ import {
   configuredNetworkProjects,
   relatedInterfaces,
   resolveCategory,
-  type NetworkProjectFilter,
 } from "@/lib/network_settings";
 import { getBridgeAttachIssue, type BridgeAttachIssue } from "@/lib/topology";
 import { get_all_docker_networks } from "@/api/docker/network";
@@ -43,6 +44,7 @@ import {
   add_controller,
   change_iface_boot_status,
   change_iface_status,
+  change_wifi_mode,
   change_zone,
   create_bridge,
   delete_bridge,
@@ -50,6 +52,7 @@ import {
   type RuntimeIpAddress,
 } from "@/api/network";
 import { get_all_iface_pppd_config } from "@/api/service_pppd";
+import { stop_and_del_iface_wifi } from "@/api/service_wifi";
 import type { PPPDServiceConfig } from "@/lib/pppd";
 import { useIfaceNodeStore } from "@/stores/iface_node";
 import { useIpConfigStore } from "@/stores/status_ipconfig";
@@ -79,11 +82,13 @@ import MSSClampServiceEditModal from "@/components/mss_clamp/MSSClampServiceEdit
 import RouteLanServiceEditModal from "@/components/route/lan/RouteLanServiceEditModal.vue";
 import RouteWanServiceEditModal from "@/components/route/wan/RouteWanServiceEditModal.vue";
 import WifiServiceEditModal from "@/components/wifi/WifiServiceEditModal.vue";
-import WifiModeChange from "@/components/wifi/WifiModeChange.vue";
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
 import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import EditButton from "@/components/common/EditButton.vue";
 import MacAddress from "@/components/common/MacAddress.vue";
+import ConfigModal from "@/components/common/ConfigModal.vue";
+import Notice from "@/components/common/Notice.vue";
+import { useNeutralDialogButtonProps } from "@/composables/useNeutralDialogButtonProps";
 
 type Editor =
   | "ip_config"
@@ -101,6 +106,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const dialog = useDialog();
+const neutralButtonProps = useNeutralDialogButtonProps();
 const message = useMessage();
 provide("app-modal-depth", 2);
 const ifaceStore = useIfaceNodeStore();
@@ -123,8 +129,7 @@ const dockerNetworks =
   ref<Awaited<ReturnType<typeof get_all_docker_networks>>>();
 const plugins = ref<Awaited<ReturnType<typeof listPlugins>>>();
 const sourceErrors = ref<string[]>([]);
-const search = ref("");
-const filter = ref<NetworkProjectFilter>("all");
+const viewMode = ref<"network" | "interface">("network");
 const selectedName = ref("");
 const configOpen = ref(false);
 const operationLoading = ref(false);
@@ -139,10 +144,8 @@ const creatingNetwork = ref(false);
 const firstWanPreset = ref(false);
 const createName = ref("");
 const createMembers = ref<number[]>([]);
-const bridgeTarget = ref<number | null>(null);
 const runtimeIpAddresses = ref<Record<string, RuntimeIpAddress[]>>({});
 const pppdConfigs = ref<PPPDServiceConfig[]>([]);
-const runtimeAddressError = ref(false);
 let runtimeAddressRefreshRunning = false;
 let runtimeAddressRefreshTimer: ReturnType<typeof setInterval> | undefined;
 const projectDetails = ref<Record<string, { access: string }>>({});
@@ -153,6 +156,8 @@ const draftRole = ref<IfaceZoneType>(IfaceZoneType.undefined);
 const savedEnabled = ref(false);
 const savedBoot = ref(false);
 const savedRole = ref<IfaceZoneType>(IfaceZoneType.undefined);
+const draftWifiMode = ref(WifiMode.Undefined);
+const savedWifiMode = ref(WifiMode.Undefined);
 type SummaryItem = { label: string; value: string };
 type EmbeddedEditor = {
   save: () => Promise<void>;
@@ -189,24 +194,33 @@ const devices = computed(() =>
   ifaceStore.net_devs.filter((item) => item.dev_type !== "Loopback"),
 );
 const projects = computed(() =>
-  configuredNetworkProjects(devices.value, sources.value).filter((item) =>
-    item.name.toLowerCase().includes(search.value.trim().toLowerCase()),
-  ),
+  viewMode.value === "network"
+    ? configuredNetworkProjects(devices.value, sources.value)
+    : devices.value.filter((item) => {
+        const source = sources.value.get(item.name);
+        return (
+          source?.kind === "physical" ||
+          (source?.kind === "system" && item.dev_kind === "bridge")
+        );
+      }),
 );
-const projectGroups = computed(() =>
-  (["wan", "lan", "other"] as const).map((type) => ({
+const projectGroups = computed(() => {
+  const types =
+    viewMode.value === "network"
+      ? (["wan", "lan"] as const)
+      : (["interface", "bridge"] as const);
+  return types.map((type) => ({
     type,
     label: t(`network.settings.project_${type}`),
     items: projects.value.filter((item) =>
-      type === "other"
-        ? sources.value.get(item.name)?.kind === "docker" ||
-          (item.zone_type !== IfaceZoneType.wan &&
-            item.zone_type !== IfaceZoneType.lan)
-        : sources.value.get(item.name)?.kind !== "docker" &&
-          item.zone_type === type,
+      viewMode.value === "network"
+        ? item.zone_type === type
+        : type === "bridge"
+          ? item.dev_kind === "bridge"
+          : item.dev_kind !== "bridge",
     ),
-  })),
-);
+  }));
+});
 const selected = computed(() =>
   devices.value.find((item) => item.name === selectedName.value),
 );
@@ -279,8 +293,17 @@ const basicDirty = computed(() =>
       draftRole.value !== savedRole.value),
   ),
 );
+const wifiModeDirty = computed(
+  () =>
+    Boolean(selected.value?.wifi_info) &&
+    draftWifiMode.value !== savedWifiMode.value,
+);
 const dirty = computed(
-  () => basicDirty.value || dirtyEditors.value.length > 0 || cpuDirty.value,
+  () =>
+    basicDirty.value ||
+    wifiModeDirty.value ||
+    dirtyEditors.value.length > 0 ||
+    cpuDirty.value,
 );
 const bridgeMemberOptions = computed(() =>
   !selected.value || selected.value.dev_kind !== "bridge"
@@ -289,10 +312,14 @@ const bridgeMemberOptions = computed(() =>
         .filter(
           (item) =>
             item.dev_kind !== "bridge" &&
-            item.controller_id !== selected.value?.index,
+            (item.controller_id === undefined ||
+              item.controller_id === selected.value?.index),
         )
         .map((item) => {
-          const issue = getBridgeAttachIssue(selected.value!, item);
+          const attached = item.controller_id === selected.value!.index;
+          const issue = attached
+            ? undefined
+            : getBridgeAttachIssue(selected.value!, item);
           return {
             label: issue
               ? `${item.name} · ${bridgeIssueLabel(issue)}`
@@ -302,6 +329,41 @@ const bridgeMemberOptions = computed(() =>
           };
         }),
 );
+function interfaceStatusTagType(
+  device?: NetDev,
+): "success" | "error" | "default" {
+  return device ? (device.carrier ? "success" : "error") : "default";
+}
+function renderInterfaceStatusTag(
+  name: string,
+  device?: NetDev,
+  handleClose?: () => void,
+) {
+  return h(
+    NTag,
+    {
+      key: name,
+      class: handleClose
+        ? "network-settings__interface-status-tag--truncate"
+        : undefined,
+      size: "small",
+      bordered: false,
+      closable: Boolean(handleClose),
+      type: interfaceStatusTagType(device),
+      title: device ? `${name} · ${carrierLabel(device)}` : name,
+      onClose: handleClose,
+    },
+    { default: () => name },
+  );
+}
+const renderBridgeMemberTag: SelectRenderTag = ({ option, handleClose }) => {
+  const device = devices.value.find((item) => item.index === option.value);
+  return renderInterfaceStatusTag(
+    device?.name ?? String(option.label),
+    device,
+    handleClose,
+  );
+};
 const createMemberOptions = computed(() =>
   devices.value.map((item) => {
     const issue: BridgeAttachIssue | "managed_interface" | undefined = [
@@ -323,11 +385,14 @@ const createMemberOptions = computed(() =>
     };
   }),
 );
-const createMenuOptions = computed(() => [
-  { label: t("network.settings.create_wan"), key: "wan" },
-  { label: t("network.settings.create_lan"), key: "lan" },
-  { label: t("network.settings.create_bridge"), key: "bridge" },
-]);
+const createMenuOptions = computed(() =>
+  viewMode.value === "network"
+    ? [
+        { label: t("network.settings.create_wan"), key: "wan" },
+        { label: t("network.settings.create_lan"), key: "lan" },
+      ]
+    : [{ label: t("network.settings.create_bridge"), key: "bridge" }],
+);
 function carrierLabel(node: NetDev) {
   return t(
     node.carrier
@@ -351,6 +416,32 @@ function zoneLabel(zone: IfaceZoneType) {
     : zone === IfaceZoneType.lan
       ? "LAN"
       : t("topology.zone.unassigned");
+}
+function wifiModeLabel(mode: WifiMode) {
+  return t(
+    mode === WifiMode.AP
+      ? "wifi.ap_mode"
+      : mode === WifiMode.Client
+        ? "wifi.client_mode"
+        : "wifi.disabled_mode",
+  );
+}
+function parentBridge(device: NetDev) {
+  return devices.value.find((item) => item.index === device.controller_id);
+}
+const selectedParentBridge = computed(() =>
+  selected.value ? parentBridge(selected.value) : undefined,
+);
+function effectiveZone(device: NetDev) {
+  if (device.zone_type !== IfaceZoneType.undefined) return device.zone_type;
+  return parentBridge(device)?.zone_type ?? IfaceZoneType.undefined;
+}
+function zoneTagType(zone: IfaceZoneType) {
+  return zone === IfaceZoneType.wan
+    ? "warning"
+    : zone === IfaceZoneType.lan
+      ? "info"
+      : "default";
 }
 function serviceStatuses(device: NetDev) {
   const show = new ServiceExhibitSwitch(device);
@@ -419,8 +510,35 @@ const projectColumns = computed<DataTableColumns<NetDev>>(() => [
   {
     title: t("network.settings.role"),
     key: "zone_type",
-    width: 90,
-    render: (item) => zoneLabel(item.zone_type),
+    width: 110,
+    render: (item) => {
+      const zone = effectiveZone(item);
+      const parent = parentBridge(item);
+      const inherited =
+        item.zone_type === IfaceZoneType.undefined &&
+        zone !== IfaceZoneType.undefined &&
+        parent;
+      const tag = () =>
+        h(
+          NTag,
+          { size: "small", bordered: false, type: zoneTagType(zone) },
+          {
+            default: () =>
+              inherited
+                ? `${zoneLabel(zone)} · ${t("network.settings.inherited")}`
+                : zoneLabel(zone),
+          },
+        );
+      return inherited
+        ? h(NTooltip, null, {
+            trigger: tag,
+            default: () =>
+              t("network.settings.inherited_zone_tip", {
+                name: parent.name,
+              }),
+          })
+        : tag();
+    },
   },
   {
     title: t("network.settings.access_type"),
@@ -436,13 +554,26 @@ const projectColumns = computed<DataTableColumns<NetDev>>(() => [
     title: t("network.settings.related_interfaces"),
     key: "related",
     width: 210,
-    ellipsis: { tooltip: true },
-    render: (item) => relatedInterfaces(item, devices.value).join(", ") || "—",
+    render: (item) => {
+      const related = relatedInterfaces(item, devices.value);
+      if (!related.length) return "—";
+      return h(
+        NFlex,
+        { size: 4 },
+        {
+          default: () =>
+            related.map((name) => {
+              const device = devices.value.find((item) => item.name === name);
+              return renderInterfaceStatusTag(name, device);
+            }),
+        },
+      );
+    },
   },
   {
     title: t("network.settings.ip_address"),
     key: "ip",
-    width: 210,
+    width: 290,
     render: (item) => {
       const addresses = addressesFor(item);
       if (!addresses.length) return "—";
@@ -467,14 +598,20 @@ const projectColumns = computed<DataTableColumns<NetDev>>(() => [
   {
     title: t("common.status"),
     key: "service_status",
-    width: 320,
+    width: 240,
     render: (item) => {
       if (sources.value.get(item.name)?.kind === "docker") return "—";
       const statuses = serviceStatuses(item);
       return statuses.length
         ? h(
-            NFlex,
-            { size: 4 },
+            "div",
+            {
+              style: {
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "4px",
+              },
+            },
             {
               default: () =>
                 statuses.map(({ key, label, status }) =>
@@ -507,6 +644,17 @@ const projectColumns = computed<DataTableColumns<NetDev>>(() => [
           }),
   },
 ]);
+const visibleColumns = computed(() =>
+  viewMode.value === "network"
+    ? projectColumns.value
+    : projectColumns.value.filter((column) =>
+        "key" in column
+          ? ["name", "mac", "zone_type", "related", "actions"].includes(
+              String(column.key),
+            )
+          : false,
+      ),
+);
 async function loadProjectDetails() {
   const details: Record<string, { access: string }> = {};
   await Promise.all(
@@ -541,16 +689,17 @@ function syncDraft() {
   savedEnabled.value = draftEnabled.value;
   savedBoot.value = draftBoot.value;
   savedRole.value = draftRole.value;
-  bridgeTarget.value = null;
+  draftWifiMode.value = device.wifi_mode ?? WifiMode.Undefined;
+  savedWifiMode.value = draftWifiMode.value;
   dirtyEditors.value = [];
   cpuDirty.value = false;
-  activeConfigTab.value = "general";
+  activeConfigTab.value = viewMode.value === "interface" ? "general" : "ipv4";
 }
 function updateUrl(section?: Editor | null) {
   router.replace({
     path: "/network/settings",
     query: {
-      tab: filter.value,
+      view: viewMode.value,
       iface: selectedName.value || undefined,
       section: section || undefined,
     },
@@ -565,8 +714,13 @@ function openConfig(device: NetDev) {
   invalidLocation.value = false;
   updateUrl();
 }
+function resetBridgeCreateForm() {
+  createName.value = "";
+  createMembers.value = [];
+}
 function startCreate(type: "wan" | "lan" | "bridge") {
   if (type === "bridge") {
+    resetBridgeCreateForm();
     createOpen.value = true;
     return;
   }
@@ -575,6 +729,9 @@ function startCreate(type: "wan" | "lan" | "bridge") {
   networkCreateIface.value = null;
   networkCreateOpen.value = true;
 }
+watch(createOpen, (open) => {
+  if (!open) resetBridgeCreateForm();
+});
 async function continueCreateNetwork() {
   const device = devices.value.find(
     (item) => item.index === networkCreateIface.value,
@@ -598,7 +755,7 @@ async function continueCreateNetwork() {
     networkCreateRole.value === IfaceZoneType.wan
       ? ["ip_config", "nat", "firewall", "route_wan"]
       : ["dhcp_v4", "route_lan"];
-  activeConfigTab.value = "general";
+  activeConfigTab.value = "ipv4";
   networkCreateOpen.value = false;
   configOpen.value = true;
   updateUrl();
@@ -613,24 +770,6 @@ function locateProject(device: NetDev) {
       ?.scrollIntoView({ behavior: "smooth", block: "center" }),
   );
 }
-function selectDiagram(device: NetDev) {
-  const source = sources.value.get(device.name);
-  if (source?.kind === "docker") {
-    router.push("/docker");
-    return;
-  }
-  if (source?.kind === "plugin") {
-    router.push("/plugins");
-    return;
-  }
-  if (
-    configuredNetworkProjects(devices.value, sources.value).some(
-      (item) => item.index === device.index,
-    )
-  )
-    locateProject(device);
-  else openConfig(device);
-}
 function requestCloseConfig() {
   if (!dirty.value) {
     configOpen.value = false;
@@ -642,7 +781,7 @@ function requestCloseConfig() {
     content: t("network.settings.unsaved_content"),
     positiveText: t("network.settings.discard"),
     negativeText: t("common.cancel"),
-    negativeButtonProps: { type: "default", ghost: false },
+    negativeButtonProps: neutralButtonProps.value,
     onPositiveClick: () => {
       configOpen.value = false;
       updateUrl();
@@ -663,9 +802,8 @@ async function refreshRuntimeAddresses() {
     ]);
     runtimeIpAddresses.value = addresses;
     pppdConfigs.value = configs;
-    runtimeAddressError.value = false;
   } catch {
-    runtimeAddressError.value = true;
+    // Keep the last successful result; the global polling warning covers outages.
   } finally {
     runtimeAddressRefreshRunning = false;
   }
@@ -699,13 +837,12 @@ async function refresh() {
   }
 }
 function restoreUrl() {
-  filter.value = (["wan", "lan"] as string[]).includes(
-    route.query.tab as string,
-  )
-    ? (route.query.tab as NetworkProjectFilter)
-    : resolveCategory(route.query.tab) === "bridge"
-      ? "bridge"
-      : "all";
+  viewMode.value =
+    route.query.view === "interface" ||
+    resolveCategory(route.query.tab) === "bridge" ||
+    route.query.tab === "interfaces"
+      ? "interface"
+      : "network";
   const requested =
     typeof route.query.iface === "string" ? route.query.iface : "";
   if (!requested) return;
@@ -767,6 +904,11 @@ async function saveConfiguration() {
   operationLoading.value = true;
   try {
     await saveBasic();
+    if (wifiModeDirty.value && selected.value) {
+      await stop_and_del_iface_wifi(selected.value.name);
+      await change_wifi_mode(selected.value.name, draftWifiMode.value);
+      savedWifiMode.value = draftWifiMode.value;
+    }
     for (const key of dirtyEditors.value)
       await embeddedEditors.get(key)?.save();
     if (cpuDirty.value) await cpuEditor.value?.save();
@@ -811,6 +953,11 @@ function requestSaveConfiguration() {
       label: t("network.settings.cpu_balance"),
       value: t("network.settings.configured"),
     });
+  if (wifiModeDirty.value)
+    changed.push({
+      label: t("network.settings.wifi_mode"),
+      value: wifiModeLabel(draftWifiMode.value),
+    });
   dialog.info({
     title: t("network.settings.save_confirm_title"),
     content: () =>
@@ -823,6 +970,7 @@ function requestSaveConfiguration() {
       ]),
     positiveText: t("common.confirm"),
     negativeText: t("common.cancel"),
+    negativeButtonProps: neutralButtonProps.value,
     onPositiveClick: async () => {
       await saveConfiguration();
       configOpen.value = false;
@@ -839,36 +987,38 @@ async function afterSaved(key?: Editor) {
       : Promise.resolve(),
   ]);
 }
-async function attachBridge() {
+async function updateBridgeMembers(nextIndexes: number[]) {
   const bridge = selected.value;
-  const device = devices.value.find(
-    (item) => item.index === bridgeTarget.value,
+  if (!bridge || bridge.dev_kind !== "bridge") return;
+  const current = childrenOf(bridge);
+  const currentIndexes = new Set(current.map((item) => item.index));
+  const next = new Set(nextIndexes);
+  const added = devices.value.filter(
+    (item) => next.has(item.index) && !currentIndexes.has(item.index),
   );
-  if (!device || !bridge || bridge.dev_kind !== "bridge") return;
+  const removed = current.filter((item) => !next.has(item.index));
   operationLoading.value = true;
   try {
-    await add_controller({
-      link_name: device.name,
-      link_ifindex: device.index,
-      master_name: bridge.name,
-      master_ifindex: bridge.index,
-    });
+    await Promise.all([
+      ...added.map((device) =>
+        add_controller({
+          link_name: device.name,
+          link_ifindex: device.index,
+          master_name: bridge.name,
+          master_ifindex: bridge.index,
+        }),
+      ),
+      ...removed.map((device) =>
+        add_controller({
+          link_name: device.name,
+          link_ifindex: device.index,
+          master_name: null,
+          master_ifindex: null,
+        }),
+      ),
+    ]);
     await refresh();
     syncDraft();
-  } finally {
-    operationLoading.value = false;
-  }
-}
-async function detach(device: NetDev) {
-  operationLoading.value = true;
-  try {
-    await add_controller({
-      link_name: device.name,
-      link_ifindex: device.index,
-      master_name: null,
-      master_ifindex: null,
-    });
-    await refresh();
   } finally {
     operationLoading.value = false;
   }
@@ -877,10 +1027,14 @@ function removeBridge() {
   const device = selected.value;
   if (!device) return;
   dialog.error({
-    title: t("network.settings.delete_bridge"),
-    content: t("topology.node.delete_bridge"),
+    title: t("network.settings.delete_bridge_confirm"),
+    content: t("network.settings.delete_bridge_content", {
+      name: device.name,
+    }),
     positiveText: t("common.delete"),
     negativeText: t("common.cancel"),
+    positiveButtonProps: { type: "error" },
+    negativeButtonProps: neutralButtonProps.value,
     onPositiveClick: async () => {
       await delete_bridge(device.name);
       configOpen.value = false;
@@ -904,6 +1058,8 @@ function removeNetworkProject() {
     }),
     positiveText: t("common.delete"),
     negativeText: t("common.cancel"),
+    positiveButtonProps: { type: "error" },
+    negativeButtonProps: neutralButtonProps.value,
     onPositiveClick: () =>
       guarded(async () => {
         await change_zone({
@@ -964,7 +1120,10 @@ async function createBridge() {
 watch(() => route.query, restoreUrl);
 onMounted(() => {
   refresh();
-  runtimeAddressRefreshTimer = setInterval(refreshRuntimeAddresses, 15_000);
+  runtimeAddressRefreshTimer = setInterval(
+    () => !document.hidden && void refreshRuntimeAddresses(),
+    15_000,
+  );
 });
 onUnmounted(() => {
   if (runtimeAddressRefreshTimer) clearInterval(runtimeAddressRefreshTimer);
@@ -992,26 +1151,31 @@ onUnmounted(() => {
         sources: sourceErrors.join(", "),
       })
     }}</n-alert>
-    <n-alert v-if="runtimeAddressError" type="warning" :show-icon="false">
-      <n-flex justify="space-between">
-        <span>{{ t("network.settings.runtime_address_failed") }}</span>
-        <n-button size="small" @click="refreshRuntimeAddresses">{{
-          t("common.retry")
-        }}</n-button>
-      </n-flex>
-    </n-alert>
-
     <NetFlow
       v-if="!loadError"
       class="network-settings__topology"
       data-testid="interface-map"
       summary
       :docker-ifaces="dockerIfaces"
-      @select="selectDiagram"
     />
 
-    <div v-if="!loadError" class="network-settings__toolbar">
-      <n-flex>
+    <div
+      v-if="!loadError"
+      class="network-settings__toolbar standard-list-align"
+    >
+      <n-flex :wrap="false">
+        <n-tabs
+          v-model:value="viewMode"
+          class="network-settings__view-tabs"
+          type="segment"
+          size="small"
+          @update:value="() => updateUrl()"
+        >
+          <n-tab name="network">{{ t("network.settings.view_network") }}</n-tab>
+          <n-tab name="interface">{{
+            t("network.settings.view_interface")
+          }}</n-tab>
+        </n-tabs>
         <n-dropdown
           trigger="hover"
           placement="right-start"
@@ -1025,18 +1189,13 @@ onUnmounted(() => {
             {{ t("network.settings.create") }}
           </n-button>
         </n-dropdown>
-        <n-button :loading="loading" secondary @click="refresh">
-          <template #icon
-            ><n-icon><Renew /></n-icon
-          ></template>
-          {{ t("common.refresh") }}
-        </n-button>
       </n-flex>
-      <n-input
-        v-model:value="search"
-        clearable
-        :placeholder="t('network.settings.search')"
-      />
+      <n-button :loading="loading" secondary @click="refresh">
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
+      </n-button>
     </div>
 
     <section v-if="!loadError" class="network-settings__projects">
@@ -1045,11 +1204,11 @@ onUnmounted(() => {
         :key="group.type"
         class="network-settings__project-group"
       >
-        <div class="network-settings__group-heading">
+        <div class="network-settings__group-heading standard-list-title">
           <strong>{{ group.label }}</strong>
         </div>
         <StandardDataTable
-          :columns="projectColumns"
+          :columns="visibleColumns"
           :data="group.items"
           :loading="loading"
           :row-key="(item: NetDev) => item.index"
@@ -1058,428 +1217,443 @@ onUnmounted(() => {
               selectedName === item.name ? 'is-selected' : undefined
           "
           :row-props="(item: NetDev) => ({ 'data-project': item.name })"
-          :scroll-x="1228"
+          :scroll-x="viewMode === 'network' ? 1228 : 678"
           size="small"
           :empty-text="t('network.settings.no_group_projects')"
         />
       </div>
-      <n-empty
-        v-if="!loading && !projects.length && Boolean(search)"
-        :description="t('network.settings.no_configured_projects')"
-      />
     </section>
 
-    <n-modal
-      :show="configOpen"
-      :mask-closable="false"
-      :close-on-esc="false"
-      @update:show="(show: boolean) => !show && requestCloseConfig()"
+    <ConfigModal
+      v-if="selected"
+      v-model:show="configOpen"
+      :show-switch="false"
+      width="var(--app-secondary-modal-width)"
+      :dirty="dirty"
+      :title="
+        t(
+          viewMode === 'network'
+            ? 'network.settings.configure_network_title'
+            : 'network.settings.configure_interface_title',
+          { name: selected.name },
+        )
+      "
+      @update:show="(show: boolean) => !show && updateUrl()"
     >
-      <n-card
-        v-if="selected"
-        class="network-settings__modal standard-config-modal"
-        :style="{
-          marginTop: 'var(--app-modal-top-offset)',
-          marginBottom: 'auto',
-        }"
-        :bordered="false"
-        closable
-        size="small"
-        content-style="min-height: 0; overflow: hidden; background: var(--app-surface-color)"
-        role="dialog"
-        aria-modal="true"
-        @close="requestCloseConfig"
+      <n-tabs
+        v-model:value="activeConfigTab"
+        type="line"
+        pane-class="network-settings__tab-pane"
       >
-        <template #header>
-          <span>{{
-            t("network.settings.configure_title", { name: selected.name })
-          }}</span>
-        </template>
-        <n-tabs
-          v-model:value="activeConfigTab"
-          type="line"
-          animated
-          pane-class="network-settings__tab-pane"
+        <n-tab-pane
+          v-if="viewMode === 'interface'"
+          name="general"
+          :tab="t('network.settings.tab_general')"
         >
-          <n-tab-pane name="general" :tab="t('network.settings.tab_general')">
-            <n-alert
-              v-if="!canWriteSelected"
-              type="warning"
-              :show-icon="false"
-              >{{
-                isManaged
-                  ? t("network.settings.managed_readonly")
-                  : t("network.settings.source_readonly")
-              }}</n-alert
+          <n-alert v-if="!canWriteSelected" type="warning" :show-icon="false">{{
+            isManaged
+              ? t("network.settings.managed_readonly")
+              : t("network.settings.source_readonly")
+          }}</n-alert>
+          <StandardSettingRow
+            :label="t('network.settings.enabled_state')"
+            control-width="auto"
+          >
+            <n-switch
+              v-model:value="draftEnabled"
+              :disabled="!canWriteSelected"
+              size="medium"
+            />
+          </StandardSettingRow>
+          <StandardSettingRow
+            :label="t('network.settings.boot')"
+            control-width="auto"
+          >
+            <n-switch
+              v-model:value="draftBoot"
+              :disabled="!canWriteSelected"
+              size="medium"
+            />
+          </StandardSettingRow>
+          <StandardSettingRow
+            v-if="selectedParentBridge"
+            :label="t('network.settings.member_bridge')"
+            control-width="auto"
+          >
+            <n-tag
+              size="small"
+              :type="interfaceStatusTagType(selectedParentBridge)"
+              :bordered="false"
             >
-            <StandardSettingRow
-              :label="t('network.settings.enabled_state')"
-              control-width="auto"
+              {{ selectedParentBridge.name }}
+            </n-tag>
+          </StandardSettingRow>
+          <StandardSettingRow
+            v-if="selectedParentBridge"
+            :label="t('network.settings.role')"
+            control-width="auto"
+          >
+            <n-tag
+              size="small"
+              :type="zoneTagType(effectiveZone(selected))"
+              :bordered="false"
             >
-              <n-switch
-                v-model:value="draftEnabled"
-                :disabled="!canWriteSelected"
-                size="medium"
-              />
+              {{ zoneLabel(effectiveZone(selected)) }} ·
+              {{ t("network.settings.inherited") }}
+            </n-tag>
+          </StandardSettingRow>
+          <StandardSettingRow v-else :label="t('network.settings.role')">
+            <n-select
+              v-model:value="draftRole"
+              :disabled="!canWriteSelected"
+              :options="[
+                { label: 'WAN', value: IfaceZoneType.wan },
+                { label: 'LAN', value: IfaceZoneType.lan },
+                {
+                  label: t('network.settings.unassigned'),
+                  value: IfaceZoneType.undefined,
+                },
+              ]"
+            />
+          </StandardSettingRow>
+          <template v-if="selected.dev_kind === 'bridge'">
+            <StandardSettingRow :label="t('network.settings.bridge_members')">
+              <n-flex vertical size="small">
+                <div class="network-settings__bridge-add">
+                  <n-select
+                    :value="childrenOf(selected).map((child) => child.index)"
+                    multiple
+                    filterable
+                    max-tag-count="responsive"
+                    :disabled="!canWriteSelected || operationLoading"
+                    :placeholder="t('network.settings.attach_bridge')"
+                    :options="bridgeMemberOptions"
+                    :render-tag="renderBridgeMemberTag"
+                    @update:value="updateBridgeMembers"
+                  />
+                </div>
+              </n-flex>
             </StandardSettingRow>
-            <StandardSettingRow
-              :label="t('network.settings.boot')"
-              control-width="auto"
-            >
-              <n-switch
-                v-model:value="draftBoot"
-                :disabled="!canWriteSelected"
-                size="medium"
-              />
-            </StandardSettingRow>
-            <StandardSettingRow :label="t('network.settings.role')">
-              <n-select
-                v-model:value="draftRole"
-                :disabled="!canWriteSelected"
-                :options="[
-                  { label: 'WAN', value: IfaceZoneType.wan },
-                  { label: 'LAN', value: IfaceZoneType.lan },
-                  {
-                    label: t('network.settings.unassigned'),
-                    value: IfaceZoneType.undefined,
-                  },
-                ]"
-              />
-            </StandardSettingRow>
-            <template v-if="selected.dev_kind === 'bridge'">
-              <h3 class="network-settings__section-title">
-                {{ t("network.settings.bridge_members") }}
-              </h3>
-              <div class="network-settings__bridge-add">
-                <n-select
-                  v-model:value="bridgeTarget"
-                  filterable
-                  clearable
-                  :placeholder="t('network.settings.attach_bridge')"
-                  :options="bridgeMemberOptions"
-                />
-                <n-button
-                  type="primary"
-                  :disabled="!canWriteSelected || bridgeTarget === null"
-                  @click="attachBridge"
-                  >{{ t("common.add") }}</n-button
-                >
-              </div>
-              <n-list v-if="childrenOf(selected).length">
-                <n-list-item
-                  v-for="child in childrenOf(selected)"
-                  :key="child.index"
-                >
-                  <span>{{ child.name }}</span>
-                  <template #suffix>
-                    <n-button
-                      size="small"
-                      :disabled="!canWriteSelected"
-                      @click="detach(child)"
-                      >{{ t("network.settings.detach") }}</n-button
-                    >
-                  </template>
-                </n-list-item>
-              </n-list>
-              <n-empty
-                v-else
-                size="small"
-                :description="t('network.settings.no_group_projects')"
-              />
-            </template>
-          </n-tab-pane>
+          </template>
+        </n-tab-pane>
 
-          <n-tab-pane
-            v-if="
-              hasService('ip_config') ||
+        <n-tab-pane
+          v-if="
+            viewMode === 'network' &&
+            (hasService('ip_config') ||
               hasService('dhcp_v4') ||
-              hasService('pppd')
-            "
-            name="ipv4"
-            :tab="t('network.settings.tab_ipv4')"
-            :display-directive="creatingNetwork ? 'show' : 'show:lazy'"
-          >
-            <IpConfigModal
-              v-if="hasService('ip_config')"
-              :show="true"
-              embedded
-              :ref="editorRef('ip_config')"
-              :zone="serviceDevice!.zone_type"
-              :iface_name="selected.name"
-              :preset-mode="
-                creatingNetwork ? IfaceIpMode.DHCPClient : undefined
-              "
-              :preset-default-router="creatingNetwork && firstWanPreset"
-              @refresh="afterSaved('ip_config')"
-              @dirty="markEditorDirty('ip_config')"
-            />
-            <DHCPv4ServiceEditModal
-              v-if="hasService('dhcp_v4')"
-              :show="true"
-              embedded
-              :ref="editorRef('dhcp_v4')"
-              :zone="serviceDevice!.zone_type"
-              :iface_name="selected.name"
-              @refresh="afterSaved('dhcp_v4')"
-              @dirty="markEditorDirty('dhcp_v4')"
-            />
-            <PPPDServiceListDrawer
-              v-if="hasService('pppd')"
-              :show="true"
-              presentation="embedded"
-              :attach_iface_name="selected.name"
-              @refresh="afterSaved('pppd')"
-            />
-          </n-tab-pane>
+              hasService('pppd'))
+          "
+          name="ipv4"
+          :tab="t('network.settings.tab_ipv4')"
+          :display-directive="creatingNetwork ? 'show' : 'show:lazy'"
+        >
+          <IpConfigModal
+            v-if="hasService('ip_config')"
+            :show="true"
+            embedded
+            :ref="editorRef('ip_config')"
+            :zone="serviceDevice!.zone_type"
+            :iface_name="selected.name"
+            :preset-mode="creatingNetwork ? IfaceIpMode.DHCPClient : undefined"
+            :preset-default-router="creatingNetwork && firstWanPreset"
+            @refresh="afterSaved('ip_config')"
+            @dirty="markEditorDirty('ip_config')"
+          />
+          <DHCPv4ServiceEditModal
+            v-if="hasService('dhcp_v4')"
+            :show="true"
+            embedded
+            :ref="editorRef('dhcp_v4')"
+            :zone="serviceDevice!.zone_type"
+            :iface_name="selected.name"
+            @refresh="afterSaved('dhcp_v4')"
+            @dirty="markEditorDirty('dhcp_v4')"
+          />
+          <PPPDServiceListDrawer
+            v-if="hasService('pppd')"
+            :show="true"
+            presentation="embedded"
+            :attach_iface_name="selected.name"
+            @refresh="afterSaved('pppd')"
+          />
+        </n-tab-pane>
 
-          <n-tab-pane
-            v-if="hasService('ipv6pd') || hasService('lan_ipv6')"
-            name="ipv6"
-            :tab="t('network.settings.tab_ipv6')"
-          >
-            <IPv6PDEditModal
-              v-if="hasService('ipv6pd')"
-              :show="true"
-              embedded
-              :ref="editorRef('ipv6pd')"
-              :zone="serviceDevice!.zone_type"
-              :iface_name="selected.name"
-              :mac="selected.mac ?? null"
-              @refresh="afterSaved('ipv6pd')"
-              @dirty="markEditorDirty('ipv6pd')"
-            />
-            <LanIPv6EditModal
-              v-if="hasService('lan_ipv6')"
-              :show="true"
-              embedded
-              :ref="editorRef('lan_ipv6')"
-              :zone="serviceDevice!.zone_type"
-              :iface_name="selected.name"
-              :mac="selected.mac"
-              @refresh="afterSaved('lan_ipv6')"
-              @dirty="markEditorDirty('lan_ipv6')"
-            />
-          </n-tab-pane>
+        <n-tab-pane
+          v-if="
+            viewMode === 'network' &&
+            (hasService('ipv6pd') || hasService('lan_ipv6'))
+          "
+          name="ipv6"
+          :tab="t('network.settings.tab_ipv6')"
+        >
+          <IPv6PDEditModal
+            v-if="hasService('ipv6pd')"
+            :show="true"
+            embedded
+            :ref="editorRef('ipv6pd')"
+            :zone="serviceDevice!.zone_type"
+            :iface_name="selected.name"
+            :mac="selected.mac ?? null"
+            @refresh="afterSaved('ipv6pd')"
+            @dirty="markEditorDirty('ipv6pd')"
+          />
+          <LanIPv6EditModal
+            v-if="hasService('lan_ipv6')"
+            :show="true"
+            embedded
+            :ref="editorRef('lan_ipv6')"
+            :zone="serviceDevice!.zone_type"
+            :iface_name="selected.name"
+            :mac="selected.mac"
+            @refresh="afterSaved('lan_ipv6')"
+            @dirty="markEditorDirty('lan_ipv6')"
+          />
+        </n-tab-pane>
 
-          <n-tab-pane
-            v-if="
-              hasService('nat') ||
+        <n-tab-pane
+          v-if="
+            viewMode === 'network' &&
+            (hasService('nat') ||
               hasService('mss_clamp') ||
               hasService('firewall') ||
               hasService('route_wan') ||
-              hasService('route_lan')
+              hasService('route_lan'))
+          "
+          name="security"
+          :tab="t('network.settings.tab_security')"
+          :display-directive="creatingNetwork ? 'show' : 'show:lazy'"
+        >
+          <NATEditModal
+            v-if="hasService('nat')"
+            :show="true"
+            embedded
+            :ref="editorRef('nat')"
+            :zone="serviceDevice!.zone_type"
+            :iface_name="selected.name"
+            @refresh="afterSaved('nat')"
+            @dirty="markEditorDirty('nat')"
+          />
+          <MSSClampServiceEditModal
+            v-if="hasService('mss_clamp')"
+            :show="true"
+            embedded
+            :ref="editorRef('mss_clamp')"
+            :iface_name="selected.name"
+            @refresh="afterSaved('mss_clamp')"
+            @dirty="markEditorDirty('mss_clamp')"
+          />
+          <FirewallServiceEditModal
+            v-if="hasService('firewall')"
+            :show="true"
+            embedded
+            :ref="editorRef('firewall')"
+            :zone="serviceDevice!.zone_type"
+            :iface_name="selected.name"
+            @refresh="afterSaved('firewall')"
+            @dirty="markEditorDirty('firewall')"
+          />
+          <RouteWanServiceEditModal
+            v-if="hasService('route_wan')"
+            :show="true"
+            embedded
+            :ref="editorRef('route_wan')"
+            :zone="serviceDevice!.zone_type"
+            :iface_name="selected.name"
+            @refresh="afterSaved('route_wan')"
+            @dirty="markEditorDirty('route_wan')"
+          />
+          <RouteLanServiceEditModal
+            v-if="hasService('route_lan')"
+            :show="true"
+            embedded
+            :ref="editorRef('route_lan')"
+            :iface_name="selected.name"
+            @refresh="afterSaved('route_lan')"
+            @dirty="markEditorDirty('route_lan')"
+          />
+        </n-tab-pane>
+
+        <n-tab-pane
+          v-if="viewMode === 'interface'"
+          name="cpu"
+          :tab="t('network.settings.cpu_balance')"
+        >
+          <IfaceCpuSoftBalance
+            ref="cpuEditor"
+            :show="true"
+            embedded
+            :iface_name="selected.name"
+            @dirty="cpuDirty = true"
+          />
+        </n-tab-pane>
+
+        <n-tab-pane
+          v-if="viewMode === 'interface' && selected.wifi_info"
+          name="wifi"
+          :tab="t('network.settings.wifi_mode')"
+        >
+          <StandardSettingRow
+            :label="t('network.settings.current_wifi_mode')"
+            control-width="auto"
+          >
+            <n-tag size="small" :bordered="false" type="info">
+              {{ wifiModeLabel(savedWifiMode) }}
+            </n-tag>
+          </StandardSettingRow>
+          <StandardSettingRow :label="t('network.settings.switch_wifi_mode')">
+            <n-select
+              v-model:value="draftWifiMode"
+              :options="[
+                { label: t('wifi.disabled_mode'), value: WifiMode.Undefined },
+                { label: t('wifi.client_mode'), value: WifiMode.Client },
+                { label: t('wifi.ap_mode'), value: WifiMode.AP },
+              ]"
+            />
+          </StandardSettingRow>
+        </n-tab-pane>
+
+        <n-tab-pane
+          v-if="viewMode === 'network' && hasService('wifi')"
+          name="wifi"
+          :tab="t('network.settings.wifi')"
+        >
+          <WifiServiceEditModal
+            :show="true"
+            embedded
+            :ref="editorRef('wifi')"
+            :zone="serviceDevice!.zone_type"
+            :iface_name="selected.name"
+            @refresh="afterSaved('wifi')"
+            @dirty="markEditorDirty('wifi')"
+          />
+        </n-tab-pane>
+      </n-tabs>
+      <template #footer>
+        <n-flex class="standard-modal-footer--split" justify="space-between">
+          <n-button
+            v-if="viewMode === 'interface' && selected.dev_kind === 'bridge'"
+            type="error"
+            :disabled="!canWriteSelected"
+            @click="removeBridge"
+            >{{ t("network.settings.delete_bridge") }}</n-button
+          >
+          <n-button
+            v-else-if="
+              viewMode === 'network' &&
+              (selected.zone_type === IfaceZoneType.wan ||
+                selected.zone_type === IfaceZoneType.lan)
             "
-            name="security"
-            :tab="t('network.settings.tab_security')"
-            :display-directive="creatingNetwork ? 'show' : 'show:lazy'"
+            type="error"
+            :disabled="!canWriteSelected"
+            @click="removeNetworkProject"
+            >{{ t("common.delete") }}</n-button
           >
-            <NATEditModal
-              v-if="hasService('nat')"
-              :show="true"
-              embedded
-              :ref="editorRef('nat')"
-              :zone="serviceDevice!.zone_type"
-              :iface_name="selected.name"
-              @refresh="afterSaved('nat')"
-              @dirty="markEditorDirty('nat')"
-            />
-            <MSSClampServiceEditModal
-              v-if="hasService('mss_clamp')"
-              :show="true"
-              embedded
-              :ref="editorRef('mss_clamp')"
-              :iface_name="selected.name"
-              @refresh="afterSaved('mss_clamp')"
-              @dirty="markEditorDirty('mss_clamp')"
-            />
-            <FirewallServiceEditModal
-              v-if="hasService('firewall')"
-              :show="true"
-              embedded
-              :ref="editorRef('firewall')"
-              :zone="serviceDevice!.zone_type"
-              :iface_name="selected.name"
-              @refresh="afterSaved('firewall')"
-              @dirty="markEditorDirty('firewall')"
-            />
-            <RouteWanServiceEditModal
-              v-if="hasService('route_wan')"
-              :show="true"
-              embedded
-              :ref="editorRef('route_wan')"
-              :zone="serviceDevice!.zone_type"
-              :iface_name="selected.name"
-              @refresh="afterSaved('route_wan')"
-              @dirty="markEditorDirty('route_wan')"
-            />
-            <RouteLanServiceEditModal
-              v-if="hasService('route_lan')"
-              :show="true"
-              embedded
-              :ref="editorRef('route_lan')"
-              :iface_name="selected.name"
-              @refresh="afterSaved('route_lan')"
-              @dirty="markEditorDirty('route_lan')"
-            />
-          </n-tab-pane>
-
-          <n-tab-pane name="cpu" :tab="t('network.settings.cpu_balance')">
-            <IfaceCpuSoftBalance
-              ref="cpuEditor"
-              :show="true"
-              embedded
-              :iface_name="selected.name"
-              @dirty="cpuDirty = true"
-            />
-          </n-tab-pane>
-
-          <n-tab-pane
-            v-if="selected.wifi_info"
-            name="wifi"
-            :tab="t('network.settings.wifi_mode')"
-          >
-            <StandardSettingRow :label="t('network.settings.wifi_mode')">
-              <WifiModeChange
-                :iface_name="selected.name"
-                :wifi_info="selected.wifi_mode"
-                :show_switch="new ServiceExhibitSwitch(serviceDevice!)"
-                @refresh="refresh"
-              />
-            </StandardSettingRow>
-            <WifiServiceEditModal
-              v-if="hasService('wifi')"
-              :show="true"
-              embedded
-              :ref="editorRef('wifi')"
-              :zone="serviceDevice!.zone_type"
-              :iface_name="selected.name"
-              @refresh="afterSaved('wifi')"
-              @dirty="markEditorDirty('wifi')"
-            />
-          </n-tab-pane>
-        </n-tabs>
-        <template #footer>
-          <n-flex justify="space-between">
-            <n-button
-              v-if="selected.dev_kind === 'bridge'"
-              type="error"
-              secondary
-              :disabled="!canWriteSelected"
-              @click="removeBridge"
-              >{{ t("network.settings.delete_bridge") }}</n-button
-            >
-            <n-button
-              v-else-if="
-                selected.zone_type === IfaceZoneType.wan ||
-                selected.zone_type === IfaceZoneType.lan
-              "
-              type="error"
-              :disabled="!canWriteSelected"
-              @click="removeNetworkProject"
-              >{{ t("common.delete") }}</n-button
-            >
-            <span v-else />
-            <n-flex>
-              <n-button @click="requestCloseConfig">{{
-                t("common.cancel")
-              }}</n-button>
-              <n-button
-                type="primary"
-                :loading="operationLoading"
-                :disabled="!canWriteSelected || !dirty"
-                @click="requestSaveConfiguration"
-                >{{ t("common.save") }}</n-button
-              >
-            </n-flex>
-          </n-flex>
-        </template>
-      </n-card>
-    </n-modal>
-
-    <n-modal v-model:show="networkCreateOpen" :mask-closable="false">
-      <n-card
-        class="network-settings__create-modal"
-        :title="
-          t(
-            networkCreateRole === IfaceZoneType.wan
-              ? 'network.settings.create_wan'
-              : 'network.settings.create_lan',
-          )
-        "
-        :bordered="false"
-        closable
-        size="small"
-        @close="networkCreateOpen = false"
-      >
-        <StandardSettingRow :label="t('network.settings.select_interface')">
-          <n-select
-            v-model:value="networkCreateIface"
-            filterable
-            :options="createMemberOptions"
-            :placeholder="t('network.settings.select_interface')"
-          >
-            <template #empty>
-              <n-empty
-                size="small"
-                :description="t('network.settings.no_available_interface')"
-              />
-            </template>
-          </n-select>
-        </StandardSettingRow>
-        <template #footer>
-          <n-flex justify="space-between">
-            <n-button @click="networkCreateOpen = false">{{
+          <span v-else />
+          <n-flex>
+            <n-button @click="requestCloseConfig">{{
               t("common.cancel")
             }}</n-button>
             <n-button
               type="primary"
-              :disabled="!networkCreateIface"
-              @click="continueCreateNetwork"
-              >{{ t("common.next") }}</n-button
+              :loading="operationLoading"
+              :disabled="!canWriteSelected || !dirty"
+              @click="requestSaveConfiguration"
+              >{{ t("common.save") }}</n-button
             >
           </n-flex>
-        </template>
-      </n-card>
-    </n-modal>
+        </n-flex>
+      </template>
+    </ConfigModal>
 
-    <n-modal v-model:show="createOpen" :mask-closable="false"
-      ><n-card
-        class="network-settings__modal"
-        :title="t('network.settings.create_bridge')"
-        :bordered="false"
-        closable
-        size="small"
-        @close="createOpen = false"
-        ><n-form label-placement="left" label-width="140"
-          ><n-form-item :label="t('network.settings.bridge_name')"
-            ><n-input v-model:value="createName" /></n-form-item
-          ><n-form-item :label="t('network.settings.bridge_members')"
-            ><n-select
-              v-model:value="createMembers"
-              multiple
-              filterable
-              to="body"
-              :options="createMemberOptions"
-            /><template #feedback>{{
-              t("network.settings.bridge_member_hint")
-            }}</template></n-form-item
-          ></n-form
-        ><template #footer
-          ><n-flex justify="space-between"
-            ><n-button @click="createOpen = false">{{
-              t("common.cancel")
-            }}</n-button
-            ><n-button
-              type="primary"
-              :loading="operationLoading"
-              :disabled="!createName.trim()"
-              @click="createBridge"
-              >{{ t("common.create") }}</n-button
-            ></n-flex
-          ></template
-        ></n-card
-      ></n-modal
+    <ConfigModal
+      v-model:show="networkCreateOpen"
+      :show-switch="false"
+      width="var(--app-compact-modal-width)"
+      :title="
+        t(
+          networkCreateRole === IfaceZoneType.wan
+            ? 'network.settings.create_wan'
+            : 'network.settings.create_lan',
+        )
+      "
     >
+      <StandardSettingRow :label="t('network.settings.select_interface')">
+        <n-select
+          v-model:value="networkCreateIface"
+          filterable
+          :options="createMemberOptions"
+          :placeholder="t('network.settings.select_interface')"
+        >
+          <template #empty>
+            <n-empty
+              size="small"
+              :description="t('network.settings.no_available_interface')"
+            />
+          </template>
+        </n-select>
+      </StandardSettingRow>
+      <template #footer>
+        <n-flex justify="space-between">
+          <n-button @click="networkCreateOpen = false">{{
+            t("common.cancel")
+          }}</n-button>
+          <n-button
+            type="primary"
+            :disabled="!networkCreateIface"
+            @click="continueCreateNetwork"
+            >{{ t("common.next") }}</n-button
+          >
+        </n-flex>
+      </template>
+    </ConfigModal>
+
+    <ConfigModal
+      v-model:show="createOpen"
+      :show-switch="false"
+      width="var(--app-compact-modal-width)"
+      :title="t('network.settings.create_bridge')"
+    >
+      <n-form>
+        <StandardSettingRow :label="t('network.settings.bridge_name')">
+          <n-input v-model:value="createName" />
+        </StandardSettingRow>
+        <StandardSettingRow>
+          <template #label>
+            <Notice>
+              {{ t("network.settings.bridge_members") }}
+              <template #msg>
+                {{ t("network.settings.bridge_member_hint") }}
+              </template>
+            </Notice>
+          </template>
+          <n-select
+            v-model:value="createMembers"
+            class="network-settings__bridge-add"
+            multiple
+            filterable
+            max-tag-count="responsive"
+            :options="createMemberOptions"
+            :render-tag="renderBridgeMemberTag"
+          />
+        </StandardSettingRow>
+      </n-form>
+      <template #footer>
+        <n-flex justify="space-between">
+          <n-button @click="createOpen = false">
+            {{ t("common.cancel") }}
+          </n-button>
+          <n-button
+            type="primary"
+            :loading="operationLoading"
+            :disabled="!createName.trim()"
+            @click="createBridge"
+          >
+            {{ t("common.create") }}
+          </n-button>
+        </n-flex>
+      </template>
+    </ConfigModal>
 
     <IfaceDisableGuardModal
       v-if="selected"
@@ -1504,6 +1678,11 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 16px;
 }
+.network-settings__view-tabs {
+  width: fit-content;
+  min-width: 240px;
+  max-width: 100%;
+}
 .network-settings__divider {
   margin: 0;
 }
@@ -1512,17 +1691,18 @@ onUnmounted(() => {
 }
 .network-settings__topology {
   flex: none;
-  min-width: 100%;
-  min-height: 400px;
+  width: calc(
+    100% - var(--app-data-table-frame-inset) - var(--app-data-table-frame-inset)
+  );
+  margin-inline: var(--app-data-table-frame-inset);
+  border-radius: var(--app-radius-surface);
+  box-shadow: 0 1px 4px var(--app-shadow-color);
 }
 .network-settings__projects {
   height: max-content;
 }
 .network-settings__toolbar {
   flex: none;
-}
-.network-settings__toolbar > .n-input {
-  width: min(320px, 100%);
 }
 .network-settings__project-group + .network-settings__project-group {
   margin-top: 18px;
@@ -1576,10 +1756,49 @@ onUnmounted(() => {
   font-size: var(--app-font-size-body);
 }
 .network-settings__bridge-add {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--app-space-sm);
-  margin-bottom: var(--app-space-sm);
+  width: 100%;
+}
+.network-settings__bridge-add :deep(.n-base-selection-tags) {
+  --n-padding-multiple: 5px 26px 5px 5px !important;
+  flex-wrap: nowrap;
+  height: var(--n-height);
+  overflow: hidden;
+}
+.network-settings__bridge-add :deep(.n-base-selection-tag-wrapper) {
+  padding-bottom: 0;
+}
+.network-settings__bridge-add :deep(.n-base-selection-input-tag) {
+  height: 24px;
+  margin-bottom: 0;
+  line-height: 24px;
+}
+.network-settings__interface-status-tag--truncate {
+  max-width: 120px;
+}
+.network-settings__interface-status-tag--truncate :deep(.n-tag__content) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.network-settings__bridge-add
+  :deep(
+    .n-base-selection-tag-wrapper .n-tag:not(.n-tag--closable) .n-tag__content
+  ) {
+  font-size: 0;
+}
+.network-settings__bridge-add
+  :deep(
+    .n-base-selection-tag-wrapper
+      .n-tag:not(.n-tag--closable)
+      .n-tag__content::after
+  ) {
+  content: "…";
+  font-size: var(--app-font-size-caption);
+}
+.network-settings__bridge-add
+  :deep(.n-base-selection-tag-wrapper .n-tag:not(.n-tag--closable)) {
+  --n-height: 24px !important;
 }
 @media (max-width: 760px) {
   .network-settings__header,
@@ -1587,8 +1806,7 @@ onUnmounted(() => {
     align-items: stretch;
     flex-direction: column;
   }
-  .network-settings__header > div:last-child,
-  .network-settings__toolbar > .n-input {
+  .network-settings__header > div:last-child {
     width: 100%;
   }
   .network-settings__modal :deep(.n-form-item) {

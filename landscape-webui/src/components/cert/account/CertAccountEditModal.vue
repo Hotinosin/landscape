@@ -3,13 +3,15 @@ import { computed, ref } from "vue";
 import type { CertAccountConfig } from "@landscape-router/types/api/schemas";
 import { get_cert_account, push_cert_account } from "@/api/cert/account";
 import { useI18n } from "vue-i18n";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
 type Props = {
   rule_id: string | null;
+  width?: string;
 };
 
 const props = defineProps<Props>();
-const emit = defineEmits(["refresh"]);
+const emit = defineEmits(["refresh", "created"]);
 const { t } = useI18n();
 
 const show = defineModel<boolean>("show", { required: true });
@@ -138,8 +140,9 @@ async function save() {
   try {
     await formRef.value?.validate();
     commit_spin.value = true;
-    await push_cert_account(rule.value);
+    const created = await push_cert_account(rule.value);
     show.value = false;
+    emit("created", created);
     emit("refresh");
   } finally {
     commit_spin.value = false;
@@ -148,15 +151,13 @@ async function save() {
 </script>
 
 <template>
-  <n-modal
-    :auto-focus="false"
+  <ConfigModal
     v-model:show="show"
-    style="width: var(--app-secondary-modal-width)"
-    class="custom-card"
-    preset="card"
+    :show-switch="false"
+    :dirty="isModified"
+    :width="props.width ?? 'var(--app-secondary-modal-width)'"
     :title="t('cert.account_edit_title')"
     @after-enter="enter"
-    :bordered="false"
   >
     <n-form
       v-if="rule"
@@ -219,13 +220,18 @@ async function save() {
       </n-form-item>
     </n-form>
 
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
-        <n-button :loading="commit_spin" @click="save" :disabled="!isModified">
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
+        <n-button
+          type="primary"
+          :loading="commit_spin"
+          @click="save"
+          :disabled="!isModified"
+        >
           {{ t("common.save") }}
         </n-button>
       </n-flex>
     </template>
-  </n-modal>
+  </ConfigModal>
 </template>

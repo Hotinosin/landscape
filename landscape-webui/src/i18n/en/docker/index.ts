@@ -3,7 +3,7 @@ export default {
     title: "Run Image: {image}",
     container_name: "Container Name",
     container_name_placeholder: "Enter container name (optional)",
-    flow_egress: "Use as Flow Egress",
+    flow_egress: "Use as Flow Policy Egress",
     restart_policy: "Restart Policy",
     entrypoint: "Entrypoint",
     entrypoint_placeholder: "Enter entrypoint (optional)",

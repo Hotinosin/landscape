@@ -90,31 +90,14 @@ const columns = computed<DataTableColumns<TableItem>>(() => [
 </script>
 
 <template>
-  <n-card
-    style="min-height: 224px"
-    content-style="display: flex"
-    size="small"
-    :hoverable="true"
-  >
-    <template #header>
-      {{ props.iface_name }}
-    </template>
-    <!-- {{ config }} -->
+  <div style="width: 100%">
+    <n-divider title-placement="left">{{ props.iface_name }}</n-divider>
     <StandardDataTable
-      v-if="info.length > 0"
       :columns="columns"
       :data="info"
       size="small"
       :row-key="(row) => row.ip"
       :scroll-x="680"
     />
-    <n-flex
-      align="center"
-      justify="center"
-      style="height: 190px; flex: 1"
-      v-else
-    >
-      <n-empty :description="t('lan_ipv6.neighbor_count_unknown')"> </n-empty>
-    </n-flex>
-  </n-card>
+  </div>
 </template>

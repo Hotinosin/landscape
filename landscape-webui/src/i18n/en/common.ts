@@ -65,6 +65,9 @@ export default {
   enable: "Enable",
   disable: "Disable",
   cancel: "Cancel",
+  unsaved_title: "Discard unsaved changes?",
+  unsaved_content: "The current settings have unsaved changes.",
+  discard: "Discard changes",
   next: "Next",
   save: "Save",
   update: "Update",
@@ -82,6 +85,9 @@ export default {
   paste_replace_success: "Replaced from clipboard",
   paste_append_success: "Appended from clipboard",
   paste_failed: "Paste failed. Check the clipboard content.",
+  paste_confirm_title: "Confirm Paste Import",
+  paste_confirm_description:
+    "Import {count} configuration item(s). Review the content below:",
 
   username: "Username",
   password: "Password",

@@ -34,7 +34,6 @@ const displayValue = computed(() =>
   background: transparent;
   color: inherit;
   font: inherit;
-  font-family: var(--font-mono);
   white-space: nowrap;
   cursor: pointer;
   transition:

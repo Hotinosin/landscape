@@ -10,6 +10,9 @@ import { get_cert, push_cert } from "@/api/cert/order";
 import { get_cert_accounts } from "@/api/cert/account";
 import { get_dns_provider_profiles } from "@/api/domain/provider_profile";
 import { useI18n } from "vue-i18n";
+import CertAccountEditModal from "@/components/cert/account/CertAccountEditModal.vue";
+import DnsProviderQuickCreateModal from "@/components/domain/DnsProviderQuickCreateModal.vue";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
 type Props = {
   rule_id: string | null;
@@ -26,6 +29,10 @@ const commit_spin = ref(false);
 const formRef = ref();
 const accounts = ref<CertAccountConfig[]>([]);
 const providerProfiles = ref<DnsProviderProfile[]>([]);
+const showAccountCreate = ref(false);
+const showProviderCreate = ref(false);
+const CREATE_ACCOUNT_OPTION = "__create_acme_account__";
+const CREATE_PROVIDER_OPTION = "__create_dns_provider__";
 
 const isModified = computed(() => {
   return JSON.stringify(rule.value) !== origin_json.value;
@@ -104,19 +111,47 @@ function setAcmeField(key: string, val: any) {
   (rule.value.cert_type as any)[key] = val;
 }
 
-const account_options = computed(() =>
-  accounts.value.map((a) => ({
-    label: a.name,
-    value: a.id!,
-  })),
-);
+const account_options = computed(() => [
+  ...accounts.value.map((a) => ({ label: a.name, value: a.id! })),
+  { label: `+ ${t("cert.add_account")}`, value: CREATE_ACCOUNT_OPTION },
+]);
 
-const provider_profile_options = computed(() =>
-  providerProfiles.value.map((profile) => ({
+const provider_profile_options = computed(() => [
+  ...providerProfiles.value.map((profile) => ({
     label: profile.name,
     value: profile.id!,
   })),
-);
+  {
+    label: `+ ${t("dns_provider.add_profile")}`,
+    value: CREATE_PROVIDER_OPTION,
+  },
+]);
+
+function onAccountChange(value: string) {
+  if (value === CREATE_ACCOUNT_OPTION) {
+    showAccountCreate.value = true;
+    return;
+  }
+  setAcmeField("account_id", value);
+}
+
+function onProviderChange(value: string) {
+  if (value === CREATE_PROVIDER_OPTION) {
+    showProviderCreate.value = true;
+    return;
+  }
+  setDnsProviderProfileId(value);
+}
+
+async function handleAccountCreated(created: CertAccountConfig) {
+  accounts.value = await get_cert_accounts();
+  if (created.id) setAcmeField("account_id", created.id);
+}
+
+async function handleProviderCreated(created: DnsProviderProfile) {
+  providerProfiles.value = await get_dns_provider_profiles();
+  if (created.id) setDnsProviderProfileId(created.id);
+}
 
 const challenge_options = [{ label: "DNS-01", value: "dns" }];
 
@@ -291,15 +326,13 @@ async function save() {
 </script>
 
 <template>
-  <n-modal
-    :auto-focus="false"
+  <ConfigModal
     v-model:show="show"
-    style="width: var(--app-secondary-modal-width)"
-    class="custom-card"
-    preset="card"
+    :show-switch="false"
+    width="var(--app-secondary-modal-width)"
     :title="t('cert.cert_edit_title')"
+    :dirty="isModified"
     @after-enter="enter"
-    :bordered="false"
   >
     <n-form
       v-if="rule"
@@ -367,7 +400,7 @@ async function save() {
         <n-form-item :label="t('cert.acme_account')">
           <n-select
             :value="rule.cert_type.account_id"
-            @update:value="(v: string) => setAcmeField('account_id', v)"
+            @update:value="onAccountChange"
             :options="account_options"
             :placeholder="t('cert.acme_account_required')"
           />
@@ -404,7 +437,7 @@ async function save() {
               :value="dnsProviderProfileId"
               :options="provider_profile_options"
               :placeholder="t('dns_provider.provider_profile_required')"
-              @update:value="setDnsProviderProfileId"
+              @update:value="onProviderChange"
             />
           </n-form-item>
         </template>
@@ -490,5 +523,16 @@ async function save() {
         </n-button>
       </n-flex>
     </template>
-  </n-modal>
+  </ConfigModal>
+  <CertAccountEditModal
+    v-model:show="showAccountCreate"
+    :rule_id="null"
+    width="var(--app-tertiary-modal-width)"
+    @created="handleAccountCreated"
+  />
+  <DnsProviderQuickCreateModal
+    v-model:show="showProviderCreate"
+    width="var(--app-tertiary-modal-width)"
+    @created="handleProviderCreated"
+  />
 </template>

@@ -27,6 +27,7 @@ export default {
     online_24h_tip_1: "最后一个是最近一小时检查时是否在线",
     online_24h_tip_2: "定期扫描, 所以新分配的 IP 可能最近一小时显示为不在线",
     actions: "操作",
+    add_device: "添加",
     static_assigned: "静态分配",
     unknown: "未知",
   },

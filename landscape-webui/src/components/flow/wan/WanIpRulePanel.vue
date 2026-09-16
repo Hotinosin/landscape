@@ -14,10 +14,7 @@ import {
   get_flow_dst_ip_rules,
   push_many_dst_ip_rule,
 } from "@/api/dst_ip_rule";
-import {
-  copy_context_to_clipboard,
-  read_context_from_clipboard,
-} from "@/lib/common";
+import { copy_context_to_clipboard } from "@/lib/common";
 import { Add, Copy, Paste } from "@vicons/carbon";
 
 const props = withDefaults(
@@ -76,9 +73,8 @@ async function exportConfig() {
   );
 }
 
-async function importRules() {
+async function importRules(imported: WanIpRuleConfig[]) {
   try {
-    const imported = JSON.parse(await read_context_from_clipboard());
     for (const rule of imported) rule.flow_id = props.flow_id;
     await push_many_dst_ip_rule(imported);
     message.success("Import Success");
@@ -99,7 +95,7 @@ watch(() => props.flow_id, readRules);
 <template>
   <n-spin :show="loading">
     <n-flex vertical class="rule-panel">
-      <n-flex>
+      <n-flex class="standard-list-align">
         <n-button type="primary" @click="showCreateModal = true">
           <template #icon
             ><n-icon><Add /></n-icon
@@ -112,7 +108,7 @@ watch(() => props.flow_id, readRules);
           ></template>
           {{ t("common.copy") }}
         </n-button>
-        <ConfirmModal @positive-click="importRules">
+        <ClipboardImportModal :on-confirm="importRules">
           <template #trigger>
             <n-button>
               <template #icon
@@ -122,7 +118,7 @@ watch(() => props.flow_id, readRules);
             </n-button>
           </template>
           {{ t("flow.wan_rule_drawer.confirm_import") }}
-        </ConfirmModal>
+        </ClipboardImportModal>
       </n-flex>
       <n-scrollbar class="rule-list">
         <StandardDataTable
@@ -145,11 +141,7 @@ watch(() => props.flow_id, readRules);
 </template>
 
 <style scoped>
-.rule-panel {
-  height: 520px;
-}
 .rule-list {
-  flex: 1;
-  min-height: 0;
+  max-height: min(440px, calc(100vh - 300px));
 }
 </style>

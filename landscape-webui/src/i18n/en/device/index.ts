@@ -3,10 +3,10 @@ export default {
   edit_title: "Edit Device Binding",
   add_title: "Add Device Binding",
 
-  name: "Display Name",
+  name: "Name",
   actions: "Actions",
   name_placeholder: "e.g. My phone",
-  name_required: "Please enter a display name",
+  name_required: "Please enter a name",
 
   hostname: "Hostname",
   hostname_placeholder: "e.g. my-device",

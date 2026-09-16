@@ -13,6 +13,7 @@ import RouteWanServiceEditModal from "@/components/route/wan/RouteWanServiceEdit
 import WifiModeChange from "@/components/wifi/WifiModeChange.vue";
 import WifiServiceEditModal from "@/components/wifi/WifiServiceEditModal.vue";
 import CarrierStatusDot from "@/components/topology/CarrierStatusDot.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import { Link } from "@vicons/carbon";
 import { useThemeVars } from "naive-ui";
 import { changeColor } from "seemly";
@@ -359,7 +360,7 @@ const node_style = computed(() => ({
           class="topology-node__handle"
         />
 
-        <n-popover :disabled="!summary" trigger="hover" placement="top">
+        <n-popover trigger="hover" placement="top" style="width: 210px">
           <template #trigger>
             <div class="topology-node__card">
               <div class="topology-node__title-row">
@@ -442,26 +443,50 @@ const node_style = computed(() => ({
               </div>
             </div>
           </template>
-          <n-descriptions label-placement="left" :column="1" size="small">
-            <n-descriptions-item :label="t('topology.panel.ifindex')">
-              {{ node.index }}
-            </n-descriptions-item>
-            <n-descriptions-item :label="t('topology.panel.boot')">
-              {{
-                t(
-                  node.enable_in_boot
-                    ? "topology.panel.yes"
-                    : "topology.panel.no",
-                )
-              }}
-            </n-descriptions-item>
-            <n-descriptions-item :label="t('topology.node.perm_mac')">
-              <MacAddress :value="node.perm_mac" empty-text="N/A" />
-            </n-descriptions-item>
-            <n-descriptions-item :label="t('topology.panel.peer_link')">
-              {{ displayValue(node.peer_link_id) }}
-            </n-descriptions-item>
-          </n-descriptions>
+          <div class="topology-node__details">
+            <StandardSettingRow
+              :label="t('topology.panel.ifindex')"
+              control-width="auto"
+            >
+              <span>
+                {{ node.index }}
+              </span>
+            </StandardSettingRow>
+            <StandardSettingRow
+              :label="t('topology.panel.boot')"
+              control-width="auto"
+            >
+              <n-tag
+                size="small"
+                :type="node.enable_in_boot ? 'success' : 'error'"
+                :bordered="false"
+              >
+                {{
+                  t(
+                    node.enable_in_boot
+                      ? "topology.panel.boot_enabled"
+                      : "topology.panel.boot_disabled",
+                  )
+                }}
+              </n-tag>
+            </StandardSettingRow>
+            <StandardSettingRow
+              :label="t('topology.node.perm_mac')"
+              control-width="auto"
+            >
+              <span>
+                <MacAddress :value="node.perm_mac" empty-text="N/A" />
+              </span>
+            </StandardSettingRow>
+            <StandardSettingRow
+              :label="t('topology.panel.peer_link')"
+              control-width="auto"
+            >
+              <span>
+                {{ displayValue(node.peer_link_id) }}
+              </span>
+            </StandardSettingRow>
+          </div>
         </n-popover>
 
         <Handle
@@ -597,6 +622,10 @@ const node_style = computed(() => ({
   flex-direction: column;
   gap: var(--app-space-sm);
   box-sizing: border-box;
+}
+
+.topology-node__details :deep(.standard-setting-row:last-child) {
+  margin-bottom: 0;
 }
 
 .topology-node__card-shell {

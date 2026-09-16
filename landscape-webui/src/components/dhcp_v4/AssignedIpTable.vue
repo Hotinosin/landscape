@@ -20,6 +20,7 @@ type Props = {
   arp_info: ArpScanInfo[];
   info: DHCPv4OfferInfo;
   iface_name: string;
+  showTitle?: boolean;
 };
 
 interface ArpInfo {
@@ -27,7 +28,7 @@ interface ArpInfo {
   ip_status: boolean[];
 }
 
-const props = withDefaults(defineProps<Props>(), {});
+const props = withDefaults(defineProps<Props>(), { showTitle: true });
 
 // MacAddr is typed as string[] in ORVAL schema but serialized as string at runtime
 function mac_as_string(mac: unknown): string {
@@ -265,7 +266,9 @@ const columns = computed<DataTableColumns<AssignedIpRow>>(() => [
   <!-- {{ arp_ip_map }} -->
   <!-- {{ not_current_round_ips }} -->
   <section class="assigned-list-section">
-    <n-text strong class="assigned-list-title">{{ iface_name }}</n-text>
+    <n-text v-if="showTitle" strong class="assigned-list-title standard-list-title">{{
+      iface_name
+    }}</n-text>
     <StandardDataTable
       v-if="info"
       :columns="columns"

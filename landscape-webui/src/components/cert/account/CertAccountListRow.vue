@@ -12,7 +12,14 @@ import { useI18n } from "vue-i18n";
 
 type Props = {
   rule: CertAccountConfig;
-  cell: "name" | "provider" | "email" | "status" | "staging" | "actions";
+  cell:
+    | "name"
+    | "provider"
+    | "email"
+    | "status"
+    | "staging"
+    | "accountActions"
+    | "actions";
 };
 
 const props = defineProps<Props>();
@@ -128,7 +135,7 @@ async function deactivate() {
       rule.use_staging ? t("common.enable") : t("common.disable")
     }}</n-tag>
   </template>
-  <template v-else>
+  <template v-else-if="cell === 'accountActions'">
     <n-flex size="small" :wrap="false">
       <n-button
         v-if="rule.status === 'unregistered' || rule.status === 'error'"
@@ -156,6 +163,10 @@ async function deactivate() {
           }}</n-button></template
         >{{ t("cert.confirm_deactivate") }}</ConfirmModal
       >
+    </n-flex>
+  </template>
+  <template v-else>
+    <n-flex size="small" :wrap="false">
       <EditButton @click="show_edit_modal = true" />
       <DeleteButton :item="rule.name" :on-confirm="del" />
     </n-flex>

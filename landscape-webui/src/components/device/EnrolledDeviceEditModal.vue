@@ -16,6 +16,7 @@ import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import CustomDhcpOptionEditor from "@/components/dhcp_v4/options/CustomDhcpOptionEditor.vue";
 import DHCPFilterOptionsEditor from "@/components/dhcp_v4/options/DHCPFilterOptionsEditor.vue";
 import { expand_ipv6, ipv6_iid_has_wan_marker } from "@/lib/common";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
 const enrolledDeviceStore = useEnrolledDeviceStore();
 
@@ -35,7 +36,6 @@ const { t } = useI18n();
 const emit = defineEmits(["refresh"]);
 
 const show = defineModel<boolean>("show", { required: true });
-
 const origin_rule_json = ref<string>("");
 const rule = ref<EnrolledDevice>({
   name: "",
@@ -413,12 +413,12 @@ async function saveRule() {
 </script>
 
 <template>
-  <n-modal
-    :auto-focus="false"
+  <ConfigModal
     v-model:show="show"
-    style="width: var(--app-secondary-modal-width)"
-    preset="card"
+    :show-switch="false"
+    :dirty="isModified"
     :title="props.rule_id ? t('device.edit_title') : t('device.add_title')"
+    width="var(--app-secondary-modal-width)"
     @after-enter="enter"
     @after-leave="exit"
   >
@@ -531,10 +531,10 @@ async function saveRule() {
       </n-grid>
     </n-form>
 
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="end">
         <n-space>
-          <n-button @click="show = false">{{ t("device.cancel") }}</n-button>
+          <n-button @click="close">{{ t("device.cancel") }}</n-button>
           <n-button
             type="primary"
             :loading="commit_spin"
@@ -546,5 +546,5 @@ async function saveRule() {
         </n-space>
       </n-flex>
     </template>
-  </n-modal>
+  </ConfigModal>
 </template>

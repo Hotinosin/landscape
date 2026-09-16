@@ -7,6 +7,7 @@ export default {
   account_terms: "同意条款",
   account_active: "启用",
   account_status: "状态",
+  account_actions: "账户操作",
   account_private_key: "账户私钥",
   account_acme_url: "ACME 账户 URL",
   account_edit_title: "ACME 账户",
@@ -45,6 +46,7 @@ export default {
   generated_validity_days_invalid: "有效期必须大于 0 天",
 
   acme_account: "ACME 账户",
+  add_account: "添加账户",
   acme_account_required: "请选择 ACME 账户",
   acme_challenge: "验证方式",
   acme_key_type: "密钥类型",

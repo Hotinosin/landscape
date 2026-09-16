@@ -869,17 +869,12 @@ async function saveRule() {
     </template>
   </ConfigModal>
 
-  <n-modal
+  <ConfigModal
     v-model:show="showPathGroupModal"
-    style="
-      width: var(--app-secondary-modal-width);
-      max-height: var(--app-secondary-modal-max-height);
-    "
-    content-style="min-height: 0; overflow: auto"
-    class="custom-card"
-    preset="card"
+    :show-switch="false"
+    width="var(--app-tertiary-modal-width)"
+    max-height="var(--app-secondary-modal-max-height)"
     :title="t('gateway.path_group_editor')"
-    :bordered="false"
   >
     <n-scrollbar class="path-group-scrollbar" :x-scrollable="false">
       <n-form v-if="pathGroupDraft" label-placement="top">
@@ -1115,7 +1110,7 @@ async function saveRule() {
         </n-button>
       </n-flex>
     </template>
-  </n-modal>
+  </ConfigModal>
 </template>
 
 <style scoped>

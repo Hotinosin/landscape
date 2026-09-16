@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { onBeforeUnmount, ref, watch } from "vue";
 import { useMessage } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import ConfigModal from "@/components/common/ConfigModal.vue";
@@ -7,11 +7,16 @@ import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import { IPV6PDConfig, IPV6PDServiceConfig } from "@/lib/ipv6pd";
 import {
   get_iface_ipv6pd_config,
+  get_all_ipv6pd_prefix_status,
+  type IPV6PDPrefixStatus,
   update_ipv6pd_config,
 } from "@/api/service_ipv6pd";
 import { useIPv6PDStore } from "@/stores/status_ipv6pd";
 import { generateValidMAC, formatMacAddress } from "@/lib/util";
 import { IfaceZoneType } from "@landscape-router/types/api/schemas";
+import { Renew } from "@vicons/carbon";
+import IAPrefixInfoCard from "@/components/ipv6pd/IAPrefixInfoCard.vue";
+import StandardStatusCard from "@/components/common/StandardStatusCard.vue";
 
 let ipv6PDStore = useIPv6PDStore();
 const message = useMessage();
@@ -34,12 +39,38 @@ const service_config = ref<IPV6PDServiceConfig>(
     }),
   }),
 );
+const prefixStatus = ref<IPV6PDPrefixStatus>();
+const statusLoading = ref(false);
+let statusTimer: ReturnType<typeof setInterval> | undefined;
+
+async function refreshPrefixStatus() {
+  statusLoading.value = true;
+  try {
+    prefixStatus.value = (await get_all_ipv6pd_prefix_status()).get(
+      iface_info.iface_name,
+    );
+  } catch {
+    prefixStatus.value = undefined;
+  } finally {
+    statusLoading.value = false;
+  }
+}
+
+function startStatusRefresh() {
+  if (statusTimer) return;
+  void refreshPrefixStatus();
+  statusTimer = setInterval(refreshPrefixStatus, 10_000);
+}
+
+function stopStatusRefresh() {
+  if (statusTimer) clearInterval(statusTimer);
+  statusTimer = undefined;
+}
 
 async function on_modal_enter() {
+  startStatusRefresh();
   try {
     let config = await get_iface_ipv6pd_config(iface_info.iface_name);
-    console.log(config);
-    // iface_service_type.value = config.t;
     service_config.value = config;
   } catch (e) {
     service_config.value = new IPV6PDServiceConfig({
@@ -50,6 +81,9 @@ async function on_modal_enter() {
     });
   }
 }
+
+watch(show_model, (show) => !show && stopStatusRefresh());
+onBeforeUnmount(stopStatusRefresh);
 
 async function save_config() {
   if (
@@ -115,6 +149,83 @@ defineExpose({ save: save_config });
       </StandardSettingRow>
     </n-form>
 
+    <StandardStatusCard>
+      <template #title>
+        <n-flex align="center" :wrap="false">
+          <n-text strong>{{ t("lan_ipv6.pd_runtime_status") }}</n-text>
+          <IAPrefixInfoCard
+            v-if="prefixStatus"
+            :prefix_status="prefixStatus"
+            cell="status"
+          />
+        </n-flex>
+      </template>
+      <template #actions>
+        <n-button
+          secondary
+          :loading="statusLoading"
+          @click="refreshPrefixStatus"
+        >
+          <template #icon
+            ><n-icon><Renew /></n-icon
+          ></template>
+          {{ t("common.refresh") }}
+        </n-button>
+      </template>
+      <n-spin :show="statusLoading">
+        <div v-if="prefixStatus" class="pd-status-card__grid">
+          <div class="pd-status-card__item">
+            <n-text>{{ t("lan_ipv6.prefix_info.prefix") }}</n-text>
+            <IAPrefixInfoCard :prefix_status="prefixStatus" cell="prefix" />
+          </div>
+          <div class="pd-status-card__item">
+            <n-text>{{ t("lan_ipv6.prefix_info.prefix_len_status") }}</n-text>
+            <IAPrefixInfoCard
+              :prefix_status="prefixStatus"
+              cell="prefix_len_status"
+            />
+          </div>
+          <div class="pd-status-card__item">
+            <Notice>
+              {{ t("lan_ipv6.prefix_info.ip_preferred_time") }}
+              <template #msg>{{
+                t("lan_ipv6.prefix_info.ip_preferred_time_desc")
+              }}</template>
+            </Notice>
+            <IAPrefixInfoCard
+              :prefix_status="prefixStatus"
+              cell="preferred_lifetime"
+            />
+          </div>
+          <div class="pd-status-card__item">
+            <Notice>
+              {{ t("lan_ipv6.prefix_info.ip_valid_time") }}
+              <template #msg>{{
+                t("lan_ipv6.prefix_info.ip_valid_time_desc")
+              }}</template>
+            </Notice>
+            <IAPrefixInfoCard
+              :prefix_status="prefixStatus"
+              cell="valid_lifetime"
+            />
+          </div>
+          <div class="pd-status-card__item">
+            <Notice>
+              {{ t("lan_ipv6.prefix_info.last_update") }}
+              <template #msg>{{
+                t("lan_ipv6.prefix_info.dhcpv6_client_prefix_time")
+              }}</template>
+            </Notice>
+            <IAPrefixInfoCard
+              :prefix_status="prefixStatus"
+              cell="last_update"
+            />
+          </div>
+        </div>
+        <n-empty v-else size="small" />
+      </n-spin>
+    </StandardStatusCard>
+
     <template #footer>
       <n-flex justify="end">
         <n-button round type="primary" @click="save_config">
@@ -124,3 +235,25 @@ defineExpose({ save: save_config });
     </template>
   </ConfigModal>
 </template>
+
+<style scoped>
+.pd-status-card__grid {
+  display: grid;
+  gap: var(--app-space-section);
+  padding-inline: var(--app-space-lg);
+}
+
+.pd-status-card__item {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    calc(var(--app-setting-control-width) - var(--app-space-lg));
+  gap: var(--app-space-lg);
+  align-items: center;
+  min-width: 0;
+}
+
+.pd-status-card__item > :last-child {
+  justify-self: start;
+}
+</style>

@@ -5,6 +5,7 @@ import type { CertParsedInfo } from "@landscape-router/types/api/schemas";
 import { get_cert_info } from "@/api/cert/order";
 import { useI18n } from "vue-i18n";
 import { useFrontEndStore } from "@/stores/front_end_config";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
 const show = defineModel<boolean>("show", { required: true });
 
@@ -108,13 +109,11 @@ watch(
 </script>
 
 <template>
-  <n-modal
+  <ConfigModal
     v-model:show="show"
-    preset="card"
-    class="custom-card"
-    style="width: var(--app-secondary-modal-width)"
+    :show-switch="false"
+    width="var(--app-secondary-modal-width)"
     :title="t('cert.cert_info_title')"
-    :bordered="false"
   >
     <n-empty v-if="!cert" />
 
@@ -283,5 +282,5 @@ watch(
         <n-button @click="show = false">{{ t("common.close") }}</n-button>
       </n-flex>
     </template>
-  </n-modal>
+  </ConfigModal>
 </template>

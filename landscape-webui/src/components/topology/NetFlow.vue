@@ -10,7 +10,6 @@ import { useI18n } from "vue-i18n";
 import { add_controller } from "@/api/network";
 import FlowHeaderExtra from "@/components/topology/FlowHeaderExtra.vue";
 import FlowNode from "@/components/topology/FlowNode.vue";
-import TopologyDetailPanel from "@/components/topology/TopologyDetailPanel.vue";
 import { NetDev, WLANTypeTag } from "@/lib/dev";
 import { getBridgeAttachIssue } from "@/lib/topology";
 import { IfaceZoneType } from "@landscape-router/types/api/schemas";
@@ -28,21 +27,15 @@ const props = withDefaults(defineProps<Props>(), {
   summary: false,
   dockerIfaces: () => new Set<string>(),
 });
-const emit = defineEmits<{ select: [device: NetDev] }>();
-
 const { t } = useI18n();
-const {
-  fitView,
-  getViewport,
-  onNodeClick,
-  onPaneClick,
-  setCenter,
-  setViewport,
-} = useVueFlow();
+const { fitView, getViewport, setCenter, setViewport } = useVueFlow();
 const message = useMessage();
 const ifaceNodeStore = useIfaceNodeStore();
 const metricStore = useMetricStore();
 const themeVars = useThemeVars();
+const topologyRadius = computed(() =>
+  Number.parseFloat(themeVars.value.borderRadius),
+);
 const containerRef = ref<HTMLElement | null>(null);
 const { width } = useElementSize(containerRef);
 const selectedIfaceId = ref<number | null>(null);
@@ -108,7 +101,6 @@ const flowEdges = computed(() => {
         : "normal-edge",
   }));
 });
-const detailOpen = computed(() => selectedIface.value !== undefined);
 const miniMapMaskColor = computed(() =>
   changeColor(themeVars.value.primaryColor, { alpha: 0.08 }),
 );
@@ -142,10 +134,6 @@ const flowStyle = computed(() => ({
     },
   )}`,
 }));
-
-function closePanel() {
-  selectedIfaceId.value = null;
-}
 
 async function fitTopology(mode: "overview" | "readable" = "readable") {
   const fit_params: {
@@ -318,16 +306,6 @@ watch(selectedIface, (value) => {
 onMounted(() => {
   ifaceNodeStore.UPDATE_INFO();
 });
-
-onNodeClick(({ node }) => {
-  selectedIfaceId.value = Number(node.id);
-  const device = findDeviceByNodeId(node.id);
-  if (device) emit("select", device);
-});
-
-onPaneClick(() => {
-  closePanel();
-});
 </script>
 
 <template>
@@ -374,11 +352,11 @@ onPaneClick(() => {
         position="bottom-left"
         :aria-label="t('topology.minimap')"
         :height="summary ? 72 : MINIMAP_HEIGHT"
-        :mask-border-radius="10"
+        :mask-border-radius="topologyRadius"
         :mask-color="miniMapMaskColor"
         :mask-stroke-color="miniMapMaskStrokeColor"
         :mask-stroke-width="1.25"
-        :node-border-radius="6"
+        :node-border-radius="topologyRadius"
         :node-color="miniMapNodeColor"
         :node-stroke-color="miniMapNodeStrokeColor"
         :node-stroke-width="1"
@@ -387,36 +365,6 @@ onPaneClick(() => {
         :zoomable="false"
         @click="handleMiniMapClick"
       />
-
-      <transition name="topology-panel">
-        <aside
-          v-if="!summary && selectedIface && !isDrawerMode"
-          class="topology-side-panel nopan nowheel"
-          data-testid="topology-side-panel"
-        >
-          <TopologyDetailPanel :node="selectedIface" @close="closePanel" />
-        </aside>
-      </transition>
-
-      <n-drawer
-        v-if="!summary && isDrawerMode"
-        :show="detailOpen"
-        placement="bottom"
-        height="78%"
-        :trap-focus="false"
-        :block-scroll="false"
-        @update:show="(show: boolean) => !show && closePanel()"
-      >
-        <n-drawer-content :closable="false" body-content-style="padding: 0;">
-          <div class="topology-drawer-panel nopan nowheel">
-            <TopologyDetailPanel
-              v-if="selectedIface"
-              :node="selectedIface"
-              @close="closePanel"
-            />
-          </div>
-        </n-drawer-content>
-      </n-drawer>
     </VueFlow>
   </div>
 </template>
@@ -425,6 +373,10 @@ onPaneClick(() => {
 @import "@vue-flow/core/dist/style.css";
 @import "@vue-flow/core/dist/theme-default.css";
 @import "@vue-flow/minimap/dist/style.css";
+
+.vue-flow__node-netflow {
+  pointer-events: auto !important;
+}
 </style>
 
 <style scoped>
@@ -460,8 +412,8 @@ onPaneClick(() => {
 
 .topology-shell.is-summary,
 .topology-shell.is-summary .topology-flow {
-  min-height: 400px;
-  height: 400px;
+  min-height: 320px;
+  height: 320px;
 }
 
 .topology-flow :deep(.vue-flow__node-netflow) {
@@ -501,32 +453,5 @@ onPaneClick(() => {
 
 .topology-flow :deep(.vue-flow__panel.bottom.left) {
   margin: 16px;
-}
-
-.topology-side-panel {
-  position: absolute;
-  z-index: 6;
-  top: 16px;
-  right: 16px;
-  bottom: 16px;
-  width: 468px;
-  overflow: visible;
-}
-
-.topology-drawer-panel {
-  height: 100%;
-}
-
-.topology-panel-enter-active,
-.topology-panel-leave-active {
-  transition:
-    transform 0.22s ease,
-    opacity 0.22s ease;
-}
-
-.topology-panel-enter-from,
-.topology-panel-leave-to {
-  opacity: 0;
-  transform: translateX(14px);
 }
 </style>

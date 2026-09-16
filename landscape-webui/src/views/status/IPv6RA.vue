@@ -14,6 +14,7 @@ import DHCPv6AssignedTable from "@/components/dhcp_v6/DHCPv6AssignedTable.vue";
 import { Renew } from "@vicons/carbon";
 
 const { t } = useI18n();
+withDefaults(defineProps<{ showRefresh?: boolean }>(), { showRefresh: true });
 
 onMounted(async () => {
   await get_info();
@@ -57,6 +58,8 @@ async function get_info() {
     loading.value = false;
   }
 }
+
+defineExpose({ refresh: get_info, refreshing: loading });
 </script>
 
 <template>
@@ -65,7 +68,7 @@ async function get_info() {
       {{ t("common.list_no_auto_refresh") }}
       <n-tag :bordered="false" type="warning">STALE</n-tag>
     </n-alert>
-    <n-flex class="standard-list-toolbar">
+    <n-flex v-if="showRefresh" class="standard-list-toolbar">
       <n-button :loading="loading" secondary @click="get_info">
         <template #icon
           ><n-icon><Renew /></n-icon
@@ -73,7 +76,7 @@ async function get_info() {
         {{ t("common.refresh") }}
       </n-button>
     </n-flex>
-    <n-flex v-if="infos.length > 0">
+    <n-flex v-if="infos.length > 0" vertical style="width: 100%">
       <LanIPv6ShowItem
         v-for="(data, index) in infos"
         :key="index"
@@ -93,7 +96,7 @@ async function get_info() {
       <n-divider title-placement="left">
         {{ t("dhcp_v6.dhcpv6_assigned_info") }}
       </n-divider>
-      <n-flex>
+      <n-flex vertical style="width: 100%">
         <DHCPv6AssignedTable
           v-for="(data, index) in dhcpv6_infos"
           :key="'dhcpv6-' + index"

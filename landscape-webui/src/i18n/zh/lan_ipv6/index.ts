@@ -57,6 +57,8 @@ export default {
     "当前模式已自动启用 M 和 O 标志，引导设备使用 DHCPv6 服务。",
 
   route_priority: "默认路由优先级",
+  route_priority_desc:
+    "控制此接口发布的 IPv6 默认路由优先级。终端同时收到多个默认路由时，会优先选择优先级更高的路由。",
   priority_low: "低",
   priority_medium: "中（默认）",
   priority_high: "高",
@@ -263,12 +265,15 @@ export default {
     prefix_len_status: "前缀长度状态",
     prefix_len_matches: "符合预期",
     prefix_len_mismatch: "不符合预期",
+    delegation_active: "有效",
+    delegation_inactive: "无效",
     last_update: "最近更新时间",
     dhcpv6_client_prefix_time: "DHCPv6 Client 得到前缀的时间",
   },
 
   // IPv6PDEditModal
   ipv6_pd_config: "IPv6-PD 客户端配置",
+  pd_runtime_status: "上游 IPv6 委派状态",
   mac_required: "MAC 地址不能为空",
   mac_hint: "申请使用的 MAC 地址",
   mac_hint_desc: "PPP 网卡上使用生成的虚拟 MAC 地址",

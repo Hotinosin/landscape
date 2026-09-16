@@ -11,13 +11,20 @@ import type {
   DnsProviderProfile,
 } from "@landscape-router/types/api/schemas";
 import { computed, h, onMounted, ref } from "vue";
-import { NButton, NTag, useMessage, type DataTableColumns } from "naive-ui";
+import {
+  NButton,
+  NFlex,
+  NTag,
+  useMessage,
+  type DataTableColumns,
+} from "naive-ui";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
 import { Add, Renew } from "@vicons/carbon";
 import { usePageRequest } from "@/composables/usePageRequest";
 import EditButton from "@/components/common/EditButton.vue";
 import DeleteButton from "@/components/common/DeleteButton.vue";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
 const { t } = useI18n();
 const message = useMessage();
@@ -249,13 +256,13 @@ const columns = computed<DataTableColumns<DnsProviderProfile>>(() => [
   {
     title: t("dns_provider.profile_name"),
     key: "name",
-    minWidth: 140,
+    width: "28%",
     render: (row) => frontEndStore.MASK_INFO(row.name),
   },
   {
     title: t("dns_provider.provider"),
     key: "provider_config",
-    width: 140,
+    width: "10%",
     render: (row) =>
       h(
         NTag,
@@ -269,20 +276,20 @@ const columns = computed<DataTableColumns<DnsProviderProfile>>(() => [
   {
     title: t("dns_provider.ddns_default_ttl"),
     key: "ddns_default_ttl",
-    width: 120,
+    width: "10%",
     render: (row) => row.ddns_default_ttl ?? 120,
   },
   {
     title: t("common.remark"),
     key: "remark",
-    minWidth: 180,
+    width: "24%",
     render: (row) => (row.remark ? frontEndStore.MASK_INFO(row.remark) : "-"),
   },
   {
-    title: t("common.status"),
-    key: "actions",
-    width: 260,
-    render: (row) => [
+    title: t("dns_provider.test"),
+    key: "test",
+    width: "16%",
+    render: (row) =>
       h(
         NButton,
         {
@@ -293,19 +300,24 @@ const columns = computed<DataTableColumns<DnsProviderProfile>>(() => [
         },
         () => t("cert.action_verify"),
       ),
-      h(EditButton, {
-        style: "margin-left: 8px",
-        onClick: () => {
-          resetForm(row);
-          showModal.value = true;
-        },
-      }),
-      h(DeleteButton, {
-        style: "margin-left: 8px",
-        item: frontEndStore.MASK_INFO(row.name),
-        onConfirm: () => remove(row.id!),
-      }),
-    ],
+  },
+  {
+    title: t("common.actions"),
+    key: "actions",
+    width: "12%",
+    render: (row) =>
+      h(NFlex, { size: "small", wrap: false }, () => [
+        h(EditButton, {
+          onClick: () => {
+            resetForm(row);
+            showModal.value = true;
+          },
+        }),
+        h(DeleteButton, {
+          item: frontEndStore.MASK_INFO(row.name),
+          onConfirm: () => remove(row.id!),
+        }),
+      ]),
   },
 ]);
 
@@ -343,10 +355,10 @@ onMounted(refresh);
       @retry="refresh"
     />
 
-    <n-modal
+    <ConfigModal
       v-model:show="showModal"
-      preset="card"
-      style="width: var(--app-secondary-modal-width)"
+      :show-switch="false"
+      width="var(--app-secondary-modal-width)"
       :title="t('dns_provider.provider_profiles')"
     >
       <n-form
@@ -530,26 +542,26 @@ onMounted(refresh);
       </n-form>
 
       <template #footer>
-        <n-flex justify="space-between">
+        <n-flex class="standard-modal-footer--split" justify="space-between">
+          <n-button
+            secondary
+            :loading="validating"
+            :disabled="saving"
+            @click="validateCredentials"
+          >
+            {{ t("cert.action_verify") }}
+          </n-button>
           <n-flex :size="8">
-            <n-button
-              secondary
-              :loading="validating"
-              :disabled="saving"
-              @click="validateCredentials"
-            >
-              {{ t("cert.action_verify") }}
-            </n-button>
             <n-button @click="showModal = false">{{
               t("common.cancel")
             }}</n-button>
+            <n-button type="primary" :loading="saving" @click="save">{{
+              t("common.save")
+            }}</n-button>
           </n-flex>
-          <n-button type="primary" :loading="saving" @click="save">{{
-            t("common.save")
-          }}</n-button>
         </n-flex>
       </template>
-    </n-modal>
+    </ConfigModal>
   </n-flex>
 </template>
 

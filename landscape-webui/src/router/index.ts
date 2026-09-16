@@ -15,9 +15,9 @@ const inner_zone: Array<RouteRecordRaw> = [
     component: () => import("@/views/Landscape.vue"),
   },
   {
-    path: "/dns/redirect",
-    name: "routes.dns-redirect",
-    component: () => import("@/views/dns/DnsRedirect.vue"),
+    path: "/network/allocations",
+    name: "routes.address-allocation",
+    component: () => import("@/views/NetworkAllocations.vue"),
   },
   {
     path: "/network/settings",
@@ -26,19 +26,31 @@ const inner_zone: Array<RouteRecordRaw> = [
   },
   ...service_status_route,
   {
-    path: "/dns/upstream",
-    name: "routes.dns-upstream",
+    path: "/dns/config",
+    name: "routes.dns-config",
     component: () => import("@/views/dns/DnsUpstream.vue"),
   },
   {
+    path: "/dns/upstream",
+    redirect: "/dns/config",
+  },
+  {
+    path: "/dns/redirect",
+    name: "routes.dns-redirect",
+    component: () => import("@/views/dns/DnsRedirect.vue"),
+  },
+  {
+    path: "/firewall-nat/port-mapping",
+    name: "routes.port-mapping",
+    component: () => import("@/views/PortMappings.vue"),
+  },
+  {
     path: "/firewall-nat/nat/v4",
-    name: "routes.nat-v4",
-    component: () => import("@/views/StaticNatMappingV4.vue"),
+    redirect: { path: "/firewall-nat/port-mapping", query: { tab: "ipv4" } },
   },
   {
     path: "/firewall-nat/nat/v6",
-    name: "routes.nat-v6",
-    component: () => import("@/views/StaticNatMappingV6.vue"),
+    redirect: { path: "/firewall-nat/port-mapping", query: { tab: "ipv6" } },
   },
   {
     path: "/flow",
@@ -87,8 +99,7 @@ const inner_zone: Array<RouteRecordRaw> = [
   },
   {
     path: "/domains/dns-providers",
-    name: "routes.dns-provider-profiles",
-    component: () => import("@/views/domain/DnsProviderProfiles.vue"),
+    redirect: "/domains/credentials",
   },
   {
     path: "/domains/ddns",
@@ -97,8 +108,12 @@ const inner_zone: Array<RouteRecordRaw> = [
   },
   {
     path: "/domains/cert-accounts",
-    name: "routes.cert-accounts",
-    component: () => import("@/views/cert/CertAccounts.vue"),
+    redirect: "/domains/credentials",
+  },
+  {
+    path: "/domains/credentials",
+    name: "routes.credentials",
+    component: () => import("@/views/domain/Credentials.vue"),
   },
   {
     path: "/domains/certs",

@@ -5,10 +5,7 @@ import { isIP } from "is-ip";
 import { computed, onMounted } from "vue";
 import { ref } from "vue";
 import ConfigModal from "@/components/common/ConfigModal.vue";
-import {
-  copy_context_to_clipboard,
-  read_context_from_clipboard,
-} from "@/lib/common";
+import { copy_context_to_clipboard } from "@/lib/common";
 import type { DNSRedirectRule } from "@landscape-router/types/api/schemas";
 import { get_dns_redirect, push_dns_redirect } from "@/api/dns_rule/redirect";
 import { getFlowRules } from "@landscape-router/types/api/flow-rules/flow-rules";
@@ -145,19 +142,17 @@ async function export_config() {
   }
 }
 
-async function import_rules() {
+async function import_rules(rules: any[]) {
   try {
     if (rule.value) {
-      let rules = JSON.parse(await read_context_from_clipboard());
       rule.value.match_rules = rules;
     }
   } catch (e) {}
 }
 
-async function append_import_rules() {
+async function append_import_rules(rules: any[]) {
   try {
     if (rule.value) {
-      let rules = JSON.parse(await read_context_from_clipboard());
       rule.value.match_rules.unshift(...rules);
     }
   } catch (e) {}
@@ -299,16 +294,20 @@ async function append_import_rules() {
                 <n-button :focusable="false" size="tiny" @click="export_config">
                   {{ t("dns.redirect_edit.copy") }}
                 </n-button>
-                <n-button :focusable="false" size="tiny" @click="import_rules">
-                  {{ t("dns.redirect_edit.paste_replace") }}
-                </n-button>
-                <n-button
-                  :focusable="false"
-                  size="tiny"
-                  @click="append_import_rules"
-                >
-                  {{ t("dns.redirect_edit.paste_append") }}
-                </n-button>
+                <ClipboardImportModal :on-confirm="import_rules">
+                  <template #trigger>
+                    <n-button :focusable="false" size="tiny">
+                      {{ t("dns.redirect_edit.paste_replace") }}
+                    </n-button>
+                  </template>
+                </ClipboardImportModal>
+                <ClipboardImportModal :on-confirm="append_import_rules">
+                  <template #trigger>
+                    <n-button :focusable="false" size="tiny">
+                      {{ t("dns.redirect_edit.paste_append") }}
+                    </n-button>
+                  </template>
+                </ClipboardImportModal>
               </n-flex>
             </n-flex>
           </template>

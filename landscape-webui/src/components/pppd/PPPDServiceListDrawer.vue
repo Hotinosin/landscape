@@ -8,13 +8,14 @@ import {
 import { PPPDServiceConfig } from "@/lib/pppd";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
 const { t } = useI18n();
 const emit = defineEmits(["refresh"]);
 const show = defineModel<boolean>("show", { required: true });
 const props = defineProps<{
   attach_iface_name: string;
-  presentation?: "drawer" | "modal" | "embedded";
+  presentation?: "modal" | "embedded";
 }>();
 
 const pppd_configs = ref<PPPDServiceConfig[]>([]);
@@ -92,81 +93,36 @@ onMounted(() => {
       @refresh="refreshDrawer"
     />
   </section>
-  <n-modal
-    v-else-if="props.presentation === 'modal'"
+  <ConfigModal
+    v-else
     v-model:show="show"
-    :auto-focus="false"
     @after-enter="inti_drawer"
+    :show-switch="false"
+    :title="
+      t('pppoe.pppd_drawer.configure_pppd', {
+        iface_name: props.attach_iface_name,
+      })
+    "
   >
-    <n-card
-      style="
-        width: var(--app-secondary-modal-width);
-        max-height: var(--app-secondary-modal-max-height);
-      "
-      :title="
-        t('pppoe.pppd_drawer.configure_pppd', {
-          iface_name: props.attach_iface_name,
-        })
-      "
-      :bordered="false"
-      closable
-      size="small"
-      content-style="min-height: 0; overflow: auto"
-      role="dialog"
-      aria-modal="true"
-      @close="show = false"
-    >
-      <n-flex vertical>
-        <n-button
-          style="align-self: flex-start"
-          @click="show_create_pppd_modal = true"
-          >{{ t("pppoe.pppd_drawer.add_pppd") }}</n-button
-        >
-        <PPPDServiceTable
-          :configs="pppd_configs"
-          :attach-iface-name="props.attach_iface_name"
-          @refresh="refreshDrawer"
-        />
-        <CreatePPPDConfigModal
-          @refresh="refreshDrawer"
-          :attach_iface_name="props.attach_iface_name"
-          v-model:show="show_create_pppd_modal"
-          :origin_value="undefined"
-        />
-      </n-flex>
-    </n-card>
-  </n-modal>
-  <n-drawer v-else v-model:show="show" width="500px" @after-enter="inti_drawer">
-    <n-drawer-content
-      :title="
-        t('pppoe.pppd_drawer.configure_pppd', {
-          iface_name: props.attach_iface_name,
-        })
-      "
-      closable
-    >
-      <n-flex style="height: 100%" vertical>
-        <n-button @click="show_create_pppd_modal = true">
-          {{ t("pppoe.pppd_drawer.add_pppd") }}
-        </n-button>
-
-        <n-scrollbar>
-          <PPPDServiceTable
-            :configs="pppd_configs"
-            :attach-iface-name="props.attach_iface_name"
-            @refresh="refreshDrawer"
-          />
-        </n-scrollbar>
-      </n-flex>
-
+    <n-flex vertical>
+      <n-button
+        style="align-self: flex-start"
+        @click="show_create_pppd_modal = true"
+        >{{ t("pppoe.pppd_drawer.add_pppd") }}</n-button
+      >
+      <PPPDServiceTable
+        :configs="pppd_configs"
+        :attach-iface-name="props.attach_iface_name"
+        @refresh="refreshDrawer"
+      />
       <CreatePPPDConfigModal
         @refresh="refreshDrawer"
         :attach_iface_name="props.attach_iface_name"
         v-model:show="show_create_pppd_modal"
         :origin_value="undefined"
       />
-    </n-drawer-content>
-  </n-drawer>
+    </n-flex>
+  </ConfigModal>
 </template>
 
 <style scoped>

@@ -61,6 +61,8 @@ export default {
     "M and O flags are automatically enabled in this mode to direct devices to the DHCPv6 server.",
 
   route_priority: "Default Route Priority",
+  route_priority_desc:
+    "Controls the priority of the IPv6 default route advertised by this interface. Clients prefer the higher-priority route when multiple default routes are available.",
   priority_low: "Low",
   priority_medium: "Medium (Default)",
   priority_high: "High",
@@ -282,12 +284,15 @@ export default {
     prefix_len_status: "Prefix Length Status",
     prefix_len_matches: "Meets Expectation",
     prefix_len_mismatch: "Does Not Meet Expectation",
+    delegation_active: "Active",
+    delegation_inactive: "Inactive",
     last_update: "Last Update",
     dhcpv6_client_prefix_time: "Time when DHCPv6 Client obtained the prefix",
   },
 
   // IPv6PDEditModal
   ipv6_pd_config: "IPv6-PD Client Config",
+  pd_runtime_status: "Upstream IPv6 Delegation Status",
   mac_required: "MAC address cannot be empty",
   mac_hint: "MAC address used for request",
   mac_hint_desc: "PPP interfaces use a generated virtual MAC address",

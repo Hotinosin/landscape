@@ -17,10 +17,7 @@ import {
   push_dst_ip_rules_rule,
   update_dst_ip_rules_rule,
 } from "@/api/dst_ip_rule";
-import {
-  copy_context_to_clipboard,
-  read_context_from_clipboard,
-} from "@/lib/common";
+import { copy_context_to_clipboard } from "@/lib/common";
 import { useI18n } from "vue-i18n";
 
 interface Props {
@@ -136,10 +133,9 @@ async function export_config() {
   }
 }
 
-async function import_rules() {
+async function import_rules(rules: any[]) {
   if (rule.value) {
     try {
-      let rules = JSON.parse(await read_context_from_clipboard());
       rule.value.source = rules;
       message.success(t("common.paste_replace_success"));
     } catch (e) {
@@ -148,10 +144,9 @@ async function import_rules() {
   }
 }
 
-async function append_import_rules() {
+async function append_import_rules(rules: any[]) {
   if (rule.value) {
     try {
-      let rules = JSON.parse(await read_context_from_clipboard());
       rule.value.source.unshift(...rules);
       message.success(t("common.paste_append_success"));
     } catch (e) {
@@ -218,16 +213,20 @@ async function append_import_rules() {
               <n-button :focusable="false" size="tiny" @click="export_config">
                 {{ t("flow.wan_rule_edit.copy") }}
               </n-button>
-              <n-button :focusable="false" size="tiny" @click="import_rules">
-                {{ t("flow.wan_rule_edit.paste_replace") }}
-              </n-button>
-              <n-button
-                :focusable="false"
-                size="tiny"
-                @click="append_import_rules"
-              >
-                {{ t("flow.wan_rule_edit.paste_append") }}
-              </n-button>
+              <ClipboardImportModal :on-confirm="import_rules">
+                <template #trigger>
+                  <n-button :focusable="false" size="tiny">
+                    {{ t("flow.wan_rule_edit.paste_replace") }}
+                  </n-button>
+                </template>
+              </ClipboardImportModal>
+              <ClipboardImportModal :on-confirm="append_import_rules">
+                <template #trigger>
+                  <n-button :focusable="false" size="tiny">
+                    {{ t("flow.wan_rule_edit.paste_append") }}
+                  </n-button>
+                </template>
+              </ClipboardImportModal>
             </n-flex>
           </n-flex>
         </template>

@@ -3,6 +3,7 @@ import { get_docker_images, pull_docker_image } from "@/api/docker";
 import { ref } from "vue";
 import DockerImageCard from "@/components/docker/image/DockerImageCard.vue";
 import { useI18n } from "vue-i18n";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 const { t } = useI18n();
 const show = defineModel<boolean>("show", { required: true });
 
@@ -20,30 +21,24 @@ function leave() {
 }
 </script>
 <template>
-  <n-drawer
+  <ConfigModal
     @after-enter="flush_tasks()"
     @after-leave="leave"
     v-model:show="show"
-    width="500px"
-    placement="right"
-    responsive
+    :show-switch="false"
+    width="var(--app-compact-modal-width)"
+    :title="t('docker.docker_pull.download_history')"
   >
-    <n-drawer-content
-      :title="t('docker.docker_pull.download_history')"
-      closable
-    >
-      <n-flex style="height: 100%" vertical>
-        <n-scrollbar>
-          <n-flex>
-            <PullTaskCard
-              v-for="task in dockerImgTask.tasks"
-              :key="task.id"
-              :task="task"
-            >
-            </PullTaskCard>
-          </n-flex>
-        </n-scrollbar>
-      </n-flex>
-    </n-drawer-content>
-  </n-drawer>
+    <n-flex style="height: 100%" vertical>
+      <n-scrollbar>
+        <n-flex>
+          <PullTaskCard
+            v-for="task in dockerImgTask.tasks"
+            :key="task.id"
+            :task="task"
+          />
+        </n-flex>
+      </n-scrollbar>
+    </n-flex>
+  </ConfigModal>
 </template>

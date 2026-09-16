@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   computed,
+  h,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -8,7 +9,9 @@ import {
   watch,
 } from "vue";
 import { useI18n } from "vue-i18n";
+import { NTag, type DataTableColumns } from "naive-ui";
 import { Search } from "@vicons/carbon";
+import EditButton from "@/components/common/EditButton.vue";
 import type {
   GeoFileCacheKey,
   GeoSiteFileConfig,
@@ -29,6 +32,7 @@ import {
 } from "@/api/geo/ip";
 import { sortGeoKeys } from "@/lib/geo_utils";
 import GeoDatabaseDrawer from "@/components/geo/GeoDatabaseDrawer.vue";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
 type Source = "site" | "ip";
 const { t } = useI18n();
@@ -42,6 +46,10 @@ const lookupInput = ref("");
 const lookupLoading = ref(false);
 type GeoLookupResult = GeoSiteLookupResult | GeoIpLookupResult;
 type GeoLookupValue = GeoSiteFileConfig | IpConfig;
+type GeoLookupRow = {
+  result: GeoLookupResult;
+  value: GeoLookupValue;
+};
 const lookupResults = ref<GeoLookupResult[]>([]);
 const showLookupResults = ref(false);
 const highlightedValue = ref("");
@@ -68,11 +76,55 @@ const visibleKeys = computed(() => {
 });
 const values = computed<any[]>(() => detail.value?.values ?? []);
 const lookupCount = computed(() => lookupResults.value.length);
+const lookupRows = computed<GeoLookupRow[]>(() =>
+  lookupResults.value.flatMap((result) =>
+    result.values.map((value) => ({ result, value })),
+  ),
+);
+const lookupColumns = computed<DataTableColumns<GeoLookupRow>>(() => [
+  {
+    title: t("geo.database.lookup_source"),
+    key: "source",
+    width: 130,
+    render: ({ result }) => result.key.name,
+  },
+  {
+    title: t("geo.database.lookup_group"),
+    key: "group",
+    render: ({ result }) => result.key.key,
+  },
+  {
+    title: t("common.type"),
+    key: "type",
+    width: 100,
+    render: ({ value }) =>
+      h(NTag, { size: "small", bordered: false }, () =>
+        "match_type" in value ? value.match_type : "CIDR",
+      ),
+  },
+  {
+    title: t("geo.database.lookup_value"),
+    key: "value",
+    render: ({ value }) =>
+      "match_type" in value ? value.value : `${value.ip}/${value.prefix}`,
+  },
+]);
 
 function valueKey(value: GeoLookupValue) {
   return "match_type" in value
     ? `${value.match_type}:${value.value}`
     : `${value.ip}/${value.prefix}`;
+}
+
+function lookupRowKey({ result, value }: GeoLookupRow) {
+  return `${result.key.name}:${result.key.key}:${valueKey(value)}`;
+}
+
+function lookupRowProps({ result, value }: GeoLookupRow) {
+  return {
+    class: "geo-lookup-row",
+    onClick: () => jumpToMatch(result, value),
+  };
 }
 
 async function load() {
@@ -147,9 +199,10 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
         :options="sourceOptions"
         class="geo-source-select"
       />
-      <n-input-group class="geo-lookup">
+      <n-flex class="geo-lookup" :size="8" :wrap="false">
         <n-input
           v-model:value="lookupInput"
+          class="geo-lookup-input"
           clearable
           :placeholder="
             t(
@@ -170,7 +223,7 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
             ><n-icon><Search /></n-icon></template
           >{{ t("geo.geo_site.lookup_action") }}
         </n-button>
-      </n-input-group>
+      </n-flex>
       <EditButton @click="showConfig = true" />
     </div>
 
@@ -243,11 +296,10 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
       :initial-tab="source"
       @refresh="load"
     />
-    <n-modal
+    <ConfigModal
       v-model:show="showLookupResults"
-      preset="card"
-      class="geo-lookup-modal"
-      style="width: var(--app-secondary-modal-width)"
+      :show-switch="false"
+      width="var(--app-secondary-modal-width)"
       :title="
         t(
           source === 'site'
@@ -267,35 +319,15 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
           )
         "
       />
-      <div v-else class="geo-lookup-results">
-        <template
-          v-for="result in lookupResults"
-          :key="`${result.key.name}:${result.key.key}`"
-        >
-          <button
-            v-for="value in result.values"
-            :key="`${result.key.name}:${result.key.key}:${valueKey(value)}`"
-            class="geo-lookup-result"
-            @click="jumpToMatch(result, value)"
-          >
-            <strong class="geo-lookup-group" :title="result.key.key">
-              {{ result.key.key }}
-            </strong>
-            <small>{{ result.key.name }}</small>
-            <span class="geo-lookup-value">
-              {{
-                "match_type" in value
-                  ? value.value
-                  : `${value.ip}/${value.prefix}`
-              }}
-            </span>
-            <n-tag v-if="'match_type' in value" size="tiny" :bordered="false">{{
-              value.match_type
-            }}</n-tag>
-          </button>
-        </template>
-      </div>
-    </n-modal>
+      <StandardDataTable
+        v-else
+        :columns="lookupColumns"
+        :data="lookupRows"
+        :row-key="lookupRowKey"
+        :max-height="560"
+        :row-props="lookupRowProps"
+      />
+    </ConfigModal>
   </n-flex>
 </template>
 
@@ -321,6 +353,10 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
 }
 .geo-lookup {
   width: 100%;
+}
+.geo-lookup-input {
+  min-width: 0;
+  flex: 1;
 }
 .geo-source-select {
   width: 100%;
@@ -387,41 +423,8 @@ onBeforeUnmount(() => clearTimeout(highlightTimer));
   background: var(--app-surface-interactive-color);
   box-shadow: inset 3px 0 var(--app-brand-color);
 }
-.geo-lookup-results {
-  display: flex;
-  flex-direction: column;
-  gap: var(--app-space-sm);
-  max-height: min(560px, 70vh);
-  overflow: auto;
-}
-.geo-lookup-result {
-  display: grid;
-  grid-template-columns: minmax(240px, 0.8fr) 88px minmax(180px, 1fr) auto;
-  align-items: center;
-  gap: var(--app-space-section);
-  width: 100%;
-  padding: var(--app-space-section);
-  border: 0;
-  border-radius: var(--app-radius-control);
-  color: var(--app-text-primary-color);
-  background: var(--app-surface-subtle-color);
+.geo-lookup-row {
   cursor: pointer;
-  text-align: left;
-}
-.geo-lookup-result:hover {
-  background: var(--app-interactive-hover-color);
-}
-.geo-lookup-result > * {
-  min-width: 0;
-}
-.geo-lookup-group,
-.geo-lookup-value {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.geo-lookup-result small {
-  color: var(--app-text-secondary-color);
 }
 @media (max-width: 800px) {
   .geo-toolbar {

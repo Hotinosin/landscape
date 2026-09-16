@@ -1,14 +1,21 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type {
   DnsProviderConfig,
   DnsProviderProfile,
 } from "@landscape-router/types/api/schemas";
 import { push_dns_provider_profile } from "@/api/domain/provider_profile";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
-const props = defineProps<{ show: boolean }>();
+const props = withDefaults(defineProps<{ show: boolean; width?: string }>(), {
+  width: "var(--app-secondary-modal-width)",
+});
 const emit = defineEmits(["update:show", "created"]);
+const showModel = computed({
+  get: () => props.show,
+  set: (value: boolean) => emit("update:show", value),
+});
 const { t } = useI18n();
 const formRef = ref();
 const saving = ref(false);
@@ -94,12 +101,11 @@ async function save() {
 </script>
 
 <template>
-  <n-modal
-    :show="show"
-    preset="card"
-    style="width: var(--app-secondary-modal-width)"
+  <ConfigModal
+    v-model:show="showModel"
+    :show-switch="false"
+    :width="props.width"
     :title="t('dns_provider.provider_profiles')"
-    @update:show="emit('update:show', $event)"
   >
     <n-form
       ref="formRef"
@@ -297,7 +303,7 @@ async function save() {
         </n-button>
       </n-flex>
     </template>
-  </n-modal>
+  </ConfigModal>
 </template>
 
 <style scoped>

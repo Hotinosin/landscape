@@ -5,6 +5,7 @@ import {
   get_iface_disable_risk_caller,
   type IfaceDisableRiskCaller,
 } from "@/lib/iface_disable_guard";
+import ConfirmModal from "@/components/common/ConfirmModal.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -83,67 +84,53 @@ defineExpose({
 </script>
 
 <template>
-  <n-modal
+  <ConfirmModal
     v-model:show="show"
-    preset="dialog"
-    type="warning"
     :title="display_title"
+    type="warning"
+    :positive-text="display_confirm_button_text"
+    :positive-button-props="{ type: 'error', disabled: !is_match, loading }"
+    :on-positive-click="handle_confirm"
   >
-    <template #default>
-      <n-flex vertical size="small">
-        <n-alert type="warning" :show-icon="false">
-          {{ display_warning }}
-        </n-alert>
-        <n-text>{{
-          t("network.iface_risk_guard.current_iface", {
+    <n-flex vertical size="small">
+      <n-alert type="warning" :show-icon="false">
+        {{ display_warning }}
+      </n-alert>
+      <n-text>{{
+        t("network.iface_risk_guard.current_iface", {
+          iface: caller?.iface_name,
+        })
+      }}</n-text>
+      <n-text>{{
+        t("network.iface_risk_guard.current_ip", { ip: caller?.ip })
+      }}</n-text>
+      <n-text>{{
+        t("network.iface_risk_guard.current_source", {
+          source: caller?.source,
+        })
+      }}</n-text>
+      <n-text v-if="caller?.hostname">{{
+        t("network.iface_risk_guard.current_hostname", {
+          hostname: caller?.hostname,
+        })
+      }}</n-text>
+
+      <n-text style="margin-top: 8px">{{
+        t("network.iface_risk_guard.input_label", {
+          iface: caller?.iface_name,
+        })
+      }}</n-text>
+      <n-input
+        v-model:value="input_value"
+        :placeholder="
+          t('network.iface_risk_guard.input_placeholder', {
             iface: caller?.iface_name,
           })
-        }}</n-text>
-        <n-text>{{
-          t("network.iface_risk_guard.current_ip", { ip: caller?.ip })
-        }}</n-text>
-        <n-text>{{
-          t("network.iface_risk_guard.current_source", {
-            source: caller?.source,
-          })
-        }}</n-text>
-        <n-text v-if="caller?.hostname">{{
-          t("network.iface_risk_guard.current_hostname", {
-            hostname: caller?.hostname,
-          })
-        }}</n-text>
-
-        <n-text style="margin-top: 8px">{{
-          t("network.iface_risk_guard.input_label", {
-            iface: caller?.iface_name,
-          })
-        }}</n-text>
-        <n-input
-          v-model:value="input_value"
-          :placeholder="
-            t('network.iface_risk_guard.input_placeholder', {
-              iface: caller?.iface_name,
-            })
-          "
-        />
-        <n-text depth="3" style="font-size: var(--app-font-size-caption)">{{
-          t("network.iface_risk_guard.input_hint")
-        }}</n-text>
-      </n-flex>
-    </template>
-
-    <template #action>
-      <n-flex justify="end">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
-        <n-button
-          type="error"
-          :disabled="!is_match"
-          :loading="loading"
-          @click="handle_confirm"
-        >
-          {{ display_confirm_button_text }}
-        </n-button>
-      </n-flex>
-    </template>
-  </n-modal>
+        "
+      />
+      <n-text depth="3" style="font-size: var(--app-font-size-caption)">{{
+        t("network.iface_risk_guard.input_hint")
+      }}</n-text>
+    </n-flex>
+  </ConfirmModal>
 </template>

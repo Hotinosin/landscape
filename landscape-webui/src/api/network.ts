@@ -53,5 +53,8 @@ export interface RuntimeIpAddress {
 export async function get_runtime_ip_addresses(): Promise<
   Record<string, RuntimeIpAddress[]>
 > {
-  return servicesAxios.get("/ip/runtime-addresses", { silent: true } as any);
+  const response = (await servicesAxios.get("/ip/runtime-addresses", {
+    silent: true,
+  } as any)) as unknown as { data: Record<string, RuntimeIpAddress[]> };
+  return response.data;
 }

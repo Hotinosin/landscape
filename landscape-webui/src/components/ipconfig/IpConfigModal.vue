@@ -4,7 +4,7 @@ import {
   update_iface_server_config,
 } from "@/api/service_ipconfig";
 import { IfaceIpServiceConfig, IfaceIpMode } from "@/lib/service_ipconfig";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import ConfigModal from "@/components/common/ConfigModal.vue";
 import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import IpEdit from "../IpEdit.vue";
@@ -12,7 +12,7 @@ import { IfaceZoneType } from "@landscape-router/types/api/schemas";
 import { useI18n } from "vue-i18n";
 
 const show_model = defineModel<boolean>("show", { required: true });
-const emit = defineEmits(["refresh"]);
+const emit = defineEmits(["refresh", "dirty"]);
 const { t } = useI18n();
 
 const iface_info = defineProps<{
@@ -20,11 +20,20 @@ const iface_info = defineProps<{
   zone: IfaceZoneType;
   presetMode?: IfaceIpMode;
   presetDefaultRouter?: boolean;
+  embedded?: boolean;
 }>();
 
 const iface_data = ref<IfaceIpServiceConfig>(
   new IfaceIpServiceConfig({ iface_name: iface_info.iface_name }),
 );
+const origin_config_json = ref("");
+const config_dirty = computed(
+  () => origin_config_json.value !== JSON.stringify(iface_data.value),
+);
+
+watch(config_dirty, (dirty) => {
+  if (dirty) emit("dirty");
+});
 
 const ip_config_options = computed(() => {
   let result = [
@@ -61,6 +70,7 @@ async function on_modal_enter() {
       iface_name: iface_info.iface_name,
     });
   }
+  origin_config_json.value = JSON.stringify(iface_data.value);
   if (
     iface_info.presetMode &&
     iface_data.value.ip_model.t === IfaceIpMode.Nothing
@@ -177,10 +187,12 @@ function select_ip_model(value: IfaceIpMode) {
   <ConfigModal
     v-model:show="show_model"
     v-model:enabled="iface_data.enable"
+    :embedded="iface_info.embedded"
     :title="t('interface.title')"
     :show-switch="false"
     width="var(--app-secondary-modal-width)"
     @after-enter="on_modal_enter"
+    @dirty="emit('dirty')"
   >
     <n-flex style="flex: 1" vertical v-if="iface_data.ip_model !== undefined">
       <StandardSettingRow :label="t('interface.title')">

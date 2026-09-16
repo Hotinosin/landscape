@@ -17,6 +17,9 @@ import DeleteButton from "@/components/common/DeleteButton.vue";
 const { t } = useI18n();
 const message = useMessage();
 const activeTab = ref("manage");
+const activePlugin = computed(() =>
+  plugins.value.find((plugin) => plugin.id === activeTab.value),
+);
 
 const columns = computed<DataTableColumns<PluginInfo>>(() => [
   { title: t("plugin.name"), key: "name" },
@@ -137,8 +140,29 @@ onMounted(() => {
 </script>
 
 <template>
-  <n-tabs v-model:value="activeTab" type="line" animated class="plugin-tabs">
-    <n-tab-pane name="manage" :tab="t('plugin.manage')">
+  <n-flex vertical :wrap="false" class="plugin-tabs">
+    <n-tabs
+      v-model:value="activeTab"
+      type="segment"
+      size="small"
+      style="width: fit-content; min-width: 240px; max-width: 100%"
+    >
+      <n-tab name="manage">
+        <n-flex align="center" :size="6" :wrap="false">
+          {{ t("plugin.manage") }}
+          <n-tag size="tiny" :bordered="false">dev</n-tag>
+        </n-flex>
+      </n-tab>
+      <n-tab
+        v-for="plugin in plugins.filter((item) => item.controller_ready)"
+        :key="plugin.id"
+        :name="plugin.id"
+      >
+        {{ plugin.name }}
+      </n-tab>
+    </n-tabs>
+
+    <template v-if="activeTab === 'manage'">
       <n-flex vertical class="standard-content-page">
         <n-flex
           align="center"
@@ -182,21 +206,14 @@ onMounted(() => {
           />
         </StandardRequestStatus>
       </n-flex>
-    </n-tab-pane>
-    <n-tab-pane
-      v-for="plugin in plugins.filter((item) => item.controller_ready)"
-      :key="plugin.id"
-      :name="plugin.id"
-      :tab="plugin.name"
-      display-directive="show:lazy"
-    >
-      <iframe
-        class="plugin-panel-frame"
-        :src="panelUrl(plugin)"
-        :title="plugin.name"
-      />
-    </n-tab-pane>
-  </n-tabs>
+    </template>
+    <iframe
+      v-else-if="activePlugin"
+      class="plugin-panel-frame"
+      :src="panelUrl(activePlugin)"
+      :title="activePlugin.name"
+    />
+  </n-flex>
 </template>
 
 <style scoped>
@@ -210,12 +227,11 @@ onMounted(() => {
   width: auto;
 }
 .plugin-tabs {
-  height: 100%;
-}
-.plugin-tabs :deep(.n-tab-pane) {
+  width: 100%;
   height: 100%;
 }
 .plugin-panel-frame {
+  flex: 1;
   width: 100%;
   height: 100%;
   border: 0;

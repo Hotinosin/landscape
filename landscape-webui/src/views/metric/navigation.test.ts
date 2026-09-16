@@ -99,7 +99,9 @@ describe("monitor navigation", () => {
     ]);
     const switcher = switcherSource;
     expect(switcher).not.toContain("n-scrollbar");
-    expect(switcher).toContain('style="min-width: 700px"');
+    expect(switcher).toContain(
+      `:style="{ width: isHistory ? '480px' : '640px' }"`,
+    );
     expect(switcher).toContain("pulse-dot");
     expect(switcher).toContain('v-if="isHistory"');
     expect(switcher.match(/<n-tab name=/g)).toHaveLength(7);

@@ -139,7 +139,8 @@ const prefixColumns = computed<DataTableColumns<PrefixRow>>(() => [
 </script>
 
 <template>
-  <n-card size="small" :title="iface_name">
+  <div style="width: 100%">
+    <n-divider title-placement="left">{{ iface_name }}</n-divider>
     <!-- IA_NA Addresses -->
     <template v-if="show_addresses.length > 0">
       <n-divider title-placement="left" class="section-divider">
@@ -173,7 +174,7 @@ const prefixColumns = computed<DataTableColumns<PrefixRow>>(() => [
       :description="t('dhcp_v6.no_records')"
       class="empty-state"
     />
-  </n-card>
+  </div>
 </template>
 
 <style scoped>

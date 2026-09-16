@@ -7,11 +7,7 @@ import {
   update_gateway_config,
   type GatewayStatus,
 } from "@/api/gateway";
-import {
-  ServiceStatusType,
-  get_service_status_label,
-  get_service_status_tag_type,
-} from "@/lib/services";
+import { ServiceStatusType } from "@/lib/services";
 import type { HttpUpstreamRuleConfig } from "@landscape-router/types/api/schemas";
 import { Add, Renew, Settings } from "@vicons/carbon";
 import { useMessage } from "naive-ui";
@@ -101,7 +97,7 @@ function isTransitionStatus(statusValue: GatewayStatus | undefined) {
 function start_status_polling() {
   if (status_poll_timer) return;
   status_poll_timer = setInterval(() => {
-    void refresh_status();
+    if (!document.hidden) void refresh_status();
   }, 2000);
 }
 
@@ -118,14 +114,6 @@ function sync_status_polling(statusValue: GatewayStatus | undefined) {
   } else {
     stop_status_polling();
   }
-}
-
-function gateway_status_label(statusValue: GatewayStatus | undefined) {
-  return get_service_status_label(statusValue?.status, t);
-}
-
-function gateway_status_tag_type(statusValue: GatewayStatus | undefined) {
-  return get_service_status_tag_type(statusValue?.status);
 }
 
 async function saveGatewayConfig(showSuccess = true) {
@@ -205,7 +193,7 @@ watch(
       justify="space-between"
       class="standard-list-toolbar"
     >
-      <n-flex>
+      <n-flex align="center" :size="16">
         <n-button
           type="primary"
           :disabled="status?.supported === false"
@@ -214,31 +202,29 @@ watch(
             ><n-icon><Add /></n-icon></template
           >{{ t("common.create") }}</n-button
         >
-      </n-flex>
-      <n-flex v-if="status" align="center" :size="16">
-        <n-tag :type="gateway_status_tag_type(status)" size="small">
-          {{ gateway_status_label(status) }}
-        </n-tag>
-        <n-text depth="3" style="font-size: var(--app-font-size-label)">
+        <StandardServiceStatusTag v-if="status" :status="status.status" />
+        <n-text
+          v-if="status"
+          depth="3"
+          style="font-size: var(--app-font-size-label)"
+        >
           HTTP: {{ status.http_port }} | HTTPS: {{ status.https_port }} |
           {{ t("gateway.rule_count") }}: {{ status.rule_count }}
         </n-text>
+      </n-flex>
+      <n-flex align="center" :size="8">
         <n-popover
+          v-if="status"
           v-model:show="show_settings"
           trigger="click"
           placement="bottom-end"
         >
           <template #trigger>
-            <n-button quaternary circle size="small">
+            <n-button secondary>
               <template #icon>
                 <n-icon :component="Settings" />
               </template>
-            </n-button>
-            <n-button :loading="rulesLoading" secondary @click="refreshAll">
-              <template #icon
-                ><n-icon><Renew /></n-icon
-              ></template>
-              {{ t("common.refresh") }}
+              {{ t("gateway.settings") }}
             </n-button>
           </template>
 
@@ -307,6 +293,12 @@ watch(
             </n-flex>
           </n-flex>
         </n-popover>
+        <n-button :loading="rulesLoading" secondary @click="refreshAll">
+          <template #icon
+            ><n-icon><Renew /></n-icon
+          ></template>
+          {{ t("common.refresh") }}
+        </n-button>
       </n-flex>
     </n-flex>
     <StandardDataTable

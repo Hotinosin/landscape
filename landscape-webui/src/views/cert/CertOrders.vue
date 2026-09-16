@@ -66,7 +66,7 @@ async function refresh() {
 
 function start_polling() {
   if (poll_timer) return;
-  poll_timer = setInterval(refresh, 5000);
+  poll_timer = setInterval(() => !document.hidden && void refresh(), 5000);
 }
 
 function stop_polling() {

@@ -242,7 +242,12 @@ const processedData = computed(() => {
 
 <template>
   <n-flex vertical :wrap="false" class="ip-stats-list">
-    <n-flex align="center" justify="space-between" style="margin-bottom: 12px">
+    <n-flex
+      class="standard-list-title--small"
+      align="center"
+      justify="space-between"
+      style="margin-bottom: 12px"
+    >
       <n-h3 v-if="title" style="margin: 0">{{ title }}</n-h3>
       <span v-else />
       <n-text depth="3">

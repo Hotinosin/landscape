@@ -14,10 +14,7 @@ import {
   getFlowDnsRules,
   addManyDnsRules,
 } from "@landscape-router/types/api/dns-rules/dns-rules";
-import {
-  copy_context_to_clipboard,
-  read_context_from_clipboard,
-} from "@/lib/common";
+import { copy_context_to_clipboard } from "@/lib/common";
 
 const props = withDefaults(
   defineProps<{ flow_id?: number; flows?: FlowConfig[] }>(),
@@ -78,9 +75,8 @@ async function exportConfig() {
   );
 }
 
-async function importRules() {
+async function importRules(imported: DNSRuleConfig[]) {
   try {
-    const imported = JSON.parse(await read_context_from_clipboard());
     for (const rule of imported) rule.flow_id = props.flow_id;
     await addManyDnsRules(imported);
     message.success("Import Success");
@@ -101,7 +97,7 @@ watch(() => props.flow_id, readRules);
 <template>
   <n-spin :show="loading">
     <n-flex vertical class="rule-panel">
-      <n-flex>
+      <n-flex class="standard-list-align">
         <n-button type="primary" @click="showCreateModal = true">
           <template #icon
             ><n-icon><Add /></n-icon
@@ -114,7 +110,7 @@ watch(() => props.flow_id, readRules);
           ></template>
           {{ t("common.copy") }}
         </n-button>
-        <ConfirmModal @positive-click="importRules">
+        <ClipboardImportModal :on-confirm="importRules">
           <template #trigger>
             <n-button>
               <template #icon
@@ -124,7 +120,7 @@ watch(() => props.flow_id, readRules);
             </n-button>
           </template>
           {{ t("dns.rule_drawer.confirm_import") }}
-        </ConfirmModal>
+        </ClipboardImportModal>
         <n-button @click="showQueryModal = true">
           <template #icon
             ><n-icon><SearchLocate /></n-icon
@@ -154,11 +150,7 @@ watch(() => props.flow_id, readRules);
 </template>
 
 <style scoped>
-.rule-panel {
-  height: 520px;
-}
 .rule-list {
-  flex: 1;
-  min-height: 0;
+  max-height: min(440px, calc(100vh - 300px));
 }
 </style>

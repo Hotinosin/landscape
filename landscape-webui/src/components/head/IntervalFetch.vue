@@ -28,7 +28,13 @@ function confirmChangeInterval() {
 
 <template>
   <n-flex align="center">
-    <n-tooltip v-if="fetchIntervalStore.error_message">
+    <n-popover
+      v-if="fetchIntervalStore.error_message"
+      :show="true"
+      trigger="manual"
+      placement="bottom-end"
+      style="max-width: 360px; white-space: normal; overflow-wrap: anywhere"
+    >
       <template #trigger>
         <n-button quaternary circle size="small">
           <template #icon>
@@ -39,7 +45,7 @@ function confirmChangeInterval() {
         </n-button>
       </template>
       {{ fetchIntervalStore.error_message }}
-    </n-tooltip>
+    </n-popover>
     <n-popover trigger="hover" @update:show="handleUpdateShow">
       <template #trigger>
         <n-flex align="center" :size="6" :wrap="false">

@@ -1,9 +1,10 @@
 export default {
   runtime_title: "Gateway Runtime",
+  settings: "Settings",
   edit_title: "Gateway Rule",
-  name: "Rule Name",
-  list_status_name: "Status / Rule Name",
-  name_required: "Rule name is required",
+  name: "Name",
+  list_status_name: "Status / Name",
+  name_required: "Name is required",
   enabled: "Enabled",
   enabled_desc:
     "Controls whether the gateway process should be started after restart",

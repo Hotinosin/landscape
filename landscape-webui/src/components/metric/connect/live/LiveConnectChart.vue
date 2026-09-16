@@ -118,7 +118,10 @@ const formatPacketRate = (value: number) => `${Math.round(value)} pps`;
 
 onMounted(() => {
   fetchData();
-  interval.value = setInterval(fetchData, 5000);
+  interval.value = setInterval(
+    () => !document.hidden && void fetchData(),
+    5000,
+  );
 });
 
 onUnmounted(() => {

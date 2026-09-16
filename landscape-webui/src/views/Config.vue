@@ -44,24 +44,9 @@ onMounted(async () => {
 
 <template>
   <div class="config-container">
-    <div class="main-content">
-      <n-space vertical size="large">
-        <UIConfigCard />
-        <DNSConfigCard />
-        <LanHostnameConfigCard />
-        <MetricConfigCard />
-        <PasswordConfigCard />
-        <BackupConfigCard />
-        <div style="height: 400px"></div>
-      </n-space>
-    </div>
-
     <!-- 侧边目录容器 -->
     <div class="side-nav hidden-mobile">
       <n-anchor
-        affix
-        :top="70"
-        :offset-top="70"
         :bound="24"
         :ignore-gap="true"
         listen-to=".main-body"
@@ -94,17 +79,29 @@ onMounted(async () => {
         </n-card>
       </n-anchor>
     </div>
+
+    <div class="main-content">
+      <n-space vertical size="large">
+        <UIConfigCard />
+        <DNSConfigCard />
+        <LanHostnameConfigCard />
+        <MetricConfigCard />
+        <PasswordConfigCard />
+        <BackupConfigCard />
+        <div style="height: 400px"></div>
+      </n-space>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .config-container {
-  padding: 24px;
+  padding: var(--app-data-table-frame-inset);
   width: 100%;
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 48px;
+  gap: 16px;
 }
 
 .main-content {
@@ -118,7 +115,7 @@ onMounted(async () => {
 }
 
 .anchor-card {
-  box-shadow: 0 4px 16px var(--app-shadow-color);
+  box-shadow: 0 1px 4px var(--app-shadow-color);
   border-radius: var(--app-radius-panel, 8px);
 }
 

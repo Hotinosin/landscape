@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import WanIpRulePanel from "./WanIpRulePanel.vue";
 import { useI18n } from "vue-i18n";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 const { t } = useI18n();
 
 interface Props {
@@ -23,18 +24,7 @@ const title = computed(() => {
 });
 </script>
 <template>
-  <n-drawer
-    v-model:show="show"
-    width="min(840px, 92vw)"
-    placement="right"
-  >
-    <n-drawer-content
-      :title="title"
-      closable
-      :native-scrollbar="false"
-      body-content-style="height: 100%; padding: 14px 16px"
-    >
-      <WanIpRulePanel :flow_id="flow_id" />
-    </n-drawer-content>
-  </n-drawer>
+  <ConfigModal v-model:show="show" :show-switch="false" :title="title">
+    <WanIpRulePanel :flow_id="flow_id" />
+  </ConfigModal>
 </template>

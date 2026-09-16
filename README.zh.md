@@ -36,7 +36,7 @@ DNS 解析 → eBPF 流 map → TC/XDP 内核导向 → 接口路由
 DNS 平面决策。内核执行。
 
 ## 核心特性
-* DNS 驱动 eBPF 分流 — DNS 应答填充对应流的 kernel map
+* DNS 驱动 eBPF 分流 — DNS 应答填充对应 Flow 策略的 kernel map
 * 细粒度 NAT — 默认采用比对称型 NAT 更严格的策略，按域名/IP 放通全锥型 NAT（[详情](https://landscape.whileaway.dev/zh/features/nat.html)）
 * 每流独立 DNS 隔离 — 独立缓存与上游配置，无跨流泄漏
 * 命中 flow 的数据包导入 Docker 容器 — 可运行任意 TProxy 兼容程序
@@ -51,7 +51,7 @@ DNS 平面决策。内核执行。
 
 **NAT，按需开放。** BT/PT 按需使用全锥型 NAT，其余默认使用严格 NAT — 域名/IP 级控制，不搞一刀切。
 
-**故障不扩散。** 每流独立 DNS 和分流策略。容器挂了？只有经过它的流量受影响。
+**故障不扩散。** 每个 Flow 策略使用独立 DNS。容器挂了？只有经过它的流量受影响。
 
 ## 快速开始
 

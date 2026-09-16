@@ -3,6 +3,7 @@ import { computed, h, ref } from "vue";
 import { NButton, useMessage, useNotification } from "naive-ui";
 import { isIPv4 } from "is-ip";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import IpEdit from "../IpEdit.vue";
 import CustomDhcpOptionEditor from "./options/CustomDhcpOptionEditor.vue";
 import IfaceDisableGuardModal from "@/components/iface/IfaceDisableGuardModal.vue";
@@ -25,7 +26,7 @@ const { t } = useI18n();
 const dhcpv4ConfigStore = useDHCPv4ConfigStore();
 
 const show_model = defineModel<boolean>("show", { required: true });
-const emit = defineEmits(["refresh"]);
+const emit = defineEmits(["refresh", "dirty"]);
 
 const commit_loading = ref(false);
 const optionEditorRef = ref<InstanceType<typeof CustomDhcpOptionEditor>>();
@@ -35,6 +36,7 @@ const disable_guard_modal = ref<InstanceType<
 const iface_info = defineProps<{
   iface_name: string;
   zone: IfaceZoneType;
+  embedded?: boolean;
 }>();
 const origin_service_enable = ref(false);
 
@@ -214,65 +216,63 @@ const network_mask = computed({
     v-model:show="show_model"
     v-model:enabled="service_config.enable"
     :title="t('dhcp_v4.service.title')"
+    :embedded="iface_info.embedded"
     width="var(--app-secondary-modal-width)"
     max-height="80vh"
     @after-enter="on_modal_enter"
+    @dirty="emit('dirty')"
   >
-    <div class="dhcp-service-body">
-      <n-flex class="dhcp-service-form-wrap">
-        <n-form class="dhcp-service-form" :model="service_config">
-          <n-alert style="flex: 1" type="warning">
-            {{ t("dhcp_v4.service.warning") }}
-          </n-alert>
+    <div
+      class="dhcp-service-body"
+      :class="{ 'dhcp-service-body--embedded': iface_info.embedded }"
+    >
+      <n-form class="dhcp-service-form" :model="service_config">
+        <n-alert class="dhcp-service-alert" type="warning">
+          {{ t("dhcp_v4.service.warning") }}
+        </n-alert>
 
-          <n-flex :size="16" align="flex-start" class="dhcp-service-columns">
-            <div style="flex: 1; min-width: 0">
-              <n-form-item :label="t('dhcp_v4.service.server_ip')">
-                <IpEdit
-                  v-model:ip="server_ip_addr"
-                  v-model:mask="network_mask"
-                  :mask_max="30"
-                  :ip_version="4"
-                ></IpEdit>
-              </n-form-item>
-              <n-form-item :label="t('dhcp_v4.service.range_start')">
-                <IpEdit
-                  v-model:ip="service_config.config.ip_range_start"
-                  :ip_version="4"
-                ></IpEdit>
-              </n-form-item>
-              <n-form-item :label="t('dhcp_v4.service.range_end')">
-                <IpEdit
-                  v-model:ip="service_config.config.ip_range_end"
-                  :ip_version="4"
-                ></IpEdit>
-              </n-form-item>
-              <n-form-item :label="t('dhcp_v4.lease_time')">
-                <n-input-number
-                  v-model:value="service_config.config.address_lease_time"
-                  :min="60"
-                  :placeholder="'86400'"
-                  style="width: 100%"
-                />
-                <template #feedback>
-                  {{ t("dhcp_v4.lease_time_tip") }}
-                </template>
-              </n-form-item>
-            </div>
-
-            <div style="flex: 1; min-width: 0">
-              <n-form-item :label="t('dhcp_v4.custom_options')">
-                <div class="custom-options-scroll">
-                  <CustomDhcpOptionEditor
-                    ref="optionEditorRef"
-                    v-model="service_config.config.custom_options"
-                  />
-                </div>
-              </n-form-item>
-            </div>
-          </n-flex>
-        </n-form>
-      </n-flex>
+        <StandardSettingRow :label="t('dhcp_v4.service.server_ip')">
+          <IpEdit
+            v-model:ip="server_ip_addr"
+            v-model:mask="network_mask"
+            :mask_max="30"
+            :ip_version="4"
+          />
+        </StandardSettingRow>
+        <StandardSettingRow :label="t('dhcp_v4.service.range_start')">
+          <IpEdit
+            v-model:ip="service_config.config.ip_range_start"
+            :ip_version="4"
+          />
+        </StandardSettingRow>
+        <StandardSettingRow :label="t('dhcp_v4.service.range_end')">
+          <IpEdit
+            v-model:ip="service_config.config.ip_range_end"
+            :ip_version="4"
+          />
+        </StandardSettingRow>
+        <StandardSettingRow>
+          <template #label>
+            <Notice>
+              {{ t("dhcp_v4.lease_time") }}
+              <template #msg>{{ t("dhcp_v4.lease_time_tip") }}</template>
+            </Notice>
+          </template>
+          <n-input-number
+            v-model:value="service_config.config.address_lease_time"
+            :min="60"
+            placeholder="86400"
+          />
+        </StandardSettingRow>
+        <n-form-item :label="t('dhcp_v4.custom_options')">
+          <div class="custom-options-scroll">
+            <CustomDhcpOptionEditor
+              ref="optionEditorRef"
+              v-model="service_config.config.custom_options"
+            />
+          </div>
+        </n-form-item>
+      </n-form>
     </div>
 
     <template #footer>
@@ -301,6 +301,7 @@ const network_mask = computed({
 
 <style scoped>
 .custom-options-scroll {
+  box-sizing: border-box;
   max-height: calc(80vh - 220px);
   min-height: 120px;
   overflow-y: auto;
@@ -313,13 +314,16 @@ const network_mask = computed({
   overflow: hidden;
 }
 
-.dhcp-service-form-wrap,
+.dhcp-service-body--embedded {
+  max-height: none;
+  overflow: visible;
+}
+
 .dhcp-service-form {
   width: 100%;
 }
 
-.dhcp-service-columns {
-  margin-top: 16px;
-  width: 100%;
+.dhcp-service-alert {
+  margin-bottom: var(--app-space-section);
 }
 </style>

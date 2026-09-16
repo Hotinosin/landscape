@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 
 import { useSysInfo } from "./systeminfo";
 import { useIfaceNodeStore } from "./iface_node";
@@ -29,17 +29,19 @@ export async function runRefreshTasks(
     (result): result is PromiseRejectedResult => result.status === "rejected",
   );
   return failures.length
-    ? failures
-        .map(({ reason }) => {
-          if (reason instanceof Error) return reason.message;
-          if (typeof reason === "string") return reason;
-          try {
-            return JSON.stringify(reason) || "Request failed";
-          } catch {
-            return "Request failed";
-          }
-        })
-        .join("; ")
+    ? [
+        ...new Set(
+          failures.map(({ reason }) => {
+            if (reason instanceof Error) return reason.message;
+            if (typeof reason === "string") return reason;
+            try {
+              return JSON.stringify(reason) || "Request failed";
+            } catch {
+              return "Request failed";
+            }
+          }),
+        ),
+      ].join("; ")
     : undefined;
 }
 
@@ -94,7 +96,7 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
     }
   };
 
-  const error_message = ref<string | undefined>(undefined);
+  const error_message = ref<string>();
   const enable_interval = ref<boolean>(true);
   const interval_time = ref<number>(3000);
   let interval_timer: ReturnType<typeof setInterval> | undefined;

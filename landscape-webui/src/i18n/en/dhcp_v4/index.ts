@@ -31,6 +31,7 @@ export default {
     online_24h_tip_2:
       "Because scans are periodic, newly assigned IPs may still appear offline in the latest hour.",
     actions: "Actions",
+    add_device: "Add",
     static_assigned: "Static Assignment",
     unknown: "Unknown",
   },

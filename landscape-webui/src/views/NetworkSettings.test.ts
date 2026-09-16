@@ -161,7 +161,7 @@ describe("NetworkSettings", () => {
     expect(wrapper.find("standard-data-table-stub").exists()).toBe(true);
   });
 
-  it("groups LAN bridges with LAN instead of creating a bridge table", async () => {
+  it("groups LAN bridges with LAN in the WAN / LAN view", async () => {
     const bridge = new NetDev({
       name: "br-lan",
       index: 3,
@@ -176,7 +176,7 @@ describe("NetworkSettings", () => {
     const vm = await mountPage();
     expect(
       vm.projectGroups.map((group: { type: string }) => group.type),
-    ).toEqual(["wan", "lan", "other"]);
+    ).toEqual(["wan", "lan"]);
     expect(
       vm.projectGroups
         .find((group: { type: string }) => group.type === "lan")
@@ -202,6 +202,64 @@ describe("NetworkSettings", () => {
     expect(wrapper.get(".network-settings__projects").text()).not.toContain(
       "docker-host",
     );
+
+    vm.viewMode = "interface";
+    await flushPromises();
+    expect(
+      vm.projectGroups.map((group: { type: string }) => group.type),
+    ).toEqual(["interface", "bridge"]);
+    expect(
+      vm.projectGroups.flatMap((group: { items: NetDev[] }) =>
+        group.items.map((item) => item.name),
+      ),
+    ).toContain("spare0");
+    expect(
+      vm.projectGroups.flatMap((group: { items: NetDev[] }) =>
+        group.items.map((item) => item.name),
+      ),
+    ).not.toContain("docker-host");
+  });
+
+  it("shows a bridge member with its inherited effective zone", async () => {
+    const bridge = new NetDev({
+      name: "br-lan",
+      index: 3,
+      dev_type: "bridge",
+      dev_kind: "bridge",
+      dev_status: { t: "up" },
+      carrier: true,
+      zone_type: IfaceZoneType.lan,
+      enable_in_boot: true,
+    });
+    const member = device("member0", IfaceZoneType.undefined);
+    member.controller_id = bridge.index;
+    mocks.ifaces.mockResolvedValueOnce([bridge, member]);
+    const vm = await mountPage();
+
+    expect(vm.effectiveZone(member)).toBe(IfaceZoneType.lan);
+    expect(vm.parentBridge(member).name).toBe("br-lan");
+
+    vm.viewMode = "interface";
+    vm.openConfig(member);
+    await flushPromises();
+    expect(vm.selectedParentBridge.name).toBe("br-lan");
+  });
+
+  it("separates network service tabs from interface setting tabs", async () => {
+    const vm = await mountPage();
+    vm.openConfig(vm.devices[0]);
+    await flushPromises();
+    expect(vm.activeConfigTab).toBe("ipv4");
+    expect(vm.visibleColumns).toHaveLength(vm.projectColumns.length);
+
+    vm.configOpen = false;
+    vm.viewMode = "interface";
+    vm.openConfig(vm.devices[0]);
+    await flushPromises();
+    expect(vm.activeConfigTab).toBe("general");
+    expect(
+      vm.visibleColumns.map((column: { key: string }) => column.key),
+    ).toEqual(["name", "mac", "zone_type", "related", "actions"]);
   });
 
   it("starts a first WAN with the existing configuration editors and safe defaults", async () => {
@@ -216,7 +274,7 @@ describe("NetworkSettings", () => {
     expect(vm.selected.name).toBe("spare0");
     expect(vm.draftRole).toBe(IfaceZoneType.wan);
     expect(vm.firstWanPreset).toBe(true);
-    expect(vm.activeConfigTab).toBe("general");
+    expect(vm.activeConfigTab).toBe("ipv4");
     expect(vm.dirtyEditors).toEqual(
       expect.arrayContaining(["ip_config", "nat", "firewall", "route_wan"]),
     );
