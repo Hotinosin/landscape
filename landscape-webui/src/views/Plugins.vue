@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, onMounted, ref } from "vue";
+import { computed, h, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Launch, Renew } from "@vicons/carbon";
 import type { DataTableColumns, UploadCustomRequestOptions } from "naive-ui";
 import { NButton, NIcon, NSpace, useMessage } from "naive-ui";
@@ -22,10 +22,18 @@ import DeleteButton from "@/components/common/DeleteButton.vue";
 const { t } = useI18n();
 const message = useMessage();
 const activeTab = ref("manage");
+const actionLoading = ref<Record<string, boolean>>({});
 const logs = ref("");
 const showLogs = ref(false);
+const logsPlugin = ref<PluginInfo>();
+const logsLoading = ref(false);
+const autoRefreshLogs = ref(false);
+let logsTimer: ReturnType<typeof setInterval> | undefined;
+
 const config = ref("");
 const configPlugin = ref<PluginInfo>();
+const saveConfigLoading = ref(false);
+const configError = ref("");
 const activePlugin = computed(() =>
   plugins.value.find((plugin) => plugin.id === activeTab.value),
 );
@@ -85,10 +93,7 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
           {
             size: "small",
             secondary: true,
-            onClick: async () => {
-              config.value = await pluginConfig(row.id);
-              configPlugin.value = row;
-            },
+            onClick: () => openConfig(row),
           },
           { default: () => t("plugin.config") },
         ),
@@ -97,10 +102,21 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
           {
             size: "small",
             secondary: true,
+            loading: !!actionLoading.value[row.id],
+            disabled: !!actionLoading.value[row.id],
             onClick: async () => {
-              if (row.service_running) await stopPlugin(row.id);
-              else await startPlugin(row.id);
-              await refresh();
+              actionLoading.value[row.id] = true;
+              try {
+                if (row.service_running) await stopPlugin(row.id);
+                else await startPlugin(row.id);
+                await refresh();
+              } catch (e: any) {
+                message.error(
+                  e.response?.data?.message || e.message || t("common.error"),
+                );
+              } finally {
+                actionLoading.value[row.id] = false;
+              }
             },
           },
           {
@@ -113,10 +129,7 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
           {
             size: "small",
             secondary: true,
-            onClick: async () => {
-              logs.value = await pluginLogs(row.id);
-              showLogs.value = true;
-            },
+            onClick: () => openLogs(row),
           },
           { default: () => t("plugin.logs") },
         ),
@@ -180,12 +193,69 @@ async function deletePlugin(plugin: PluginInfo) {
   await refresh();
 }
 
+async function fetchLogs() {
+  if (!logsPlugin.value) return;
+  logsLoading.value = true;
+  try {
+    logs.value = await pluginLogs(logsPlugin.value.id);
+  } catch (e: any) {
+    message.error(e?.message || t("common.error"));
+  } finally {
+    logsLoading.value = false;
+  }
+}
+
+function openLogs(row: PluginInfo) {
+  logsPlugin.value = row;
+  showLogs.value = true;
+  void fetchLogs();
+}
+
+watch(autoRefreshLogs, (enabled) => {
+  if (logsTimer) clearInterval(logsTimer);
+  if (enabled && showLogs.value) {
+    logsTimer = setInterval(fetchLogs, 2500);
+  }
+});
+
+watch(showLogs, (shown) => {
+  if (!shown) {
+    autoRefreshLogs.value = false;
+    if (logsTimer) clearInterval(logsTimer);
+    logsPlugin.value = undefined;
+  }
+});
+
+onBeforeUnmount(() => {
+  if (logsTimer) clearInterval(logsTimer);
+});
+
+async function openConfig(row: PluginInfo) {
+  configError.value = "";
+  try {
+    config.value = await pluginConfig(row.id);
+    configPlugin.value = row;
+  } catch (e: any) {
+    message.error(e?.message || t("common.error"));
+  }
+}
+
 async function saveConfig() {
   if (!configPlugin.value) return;
-  await savePluginConfig(configPlugin.value.id, config.value);
-  configPlugin.value = undefined;
-  await refresh();
-  message.success(t("plugin.config_saved"));
+  saveConfigLoading.value = true;
+  configError.value = "";
+  try {
+    await savePluginConfig(configPlugin.value.id, config.value);
+    configPlugin.value = undefined;
+    await refresh();
+    message.success(t("plugin.config_saved"));
+  } catch (e: any) {
+    const errMsg = e.response?.data?.message || e.message || t("common.error");
+    configError.value = errMsg;
+    message.error(errMsg);
+  } finally {
+    saveConfigLoading.value = false;
+  }
 }
 
 function panelUrl(plugin: PluginInfo) {
@@ -281,18 +351,49 @@ onMounted(() => {
     />
     <n-modal v-model:show="showLogs">
       <n-card :title="t('plugin.logs')" style="width: min(900px, 90vw)">
+        <template #header-extra>
+          <n-flex align="center" :size="12">
+            <n-flex align="center" :size="4">
+              <n-switch v-model:value="autoRefreshLogs" size="small" />
+              <span style="font-size: var(--app-font-size-caption)">{{ t("plugin.auto_refresh") }}</span>
+            </n-flex>
+            <n-button
+              size="tiny"
+              secondary
+              :loading="logsLoading"
+              @click="fetchLogs"
+            >
+              <template #icon
+                ><n-icon><Renew /></n-icon
+              ></template>
+              {{ t("common.refresh") }}
+            </n-button>
+          </n-flex>
+        </template>
         <pre class="plugin-logs">{{ logs }}</pre>
       </n-card>
     </n-modal>
     <n-modal :show="!!configPlugin" @update:show="configPlugin = undefined">
       <n-card :title="t('plugin.config')" style="width: min(900px, 90vw)">
+        <n-alert
+          v-if="configError"
+          type="error"
+          style="margin-bottom: 12px"
+          :show-icon="false"
+        >
+          {{ configError }}
+        </n-alert>
         <n-input
           v-model:value="config"
           type="textarea"
           :autosize="{ minRows: 14, maxRows: 28 }"
         />
         <template #footer>
-          <n-button type="primary" @click="saveConfig">
+          <n-button
+            type="primary"
+            :loading="saveConfigLoading"
+            @click="saveConfig"
+          >
             {{ t("common.save") }}
           </n-button>
         </template>

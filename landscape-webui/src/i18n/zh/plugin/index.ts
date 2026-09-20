@@ -20,4 +20,5 @@ export default {
   import_success: "插件导入成功",
   open_panel: "打开面板",
   manage: "插件管理",
+  auto_refresh: "自动刷新",
 };

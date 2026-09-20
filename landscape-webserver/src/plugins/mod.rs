@@ -935,6 +935,17 @@ async fn remove_plugin(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/{id}/start",
+    tag = "Plugins",
+    params(("id" = String, Path, description = "Plugin id")),
+    responses(
+        (status = 200, description = "Plugin started"),
+        (status = 204, description = "Plugin started"),
+        (status = 400, description = "Plugin start failed")
+    )
+)]
 async fn start_plugin(
     State(manager): State<PluginManager>,
     AxumPath(id): AxumPath<String>,
@@ -945,6 +956,17 @@ async fn start_plugin(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/{id}/stop",
+    tag = "Plugins",
+    params(("id" = String, Path, description = "Plugin id")),
+    responses(
+        (status = 200, description = "Plugin stopped"),
+        (status = 204, description = "Plugin stopped"),
+        (status = 404, description = "Plugin not found")
+    )
+)]
 async fn stop_plugin(
     State(manager): State<PluginManager>,
     AxumPath(id): AxumPath<String>,
@@ -955,6 +977,16 @@ async fn stop_plugin(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/{id}/logs",
+    tag = "Plugins",
+    params(("id" = String, Path, description = "Plugin id")),
+    responses(
+        (status = 200, description = "Plugin logs output", body = String, content_type = "text/plain"),
+        (status = 404, description = "Plugin not found")
+    )
+)]
 async fn plugin_logs(
     State(manager): State<PluginManager>,
     AxumPath(id): AxumPath<String>,
@@ -965,6 +997,16 @@ async fn plugin_logs(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/{id}/config",
+    tag = "Plugins",
+    params(("id" = String, Path, description = "Plugin id")),
+    responses(
+        (status = 200, description = "Plugin configuration content", body = String, content_type = "text/plain"),
+        (status = 404, description = "Plugin not found")
+    )
+)]
 async fn plugin_config(
     State(manager): State<PluginManager>,
     AxumPath(id): AxumPath<String>,
@@ -975,6 +1017,19 @@ async fn plugin_config(
     }
 }
 
+#[utoipa::path(
+    put,
+    path = "/{id}/config",
+    tag = "Plugins",
+    params(("id" = String, Path, description = "Plugin id")),
+    request_body(content = String, description = "Plugin configuration", content_type = "text/plain"),
+    responses(
+        (status = 200, description = "Plugin configuration saved"),
+        (status = 204, description = "Plugin configuration saved"),
+        (status = 400, description = "Invalid plugin configuration"),
+        (status = 404, description = "Plugin not found")
+    )
+)]
 async fn save_plugin_config(
     State(manager): State<PluginManager>,
     AxumPath(id): AxumPath<String>,
@@ -1012,7 +1067,16 @@ pub fn api_router(manager: PluginManager) -> Router {
 
 #[derive(OpenApi)]
 #[openapi(
-    paths(list_plugins, import_plugin, remove_plugin),
+    paths(
+        list_plugins,
+        import_plugin,
+        remove_plugin,
+        start_plugin,
+        stop_plugin,
+        plugin_logs,
+        plugin_config,
+        save_plugin_config
+    ),
     components(schemas(PluginPlatform, PluginService, PluginNetwork, PluginManifest, PluginInfo)),
     tags((name = "Plugins", description = "Runtime plugin management"))
 )]

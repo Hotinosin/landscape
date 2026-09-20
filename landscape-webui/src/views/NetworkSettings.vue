@@ -250,6 +250,11 @@ const projectGroups = computed(() => {
 const selected = computed(() =>
   devices.value.find((item) => item.name === selectedName.value),
 );
+function isLinkLocal(addr: string): boolean {
+  const lower = addr.toLowerCase();
+  return lower.startsWith("fe80:") || lower.startsWith("169.254.");
+}
+
 function addressesFor(device: NetDev) {
   const ifaceNames = [
     device.name,
@@ -258,14 +263,19 @@ function addressesFor(device: NetDev) {
       .map((config) => config.iface_name),
   ];
   const seen = new Set<string>();
-  return ifaceNames.flatMap((ifaceName) =>
+  const list = ifaceNames.flatMap((ifaceName) =>
     (runtimeIpAddresses.value[ifaceName] ?? []).flatMap((address) => {
       const value = `${address.address}/${address.prefix_length}`;
       if (seen.has(value)) return [];
       seen.add(value);
-      return [{ ...address, ifaceName, value }];
+      const linkLocal = isLinkLocal(address.address);
+      return [{ ...address, ifaceName, value, linkLocal }];
     }),
   );
+  return list.sort((a, b) => {
+    if (a.linkLocal === b.linkLocal) return 0;
+    return a.linkLocal ? 1 : -1;
+  });
 }
 const serviceDevice = computed(() =>
   selected.value && creatingNetwork.value && networkCreateRole.value
@@ -603,10 +613,18 @@ const projectColumns = computed<DataTableColumns<NetDev>>(() => [
             addresses.map((address) =>
               h(
                 "span",
-                { key: `${address.ifaceName}-${address.value}` },
+                {
+                  key: `${address.ifaceName}-${address.value}`,
+                  style: address.linkLocal
+                    ? {
+                        color: "var(--app-text-muted-color)",
+                        fontSize: "var(--app-font-size-caption)",
+                      }
+                    : undefined,
+                },
                 `${address.ifaceName === item.name ? "" : "PPPD · "}${
                   frontEndStore.MASK_INFO(address.value) || "—"
-                }`,
+                }${address.linkLocal ? " (Link-Local)" : ""}`,
               ),
             ),
         },

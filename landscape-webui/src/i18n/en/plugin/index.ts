@@ -20,4 +20,5 @@ export default {
   import_success: "Plugin imported",
   open_panel: "Open panel",
   manage: "Plugin management",
+  auto_refresh: "Auto Refresh",
 };

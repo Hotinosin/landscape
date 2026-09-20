@@ -9,7 +9,8 @@ import {
   watch,
 } from "vue";
 import { useI18n } from "vue-i18n";
-import { NTag, type DataTableColumns } from "naive-ui";
+import { NTag, useDialog, useMessage, type DataTableColumns } from "naive-ui";
+import { useNeutralDialogButtonProps } from "@/composables/useNeutralDialogButtonProps";
 import { Search } from "@vicons/carbon";
 import EditButton from "@/components/common/EditButton.vue";
 import type {
@@ -36,6 +37,9 @@ import ConfigModal from "@/components/common/ConfigModal.vue";
 
 type Source = "site" | "ip";
 const { t } = useI18n();
+const dialog = useDialog();
+const message = useMessage();
+const neutralButtonProps = useNeutralDialogButtonProps();
 const source = ref<Source>("site");
 const rules = ref<GeoFileCacheKey[]>([]);
 const selected = ref<GeoFileCacheKey | null>(null);
@@ -146,18 +150,75 @@ async function selectKey(item: GeoFileCacheKey) {
       ? await get_geo_site_cache_detail(item)
       : await get_geo_ip_cache_detail(item);
 }
-async function lookup() {
-  const input = lookupInput.value.trim();
-  if (!input) return;
+function cleanDomainInput(raw: string): string {
+  let val = raw.trim();
+  val = val.replace(/^[a-zA-Z]+:\/\//, "");
+  val = val.split(/[/?#]/)[0].trim();
+  if (val.includes(":") && !val.includes("::") && !val.startsWith("[")) {
+    val = val.split(":")[0];
+  }
+  return val.toLowerCase();
+}
+
+async function executeLookup(query: string) {
   lookupLoading.value = true;
   try {
-    lookupResults.value =
+    const results =
       source.value === "site"
-        ? await lookup_geo_site_domain(input)
-        : await lookup_geo_ip_address(input);
+        ? await lookup_geo_site_domain(query)
+        : await lookup_geo_ip_address(query);
+    lookupResults.value = results;
+    if (results.length === 0) {
+      message.info(
+        t(
+          source.value === "site"
+            ? "geo.geo_site.lookup_empty"
+            : "geo.geo_ip.lookup_empty",
+        ),
+      );
+    }
     showLookupResults.value = true;
+  } catch (error: any) {
+    message.error(error?.message || t("common.error"));
   } finally {
     lookupLoading.value = false;
+  }
+}
+
+async function lookup() {
+  const raw = lookupInput.value.trim();
+  if (!raw) return;
+
+  if (source.value === "site") {
+    const cleaned = cleanDomainInput(raw);
+    if (!cleaned) return;
+    lookupInput.value = cleaned;
+
+    if (!cleaned.includes(".")) {
+      const suggested = `${cleaned}.com`;
+      dialog.info({
+        autoFocus: false,
+        title: t("geo.geo_site.lookup_confirm_title"),
+        content: t("geo.geo_site.lookup_confirm_content", {
+          example: "baidu.com",
+          suggested,
+        }),
+        positiveText: t("geo.geo_site.lookup_confirm_positive", {
+          domain: suggested,
+        }),
+        negativeText: t("common.cancel"),
+        negativeButtonProps: neutralButtonProps.value,
+        onPositiveClick: () => {
+          lookupInput.value = suggested;
+          void executeLookup(suggested);
+        },
+      });
+      return;
+    }
+
+    await executeLookup(cleaned);
+  } else {
+    await executeLookup(raw);
   }
 }
 async function jumpToMatch(result: GeoLookupResult, value: GeoLookupValue) {
