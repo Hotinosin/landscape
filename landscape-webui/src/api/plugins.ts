@@ -16,7 +16,21 @@ import type {
 export type { PluginInfo, PluginNetwork };
 
 export async function listPlugins(): Promise<PluginInfo[]> {
-  return listPluginsApi({ silent: true });
+  try {
+    const res = await listPluginsApi({ silent: true });
+    if (Array.isArray(res)) return res;
+    if (
+      res &&
+      typeof res === "object" &&
+      "data" in res &&
+      Array.isArray((res as any).data)
+    ) {
+      return (res as any).data;
+    }
+    return [];
+  } catch {
+    return [];
+  }
 }
 
 export async function importPlugin(file: File): Promise<PluginInfo> {

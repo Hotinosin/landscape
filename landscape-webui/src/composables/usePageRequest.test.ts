@@ -112,4 +112,29 @@ describe("request ordering", () => {
     expect(request.lastSuccessAt.value).toBe(2000);
     vi.useRealTimers();
   });
+
+  it("supports SWR memory cache across instances", async () => {
+    const loader = vi.fn().mockResolvedValue(["cached_result"]);
+    const req1 = usePageRequest(loader, {
+      initialData: [] as string[],
+      cacheKey: "test-swr-key",
+    });
+    expect(req1.hasSucceeded.value).toBe(false);
+    expect(req1.data.value).toEqual([]);
+    await req1.execute();
+    expect(req1.data.value).toEqual(["cached_result"]);
+
+    // Second instance with the same cacheKey immediately has data and hasSucceeded=true
+    const loader2 = vi.fn().mockResolvedValue(["fresh_result"]);
+    const req2 = usePageRequest(loader2, {
+      initialData: [] as string[],
+      cacheKey: "test-swr-key",
+    });
+    expect(req2.hasSucceeded.value).toBe(true);
+    expect(req2.initialLoading.value).toBe(false);
+    expect(req2.data.value).toEqual(["cached_result"]);
+
+    await req2.execute();
+    expect(req2.data.value).toEqual(["fresh_result"]);
+  });
 });

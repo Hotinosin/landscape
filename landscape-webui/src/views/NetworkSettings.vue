@@ -841,8 +841,13 @@ async function refresh() {
       Object.values(statusStores).map((store) => store.UPDATE_INFO()),
     );
     dockerNetworks.value =
-      docker.status === "fulfilled" ? docker.value : undefined;
-    plugins.value = plugin.status === "fulfilled" ? plugin.value : undefined;
+      docker.status === "fulfilled" && Array.isArray(docker.value)
+        ? docker.value
+        : [];
+    plugins.value =
+      plugin.status === "fulfilled" && Array.isArray(plugin.value)
+        ? plugin.value
+        : [];
     if (docker.status === "rejected") sourceErrors.value.push("Docker");
     if (plugin.status === "rejected")
       sourceErrors.value.push(t("network.settings.plugin"));

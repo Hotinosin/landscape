@@ -75,7 +75,7 @@ onMounted(get_info);
         <n-select
           v-model:value="selectedIface"
           :options="ifaceOptions"
-          :placeholder="t('network.interface.select_interface')"
+          :placeholder="t('network.settings.select_interface')"
           style="width: 240px"
         />
         <AssignedIpTable

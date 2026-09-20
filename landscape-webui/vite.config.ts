@@ -96,5 +96,22 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    preview: {
+      host: dev_host,
+      proxy: {
+        "/api": {
+          target: `https://${address}:${port}`,
+          changeOrigin: true,
+          secure: false,
+          ws: true,
+        },
+        "/ws": {
+          target: `ws://${address}:${port}`,
+          changeOrigin: true,
+          ws: true,
+          rewrite: (path: any) => path.replace(/^\/ws/, ""),
+        },
+      },
+    },
   };
 });

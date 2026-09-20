@@ -412,4 +412,18 @@ describe("NetworkSettings", () => {
     expect(vm.loadError).toBeUndefined();
     expect(mocks.ifaces).toHaveBeenCalledTimes(2);
   });
+
+  it("keeps physical interfaces visible in interface view even when docker or plugins request rejects", async () => {
+    mocks.query = { view: "interface" };
+    mocks.dockerNetworks.mockRejectedValueOnce(new Error("Docker daemon down"));
+    mocks.plugins.mockRejectedValueOnce(new Error("Plugins not supported"));
+    const vm = await mountPage();
+    const interfaceGroup = vm.projectGroups.find(
+      (group: any) => group.type === "interface",
+    );
+    expect(interfaceGroup?.items.map((item: any) => item.name)).toEqual([
+      "wanA",
+      "wanB",
+    ]);
+  });
 });

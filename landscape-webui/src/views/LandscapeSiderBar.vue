@@ -40,11 +40,22 @@ import {
 
 import CopyRight from "@/components/CopyRight.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
+import { prefetchRoute } from "@/router/prefetch";
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 const frontEndStore = useFrontEndStore();
+
+function nodeProps(option: MenuOption) {
+  return {
+    onMouseenter() {
+      if (typeof option.key === "string") {
+        prefetchRoute(option.key);
+      }
+    },
+  };
+}
 
 const menuThemeOverrides = {
   itemHeight: "var(--app-control-height)",
@@ -290,6 +301,7 @@ const menuOptions = computed<MenuOption[]>(() => [
         <n-menu
           v-model:value="menu_active_key"
           @update:value="click_menu"
+          :node-props="nodeProps"
           :collapsed="collapsed"
           :collapsed-width="64"
           :root-indent="40"
