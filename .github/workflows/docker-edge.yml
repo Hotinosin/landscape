@@ -12,8 +12,6 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             arch: amd64
-          - target: aarch64-unknown-linux-gnu
-            arch: arm64
     env:
       TARGET_ARCH: ${{ matrix.target }}
       TMP_DIR: tmp/${{ matrix.arch }}/redirect_prog
@@ -71,9 +69,6 @@ jobs:
           - arch: amd64
             platform: linux/amd64
             target: x86_64-unknown-linux-gnu
-          - arch: arm64
-            platform: linux/arm64
-            target: aarch64-unknown-linux-gnu
 
     env:
       DOCKER_ARCH: ${{ matrix.arch }}

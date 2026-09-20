@@ -77,6 +77,8 @@ bincode = { version = "2.0.1", features = ["std", "serde"] }
 toml = "1.1.5"
 toml_edit = "0.25.13"
 bytes = "1.12.1"
+flate2 = "1.1.5"
+tar = "0.4.44"
 http = "1.5.0"
 h2 = "0.4.15"
 deku = "0.20.3"

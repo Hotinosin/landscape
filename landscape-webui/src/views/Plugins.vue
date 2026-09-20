@@ -7,7 +7,12 @@ import { useI18n } from "vue-i18n";
 import {
   importPlugin,
   listPlugins,
+  pluginConfig,
+  pluginLogs,
   removePlugin,
+  startPlugin,
+  stopPlugin,
+  savePluginConfig,
   type PluginInfo,
 } from "@/api/plugins";
 import { syncPluginSessionCookie } from "@/lib/common";
@@ -17,6 +22,10 @@ import DeleteButton from "@/components/common/DeleteButton.vue";
 const { t } = useI18n();
 const message = useMessage();
 const activeTab = ref("manage");
+const logs = ref("");
+const showLogs = ref(false);
+const config = ref("");
+const configPlugin = ref<PluginInfo>();
 const activePlugin = computed(() =>
   plugins.value.find((plugin) => plugin.id === activeTab.value),
 );
@@ -24,6 +33,18 @@ const activePlugin = computed(() =>
 const columns = computed<DataTableColumns<PluginInfo>>(() => [
   { title: t("plugin.name"), key: "name" },
   { title: t("plugin.interface"), key: "host_interface" },
+  { title: t("plugin.version"), key: "version" },
+  { title: t("plugin.trust"), key: "trust" },
+  {
+    title: t("plugin.service"),
+    key: "service_running",
+    render: (row) =>
+      h(
+        "span",
+        { class: row.service_running ? "status-ready" : "status-offline" },
+        row.service_running ? t("plugin.running") : t("plugin.stopped"),
+      ),
+  },
   {
     title: t("plugin.data_plane"),
     key: "interface_ready",
@@ -59,6 +80,46 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
     key: "actions",
     render: (row) =>
       h(NSpace, { size: "small", wrap: false }, () => [
+        h(
+          NButton,
+          {
+            size: "small",
+            secondary: true,
+            onClick: async () => {
+              config.value = await pluginConfig(row.id);
+              configPlugin.value = row;
+            },
+          },
+          { default: () => t("plugin.config") },
+        ),
+        h(
+          NButton,
+          {
+            size: "small",
+            secondary: true,
+            onClick: async () => {
+              if (row.service_running) await stopPlugin(row.id);
+              else await startPlugin(row.id);
+              await refresh();
+            },
+          },
+          {
+            default: () =>
+              row.service_running ? t("plugin.stop") : t("plugin.start"),
+          },
+        ),
+        h(
+          NButton,
+          {
+            size: "small",
+            secondary: true,
+            onClick: async () => {
+              logs.value = await pluginLogs(row.id);
+              showLogs.value = true;
+            },
+          },
+          { default: () => t("plugin.logs") },
+        ),
         h(
           NButton,
           {
@@ -119,6 +180,14 @@ async function deletePlugin(plugin: PluginInfo) {
   await refresh();
 }
 
+async function saveConfig() {
+  if (!configPlugin.value) return;
+  await savePluginConfig(configPlugin.value.id, config.value);
+  configPlugin.value = undefined;
+  await refresh();
+  message.success(t("plugin.config_saved"));
+}
+
 function panelUrl(plugin: PluginInfo) {
   const proxyPath = `/api/plugins/${encodeURIComponent(plugin.id)}/ui`;
   const uiPath = plugin.ui_path.replace(/^\//, "");
@@ -172,7 +241,7 @@ onMounted(() => {
         >
           <n-upload
             class="plugin-upload"
-            accept="application/json,.json"
+            accept="application/gzip,application/x-gzip,.tar.gz,.tgz"
             :show-file-list="false"
             :custom-request="upload"
           >
@@ -210,6 +279,25 @@ onMounted(() => {
       :src="panelUrl(activePlugin)"
       :title="activePlugin.name"
     />
+    <n-modal v-model:show="showLogs">
+      <n-card :title="t('plugin.logs')" style="width: min(900px, 90vw)">
+        <pre class="plugin-logs">{{ logs }}</pre>
+      </n-card>
+    </n-modal>
+    <n-modal :show="!!configPlugin" @update:show="configPlugin = undefined">
+      <n-card :title="t('plugin.config')" style="width: min(900px, 90vw)">
+        <n-input
+          v-model:value="config"
+          type="textarea"
+          :autosize="{ minRows: 14, maxRows: 28 }"
+        />
+        <template #footer>
+          <n-button type="primary" @click="saveConfig">
+            {{ t("common.save") }}
+          </n-button>
+        </template>
+      </n-card>
+    </n-modal>
   </n-flex>
 </template>
 
@@ -233,5 +321,10 @@ onMounted(() => {
   height: 100%;
   border: 0;
   background: var(--app-surface-color);
+}
+.plugin-logs {
+  max-height: 70vh;
+  overflow: auto;
+  white-space: pre-wrap;
 }
 </style>

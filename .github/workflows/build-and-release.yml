@@ -87,116 +87,6 @@ jobs:
           name: landscape-webserver-${{ matrix.settings.target }}
           path: output/*
 
-  # 交叉编译（cargo-zigbuild + 发行版 sysroot，见 scripts/build_musl_static.sh
-  # 与 scripts/build_gnu.sh）：
-  #   - musl 目标：全静态单文件，无 so 依赖，产物 landscape-webserver-<arch>-static
-  #     （s390x 无 musl std，Rust Tier 3，不参与）
-  #   - gnu 目标：动态链接 glibc（运行时依赖目标机 libc/libelf.so），产物
-  #     landscape-webserver-<arch>，与原生发行版行为一致；sysroot 取 Ubuntu
-  #     noble ports（riscv64/s390x）与 Debian sid（loong64），替代原先的
-  #     gcc 交叉工具链与源码编译 zlib/elfutils
-  # Cross-compilation (cargo-zigbuild + distro sysroots, see
-  # scripts/build_musl_static.sh and scripts/build_gnu.sh):
-  #   - musl targets: fully static single-file artifacts with no .so deps,
-  #     named landscape-webserver-<arch>-static (s390x has no musl std and is
-  #     excluded)
-  #   - gnu targets: dynamically linked glibc binaries (runtime deps on the
-  #     target libc/libelf.so), named landscape-webserver-<arch>, matching
-  #     native distro behavior; sysroots come from Ubuntu noble ports
-  #     (riscv64/s390x) and Debian sid (loong64), replacing the previous gcc
-  #     cross toolchains and from-source zlib/elfutils builds
-  linux-cross-build:
-    if: github.ref_name == 'feature/extensions'
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        settings:
-          # ---- 全静态 musl / fully static musl ----
-          - architecture: x86_64
-            target: x86_64-unknown-linux-musl
-            gateway: true
-
-          - architecture: aarch64
-            target: aarch64-unknown-linux-musl
-            gateway: true
-
-          - architecture: riscv64
-            target: riscv64gc-unknown-linux-musl
-            gateway: true
-
-          - architecture: loongarch64
-            target: loongarch64-unknown-linux-musl
-            gateway: true
-
-          # ---- 动态 gnu / dynamic glibc ----
-          - architecture: riscv64
-            target: riscv64gc-unknown-linux-gnu
-            gateway: true
-
-          - architecture: s390x
-            target: s390x-unknown-linux-gnu
-            gateway: true
-
-          - architecture: loongarch64
-            target: loongarch64-unknown-linux-gnu
-            gateway: true
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang curl gcc make pkg-config python3-pip wget file libelf-dev zlib1g-dev libclang-dev
-
-      - name: Setup sccache
-        run: |
-          wget -qO- https://github.com/mozilla/sccache/releases/download/${sccache_version}/sccache-${sccache_version}-x86_64-unknown-linux-musl.tar.gz | sudo tar -xzf - -C /usr/local/bin/ --strip-components=1
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-
-      - name: Setup rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.settings.target }}
-
-      - name: Setup cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cache/sccache
-            ~/sysroots
-          key: ${{ runner.os }}-cross-${{ matrix.settings.target }}-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-cross-${{ matrix.settings.target }}-
-
-      - name: Setup zig and cargo-zigbuild
-        run: |
-          sudo pip3 install --break-system-packages ziglang==0.16.0
-          cargo install --locked cargo-zigbuild --version 0.23.4
-
-      - name: Build binaries
-        run: |
-          SCRIPT=build_gnu.sh
-          if [[ "${{ matrix.settings.target }}" == *-musl ]]; then
-            SCRIPT=build_musl_static.sh
-          fi
-          GATEWAY=${{ matrix.settings.gateway }} ./scripts/$SCRIPT ${{ matrix.settings.target }}
-
-      - name: Verify static linking
-        if: contains(matrix.settings.target, 'musl')
-        run: |
-          file output/landscape-webserver-${{ matrix.settings.architecture }}-static
-          if readelf -d output/landscape-webserver-${{ matrix.settings.architecture }}-static | grep -q NEEDED; then
-            echo "::error::Static artifact has dynamic dependencies"
-            exit 1
-          fi
-
-      - name: Upload binary
-        uses: actions/upload-artifact@v7
-        with:
-          name: landscape-webserver-${{ matrix.settings.target }}${{ contains(matrix.settings.target, 'musl') && '-static' || '' }}
-          path: output/*
   build-front:
     needs: linux-build
     runs-on: ubuntu-latest
@@ -254,7 +144,7 @@ jobs:
   publish:
     if: github.ref_name == 'feature/extensions'
     runs-on: ubuntu-latest
-    needs: [linux-build, linux-cross-build, build-front]
+    needs: [linux-build, build-front]
 
     steps:
       - name: Checkout code

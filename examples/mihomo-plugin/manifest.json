@@ -2,12 +2,21 @@
   "protocol_version": 1,
   "id": "mihomo",
   "name": "Mihomo",
+  "version": "1.19.31",
+  "platform": { "os": "linux", "arch": "aarch64" },
   "host_interface": "land-mihomo",
   "controller_socket": "/run/landscape/plugins/mihomo/controller.sock",
   "ui_path": "/ui/",
   "network": {
     "namespace": "land-mihomo",
     "peer_interface": "plugin0",
-    "tproxy_port": 12345
+    "tproxy_port": 12345,
+    "host_ipv4": "169.254.127.1",
+    "peer_ipv4": "169.254.127.2"
+  },
+  "service": {
+    "kind": "mihomo",
+    "executable": "bin/mihomo",
+    "default_config": "config.yaml"
   }
 }

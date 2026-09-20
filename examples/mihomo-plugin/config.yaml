@@ -1,0 +1,7 @@
+tproxy-port: 12345
+bind-address: "*"
+mode: rule
+log-level: info
+external-controller-unix: /run/landscape/plugins/mihomo/controller.sock
+rules:
+  - MATCH,DIRECT
