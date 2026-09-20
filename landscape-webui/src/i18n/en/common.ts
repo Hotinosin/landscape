@@ -40,6 +40,7 @@ export default {
   pull_image: "Pull Image",
   pull_image_name_required: "Image name cannot be empty",
   port_mapping: "Port Mapping",
+  ip_address: "IP Address",
   ipv4_target: "IPv4 Target",
   ipv6_target: "IPv6 Target",
   updated_at: "Updated At",

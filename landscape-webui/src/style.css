@@ -8,6 +8,8 @@
   );
   --app-setting-control-width: 320px;
   --app-setting-control-width-wide: 440px;
+  --app-setting-control-width-compact: 110px;
+  --app-setting-hint-size: 15px;
   --app-range-input-width: 72px;
   --app-data-table-padding-small: 8px;
   --app-data-table-padding-medium: 12px;
@@ -171,6 +173,20 @@ body {
   --n-text-color: var(--app-tag-upstream-color) !important;
 }
 
+.plugins-dev-tag {
+  --n-color: var(--app-brand-color) !important;
+  --n-text-color: var(--app-text-inverse-color) !important;
+  height: 15px !important;
+  line-height: 15px !important;
+  padding: 0 4px !important;
+  font-size: var(--app-font-size-micro) !important;
+  transform: scale(0.82);
+  transform-origin: center center;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  border-radius: var(--app-radius-hairline) !important;
+}
+
 .standard-list-toolbar {
   margin-inline: var(--app-data-table-frame-inset);
 }
@@ -279,95 +295,5 @@ body {
 @media (max-width: 768px) {
   .n-drawer {
     width: 90vw !important;
-  }
-}
-.app-setting-switch-row,
-.standard-setting-row {
-  gap: var(--app-space-lg);
-  min-height: var(--app-control-height);
-  font-size: var(--app-font-size-body);
-}
-
-.app-setting-switch-row {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-}
-
-.standard-setting-row {
-  align-items: start;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--app-setting-control-width);
-}
-
-.standard-setting-row--stacked {
-  display: flex;
-  flex-direction: column;
-  gap: var(--app-space-sm);
-}
-
-.standard-setting-row--wide {
-  grid-template-columns:
-    minmax(0, 1fr)
-    var(--app-setting-control-width-wide);
-}
-
-.standard-setting-row--auto {
-  grid-template-columns: minmax(0, 1fr) auto;
-}
-
-.app-setting-switch-row,
-.standard-setting-row__label {
-  flex: none;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.standard-setting-row__label {
-  display: flex;
-  align-items: center;
-  min-height: var(--app-control-height);
-}
-
-.standard-setting-row--stacked .standard-setting-row__label {
-  min-height: auto;
-}
-
-.standard-setting-row {
-  margin-bottom: var(--app-space-section);
-}
-
-.standard-setting-row__control {
-  min-width: 0;
-  width: var(--app-setting-control-width);
-}
-
-.standard-setting-row__control--auto {
-  width: auto;
-  padding-right: 4px;
-}
-
-.standard-setting-row__control--wide {
-  width: var(--app-setting-control-width-wide);
-}
-
-.standard-setting-row__control--stacked {
-  width: 100%;
-}
-
-.standard-setting-row__control:not(.standard-setting-row__control--auto) > * {
-  width: 100%;
-}
-
-@media (max-width: 640px) {
-  .standard-setting-row {
-    align-items: stretch;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .standard-setting-row__control,
-  .standard-setting-row__control--wide {
-    width: 100%;
   }
 }

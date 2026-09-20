@@ -50,7 +50,7 @@ async function updateEnabled(enable: boolean) {
 
 <template>
   <template v-if="cell === 'status'">
-    <StatusTitle :enable="rule.enable" :remark="rule.remark || t('common.no_remark')" /> </template
+    <StatusTitle :enable="rule.enable" :name="rule.name" :remark="rule.remark" /> </template
   ><template v-else-if="cell === 'enable'">
     <StandardEnableSwitch :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" /> </template
   ><template v-else-if="cell === 'flows'">
@@ -98,7 +98,7 @@ async function updateEnabled(enable: boolean) {
     <n-flex :wrap="false">
       <EditButton @click="showEditModal = true" />
       <DeleteButton
-        :item="frontEndStore.MASK_INFO(rule.remark || t('common.no_remark'))"
+        :item="frontEndStore.MASK_INFO(rule.name || rule.remark || t('common.unnamed'))"
         :on-confirm="remove"
       />
     </n-flex>

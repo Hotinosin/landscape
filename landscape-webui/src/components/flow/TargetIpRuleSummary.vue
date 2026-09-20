@@ -30,7 +30,9 @@ const matchLabels = computed(() =>
     <n-flex align="center" size="small" :wrap="false">
       <CarrierStatusDot :active="rule.enable !== false" />
       <n-text>{{ t("flow.list.priority", { priority: rule.index }) }}</n-text>
-      <n-text strong>{{ rule.remark || t("common.unnamed") }}</n-text>
+      <n-text v-if="rule.name" strong>{{ rule.name }}</n-text>
+      <n-text v-if="rule.remark" :depth="rule.name ? 3 : undefined">{{ rule.remark }}</n-text>
+      <n-text v-if="!rule.name && !rule.remark" depth="3">{{ t("common.unnamed") }}</n-text>
     </n-flex>
     <n-flex align="center" size="small">
       <n-tag

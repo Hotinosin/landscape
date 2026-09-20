@@ -54,7 +54,9 @@ const upstreamLabel = computed(() => {
   const upstream = props.upstreams.find(
     (item) => item.id === props.rule.upstream_id,
   );
-  return upstream?.remark || t("flow.list.unknown_upstream");
+  return (
+    upstream?.name || upstream?.remark || t("flow.list.unknown_upstream")
+  );
 });
 </script>
 

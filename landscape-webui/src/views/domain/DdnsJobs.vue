@@ -83,6 +83,16 @@ const formEnabled = computed({
   },
 });
 
+const originFormJson = ref("");
+function getSnapshot() {
+  return JSON.stringify({
+    form: form.value,
+    sources: sourceInputs.value,
+    records: recordInputs.value,
+  });
+}
+const isModified = computed(() => getSnapshot() !== originFormJson.value);
+
 const enrolledDeviceStore = useEnrolledDeviceStore();
 const familyOptions = [
   { label: "IPv4", value: "ipv4" },
@@ -190,6 +200,7 @@ function resetForm(item?: DdnsJob) {
     },
   ];
   recordInputs.value = item?.records?.map((record) => record.name) ?? ["@"];
+  originFormJson.value = getSnapshot();
 }
 
 const listRequest = usePageRequest(
@@ -833,6 +844,7 @@ onMounted(async () => {
       v-model:show="showModal"
       v-model:enabled="formEnabled"
       :show-switch="false"
+      :dirty="isModified"
       :title="t('ddns.ddns_jobs')"
       width="var(--app-secondary-modal-width)"
     >
@@ -843,9 +855,12 @@ onMounted(async () => {
         label-placement="left"
         label-width="auto"
       >
-        <n-form-item :label="t('ddns.job_name')" path="name"
-          ><n-input v-model:value="form.name"
-        /></n-form-item>
+        <n-form-item :label="t('ddns.job_name')" path="name">
+          <n-input
+            v-model:value="form.name"
+            :placeholder="t('ddns.job_name_placeholder')"
+          />
+        </n-form-item>
         <n-form-item :label="t('ddns.zone_name')" path="zone_name">
           <n-input v-model:value="form.zone_name" placeholder="example.com" />
         </n-form-item>
@@ -952,14 +967,19 @@ onMounted(async () => {
         {{ t("ddns.zone_records_hint") }}
       </n-alert>
 
-      <template #footer>
+      <template #footer="{ close }">
         <n-flex justify="space-between">
-          <n-button @click="showModal = false">{{
+          <n-button @click="close">{{
             t("common.cancel")
           }}</n-button>
-          <n-button type="primary" :loading="saving" @click="save">{{
-            t("common.save")
-          }}</n-button>
+          <n-button
+            type="primary"
+            :loading="saving"
+            :disabled="!isModified"
+            @click="save"
+          >
+            {{ t("common.save") }}
+          </n-button>
         </n-flex>
       </template>
     </ConfigModal>

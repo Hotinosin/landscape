@@ -35,7 +35,10 @@ export default {
   },
   redirect_edit: {
     title: "重定向与拦截配置",
+    name: "名称",
+    name_placeholder: "请输入名称",
     remark: "备注",
+    remark_placeholder: "请输入备注",
     apply_flows: "选择应用的 Flow 策略，为空时应用于全部 Flow 策略",
     apply_flows_placeholder: "选择应用的流 ID",
     answer_mode: "回答模式",
@@ -68,8 +71,10 @@ export default {
     title: "DNS 配置",
     copy: "复制",
     paste: "粘贴",
+    name: "名称",
+    name_placeholder: "请输入名称",
     remark: "备注",
-    remark_placeholder: "DNS 规则中进行选择时与其他区分",
+    remark_placeholder: "请输入备注",
     ip_validation: "是否过滤非法结果",
     ip_validation_desc_1:
       "开启后将会过滤 DNS 服务端返回的所有私有地址, 回环地址等.",

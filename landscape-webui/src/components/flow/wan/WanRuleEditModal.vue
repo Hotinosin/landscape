@@ -165,6 +165,7 @@ async function append_import_rules(rules: any[]) {
     :title="t('flow.wan_rule_edit.title')"
     :switch-disabled="!rule"
     width="var(--app-secondary-modal-width)"
+    :dirty="isModified"
     @after-enter="enter"
   >
     <!-- {{ isModified }} -->
@@ -175,8 +176,19 @@ async function append_import_rules(rules: any[]) {
       <StandardSettingRow :label="t('flow.wan_rule_edit.egress_select')">
         <FlowMarkEdit v-model:mark="rule.mark"></FlowMarkEdit>
       </StandardSettingRow>
+      <StandardSettingRow :label="t('flow.wan_rule_edit.name')">
+        <n-input
+          v-model:value="rule.name"
+          :placeholder="t('flow.wan_rule_edit.name_placeholder')"
+          clearable
+        />
+      </StandardSettingRow>
       <StandardSettingRow :label="t('flow.wan_rule_edit.remark')">
-        <n-input v-model:value="rule.remark" type="text" />
+        <n-input
+          v-model:value="rule.remark"
+          :placeholder="t('flow.wan_rule_edit.remark_placeholder')"
+          type="text"
+        />
       </StandardSettingRow>
       <StandardSettingRow control-width="wide">
         <template #label>
@@ -229,9 +241,9 @@ async function append_import_rules(rules: any[]) {
         </n-flex>
       </StandardSettingRow>
     </n-form>
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button
           :loading="commit_spin"
           @click="saveRule"

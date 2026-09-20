@@ -163,6 +163,7 @@ async function enter() {
     rule.value = await get_dns_upstream(props.rule_id);
   } else {
     rule.value = {
+      name: null,
       remark: "",
       mode: { t: DnsUpstreamModeTsEnum.Plaintext },
       ips: [],
@@ -303,6 +304,14 @@ async function import_rules(rules: DnsUpstreamConfig) {
       ref="formRef"
       :model="rule"
     >
+      <StandardSettingRow :label="t('dns.upstream_edit.name')">
+        <n-input
+          :placeholder="t('dns.upstream_edit.name_placeholder')"
+          v-model:value="rule.name"
+          clearable
+        />
+      </StandardSettingRow>
+
       <StandardSettingRow :label="t('dns.upstream_edit.remark')">
         <n-input
           :placeholder="t('dns.upstream_edit.remark_placeholder')"
@@ -428,9 +437,9 @@ async function import_rules(rules: DnsUpstreamConfig) {
         </n-dynamic-input>
       </StandardSettingRow>
     </n-form>
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button
           :loading="commit_spin"
           @click="saveRule"

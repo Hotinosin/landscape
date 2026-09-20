@@ -71,7 +71,8 @@ async function updateEnabled(value: boolean) {
     <n-flex vertical align="start" size="small">
       <StatusTitle
         :enable="config.enable"
-        :remark="`${config.flow_id}: ${titleName}`"
+        :name="config.name ? frontEndStore.MASK_INFO(config.name) : null"
+        :prefix="config.flow_id"
       />
     </n-flex>
   </template>

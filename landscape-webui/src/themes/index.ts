@@ -213,6 +213,7 @@ function createTheme(
       Card: {
         borderRadius: tokens.radiusSurface,
         paddingSmall: "12px 16px 16px",
+        paddingMedium: "14px 20px 16px",
       },
       Tag: {
         heightSmall: "24px",

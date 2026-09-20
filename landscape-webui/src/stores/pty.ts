@@ -121,7 +121,10 @@ export const usePtyStore = defineStore("pty", () => {
     // 1. Sync state from master
     if (masterSerializeAddon.value) {
       const history = masterSerializeAddon.value.serialize();
-      term.write(history);
+      term.write(history, () => {
+        fit.fit();
+        term.scrollToBottom?.();
+      });
     }
 
     // 2. Setup input forwarding
@@ -155,7 +158,15 @@ export const usePtyStore = defineStore("pty", () => {
       if (activeTerminal.value !== term) return;
       fit.fit();
       term.focus();
+      term.scrollToBottom?.();
     }, 50);
+
+    // Re-fit after layout transition settles
+    setTimeout(() => {
+      if (activeTerminal.value !== term) return;
+      fit.fit();
+      term.scrollToBottom?.();
+    }, 350);
   }
 
   function detachTerminal(term: Terminal) {
@@ -275,7 +286,19 @@ export const usePtyStore = defineStore("pty", () => {
   }
 
   function fit() {
-    activeFitAddon.value?.fit();
+    if (!activeFitAddon.value || !activeTerminal.value) return;
+    const el = activeTerminal.value.element?.parentElement;
+    if (el && (el.clientWidth < 50 || el.clientHeight < 50)) {
+      return;
+    }
+    const term = activeTerminal.value;
+    const isAtBottom =
+      !term.buffer?.active ||
+      term.buffer.active.viewportY >= term.buffer.active.baseY;
+    activeFitAddon.value.fit();
+    if (isAtBottom) {
+      term.scrollToBottom?.();
+    }
   }
 
   function markRead() {

@@ -36,7 +36,10 @@ export default {
   },
   redirect_edit: {
     title: "Redirect & Blocking Configuration",
+    name: "Name",
+    name_placeholder: "Enter name",
     remark: "Remark",
+    remark_placeholder: "Enter remark",
     apply_flows: "Applied flows (empty means all flows)",
     apply_flows_placeholder: "Select flow IDs",
     answer_mode: "Answer mode",
@@ -70,8 +73,10 @@ export default {
     title: "DNS Configuration",
     copy: "Copy",
     paste: "Paste",
+    name: "Name",
+    name_placeholder: "Enter name",
     remark: "Remark",
-    remark_placeholder: "Used to differentiate upstreams in DNS rule selection",
+    remark_placeholder: "Enter remark",
     ip_validation: "Filter invalid results",
     ip_validation_desc_1:
       "When enabled, private/loopback and other invalid addresses from upstream responses will be filtered.",

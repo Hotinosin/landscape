@@ -5,6 +5,7 @@ export default {
   current_ttl: "当前 TTL：{ttl}",
   custom_ttl: "自定义 TTL",
   job_name: "名称",
+  job_name_placeholder: "请输入名称",
   job_name_required: "名称不能为空",
   zone_name: "顶级域名",
   zone_name_required: "顶级域名不能为空",

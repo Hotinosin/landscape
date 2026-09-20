@@ -2,7 +2,9 @@ export default {
   test: "测试",
   provider_profiles: "域名服务商",
   profile_name: "名称",
+  profile_name_placeholder: "请输入名称",
   profile_name_required: "名称不能为空",
+  remark_placeholder: "请输入备注",
   provider: "服务商",
   ddns_default_ttl: "DDNS TTL",
   ddns_default_ttl_hint:

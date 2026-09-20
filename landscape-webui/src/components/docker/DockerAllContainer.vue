@@ -8,19 +8,29 @@ import type { DockerContainerSummary } from "@/lib/docker";
 
 const dockerStatus = useDockerStore();
 const { t } = useI18n();
-type ContainerCell = "name" | "image" | "status" | "created" | "actions";
+type ContainerCell =
+  | "name"
+  | "image"
+  | "ip"
+  | "ports"
+  | "status"
+  | "created"
+  | "actions";
 const columns = computed<DataTableColumns<DockerContainerSummary>>(() =>
   (
     [
-      [`${t("common.status")} / ${t("common.name")}`, "name"],
-      [t("common.image"), "image"],
-      [t("common.status"), "status"],
-      [t("common.created_at"), "created"],
-      [t("common.actions"), "actions"],
-    ] satisfies Array<[string, ContainerCell]>
-  ).map(([title, cell]) => ({
+      [`${t("common.status")} / ${t("common.name")}`, "name", 200],
+      [t("common.image"), "image", 220],
+      [t("common.ip_address"), "ip", 160],
+      [t("common.port_mapping"), "ports", 200],
+      [t("common.status"), "status", 110],
+      [t("common.created_at"), "created", 170],
+      [t("common.actions"), "actions", 160],
+    ] satisfies Array<[string, ContainerCell, number]>
+  ).map(([title, cell, width]) => ({
     title,
     key: cell,
+    width,
     align: "left" as const,
     render: (container: DockerContainerSummary) =>
       h(DockerContainerListRow, { container, cell }),
@@ -37,7 +47,7 @@ function rowKey(row: DockerContainerSummary) {
     :loading="dockerStatus.loading"
     :error="dockerStatus.error"
     :row-key="rowKey"
-    :scroll-x="800"
+    :scroll-x="1220"
     @retry="dockerStatus.retry"
   />
 </template>

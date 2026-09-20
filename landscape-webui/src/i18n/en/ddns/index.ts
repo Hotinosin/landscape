@@ -5,6 +5,7 @@ export default {
   current_ttl: "Current TTL: {ttl}",
   custom_ttl: "Custom TTL",
   job_name: "Name",
+  job_name_placeholder: "Enter name",
   job_name_required: "Name is required",
   zone_name: "Zone Name",
   zone_name_required: "Zone name is required",

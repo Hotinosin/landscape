@@ -4,7 +4,10 @@ export default {
   },
   blacklist_edit: {
     title: "防火墙黑名单编辑",
+    name: "名称",
+    name_placeholder: "请输入名称",
     remark: "备注",
+    remark_placeholder: "请输入备注",
     source: "黑名单来源",
     source_type_ip: "IP 地址",
     source_type_geo: "GeoIP 数据库",

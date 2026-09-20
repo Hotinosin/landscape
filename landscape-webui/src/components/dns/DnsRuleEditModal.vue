@@ -123,6 +123,7 @@ async function append_import_rules(rules: any[]) {
     :show-switch="false"
     :title="t('dns.rule_edit.title')"
     width="var(--app-tertiary-modal-width)"
+    :dirty="isModified"
     @after-enter="enter"
   >
     <!-- {{ isModified }} -->
@@ -192,9 +193,9 @@ async function append_import_rules(rules: any[]) {
         </n-flex>
       </StandardSettingRow>
     </n-form>
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button
           :loading="commit_spin"
           @click="saveRule"

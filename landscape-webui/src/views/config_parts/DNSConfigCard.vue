@@ -32,34 +32,37 @@ async function handleSaveDns() {
     <n-form>
       <StandardSettingRow
         :label="t('config.cache_capacity')"
-        :feedback="t('config.cache_capacity_desc')"
+        :hint="t('config.cache_capacity_desc')"
       >
         <n-input-number
           v-model:value="dnsStore.cacheCapacity"
           :min="1024"
           :max="1048576"
+          :show-button="false"
           placeholder="4096"
         />
       </StandardSettingRow>
       <StandardSettingRow
         :label="t('config.cache_ttl')"
-        :feedback="t('config.cache_ttl_desc')"
+        :hint="t('config.cache_ttl_desc')"
       >
         <n-input-number
           v-model:value="dnsStore.cacheTtl"
           :min="60"
           :max="2592000"
+          :show-button="false"
           placeholder="86400"
         />
       </StandardSettingRow>
       <StandardSettingRow
         :label="t('config.cache_negative_ttl')"
-        :feedback="t('config.cache_negative_ttl_desc')"
+        :hint="t('config.cache_negative_ttl_desc')"
       >
         <n-input-number
           v-model:value="dnsStore.cacheNegativeTtl"
           :min="5"
           :max="3600"
+          :show-button="false"
           placeholder="60"
         />
       </StandardSettingRow>

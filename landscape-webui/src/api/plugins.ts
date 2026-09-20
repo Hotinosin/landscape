@@ -4,6 +4,7 @@ import {
   removePlugin as removePluginApi,
   startPlugin as startPluginApi,
   stopPlugin as stopPluginApi,
+  restartPlugin as restartPluginApi,
   pluginLogs as pluginLogsApi,
   pluginConfig as pluginConfigApi,
   savePluginConfig as savePluginConfigApi,
@@ -34,7 +35,12 @@ export async function listPlugins(): Promise<PluginInfo[]> {
 }
 
 export async function importPlugin(file: File): Promise<PluginInfo> {
-  return importPluginApi({ file });
+  const formData = new FormData();
+  formData.append("file", file);
+  return importPluginApi({
+    data: formData,
+    headers: { "Content-Type": "multipart/form-data" },
+  } as any);
 }
 
 export async function removePlugin(id: string): Promise<void> {
@@ -45,8 +51,12 @@ export async function startPlugin(id: string): Promise<void> {
   await startPluginApi(id);
 }
 
-export async function stopPlugin(id: string): Promise<void> {
-  await stopPluginApi(id);
+export async function stopPlugin(id: string, force = false): Promise<void> {
+  await stopPluginApi(id, force ? { force } : undefined);
+}
+
+export async function restartPlugin(id: string): Promise<void> {
+  await restartPluginApi(id);
 }
 
 export async function pluginLogs(id: string): Promise<string> {

@@ -427,6 +427,7 @@ async function saveRule() {
     :title="t('gateway.edit_title')"
     :switch-disabled="!rule || isLegacyRule"
     width="min(900px, calc(100vw - 32px))"
+    :dirty="isModified"
     @after-enter="enter"
   >
     <div v-if="rule" class="editor-shell">
@@ -842,9 +843,9 @@ async function saveRule() {
       </n-scrollbar>
     </div>
 
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button
           :loading="commit_spin"
           @click="saveRule"

@@ -2,7 +2,14 @@
 import { computed, h, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Launch, Renew } from "@vicons/carbon";
 import type { DataTableColumns, UploadCustomRequestOptions } from "naive-ui";
-import { NButton, NIcon, NSpace, useMessage } from "naive-ui";
+import {
+  NButton,
+  NButtonGroup,
+  NDropdown,
+  NIcon,
+  NSpace,
+  useMessage,
+} from "naive-ui";
 import { useI18n } from "vue-i18n";
 import {
   importPlugin,
@@ -10,6 +17,7 @@ import {
   pluginConfig,
   pluginLogs,
   removePlugin,
+  restartPlugin,
   startPlugin,
   stopPlugin,
   savePluginConfig,
@@ -23,6 +31,7 @@ const { t } = useI18n();
 const message = useMessage();
 const activeTab = ref("manage");
 const actionLoading = ref<Record<string, boolean>>({});
+const restartLoading = ref<Record<string, boolean>>({});
 const logs = ref("");
 const showLogs = ref(false);
 const logsPlugin = ref<PluginInfo>();
@@ -97,33 +106,136 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
           },
           { default: () => t("plugin.config") },
         ),
-        h(
-          NButton,
-          {
-            size: "small",
-            secondary: true,
-            loading: !!actionLoading.value[row.id],
-            disabled: !!actionLoading.value[row.id],
-            onClick: async () => {
-              actionLoading.value[row.id] = true;
-              try {
-                if (row.service_running) await stopPlugin(row.id);
-                else await startPlugin(row.id);
-                await refresh();
-              } catch (e: any) {
-                message.error(
-                  e.response?.data?.message || e.message || t("common.error"),
-                );
-              } finally {
-                actionLoading.value[row.id] = false;
-              }
-            },
-          },
-          {
-            default: () =>
-              row.service_running ? t("plugin.stop") : t("plugin.start"),
-          },
-        ),
+        ...(row.service_running
+          ? [
+              h(
+                NButton,
+                {
+                  size: "small",
+                  secondary: true,
+                  loading: !!restartLoading.value[row.id],
+                  disabled:
+                    !!actionLoading.value[row.id] ||
+                    !!restartLoading.value[row.id],
+                  onClick: async () => {
+                    restartLoading.value[row.id] = true;
+                    try {
+                      await restartPlugin(row.id);
+                      await refresh();
+                      message.success(t("plugin.restart_success"));
+                    } catch (e: any) {
+                      message.error(
+                        e.response?.data?.message ||
+                          e.message ||
+                          t("common.error"),
+                      );
+                    } finally {
+                      restartLoading.value[row.id] = false;
+                    }
+                  },
+                },
+                { default: () => t("plugin.restart") },
+              ),
+              h(
+                NButtonGroup,
+                { size: "small" },
+                () => [
+                  h(
+                    NButton,
+                    {
+                      size: "small",
+                      secondary: true,
+                      loading: !!actionLoading.value[row.id],
+                      disabled:
+                        !!actionLoading.value[row.id] ||
+                        !!restartLoading.value[row.id],
+                      onClick: async () => {
+                        actionLoading.value[row.id] = true;
+                        try {
+                          await stopPlugin(row.id, false);
+                          await refresh();
+                        } catch (e: any) {
+                          message.error(
+                            e.response?.data?.message ||
+                              e.message ||
+                              t("common.error"),
+                          );
+                        } finally {
+                          actionLoading.value[row.id] = false;
+                        }
+                      },
+                    },
+                    { default: () => t("plugin.stop") },
+                  ),
+                  h(
+                    NDropdown,
+                    {
+                      trigger: "click",
+                      options: [
+                        { label: t("plugin.force_stop"), key: "force" },
+                      ],
+                      onSelect: async () => {
+                        actionLoading.value[row.id] = true;
+                        try {
+                          await stopPlugin(row.id, true);
+                          await refresh();
+                        } catch (e: any) {
+                          message.error(
+                            e.response?.data?.message ||
+                              e.message ||
+                              t("common.error"),
+                          );
+                        } finally {
+                          actionLoading.value[row.id] = false;
+                        }
+                      },
+                    },
+                    {
+                      default: () =>
+                        h(
+                          NButton,
+                          {
+                            size: "small",
+                            secondary: true,
+                            style: { padding: "0 6px" },
+                            disabled:
+                              !!actionLoading.value[row.id] ||
+                              !!restartLoading.value[row.id],
+                          },
+                          { default: () => "▾" },
+                        ),
+                    },
+                  ),
+                ],
+              ),
+            ]
+          : [
+              h(
+                NButton,
+                {
+                  size: "small",
+                  secondary: true,
+                  loading: !!actionLoading.value[row.id],
+                  disabled: !!actionLoading.value[row.id],
+                  onClick: async () => {
+                    actionLoading.value[row.id] = true;
+                    try {
+                      await startPlugin(row.id);
+                      await refresh();
+                    } catch (e: any) {
+                      message.error(
+                        e.response?.data?.message ||
+                          e.message ||
+                          t("common.error"),
+                      );
+                    } finally {
+                      actionLoading.value[row.id] = false;
+                    }
+                  },
+                },
+                { default: () => t("plugin.start") },
+              ),
+            ]),
         h(
           NButton,
           {
@@ -260,7 +372,7 @@ async function saveConfig() {
 
 function panelUrl(plugin: PluginInfo) {
   const proxyPath = `/api/plugins/${encodeURIComponent(plugin.id)}/ui`;
-  const uiPath = plugin.ui_path.replace(/^\//, "");
+  const uiPath = (plugin.ui_path ?? "").replace(/^\//, "");
   const setup = new URLSearchParams({
     hostname: window.location.hostname,
     port: window.location.port,
@@ -289,7 +401,9 @@ onMounted(() => {
       <n-tab name="manage">
         <n-flex align="center" :size="6" :wrap="false">
           {{ t("plugin.manage") }}
-          <n-tag size="tiny" :bordered="false">dev</n-tag>
+          <n-tag size="tiny" :bordered="false" class="plugins-dev-tag">
+            dev
+          </n-tag>
         </n-flex>
       </n-tab>
       <n-tab

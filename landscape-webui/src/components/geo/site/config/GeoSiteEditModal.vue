@@ -148,6 +148,7 @@ const matchTypeOptions = [
     :title="t('geo.geo_site.title')"
     :switch-disabled="!rule"
     width="var(--app-secondary-modal-width)"
+    :dirty="isModified"
     @after-enter="enter"
   >
     <n-form
@@ -282,9 +283,9 @@ const matchTypeOptions = [
         </StandardSettingRow>
       </template>
     </n-form>
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button
           :loading="commit_spin"
           @click="saveRule"

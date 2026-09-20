@@ -46,7 +46,7 @@ async function handleSaveLanHostname() {
       </StandardSettingRow>
       <StandardSettingRow
         :label="t('config.lan_suffix')"
-        :feedback="t('config.lan_suffix_desc')"
+        :hint="t('config.lan_suffix_desc')"
       >
         <n-input
           v-model:value="lanHostnameStore.lanSuffix"

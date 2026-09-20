@@ -2,7 +2,9 @@ export default {
   test: "Test",
   provider_profiles: "Domain Providers",
   profile_name: "Name",
+  profile_name_placeholder: "Enter name",
   profile_name_required: "Name is required",
+  remark_placeholder: "Enter remark",
   provider: "Provider",
   ddns_default_ttl: "DDNS TTL",
   ddns_default_ttl_hint:

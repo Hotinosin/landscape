@@ -513,9 +513,9 @@ async function save() {
       </template>
     </n-form>
 
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button :loading="commit_spin" @click="save" :disabled="!isModified">
           {{ t("common.save") }}
         </n-button>

@@ -1665,6 +1665,7 @@ onUnmounted(() => {
     <ConfigModal
       v-model:show="createOpen"
       :show-switch="false"
+      :dirty="Boolean(createName.trim() || createMembers.length)"
       width="var(--app-compact-modal-width)"
       :title="t('network.settings.create_bridge')"
     >
@@ -1692,9 +1693,9 @@ onUnmounted(() => {
           />
         </StandardSettingRow>
       </n-form>
-      <template #footer>
+      <template #footer="{ close }">
         <n-flex justify="space-between">
-          <n-button @click="createOpen = false">
+          <n-button @click="close">
             {{ t("common.cancel") }}
           </n-button>
           <n-button

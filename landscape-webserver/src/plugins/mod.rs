@@ -48,6 +48,112 @@ pub struct PluginService {
     pub executable: PathBuf,
     #[schema(value_type = String)]
     pub default_config: PathBuf,
+    #[serde(default)]
+    pub run_args: Option<Vec<String>>,
+    #[serde(default)]
+    pub check_args: Option<Vec<String>>,
+    #[serde(default)]
+    pub auto_restart: Option<bool>,
+}
+
+impl PluginService {
+    pub fn config_filename(&self) -> &str {
+        self.default_config
+            .file_name()
+            .and_then(|f| f.to_str())
+            .unwrap_or("config.yaml")
+    }
+
+    pub fn resolve_run_args(
+        &self,
+        executable: &Path,
+        data: &Path,
+        config: &Path,
+        namespace: &str,
+    ) -> Vec<String> {
+        if let Some(args) = &self.run_args {
+            return Self::substitute_args(args, executable, data, config, namespace);
+        }
+        match self.kind.as_str() {
+            "mihomo" => vec![
+                "-d".into(),
+                data.to_string_lossy().into_owned(),
+                "-f".into(),
+                config.to_string_lossy().into_owned(),
+            ],
+            "sing-box" => vec![
+                "run".into(),
+                "-c".into(),
+                config.to_string_lossy().into_owned(),
+                "-D".into(),
+                data.to_string_lossy().into_owned(),
+            ],
+            "xray" | "v2ray" => vec![
+                "run".into(),
+                "-c".into(),
+                config.to_string_lossy().into_owned(),
+            ],
+            _ => vec![
+                "-c".into(),
+                config.to_string_lossy().into_owned(),
+            ],
+        }
+    }
+
+    pub fn resolve_check_args(
+        &self,
+        executable: &Path,
+        data: &Path,
+        config: &Path,
+        namespace: &str,
+    ) -> Option<Vec<String>> {
+        if let Some(args) = &self.check_args {
+            return Some(Self::substitute_args(args, executable, data, config, namespace));
+        }
+        match self.kind.as_str() {
+            "mihomo" => Some(vec![
+                "-t".into(),
+                "-d".into(),
+                data.to_string_lossy().into_owned(),
+                "-f".into(),
+                config.to_string_lossy().into_owned(),
+            ]),
+            "sing-box" => Some(vec![
+                "check".into(),
+                "-c".into(),
+                config.to_string_lossy().into_owned(),
+                "-D".into(),
+                data.to_string_lossy().into_owned(),
+            ]),
+            "xray" | "v2ray" => Some(vec![
+                "test".into(),
+                "-c".into(),
+                config.to_string_lossy().into_owned(),
+            ]),
+            _ => None,
+        }
+    }
+
+    fn substitute_args(
+        templates: &[String],
+        executable: &Path,
+        data: &Path,
+        config: &Path,
+        namespace: &str,
+    ) -> Vec<String> {
+        let exe_str = executable.to_string_lossy();
+        let data_str = data.to_string_lossy();
+        let config_str = config.to_string_lossy();
+        templates
+            .iter()
+            .map(|arg| {
+                arg.replace("{executable}", &exe_str)
+                    .replace("{data}", &data_str)
+                    .replace("{config}", &config_str)
+                    .replace("{namespace}", namespace)
+            })
+            .collect()
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
@@ -136,6 +242,8 @@ pub struct PluginManager {
     manifests: Arc<RwLock<HashMap<String, PluginManifest>>>,
     handlers: Arc<Mutex<HashMap<String, Child>>>,
     services: Arc<Mutex<HashMap<String, Child>>>,
+    user_stopped: Arc<Mutex<std::collections::HashSet<String>>>,
+    restart_failures: Arc<Mutex<HashMap<String, (u32, std::time::Instant)>>>,
 }
 
 impl PluginManager {
@@ -150,10 +258,88 @@ impl PluginManager {
             manifests: Arc::new(RwLock::new(HashMap::new())),
             handlers: Arc::new(Mutex::new(HashMap::new())),
             services: Arc::new(Mutex::new(HashMap::new())),
+            user_stopped: Arc::new(Mutex::new(std::collections::HashSet::new())),
+            restart_failures: Arc::new(Mutex::new(HashMap::new())),
         };
         fs::create_dir_all(&manager.dir).await.map_err(|e| e.to_string())?;
         manager.reload().await;
+
+        let watchdog_manager = manager.clone();
+        tokio::spawn(async move {
+            watchdog_manager.watchdog_loop().await;
+        });
+
         Ok(manager)
+    }
+
+    async fn watchdog_loop(&self) {
+        let mut ticker = tokio::time::interval(tokio::time::Duration::from_secs(3));
+        loop {
+            ticker.tick().await;
+            self.watchdog_tick().await;
+        }
+    }
+
+    async fn watchdog_tick(&self) {
+        let manifests = self.manifests.read().await.clone();
+        for (id, manifest) in manifests {
+            let Some(service) = &manifest.service else { continue };
+            if service.auto_restart == Some(false) {
+                continue;
+            }
+
+            if self.user_stopped.lock().await.contains(&id) {
+                continue;
+            }
+
+            let running = self.service_running(&id).await;
+            if running {
+                let mut failures = self.restart_failures.lock().await;
+                if let Some((count, _)) = failures.get_mut(&id) {
+                    if *count > 0 {
+                        *count = 0;
+                    }
+                }
+                continue;
+            }
+
+            let mut failures = self.restart_failures.lock().await;
+            let now = std::time::Instant::now();
+            let (attempts, last_attempt) = failures.entry(id.clone()).or_insert((0, now));
+
+            if *attempts >= 3 {
+                if now.duration_since(*last_attempt) < std::time::Duration::from_secs(60) {
+                    continue;
+                }
+                *attempts = 0;
+            }
+
+            let delay_secs = match *attempts {
+                0 => 0,
+                1 => 1,
+                _ => 2,
+            };
+            if *attempts > 0
+                && now.duration_since(*last_attempt) < std::time::Duration::from_secs(delay_secs)
+            {
+                continue;
+            }
+
+            *attempts += 1;
+            *last_attempt = now;
+            tracing::warn!(
+                plugin = %id,
+                attempt = *attempts,
+                "plugin service stopped unexpectedly, attempting auto-restart"
+            );
+            drop(failures);
+
+            if let Err(err) = self.start_service(&manifest).await {
+                tracing::error!(plugin = %id, %err, "watchdog failed to restart plugin service");
+            } else {
+                tracing::info!(plugin = %id, "watchdog successfully restarted plugin service");
+            }
+        }
     }
 
     async fn reload(&self) {
@@ -239,8 +425,8 @@ impl PluginManager {
             }
         }
         if let Some(service) = &manifest.service {
-            if service.kind != "mihomo" {
-                return Err("only the declarative mihomo service is supported".into());
+            if service.kind.trim().is_empty() {
+                return Err("service kind is required".into());
             }
             validate_package_path(&service.executable)?;
             validate_package_path(&service.default_config)?;
@@ -254,6 +440,10 @@ impl PluginManager {
 
     fn plugin_dir(&self, id: &str) -> PathBuf {
         self.dir.join(id)
+    }
+
+    fn service_config_path(&self, id: &str, service: &PluginService) -> PathBuf {
+        self.plugin_dir(id).join("config").join(service.config_filename())
     }
 
     async fn prepare_dirs(&self, manifest: &PluginManifest) -> Result<(), String> {
@@ -298,7 +488,7 @@ impl PluginManager {
         let plugin_dir = self.plugin_dir(&manifest.id);
         let executable = plugin_dir.join("package").join(&service.executable);
         let bundled_config = plugin_dir.join("package").join(&service.default_config);
-        let config = plugin_dir.join("config/config.yaml");
+        let config = self.service_config_path(&manifest.id, service);
         if !executable.is_file() || !bundled_config.is_file() {
             return Err("package executable or default config is missing".into());
         }
@@ -313,22 +503,19 @@ impl PluginManager {
             .append(true)
             .open(plugin_dir.join("logs/service.log"))
             .map_err(|e| e.to_string())?;
-        let mut child = Command::new("ip")
-            .args(["netns", "exec", &namespace])
-            .arg(executable)
-            .arg("-d")
-            .arg(data)
-            .arg("-f")
-            .arg(config)
-            .stdin(Stdio::null())
+        let run_args = service.resolve_run_args(&executable, &data, &config, &namespace);
+        let mut cmd = Command::new("ip");
+        cmd.args(["netns", "exec", &namespace]);
+        cmd.arg(&executable);
+        cmd.args(&run_args);
+        cmd.stdin(Stdio::null())
             .stdout(Stdio::from(log.try_clone().map_err(|e| e.to_string())?))
             .stderr(Stdio::from(log))
-            .kill_on_drop(true)
-            .spawn()
-            .map_err(|e| e.to_string())?;
+            .kill_on_drop(true);
+        let mut child = cmd.spawn().map_err(|e| e.to_string())?;
         tokio::time::sleep(tokio::time::Duration::from_millis(250)).await;
         if let Some(status) = child.try_wait().map_err(|e| e.to_string())? {
-            return Err(format!("mihomo exited with {status}"));
+            return Err(format!("{} exited with {status}", service.kind));
         }
         self.services.lock().await.insert(manifest.id.clone(), child);
         Ok(())
@@ -341,29 +528,65 @@ impl PluginManager {
         data: &Path,
         config: &Path,
     ) -> Result<(), String> {
+        let Some(service) = &manifest.service else { return Ok(()) };
         let namespace = self.namespace(manifest);
-        let check = Command::new("ip")
-            .args(["netns", "exec", &namespace])
-            .arg(executable)
-            .args(["-t", "-d"])
-            .arg(data)
-            .arg("-f")
-            .arg(config)
-            .output()
-            .await
-            .map_err(|e| e.to_string())?;
+        let Some(check_args) = service.resolve_check_args(executable, data, config, &namespace) else {
+            return Ok(());
+        };
+        let mut cmd = Command::new("ip");
+        cmd.args(["netns", "exec", &namespace]);
+        cmd.arg(executable);
+        cmd.args(&check_args);
+        let check = cmd.output().await.map_err(|e| e.to_string())?;
         if !check.status.success() {
-            return Err(format!(
-                "mihomo config check failed: {}",
-                String::from_utf8_lossy(&check.stderr).trim()
-            ));
+            let stderr = String::from_utf8_lossy(&check.stderr);
+            let stdout = String::from_utf8_lossy(&check.stdout);
+            let detail = if !stderr.trim().is_empty() {
+                stderr.trim().to_string()
+            } else {
+                stdout.trim().to_string()
+            };
+            return Err(format!("{} config check failed: {}", service.kind, detail));
         }
         Ok(())
     }
 
-    async fn stop_service(&self, id: &str) {
-        if let Some(mut child) = self.services.lock().await.remove(id) {
-            let _ = child.kill().await;
+    async fn stop_service(&self, id: &str, force: bool) {
+        let child_opt = {
+            let mut services = self.services.lock().await;
+            services.remove(id)
+        };
+        if let Some(mut child) = child_opt {
+            if force {
+                let _ = child.kill().await;
+                let _ = child.wait().await;
+                return;
+            }
+
+            #[cfg(unix)]
+            {
+                use nix::sys::signal::{self, Signal};
+                use nix::unistd::Pid;
+                if let Some(pid) = child.id() {
+                    let _ = signal::kill(Pid::from_raw(pid as i32), Signal::SIGTERM);
+                }
+            }
+            #[cfg(not(unix))]
+            {
+                let _ = child.kill().await;
+            }
+
+            match tokio::time::timeout(tokio::time::Duration::from_secs(3), child.wait()).await {
+                Ok(_) => {}
+                Err(_) => {
+                    tracing::warn!(
+                        plugin = %id,
+                        "service did not exit within 3s after SIGTERM, force killing"
+                    );
+                    let _ = child.kill().await;
+                    let _ = child.wait().await;
+                }
+            }
         }
     }
 
@@ -592,7 +815,7 @@ impl PluginManager {
             set_executable(&package_dir.join(&service.executable))?;
         }
         if let Err(error) = self.install(&manifest).await {
-            self.stop_service(&manifest.id).await;
+            self.stop_service(&manifest.id, true).await;
             self.stop_tproxy(&manifest.id).await;
             let route_key = Self::route_key(&manifest.id);
             self.route_service.remove_ipv4_wan_route(&route_key).await;
@@ -625,7 +848,9 @@ impl PluginManager {
 
     async fn remove(&self, id: &str) -> Result<(), String> {
         let manifest = self.manifests.write().await.remove(id).ok_or("plugin not found")?;
-        self.stop_service(id).await;
+        self.user_stopped.lock().await.remove(id);
+        self.restart_failures.lock().await.remove(id);
+        self.stop_service(id, true).await;
         self.stop_tproxy(id).await;
         let route_key = Self::route_key(id);
         self.route_service.remove_ipv4_wan_route(&route_key).await;
@@ -649,15 +874,27 @@ impl PluginManager {
 
     async fn start(&self, id: &str) -> Result<(), String> {
         let manifest = self.get(id).await.ok_or("plugin not found")?;
+        self.user_stopped.lock().await.remove(id);
+        self.restart_failures.lock().await.remove(id);
         self.start_service(&manifest).await
     }
 
-    async fn stop(&self, id: &str) -> Result<(), String> {
+    async fn stop(&self, id: &str, force: bool) -> Result<(), String> {
         if self.get(id).await.is_none() {
             return Err("plugin not found".into());
         }
-        self.stop_service(id).await;
+        self.user_stopped.lock().await.insert(id.to_string());
+        self.restart_failures.lock().await.remove(id);
+        self.stop_service(id, force).await;
         Ok(())
+    }
+
+    async fn restart(&self, id: &str) -> Result<(), String> {
+        let manifest = self.get(id).await.ok_or("plugin not found")?;
+        self.user_stopped.lock().await.remove(id);
+        self.restart_failures.lock().await.remove(id);
+        self.stop_service(id, false).await;
+        self.start_service(&manifest).await
     }
 
     async fn logs(&self, id: &str) -> Result<String, String> {
@@ -671,12 +908,10 @@ impl PluginManager {
     }
 
     async fn config(&self, id: &str) -> Result<String, String> {
-        if self.get(id).await.is_none() {
-            return Err("plugin not found".into());
-        }
-        fs::read_to_string(self.plugin_dir(id).join("config/config.yaml"))
-            .await
-            .map_err(|e| e.to_string())
+        let manifest = self.get(id).await.ok_or("plugin not found")?;
+        let service = manifest.service.as_ref().ok_or("plugin has no managed service")?;
+        let config_path = self.service_config_path(id, service);
+        fs::read_to_string(config_path).await.map_err(|e| e.to_string())
     }
 
     async fn save_config(&self, id: &str, body: &str) -> Result<(), String> {
@@ -688,8 +923,9 @@ impl PluginManager {
         let plugin_dir = self.plugin_dir(id);
         let executable = plugin_dir.join("package").join(&service.executable);
         let data = plugin_dir.join("data");
-        let config = plugin_dir.join("config/config.yaml");
-        let pending = plugin_dir.join("config/config.yaml.new");
+        let config = self.service_config_path(id, service);
+        let filename = service.config_filename();
+        let pending = plugin_dir.join("config").join(format!("{filename}.new"));
         fs::write(&pending, body).await.map_err(|e| e.to_string())?;
         if let Err(error) = self.check_service_config(&manifest, &executable, &data, &pending).await
         {
@@ -698,7 +934,7 @@ impl PluginManager {
         }
         let was_running = self.service_running(id).await;
         if was_running {
-            self.stop_service(id).await;
+            self.stop_service(id, false).await;
         }
         fs::rename(&pending, config).await.map_err(|e| e.to_string())?;
         if was_running {
@@ -956,11 +1192,21 @@ async fn start_plugin(
     }
 }
 
+#[derive(Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct StopQuery {
+    #[serde(default)]
+    pub force: bool,
+}
+
 #[utoipa::path(
     post,
     path = "/{id}/stop",
     tag = "Plugins",
-    params(("id" = String, Path, description = "Plugin id")),
+    params(
+        ("id" = String, Path, description = "Plugin id"),
+        StopQuery
+    ),
     responses(
         (status = 200, description = "Plugin stopped"),
         (status = 204, description = "Plugin stopped"),
@@ -970,10 +1216,39 @@ async fn start_plugin(
 async fn stop_plugin(
     State(manager): State<PluginManager>,
     AxumPath(id): AxumPath<String>,
+    axum::extract::Query(query): axum::extract::Query<StopQuery>,
 ) -> Response {
-    match manager.stop(&id).await {
+    match manager.stop(&id, query.force).await {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(e) => error(StatusCode::NOT_FOUND, e),
+    }
+}
+
+#[utoipa::path(
+    post,
+    path = "/{id}/restart",
+    tag = "Plugins",
+    params(("id" = String, Path, description = "Plugin id")),
+    responses(
+        (status = 200, description = "Plugin restarted"),
+        (status = 204, description = "Plugin restarted"),
+        (status = 400, description = "Plugin restart failed"),
+        (status = 404, description = "Plugin not found")
+    )
+)]
+async fn restart_plugin(
+    State(manager): State<PluginManager>,
+    AxumPath(id): AxumPath<String>,
+) -> Response {
+    match manager.restart(&id).await {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(e) => {
+            if e == "plugin not found" {
+                error(StatusCode::NOT_FOUND, e)
+            } else {
+                error(StatusCode::BAD_REQUEST, e)
+            }
+        }
     }
 }
 
@@ -1059,6 +1334,7 @@ pub fn api_router(manager: PluginManager) -> Router {
         .route("/{id}", delete(remove_plugin))
         .route("/{id}/start", post(start_plugin))
         .route("/{id}/stop", post(stop_plugin))
+        .route("/{id}/restart", post(restart_plugin))
         .route("/{id}/logs", get(plugin_logs))
         .route("/{id}/config", get(plugin_config).put(save_plugin_config))
         .layer(DefaultBodyLimit::max(MAX_PACKAGE_SIZE + 1024 * 1024))
@@ -1073,6 +1349,7 @@ pub fn api_router(manager: PluginManager) -> Router {
         remove_plugin,
         start_plugin,
         stop_plugin,
+        restart_plugin,
         plugin_logs,
         plugin_config,
         save_plugin_config
@@ -1092,11 +1369,14 @@ pub fn ui_router(manager: PluginManager) -> Router {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Read;
+    use std::{io::Read, path::Path};
 
     use flate2::{Compression, write::GzEncoder};
 
-    use super::{PluginManifest, extract_package, valid_network_name, validate_package_path};
+    use super::{
+        PluginManifest, PluginService, StopQuery, extract_package, valid_network_name,
+        validate_package_path,
+    };
 
     #[test]
     fn manifest_shape_is_stable() {
@@ -1116,6 +1396,120 @@ mod tests {
         assert_eq!(manifest.network.tproxy_port, 12345);
         assert!(valid_network_name("land-mihomo", 15));
         assert!(!valid_network_name("../../root", 64));
+    }
+
+    fn as_str_vec(v: &[String]) -> Vec<&str> {
+        v.iter().map(|s| s.as_str()).collect()
+    }
+
+    #[test]
+    fn service_args_resolution_preset() {
+        let mihomo_service = PluginService {
+            kind: "mihomo".into(),
+            executable: "bin/mihomo".into(),
+            default_config: "config/config.yaml".into(),
+            run_args: None,
+            check_args: None,
+            auto_restart: None,
+        };
+        assert_eq!(mihomo_service.config_filename(), "config.yaml");
+        let run = mihomo_service.resolve_run_args(
+            Path::new("/bin/mihomo"),
+            Path::new("/data"),
+            Path::new("/config/config.yaml"),
+            "land-mihomo",
+        );
+        assert_eq!(as_str_vec(&run), vec!["-d", "/data", "-f", "/config/config.yaml"]);
+
+        let check = mihomo_service.resolve_check_args(
+            Path::new("/bin/mihomo"),
+            Path::new("/data"),
+            Path::new("/config/config.yaml"),
+            "land-mihomo",
+        );
+        assert_eq!(
+            check.as_ref().map(|v| as_str_vec(v)),
+            Some(vec!["-t", "-d", "/data", "-f", "/config/config.yaml"])
+        );
+
+        let singbox_service = PluginService {
+            kind: "sing-box".into(),
+            executable: "bin/sing-box".into(),
+            default_config: "config.json".into(),
+            run_args: None,
+            check_args: None,
+            auto_restart: Some(true),
+        };
+        assert_eq!(singbox_service.config_filename(), "config.json");
+        let sb_run = singbox_service.resolve_run_args(
+            Path::new("/bin/sing-box"),
+            Path::new("/data"),
+            Path::new("/config/config.json"),
+            "land-sb",
+        );
+        assert_eq!(as_str_vec(&sb_run), vec!["run", "-c", "/config/config.json", "-D", "/data"]);
+        let sb_check = singbox_service.resolve_check_args(
+            Path::new("/bin/sing-box"),
+            Path::new("/data"),
+            Path::new("/config/config.json"),
+            "land-sb",
+        );
+        assert_eq!(
+            sb_check.as_ref().map(|v| as_str_vec(v)),
+            Some(vec!["check", "-c", "/config/config.json", "-D", "/data"])
+        );
+    }
+
+    #[test]
+    fn service_args_resolution_custom_placeholders() {
+        let custom_service = PluginService {
+            kind: "custom-vpn".into(),
+            executable: "bin/vpn".into(),
+            default_config: "vpn.conf".into(),
+            run_args: Some(vec![
+                "start".into(),
+                "--cfg={config}".into(),
+                "--dir={data}".into(),
+                "--ns={namespace}".into(),
+            ]),
+            check_args: Some(vec!["verify".into(), "{config}".into()]),
+            auto_restart: Some(false),
+        };
+        assert_eq!(custom_service.config_filename(), "vpn.conf");
+        let run = custom_service.resolve_run_args(
+            Path::new("/bin/vpn"),
+            Path::new("/data/vpn"),
+            Path::new("/cfg/vpn.conf"),
+            "land-vpn",
+        );
+        assert_eq!(
+            as_str_vec(&run),
+            vec![
+                "start",
+                "--cfg=/cfg/vpn.conf",
+                "--dir=/data/vpn",
+                "--ns=land-vpn"
+            ]
+        );
+        let check = custom_service.resolve_check_args(
+            Path::new("/bin/vpn"),
+            Path::new("/data/vpn"),
+            Path::new("/cfg/vpn.conf"),
+            "land-vpn",
+        );
+        assert_eq!(
+            check.as_ref().map(|v| as_str_vec(v)),
+            Some(vec!["verify", "/cfg/vpn.conf"])
+        );
+    }
+
+    #[test]
+    fn stop_query_deserialization() {
+        let q_default: StopQuery = serde_json::from_str("{}").unwrap();
+        assert!(!q_default.force);
+
+        let q_force: StopQuery = serde_json::from_str(r#"{"force": true}"#).unwrap();
+        assert!(q_force.force);
     }
 
     #[test]

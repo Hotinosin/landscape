@@ -52,7 +52,8 @@ async function updateEnabled(enable: boolean) {
   <template v-if="cell === 'status'">
     <StatusTitle
       :enable="rule.enable"
-      :remark="rule.remark || t('common.no_remark')"
+      :name="rule.name"
+      :remark="rule.remark"
     />
   </template>
   <template v-else-if="cell === 'enable'">
@@ -89,7 +90,7 @@ async function updateEnabled(enable: boolean) {
     <n-flex justify="start" :wrap="false">
       <EditButton @click="show = true" />
       <DeleteButton
-        :item="rule.remark || t('common.no_remark')"
+        :item="rule.name || rule.remark || t('common.unnamed')"
         :on-confirm="remove"
       />
     </n-flex>

@@ -59,6 +59,7 @@ async function enter() {
   } else {
     config.value = {
       enable: true,
+      name: null,
       source: [],
       remark: "",
     };
@@ -138,11 +139,23 @@ async function saveConfig() {
     :title="t('firewall.blacklist_edit.title')"
     :switch-disabled="!config"
     width="var(--app-secondary-modal-width)"
+    :dirty="isModified"
     @after-enter="enter"
   >
     <n-form v-if="config" style="flex: 1" :model="config">
+      <StandardSettingRow :label="t('firewall.blacklist_edit.name')">
+        <n-input
+          v-model:value="config.name"
+          :placeholder="t('firewall.blacklist_edit.name_placeholder')"
+          clearable
+        />
+      </StandardSettingRow>
       <StandardSettingRow :label="t('firewall.blacklist_edit.remark')">
-        <n-input v-model:value="config.remark" type="text" />
+        <n-input
+          v-model:value="config.remark"
+          :placeholder="t('firewall.blacklist_edit.remark_placeholder')"
+          type="text"
+        />
       </StandardSettingRow>
       <StandardSettingRow
         :label="t('firewall.blacklist_edit.source')"
@@ -186,9 +199,9 @@ async function saveConfig() {
         </n-dynamic-input>
       </StandardSettingRow>
     </n-form>
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button
           :loading="commit_spin"
           @click="saveConfig"

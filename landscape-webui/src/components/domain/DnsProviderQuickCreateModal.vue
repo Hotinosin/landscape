@@ -21,6 +21,10 @@ const formRef = ref();
 const saving = ref(false);
 const providerType = ref("cloudflare");
 const form = ref<DnsProviderProfile>(createEmptyProfile());
+const originFormJson = ref("");
+const isModified = computed(
+  () => JSON.stringify(form.value) !== originFormJson.value,
+);
 
 const providerOptions = [
   { label: "Cloudflare", value: "cloudflare" },
@@ -81,7 +85,9 @@ watch(
     if (!show) return;
     providerType.value = "cloudflare";
     form.value = createEmptyProfile();
+    originFormJson.value = JSON.stringify(form.value);
   },
+  { immediate: true },
 );
 
 async function save() {
@@ -104,6 +110,7 @@ async function save() {
   <ConfigModal
     v-model:show="showModel"
     :show-switch="false"
+    :dirty="isModified"
     :width="props.width"
     :title="t('dns_provider.provider_profiles')"
   >
@@ -127,6 +134,7 @@ async function save() {
       <n-form-item :label="t('dns_provider.profile_name')" path="name">
         <n-input
           v-model:value="form.name"
+          :placeholder="t('dns_provider.profile_name_placeholder')"
           :input-props="{
             name: 'dns-provider-profile-name-new',
             autocomplete: 'one-time-code',
@@ -289,16 +297,25 @@ async function save() {
         />
       </n-form-item>
       <n-form-item :label="t('common.remark')">
-        <n-input v-model:value="form.remark" type="textarea" />
+        <n-input
+          v-model:value="form.remark"
+          type="textarea"
+          :placeholder="t('dns_provider.remark_placeholder')"
+        />
       </n-form-item>
     </n-form>
 
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="end">
-        <n-button @click="emit('update:show', false)">
+        <n-button @click="close">
           {{ t("common.cancel") }}
         </n-button>
-        <n-button type="primary" :loading="saving" @click="save">
+        <n-button
+          type="primary"
+          :loading="saving"
+          :disabled="!isModified"
+          @click="save"
+        >
           {{ t("common.save") }}
         </n-button>
       </n-flex>

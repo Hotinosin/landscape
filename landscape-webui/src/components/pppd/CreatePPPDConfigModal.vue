@@ -97,6 +97,7 @@ async function confirm_config() {
     :title="t('pppoe.editor.title')"
     :show-switch="false"
     width="var(--app-secondary-modal-width)"
+    :dirty="isModified"
     @after-enter="init_conf_value"
   >
     <n-form
@@ -177,9 +178,9 @@ async function confirm_config() {
         />
       </StandardSettingRow>
     </n-form>
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button
           @click="confirm_config()"
           type="primary"

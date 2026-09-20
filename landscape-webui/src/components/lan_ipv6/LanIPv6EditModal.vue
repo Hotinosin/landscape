@@ -265,7 +265,7 @@ function replace_group_sources(
     v-model:show="show_model"
     v-model:enabled="service_enabled"
     :embedded="iface_info.embedded"
-    :mask-closable="!config_dirty"
+    :dirty="config_dirty"
     :title="t('lan_ipv6.title')"
     :switch-disabled="!service_config"
     width="var(--app-secondary-modal-width)"

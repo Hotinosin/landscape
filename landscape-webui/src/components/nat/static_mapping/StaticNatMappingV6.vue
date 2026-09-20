@@ -22,7 +22,7 @@ type MappingCell =
 const columns = computed<DataTableColumns<StaticNatMappingV6Config>>(() =>
   (
     [
-      [`${t("common.status")} / ${t("common.remark")}`, "status"],
+      [`${t("common.status")} / ${t("common.name")}`, "status"],
       [t("common.ipv6_target"), "target"],
       [t("common.type"), "protocol"],
       [t("common.port_mapping"), "ports"],

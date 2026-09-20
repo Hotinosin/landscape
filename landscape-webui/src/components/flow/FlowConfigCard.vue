@@ -69,15 +69,17 @@ const show_remark = computed(
     <template #header>
       <StatusTitle
         :enable="config.enable"
-        :remark="`${config.flow_id}: ${title_name}`"
-      ></StatusTitle>
+        :name="config.name ? frontEndStore.MASK_INFO(config.name) : null"
+        :remark="config.remark ? frontEndStore.MASK_INFO(config.remark) : null"
+        :prefix="config.flow_id"
+      />
     </template>
 
     <template v-if="show_action" #header-extra>
       <n-flex>
         <EditButton @click="show_edit = true" />
         <DeleteButton
-          :item="`${config.flow_id}: ${title_name}`"
+          :item="`${config.flow_id}: ${config.name || config.remark || t('common.unnamed')}`"
           :on-confirm="del"
         />
       </n-flex>

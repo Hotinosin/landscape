@@ -71,6 +71,7 @@ async function enter() {
   } else {
     rule.value = {
       enable: true,
+      name: null,
       remark: "",
       match_rules: [],
       answer_mode: "static_ips",
@@ -169,6 +170,7 @@ async function append_import_rules(rules: any[]) {
     :title="t('dns.redirect_edit.title')"
     :switch-disabled="!rule"
     width="var(--app-secondary-modal-width)"
+    :dirty="isModified"
     @after-enter="enter"
   >
     <!-- {{ isModified }} -->
@@ -179,8 +181,19 @@ async function append_import_rules(rules: any[]) {
       ref="formRef"
       :model="rule"
     >
+      <StandardSettingRow :label="t('dns.redirect_edit.name')">
+        <n-input
+          v-model:value="rule.name"
+          :placeholder="t('dns.redirect_edit.name_placeholder')"
+          clearable
+        />
+      </StandardSettingRow>
+
       <StandardSettingRow :label="t('dns.redirect_edit.remark')">
-        <n-input v-model:value="rule.remark" />
+        <n-input
+          v-model:value="rule.remark"
+          :placeholder="t('dns.redirect_edit.remark_placeholder')"
+        />
       </StandardSettingRow>
 
       <StandardSettingRow control-width="auto">
@@ -286,9 +299,9 @@ async function append_import_rules(rules: any[]) {
         </n-flex>
       </StandardSettingRow>
     </n-form>
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button
           :loading="commit_spin"
           @click="saveRule"

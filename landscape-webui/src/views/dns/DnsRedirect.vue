@@ -29,7 +29,7 @@ type RedirectCell =
 const columns = computed<DataTableColumns<DNSRedirectRule>>(() =>
   (
     [
-      [`${t("common.status")} / ${t("common.remark")}`, "status"],
+      [`${t("common.status")} / ${t("common.name")}`, "status"],
       [t("dns.redirect_card.apply_to"), "flows"],
       [t("dns.rule_card.match_rules"), "rules"],
       [t("dns.redirect_card.answer_mode"), "mode"],

@@ -2,7 +2,7 @@ export default {
   docker_run: {
     title: "Run Image: {image}",
     container_name: "Container Name",
-    container_name_placeholder: "Enter container name (optional)",
+    container_name_placeholder: "Enter container name",
     flow_egress: "Use as Flow Policy Egress",
     restart_policy: "Restart Policy",
     entrypoint: "Entrypoint",

@@ -33,7 +33,7 @@ async function updateEnabled(enable: boolean) {
 }
 </script>
 <template>
-  <StatusTitle v-if="cell === 'status'" :enable="rule.enable" :remark="rule.remark || t('common.no_remark')" />
+  <StatusTitle v-if="cell === 'status'" :enable="rule.enable" :name="rule.name" :remark="rule.remark" />
   <StandardEnableSwitch v-else-if="cell === 'enable'" :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" />
   <n-flex v-else-if="cell === 'source'" size="small">
     <BlacklistSourceExhibit
@@ -47,7 +47,7 @@ async function updateEnabled(enable: boolean) {
   <n-flex v-else justify="start" :wrap="false">
     <EditButton @click="show = true" />
     <DeleteButton
-      :item="rule.remark || t('common.no_remark')"
+      :item="rule.name || rule.remark || t('common.unnamed')"
       :on-confirm="remove"
     />
   </n-flex>

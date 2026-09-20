@@ -160,6 +160,7 @@ function normalizeFlowTargets(
     :switch-disabled="!rule"
     :show-switch="false"
     :width="modalWidth"
+    :dirty="isModified"
     @after-enter="enter"
     @after-leave="exit"
   >
@@ -189,6 +190,7 @@ function normalizeFlowTargets(
             <n-input
               :type="frontEndStore.presentation_mode ? 'password' : 'text'"
               v-model:value="rule.remark"
+              :placeholder="t('flow.edit.remark_placeholder')"
             />
           </StandardSettingRow>
           <StandardSettingRow layout="stacked">
@@ -236,9 +238,9 @@ function normalizeFlowTargets(
         />
       </n-tab-pane>
     </n-tabs>
-    <template v-if="activeTab === 'flow'" #footer>
+    <template v-if="activeTab === 'flow'" #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button
           :loading="commit_spin"
           @click="saveRule"

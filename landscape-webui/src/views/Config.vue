@@ -22,8 +22,6 @@ const lanHostnameStore = useLanHostnameConfigStore();
 const message = useMessage();
 const loading = ref(false);
 
-const scrollTarget = () => document.querySelector(".main-body");
-
 onMounted(async () => {
   loading.value = true;
   try {
@@ -44,51 +42,17 @@ onMounted(async () => {
 
 <template>
   <div class="config-container">
-    <!-- 侧边目录容器 -->
-    <div class="side-nav hidden-mobile">
-      <n-anchor
-        :bound="24"
-        :ignore-gap="true"
-        listen-to=".main-body"
-        style="width: 200px"
-      >
-        <n-card
-          :title="t('config.directory')"
-          size="small"
-          :segmented="{ content: true }"
-          class="anchor-card"
-        >
-          <n-anchor-link :title="t('config.ui_title')" href="#ui-config" />
-          <n-anchor-link :title="t('config.dns_title')" href="#dns-config" />
-          <n-anchor-link
-            :title="t('config.lan_hostname_title')"
-            href="#lan-hostname-config"
-          />
-          <n-anchor-link
-            :title="t('config.metric_title')"
-            href="#metric-config"
-          />
-          <n-anchor-link
-            :title="t('config.password_title')"
-            href="#password-config"
-          />
-          <n-anchor-link
-            :title="t('config.backup_title')"
-            href="#backup-config"
-          />
-        </n-card>
-      </n-anchor>
-    </div>
-
-    <div class="main-content">
-      <n-space vertical size="large">
-        <UIConfigCard />
-        <DNSConfigCard />
-        <LanHostnameConfigCard />
-        <MetricConfigCard />
-        <PasswordConfigCard />
-        <BackupConfigCard />
-      </n-space>
+    <div class="config-waterfall">
+      <div class="config-column">
+        <UIConfigCard class="card-item--ui" />
+        <DNSConfigCard class="card-item--dns" />
+        <LanHostnameConfigCard class="card-item--lan-hostname" />
+        <PasswordConfigCard class="card-item--password" />
+        <BackupConfigCard class="card-item--backup" />
+      </div>
+      <div class="config-column">
+        <MetricConfigCard class="card-item--metric" />
+      </div>
     </div>
   </div>
 </template>
@@ -97,84 +61,56 @@ onMounted(async () => {
 .config-container {
   padding: var(--app-data-table-frame-inset);
   width: 100%;
+  box-sizing: border-box;
+}
+
+.config-waterfall {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--app-space-lg, 16px);
+  align-items: start;
+}
+
+.config-column {
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 16px;
+  flex-direction: column;
+  gap: var(--app-space-lg, 16px);
+  min-width: 0;
 }
 
-.main-content {
-  flex: 1;
-  min-width: 0; /* 防止内容撑破 flex 容器 */
-}
-
-.side-nav {
-  width: 200px;
-  flex-shrink: 0;
-}
-
-.anchor-card {
-  box-shadow: 0 1px 4px var(--app-shadow-color);
-  border-radius: var(--app-radius-panel, 8px);
-}
-
-.side-nav :deep(.n-anchor) {
-  padding-left: 0;
-}
-
-.side-nav :deep(.n-anchor-rail),
-.side-nav :deep(.n-anchor-link-background) {
-  display: none;
-}
-
-/* 响应式：在窄屏下隐藏目录，主内容自动占满 */
 @media (max-width: 992px) {
-  .hidden-mobile {
-    display: none;
+  .config-waterfall {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-space-lg, 16px);
   }
-  .config-container {
-    gap: 0;
+
+  .config-column {
+    display: contents;
   }
-}
 
-:deep(.anchor-card .n-anchor-link) {
-  box-sizing: border-box;
-  height: 28px !important;
-  min-height: 0;
-  margin-top: 6px;
-  padding: 0 8px !important;
-  justify-content: center;
-  line-height: normal;
-  font-size: var(--app-font-size-body);
-}
+  .card-item--ui {
+    order: 1;
+  }
 
-:deep(.n-anchor-link--active) {
-  background: transparent;
-}
+  .card-item--metric {
+    order: 2;
+  }
 
-:deep(.n-anchor-link--active::before) {
-  position: absolute;
-  top: var(--app-space-sm);
-  bottom: var(--app-space-sm);
-  left: 0;
-  width: var(--app-radius-indicator);
-  content: "";
-  background: var(--app-brand-color);
-  border-radius: var(--app-radius-indicator);
-}
+  .card-item--dns {
+    order: 3;
+  }
 
-:deep(.n-anchor-link--active > .n-anchor-link__title) {
-  color: var(--app-brand-active-color);
-  background: color-mix(in srgb, var(--app-brand-color) 18%, transparent);
-}
+  .card-item--lan-hostname {
+    order: 4;
+  }
 
-:deep(.anchor-card .n-anchor-link__title) {
-  box-sizing: border-box;
-  display: flex !important;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  padding: 0 18px !important;
-  border-radius: var(--app-radius-control);
+  .card-item--password {
+    order: 5;
+  }
+
+  .card-item--backup {
+    order: 6;
+  }
 }
 </style>

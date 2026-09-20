@@ -37,6 +37,7 @@ export default {
   pull_image: "拉取镜像",
   pull_image_name_required: "拉取的镜像名称不能为空",
   port_mapping: "端口映射",
+  ip_address: "IP 地址",
   ipv4_target: "IPv4 目标",
   ipv6_target: "IPv6 目标",
   updated_at: "更新于",

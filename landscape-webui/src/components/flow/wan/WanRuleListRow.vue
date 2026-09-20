@@ -46,7 +46,13 @@ async function updateEnabled(enable: boolean) {
 </script>
 
 <template>
-  <StatusTitle v-if="cell === 'status'" :enable="rule.enable" :remark="`${rule.index}: ${rule.remark || t('common.no_remark')}`" />
+  <StatusTitle
+    v-if="cell === 'status'"
+    :enable="rule.enable"
+    :name="rule.name"
+    :remark="rule.remark"
+    :prefix="rule.index"
+  />
   <StandardEnableSwitch v-else-if="cell === 'enable'" :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" />
   <FlowRuleEgress
     v-else-if="cell === 'action'"
@@ -70,7 +76,7 @@ async function updateEnabled(enable: boolean) {
   <n-flex v-else-if="cell === 'actions'" size="small" :wrap="false">
     <EditButton @click="showEdit = true" />
     <DeleteButton
-      :item="`${rule.index}: ${rule.remark || t('common.no_remark')}`"
+      :item="`${rule.index}: ${rule.name || rule.remark || t('common.unnamed')}`"
       :on-confirm="remove"
     />
   </n-flex>

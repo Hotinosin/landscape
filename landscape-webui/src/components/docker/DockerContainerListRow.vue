@@ -12,7 +12,7 @@ import { usePreferenceStore } from "@/stores/preference";
 import { useI18n } from "vue-i18n";
 const props = defineProps<{
   container: DockerContainerSummary;
-  cell: "name" | "image" | "status" | "created" | "actions";
+  cell: "name" | "image" | "ip" | "ports" | "status" | "created" | "actions";
 }>();
 const store = useDockerStore();
 const front = useFrontEndStore();
@@ -23,6 +23,8 @@ const title = computed(
   () => props.container.Names?.[0]?.replace(/^\/+/, "") ?? "",
 );
 const buttons = computed(() => new DockerBtnShow(props.container.State));
+const ips = computed(() => props.container.getIpAddresses());
+const ports = computed(() => props.container.formatPorts());
 async function act(fn: (name: string) => Promise<unknown>) {
   if (!title.value) return;
   busy.value = true;
@@ -44,6 +46,30 @@ async function act(fn: (name: string) => Promise<unknown>) {
     <n-ellipsis style="max-width: 320px">{{
       front.MASK_INFO(container.Image)
     }}</n-ellipsis> </template
+  ><template v-else-if="cell === 'ip'">
+    <n-flex v-if="ips.length" :size="4" wrap>
+      <n-tag
+        v-for="ip in ips"
+        :key="ip"
+        size="small"
+        :bordered="false"
+      >
+        {{ front.MASK_INFO(ip) }}
+      </n-tag>
+    </n-flex>
+    <span v-else>—</span> </template
+  ><template v-else-if="cell === 'ports'">
+    <n-flex v-if="ports.length" :size="4" wrap>
+      <n-tag
+        v-for="p in ports"
+        :key="p"
+        size="small"
+        :bordered="false"
+      >
+        {{ front.MASK_INFO(p) }}
+      </n-tag>
+    </n-flex>
+    <span v-else>—</span> </template
   ><template v-else-if="cell === 'status'">{{ container.State }}</template>
   <template v-else-if="cell === 'created'">
     <n-time

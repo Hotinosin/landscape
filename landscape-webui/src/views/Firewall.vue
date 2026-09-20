@@ -22,7 +22,7 @@ const { t } = useI18n();
 
 const columns = computed<DataTableColumns<FirewallBlacklistConfig>>(() => [
   {
-    title: `${t("common.status")} / ${t("common.remark")}`,
+    title: `${t("common.status")} / ${t("common.name")}`,
     key: "status",
     render: (rule) => h(FirewallBlacklistListRow, { rule, cell: "status" }),
   },

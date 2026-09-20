@@ -44,6 +44,35 @@ const dockContentRef = ref<HTMLDivElement | null>(null);
 const pageContentRef = ref<HTMLDivElement | null>(null);
 let term: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
+let resizeObserver: ResizeObserver | null = null;
+let resizeRaf: number | null = null;
+
+function setupResizeObserver(target: HTMLElement) {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+  if (resizeRaf !== null) {
+    cancelAnimationFrame(resizeRaf);
+    resizeRaf = null;
+  }
+  if (typeof ResizeObserver !== "undefined") {
+    resizeObserver = new ResizeObserver(() => {
+      if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(() => {
+        ptyStore.fit();
+      });
+    });
+    resizeObserver.observe(target);
+  }
+}
+
+function onWindowResize() {
+  if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
+  resizeRaf = requestAnimationFrame(() => {
+    ptyStore.fit();
+  });
+}
 
 // UI State
 const isFullScreen = ref(false);
@@ -197,6 +226,14 @@ function reconnect() {
 // --- Terminal Management ---
 
 function cleanupTerminal() {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+  if (resizeRaf !== null) {
+    cancelAnimationFrame(resizeRaf);
+    resizeRaf = null;
+  }
   if (term) {
     ptyStore.detachTerminal(term);
     term.dispose();
@@ -235,6 +272,17 @@ function mountTerminal() {
   term.loadAddon(fitAddon);
   term.open(target);
   ptyStore.attachTerminal(term, fitAddon);
+
+  setupResizeObserver(target);
+
+  if (typeof document !== "undefined" && document.fonts?.ready) {
+    document.fonts.ready.then(() => {
+      if (term) ptyStore.fit();
+    });
+  }
+
+  setTimeout(() => ptyStore.fit(), 100);
+  setTimeout(() => ptyStore.fit(), 350);
 
   if (!ptyStore.isConnected) ptyStore.connect();
 }
@@ -319,10 +367,14 @@ function onAfterLeave() {
 }
 
 onMounted(() => {
+  window.addEventListener("resize", onWindowResize);
   if (props.page) void nextTick(mountTerminal);
 });
 
-onUnmounted(cleanupTerminal);
+onUnmounted(() => {
+  window.removeEventListener("resize", onWindowResize);
+  cleanupTerminal();
+});
 </script>
 
 <template>
@@ -644,16 +696,25 @@ onUnmounted(cleanupTerminal);
 .terminal-page {
   display: flex;
   flex: 1;
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
+  box-sizing: border-box;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--app-terminal-border-color);
   border-radius: var(--app-radius-surface);
+  background-color: var(--app-terminal-background-color);
 }
 
 .terminal-page__content {
+  flex: 1;
+  width: 100%;
   min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
 }
 
 .float-btn-container {
@@ -680,14 +741,29 @@ onUnmounted(cleanupTerminal);
 
 .terminal-container {
   flex: 1;
+  width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
   background-color: var(--app-terminal-background-color);
   overflow: hidden;
+  position: relative;
+}
+
+:deep(.xterm) {
+  padding: 4px 6px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+:deep(.xterm-viewport) {
+  background-color: var(--app-terminal-background-color) !important;
 }
 
 /* Unified header style */
 .dock-header,
 :deep(.terminal-header) {
   height: 36px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   padding: 0 8px;

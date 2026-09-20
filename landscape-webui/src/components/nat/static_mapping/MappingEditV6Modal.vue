@@ -156,6 +156,7 @@ async function enter() {
   } else {
     rule.value = {
       enable: true,
+      name: null,
       port_config: { mode: "ports", ports: [] },
       wan_iface_name: null,
       lan_target: { t: "device", device_ids: [] },
@@ -248,6 +249,7 @@ const isIndeterminate = computed(() => {
     :title="t('nat.mapping.edit_title')"
     :show-switch="false"
     width="var(--app-secondary-modal-width)"
+    :dirty="isModified"
     @after-enter="enter"
   >
     <n-flex vertical>
@@ -381,17 +383,32 @@ const isIndeterminate = computed(() => {
         </StandardSettingRow>
 
         <StandardSettingRow
+          :label="t('nat.mapping.name')"
+          control-width="wide"
+        >
+          <n-input
+            v-model:value="rule.name"
+            :placeholder="t('nat.mapping.name_placeholder')"
+            clearable
+          />
+        </StandardSettingRow>
+
+        <StandardSettingRow
           :label="t('nat.mapping.remark')"
           control-width="wide"
         >
-          <n-input v-model:value="rule.remark" type="textarea" />
+          <n-input
+            v-model:value="rule.remark"
+            :placeholder="t('nat.mapping.remark_placeholder')"
+            type="textarea"
+          />
         </StandardSettingRow>
       </n-form>
     </n-flex>
 
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button
           :loading="commit_spin"
           @click="saveRule"

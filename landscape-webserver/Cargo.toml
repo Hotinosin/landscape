@@ -38,6 +38,7 @@ http-body-util = { workspace = true }
 headers = { workspace = true }
 
 homedir = { workspace = true }
+nix = { workspace = true, features = ["signal", "user", "process"] }
 
 futures = { workspace = true }
 

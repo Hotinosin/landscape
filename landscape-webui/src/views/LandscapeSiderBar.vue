@@ -251,7 +251,11 @@ const menuOptions = computed<MenuOption[]>(() => [
         label: () =>
           h("span", { style: "display:flex;align-items:center;gap:6px" }, [
             t("routes.plugins"),
-            h(NTag, { size: "tiny", bordered: false }, () => "dev"),
+            h(
+              NTag,
+              { size: "tiny", bordered: false, class: "plugins-dev-tag" },
+              () => "dev",
+            ),
           ]),
         key: "plugins",
         icon: renderIcon(Plug),
@@ -423,5 +427,9 @@ const menuOptions = computed<MenuOption[]>(() => [
 
 .sidebar-collapse-button:hover {
   color: var(--app-brand-color);
+}
+
+.landscape-sidebar :deep(.plugins-dev-tag) {
+  transform-origin: left center;
 }
 </style>

@@ -49,6 +49,10 @@ const form = ref<DnsProviderProfile>({
   ddns_default_ttl: defaultDdnsTtlForProvider("cloudflare"),
   remark: "",
 });
+const originFormJson = ref("");
+const isModified = computed(
+  () => JSON.stringify(form.value) !== originFormJson.value,
+);
 const providerType = ref("cloudflare");
 
 function rowKey(row: DnsProviderProfile) {
@@ -183,6 +187,7 @@ function resetForm(item?: DnsProviderProfile) {
       };
   editingId.value = item?.id ?? null;
   providerType.value = getProviderType(form.value.provider_config);
+  originFormJson.value = JSON.stringify(form.value);
 }
 
 async function save() {
@@ -356,6 +361,7 @@ onMounted(refresh);
     <ConfigModal
       v-model:show="showModal"
       :show-switch="false"
+      :dirty="isModified"
       width="var(--app-secondary-modal-width)"
       :title="t('dns_provider.provider_profiles')"
     >
@@ -379,6 +385,7 @@ onMounted(refresh);
         <n-form-item :label="t('dns_provider.profile_name')" path="name">
           <n-input
             v-model:value="form.name"
+            :placeholder="t('dns_provider.profile_name_placeholder')"
             :input-props="{
               name: 'dns-provider-profile-name',
               autocomplete: 'one-time-code',
@@ -534,12 +541,13 @@ onMounted(refresh);
           <n-input
             v-model:value="form.remark"
             type="textarea"
+            :placeholder="t('dns_provider.remark_placeholder')"
             :autosize="{ minRows: 2, maxRows: 4 }"
           />
         </n-form-item>
       </n-form>
 
-      <template #footer>
+      <template #footer="{ close }">
         <n-flex class="standard-modal-footer--split" justify="space-between">
           <n-button
             secondary
@@ -550,12 +558,17 @@ onMounted(refresh);
             {{ t("cert.action_verify") }}
           </n-button>
           <n-flex :size="8">
-            <n-button @click="showModal = false">{{
+            <n-button @click="close">{{
               t("common.cancel")
             }}</n-button>
-            <n-button type="primary" :loading="saving" @click="save">{{
-              t("common.save")
-            }}</n-button>
+            <n-button
+              type="primary"
+              :loading="saving"
+              :disabled="!isModified"
+              @click="save"
+            >
+              {{ t("common.save") }}
+            </n-button>
           </n-flex>
         </n-flex>
       </template>
