@@ -1,67 +1,51 @@
-import axios from "axios";
-import { applyInterceptors } from "@/api";
+import {
+  listPlugins as listPluginsApi,
+  importPlugin as importPluginApi,
+  removePlugin as removePluginApi,
+  startPlugin as startPluginApi,
+  stopPlugin as stopPluginApi,
+  pluginLogs as pluginLogsApi,
+  pluginConfig as pluginConfigApi,
+  savePluginConfig as savePluginConfigApi,
+} from "@landscape-router/types/api/plugins/plugins";
+import type {
+  PluginInfo,
+  PluginNetwork,
+} from "@landscape-router/types/api/schemas";
 
-const client = applyInterceptors(axios.create({ baseURL: "/api/v1/plugins" }));
-
-export interface PluginInfo {
-  protocol_version: number;
-  id: string;
-  name: string;
-  version?: string;
-  host_interface: string;
-  controller_socket: string;
-  ui_path: string;
-  network: {
-    namespace?: string;
-    peer_interface: string;
-    tproxy_port: number;
-  };
-  interface_ready: boolean;
-  tproxy_ready: boolean;
-  controller_ready: boolean;
-  service_running: boolean;
-  trust: "UNVERIFIED_SOURCE";
-}
+export type { PluginInfo, PluginNetwork };
 
 export async function listPlugins(): Promise<PluginInfo[]> {
-  return client.get("", { silent: true } as any);
+  return listPluginsApi({ silent: true });
 }
 
 export async function importPlugin(file: File): Promise<PluginInfo> {
-  const body = new FormData();
-  body.append("file", file);
-  return client.post("/import", body);
+  return importPluginApi({ file });
 }
 
 export async function removePlugin(id: string): Promise<void> {
-  await client.delete(`/${encodeURIComponent(id)}`);
+  await removePluginApi(id);
 }
 
 export async function startPlugin(id: string): Promise<void> {
-  await client.post(`/${encodeURIComponent(id)}/start`);
+  await startPluginApi(id);
 }
 
 export async function stopPlugin(id: string): Promise<void> {
-  await client.post(`/${encodeURIComponent(id)}/stop`);
+  await stopPluginApi(id);
 }
 
 export async function pluginLogs(id: string): Promise<string> {
-  return client.get(`/${encodeURIComponent(id)}/logs`, {
-    responseType: "text",
-  });
+  return pluginLogsApi(id);
 }
 
 export async function pluginConfig(id: string): Promise<string> {
-  return client.get(`/${encodeURIComponent(id)}/config`, {
-    responseType: "text",
-  });
+  return pluginConfigApi(id);
 }
 
 export async function savePluginConfig(
   id: string,
   config: string,
 ): Promise<void> {
-  await client.put(`/${encodeURIComponent(id)}/config`, config, {
-    headers: { "Content-Type": "text/plain" },
-  });
+  await savePluginConfigApi(id, config);
 }

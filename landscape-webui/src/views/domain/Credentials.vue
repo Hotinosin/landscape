@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
-import CertAccounts from "@/views/cert/CertAccounts.vue";
-import DnsProviderProfiles from "@/views/domain/DnsProviderProfiles.vue";
+import CertAccounts from "@/components/cert/account/CertAccounts.vue";
+import DnsProviderProfiles from "@/components/domain/DnsProviderProfiles.vue";
 
 const { t } = useI18n();
 </script>

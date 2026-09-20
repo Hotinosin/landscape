@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import StaticNatMappingV4 from "@/views/StaticNatMappingV4.vue";
-import StaticNatMappingV6 from "@/views/StaticNatMappingV6.vue";
+import StaticNatMappingV4 from "@/components/nat/static_mapping/StaticNatMappingV4.vue";
+import StaticNatMappingV6 from "@/components/nat/static_mapping/StaticNatMappingV6.vue";
 
 const route = useRoute();
 const router = useRouter();

@@ -9,14 +9,15 @@ import {
   changeDevStatus as change_iface_status,
   changeWifiMode as change_wifi_mode,
 } from "@landscape-router/types/api/interfaces/interfaces";
+import { getRuntimeIpAddresses } from "@landscape-router/types/api/ip-config/ip-config";
+import type { RuntimeIpAddress } from "@landscape-router/types/api/schemas";
 import { applyInterceptors } from "@/api";
 
 const networkAxios = applyInterceptors(
   axios.create({ baseURL: "/api/v1/interfaces", timeout: 30000 }),
 );
-const servicesAxios = applyInterceptors(
-  axios.create({ baseURL: "/api/v1/services", timeout: 30000 }),
-);
+
+export type { RuntimeIpAddress };
 
 export {
   add_controller,
@@ -44,17 +45,9 @@ export async function change_iface_boot_status(
   );
 }
 
-export interface RuntimeIpAddress {
-  address: string;
-  prefix_length: number;
-  is_permanent: boolean;
-}
-
 export async function get_runtime_ip_addresses(): Promise<
   Record<string, RuntimeIpAddress[]>
 > {
-  const response = (await servicesAxios.get("/ip/runtime-addresses", {
-    silent: true,
-  } as any)) as unknown as { data: Record<string, RuntimeIpAddress[]> };
-  return response.data;
+  const data = await getRuntimeIpAddresses({ silent: true });
+  return (data || {}) as Record<string, RuntimeIpAddress[]>;
 }

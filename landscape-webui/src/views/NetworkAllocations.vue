@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import DHCPv4Server from "@/views/status/DHCPv4Server.vue";
-import IPv6RA from "@/views/status/IPv6RA.vue";
+import DHCPv4Server from "@/components/dhcp_v4/DHCPv4Server.vue";
+import IPv6RA from "@/components/dhcp_v6/IPv6RA.vue";
 import { Renew } from "@vicons/carbon";
 import { useI18n } from "vue-i18n";
 

@@ -1,16 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const mocks = vi.hoisted(() => ({ get: vi.fn() }));
-
-vi.mock("axios", () => ({ default: { create: vi.fn() } }));
-vi.mock("@/api", () => ({
-  applyInterceptors: () => ({ get: mocks.get }),
-}));
-
+import { setAxiosInstance } from "@landscape-router/types/mutator";
 import { get_runtime_ip_addresses } from "./network";
 
+const mockAxios = vi.fn();
+
 describe("get_runtime_ip_addresses", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setAxiosInstance(mockAxios as any);
+  });
 
   it("unwraps the Landscape API response", async () => {
     const addresses = {
@@ -22,8 +20,15 @@ describe("get_runtime_ip_addresses", () => {
         },
       ],
     };
-    mocks.get.mockResolvedValue({ data: addresses });
+    mockAxios.mockResolvedValue({ data: addresses });
 
     await expect(get_runtime_ip_addresses()).resolves.toEqual(addresses);
+    expect(mockAxios).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: "/api/v1/services/ip/runtime-addresses",
+        method: "GET",
+      }),
+    );
   });
 });
+
