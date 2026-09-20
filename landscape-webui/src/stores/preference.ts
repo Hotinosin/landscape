@@ -12,6 +12,7 @@ import {
   cacheAccentColor,
   cacheThemeStyle,
   normalizeThemePreference,
+  normalizeThemeStyle,
   readCachedAccentColor,
   readCachedThemeStyle,
   readCachedThemePreference,
@@ -45,6 +46,9 @@ export const usePreferenceStore = defineStore("preference", () => {
       language.value = normalizeLanguage(config.language, currentLocale);
       timezone.value = config.timezone || "Asia/Shanghai";
       theme.value = normalizeThemePreference(config.theme, theme.value);
+      if (config.theme_style) {
+        themeStyle.value = normalizeThemeStyle(config.theme_style as any);
+      }
 
       applyPreference();
     } catch (error) {
@@ -59,6 +63,9 @@ export const usePreferenceStore = defineStore("preference", () => {
     language.value = normalizeLanguage(ui.language, currentLocale);
     timezone.value = ui.timezone || "Asia/Shanghai";
     theme.value = normalizeThemePreference(ui.theme, theme.value);
+    if (ui.theme_style) {
+      themeStyle.value = normalizeThemeStyle(ui.theme_style as any);
+    }
     expectedHash.value = hash;
   }
 
@@ -73,6 +80,14 @@ export const usePreferenceStore = defineStore("preference", () => {
       language: language.value === "zh" ? undefined : language.value,
       timezone: timezone.value === "Asia/Shanghai" ? undefined : timezone.value,
       theme: theme.value,
+      theme_style: {
+        preset: themeStyle.value.preset,
+        radius: themeStyle.value.radius,
+        base: themeStyle.value.base,
+        chroma: themeStyle.value.chroma,
+        hue: themeStyle.value.hue,
+        lightness: themeStyle.value.lightness,
+      },
     };
     await update_ui_config({
       new_ui,
