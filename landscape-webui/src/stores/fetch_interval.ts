@@ -45,6 +45,76 @@ export async function runRefreshTasks(
     : undefined;
 }
 
+import router from "@/router";
+
+export interface PollingStores {
+  sysinfo: { UPDATE_INFO: () => Promise<unknown> };
+  dockerStore: { UPDATE_INFO: () => Promise<unknown> };
+  dnsStore: { UPDATE_INFO: () => Promise<unknown> };
+  ifaceNodeStore: { UPDATE_INFO: () => Promise<unknown> };
+  ipConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  natConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  ipv6PDStore: { UPDATE_INFO: () => Promise<unknown> };
+  lanIpv6Store: { UPDATE_INFO: () => Promise<unknown> };
+  firewallConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  wifiConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  dhcpv4ConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  metricStore: { UPDATE_INFO: (interval: number) => Promise<unknown> };
+  mssclampConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  routeLanConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  routeWanConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+}
+
+export function getPollingTasksForPath(
+  path: string,
+  stores: PollingStores,
+  intervalMs: number,
+): Array<() => Promise<unknown>> {
+  const isDashboard = path === "/" || path === "";
+  const isNetworkSettings = path.startsWith("/network/settings");
+  const isDns = path.startsWith("/dns") || path.startsWith("/metrics/dns");
+  const isMetrics = path.startsWith("/metrics");
+
+  const tasks: Array<() => Promise<unknown>> = [];
+
+  // 1. Sysinfo is only needed on Dashboard
+  if (isDashboard) {
+    tasks.push(() => stores.sysinfo.UPDATE_INFO());
+  }
+
+  // 2. Network topology & microservice statuses needed on Dashboard and NetworkSettings
+  if (isDashboard || isNetworkSettings) {
+    tasks.push(
+      () => stores.ifaceNodeStore.UPDATE_INFO(),
+      () => stores.ipConfigStore.UPDATE_INFO(),
+      () => stores.natConfigStore.UPDATE_INFO(),
+      () => stores.ipv6PDStore.UPDATE_INFO(),
+      () => stores.lanIpv6Store.UPDATE_INFO(),
+      () => stores.firewallConfigStore.UPDATE_INFO(),
+      () => stores.wifiConfigStore.UPDATE_INFO(),
+      () => stores.dhcpv4ConfigStore.UPDATE_INFO(),
+      () => stores.mssclampConfigStore.UPDATE_INFO(),
+      () => stores.routeLanConfigStore.UPDATE_INFO(),
+      () => stores.routeWanConfigStore.UPDATE_INFO(),
+    );
+  }
+
+  // 3. DNS status needed on Dashboard and DNS pages
+  if (isDashboard || isDns) {
+    tasks.push(() => stores.dnsStore.UPDATE_INFO());
+  }
+
+  // 4. Metrics store (has internal demand checking)
+  if (isDashboard || isMetrics) {
+    tasks.push(() => stores.metricStore.UPDATE_INFO(intervalMs));
+  }
+
+  // 5. Docker store (has internal page_active checking)
+  tasks.push(() => stores.dockerStore.UPDATE_INFO());
+
+  return tasks;
+}
+
 export const useFetchIntervalStore = defineStore("fetch_interval", () => {
   const sysinfo = useSysInfo();
   const ifaceNodeStore = useIfaceNodeStore();
@@ -65,6 +135,12 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
   // SOCK
   const dockerImgTask = useDockerImgTask();
 
+  const current_path = ref<string>("/");
+
+  function SET_PATH(path: string) {
+    current_path.value = path;
+  }
+
   let refresh_running = false;
   const interval_function = async () => {
     if (refresh_running) return;
@@ -73,23 +149,32 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
       start_count_down_callback.value();
     }
     try {
-      error_message.value = await runRefreshTasks([
-        () => sysinfo.UPDATE_INFO(),
-        () => dockerStore.UPDATE_INFO(),
-        () => dnsStore.UPDATE_INFO(),
-        () => ifaceNodeStore.UPDATE_INFO(),
-        () => ipConfigStore.UPDATE_INFO(),
-        () => natConfigStore.UPDATE_INFO(),
-        () => ipv6PDStore.UPDATE_INFO(),
-        () => lanIpv6Store.UPDATE_INFO(),
-        () => firewallConfigStore.UPDATE_INFO(),
-        () => wifiConfigStore.UPDATE_INFO(),
-        () => dhcpv4ConfigStore.UPDATE_INFO(),
-        () => metricStore.UPDATE_INFO(interval_time.value),
-        () => mssclampConfigStore.UPDATE_INFO(),
-        () => routeLanConfigStore.UPDATE_INFO(),
-        () => routeWanConfigStore.UPDATE_INFO(),
-      ]);
+      const activePath =
+        current_path.value || router.currentRoute?.value?.path || "/";
+      const tasks = getPollingTasksForPath(
+        activePath,
+        {
+          sysinfo,
+          dockerStore,
+          dnsStore,
+          ifaceNodeStore,
+          ipConfigStore,
+          natConfigStore,
+          ipv6PDStore,
+          lanIpv6Store,
+          firewallConfigStore,
+          wifiConfigStore,
+          dhcpv4ConfigStore,
+          metricStore,
+          mssclampConfigStore,
+          routeLanConfigStore,
+          routeWanConfigStore,
+        },
+        interval_time.value,
+      );
+      if (tasks.length > 0) {
+        error_message.value = await runRefreshTasks(tasks);
+      }
       dockerImgTask.CONNECT();
     } finally {
       refresh_running = false;
@@ -168,6 +253,8 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
     enable_interval,
     interval_time,
     error_message,
+    current_path,
+    SET_PATH,
     IMMEDIATELY_EXECUTE,
     SETTING_CALLBACK,
     destroy,

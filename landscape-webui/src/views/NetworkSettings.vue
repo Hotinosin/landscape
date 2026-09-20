@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   computed,
+  defineAsyncComponent,
   h,
   nextTick,
   onMounted,
@@ -68,20 +69,45 @@ import { useWifiConfigStore } from "@/stores/status_wifi";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { IfaceIpMode } from "@/lib/service_ipconfig";
 import IfaceDisableGuardModal from "@/components/iface/IfaceDisableGuardModal.vue";
-import IfaceCpuSoftBalance from "@/components/iface/IfaceCpuSoftBalance.vue";
-import IpConfigModal from "@/components/ipconfig/IpConfigModal.vue";
-import PPPDServiceListDrawer from "@/components/pppd/PPPDServiceListDrawer.vue";
-import DHCPv4ServiceEditModal from "@/components/dhcp_v4/DHCPv4ServiceEditModal.vue";
-import IPv6PDEditModal from "@/components/ipv6pd/IPv6PDEditModal.vue";
-import LanIPv6EditModal from "@/components/lan_ipv6/LanIPv6EditModal.vue";
 import NetFlow from "@/components/topology/NetFlow.vue";
 import CarrierStatusDot from "@/components/topology/CarrierStatusDot.vue";
-import NATEditModal from "@/components/nat/NATEditModal.vue";
-import FirewallServiceEditModal from "@/components/firewall/FirewallServiceEditModal.vue";
-import MSSClampServiceEditModal from "@/components/mss_clamp/MSSClampServiceEditModal.vue";
-import RouteLanServiceEditModal from "@/components/route/lan/RouteLanServiceEditModal.vue";
-import RouteWanServiceEditModal from "@/components/route/wan/RouteWanServiceEditModal.vue";
-import WifiServiceEditModal from "@/components/wifi/WifiServiceEditModal.vue";
+
+const IfaceCpuSoftBalance = defineAsyncComponent(
+  () => import("@/components/iface/IfaceCpuSoftBalance.vue"),
+);
+const IpConfigModal = defineAsyncComponent(
+  () => import("@/components/ipconfig/IpConfigModal.vue"),
+);
+const PPPDServiceListDrawer = defineAsyncComponent(
+  () => import("@/components/pppd/PPPDServiceListDrawer.vue"),
+);
+const DHCPv4ServiceEditModal = defineAsyncComponent(
+  () => import("@/components/dhcp_v4/DHCPv4ServiceEditModal.vue"),
+);
+const IPv6PDEditModal = defineAsyncComponent(
+  () => import("@/components/ipv6pd/IPv6PDEditModal.vue"),
+);
+const LanIPv6EditModal = defineAsyncComponent(
+  () => import("@/components/lan_ipv6/LanIPv6EditModal.vue"),
+);
+const NATEditModal = defineAsyncComponent(
+  () => import("@/components/nat/NATEditModal.vue"),
+);
+const FirewallServiceEditModal = defineAsyncComponent(
+  () => import("@/components/firewall/FirewallServiceEditModal.vue"),
+);
+const MSSClampServiceEditModal = defineAsyncComponent(
+  () => import("@/components/mss_clamp/MSSClampServiceEditModal.vue"),
+);
+const RouteLanServiceEditModal = defineAsyncComponent(
+  () => import("@/components/route/lan/RouteLanServiceEditModal.vue"),
+);
+const RouteWanServiceEditModal = defineAsyncComponent(
+  () => import("@/components/route/wan/RouteWanServiceEditModal.vue"),
+);
+const WifiServiceEditModal = defineAsyncComponent(
+  () => import("@/components/wifi/WifiServiceEditModal.vue"),
+);
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
 import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import EditButton from "@/components/common/EditButton.vue";
@@ -451,7 +477,7 @@ function serviceStatuses(device: NetDev) {
       items.push({
         key,
         label,
-        status: statusStores[key].GET_STATUS_BY_IFACE_NAME(device.name).value,
+        status: statusStores[key].GET_STATUS_BY_IFACE_NAME(device.name),
       });
   };
   add(show.ip_config, "ip_config", "IP");

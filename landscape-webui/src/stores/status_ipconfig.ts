@@ -1,7 +1,7 @@
 import { get_all_ipconfig_status } from "@/api/service_ipconfig";
 import { ServiceStatus } from "@/lib/services";
 import { defineStore } from "pinia";
-import { computed, ComputedRef, ref } from "vue";
+import { ref } from "vue";
 
 export const useIpConfigStore = defineStore("status_ipconfig", () => {
   const status = ref<Map<string, ServiceStatus>>(
@@ -14,11 +14,12 @@ export const useIpConfigStore = defineStore("status_ipconfig", () => {
 
   function GET_STATUS_BY_IFACE_NAME(
     name: string,
-  ): ComputedRef<ServiceStatus | undefined> {
-    return computed(() => status.value.get(name));
+  ): ServiceStatus | undefined {
+    return status.value.get(name);
   }
 
   return {
+    status,
     UPDATE_INFO,
     GET_STATUS_BY_IFACE_NAME,
   };

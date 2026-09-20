@@ -71,7 +71,7 @@ const details = computed(() => [
   ...serviceGroups.map((group) => {
     const statuses = ifaceStore.net_devs.flatMap((iface) =>
       group.stores
-        .map((store) => store.GET_STATUS_BY_IFACE_NAME(iface.name).value)
+        .map((store) => store.GET_STATUS_BY_IFACE_NAME(iface.name))
         .filter((status): status is ServiceStatus => Boolean(status)),
     );
     return {
@@ -90,7 +90,7 @@ const summary = computed(() => {
   for (const iface of ifaceStore.net_devs) {
     for (const group of serviceGroups) {
       for (const store of group.stores) {
-        const status = store.GET_STATUS_BY_IFACE_NAME(iface.name).value;
+        const status = store.GET_STATUS_BY_IFACE_NAME(iface.name);
         if (status) statuses.push(status);
       }
     }

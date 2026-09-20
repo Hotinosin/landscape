@@ -183,7 +183,8 @@ export const usePtyStore = defineStore("pty", () => {
     }
     if (attempt !== connectionAttempt) return;
 
-    const url = `wss://${window.location.hostname}:${window.location.port}/api/ws/pty/sessions?${objToQuery(config.value)}`;
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const url = `${protocol}//${window.location.host}/api/ws/pty/sessions?${objToQuery(config.value)}`;
     const ws = new WebSocket(url);
 
     ws.onopen = () => {

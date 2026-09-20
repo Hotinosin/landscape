@@ -53,7 +53,28 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      chunkSizeWarningLimit: 5000,
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: (id: string) => {
+            if (id.includes("node_modules")) {
+              if (
+                id.includes("echarts") ||
+                id.includes("zrender") ||
+                id.includes("vue-echarts")
+              ) {
+                return "vendor-echarts";
+              }
+              if (id.includes("@xterm")) {
+                return "vendor-xterm";
+              }
+              if (id.includes("@vue-flow")) {
+                return "vendor-vueflow";
+              }
+            }
+          },
+        },
+      },
     },
     server: {
       host: dev_host,

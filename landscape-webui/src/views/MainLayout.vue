@@ -10,6 +10,7 @@ import { clearLandscapeSession } from "@/lib/common";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import { useMetricStore } from "@/stores/status_metric";
+import { useFetchIntervalStore } from "@/stores/fetch_interval";
 import IntervalFetch from "@/components/head/IntervalFetch.vue";
 import LanguageSetting from "@/components/head/LanguageSetting.vue";
 import LandscapeSiderBar from "@/views/LandscapeSiderBar.vue";
@@ -49,6 +50,7 @@ function handleTagClose(path: string) {
 const frontEndStore = useFrontEndStore();
 const enrolledDeviceStore = useEnrolledDeviceStore();
 const metricStore = useMetricStore();
+const fetchIntervalStore = useFetchIntervalStore();
 const accountName = computed(() => frontEndStore.username || "admin");
 const accountInitial = computed(() =>
   accountName.value.charAt(0).toLowerCase(),
@@ -59,6 +61,7 @@ watch(
   (path) => {
     void enrolledDeviceStore.UPDATE_INFO();
     metricStore.SET_PAGE(path, !document.hidden);
+    fetchIntervalStore.SET_PATH(path);
   },
   { immediate: true },
 );

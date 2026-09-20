@@ -27,8 +27,46 @@ vi.mock("./status_route_wan", () => ({ useRouteWanConfigStore: mocks.store }));
 vi.mock("@/stores/docker_img_task", () => ({
   default: () => ({ CONNECT: mocks.connect }),
 }));
-import { runRefreshTasks } from "./fetch_interval";
-import { useFetchIntervalStore } from "./fetch_interval";
+import {
+  getPollingTasksForPath,
+  runRefreshTasks,
+  useFetchIntervalStore,
+} from "./fetch_interval";
+
+describe("getPollingTasksForPath", () => {
+  const dummyStores: any = {
+    sysinfo: { UPDATE_INFO: vi.fn() },
+    dockerStore: { UPDATE_INFO: vi.fn() },
+    dnsStore: { UPDATE_INFO: vi.fn() },
+    ifaceNodeStore: { UPDATE_INFO: vi.fn() },
+    ipConfigStore: { UPDATE_INFO: vi.fn() },
+    natConfigStore: { UPDATE_INFO: vi.fn() },
+    ipv6PDStore: { UPDATE_INFO: vi.fn() },
+    lanIpv6Store: { UPDATE_INFO: vi.fn() },
+    firewallConfigStore: { UPDATE_INFO: vi.fn() },
+    wifiConfigStore: { UPDATE_INFO: vi.fn() },
+    dhcpv4ConfigStore: { UPDATE_INFO: vi.fn() },
+    metricStore: { UPDATE_INFO: vi.fn() },
+    mssclampConfigStore: { UPDATE_INFO: vi.fn() },
+    routeLanConfigStore: { UPDATE_INFO: vi.fn() },
+    routeWanConfigStore: { UPDATE_INFO: vi.fn() },
+  };
+
+  it("includes all dashboard tasks on root route", () => {
+    const tasks = getPollingTasksForPath("/", dummyStores, 3000);
+    expect(tasks.length).toBe(15);
+  });
+
+  it("includes only network tasks on network settings route", () => {
+    const tasks = getPollingTasksForPath("/network/settings", dummyStores, 3000);
+    expect(tasks.length).toBe(12);
+  });
+
+  it("includes minimal tasks on non-network routes like /plugins or /about", () => {
+    const tasks = getPollingTasksForPath("/plugins", dummyStores, 3000);
+    expect(tasks.length).toBe(1);
+  });
+});
 
 describe("runRefreshTasks", () => {
   it("starts requests together and isolates failures", async () => {

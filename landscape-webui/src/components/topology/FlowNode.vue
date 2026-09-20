@@ -87,34 +87,34 @@ const routeWanConfigStore = useRouteWanConfigStore();
 const mssClampConfigStore = useMSSClampConfigStore();
 
 const ip_config_status = computed(
-  () => ipConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => ipConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const dhcp_v4_status = computed(
-  () => dhcpv4ConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => dhcpv4ConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const nat_status = computed(
-  () => natConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => natConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const firewall_status = computed(
-  () => firewallConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => firewallConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const ipv6pd_status = computed(
-  () => ipv6PDStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => ipv6PDStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const lan_ipv6_status = computed(
-  () => lanIpv6Store.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => lanIpv6Store.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const wifi_status = computed(
-  () => wifiConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => wifiConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const route_lan_status = computed(
-  () => routeLanConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => routeLanConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const route_wan_status = computed(
-  () => routeWanConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => routeWanConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const mss_clamp_status = computed(
-  () => mssClampConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => mssClampConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 
 const status_type = computed(() => {
