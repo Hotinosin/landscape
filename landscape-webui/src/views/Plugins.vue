@@ -708,18 +708,22 @@ onMounted(() => {
                   </n-grid>
                 </n-card>
 
-                <n-flex vertical :size="4">
+                <n-flex vertical :size="4" class="config-yaml-section">
                   <n-text strong>{{ t("plugin.advanced_mixin_yaml") }}</n-text>
                   <n-input
                     v-model:value="overrideConfigText"
                     type="textarea"
-                    :autosize="{ minRows: 10, maxRows: 18 }"
+                    class="config-yaml-input"
                     placeholder="# Mixin YAML"
                     @input="onOverrideYamlInput"
                   />
                 </n-flex>
 
-                <n-flex justify="space-between" align="center">
+                <n-flex
+                  justify="space-between"
+                  align="center"
+                  class="config-footer-row"
+                >
                   <n-flex align="center" :size="8">
                     <n-switch
                       v-model:value="validateConfigOnSave"
@@ -752,10 +756,14 @@ onMounted(() => {
                 <n-input
                   v-model:value="baseConfigText"
                   type="textarea"
-                  :autosize="{ minRows: 16, maxRows: 24 }"
+                  class="config-yaml-input config-yaml-input--full"
                   placeholder="# proxies, proxy-groups, rules..."
                 />
-                <n-flex justify="space-between" align="center">
+                <n-flex
+                  justify="space-between"
+                  align="center"
+                  class="config-footer-row"
+                >
                   <n-flex align="center" :size="8">
                     <n-switch
                       v-model:value="validateConfigOnSave"
@@ -898,11 +906,52 @@ onMounted(() => {
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  max-height: 55vh;
+  flex: 1;
+  min-height: 240px;
+  max-height: none;
   overflow: auto;
 }
 .config-tab-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  box-sizing: border-box;
   padding-top: var(--app-space-sm);
   padding-bottom: var(--app-space-sm);
+}
+.config-yaml-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 180px;
+}
+.config-yaml-input {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 160px;
+}
+.config-yaml-input--full {
+  min-height: 320px;
+}
+.config-yaml-input :deep(.n-input-wrapper) {
+  height: 100%;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.config-yaml-input :deep(.n-input__textarea) {
+  height: 100%;
+}
+.config-yaml-input :deep(.n-input__textarea-el) {
+  height: 100% !important;
+  resize: none;
+  font-family: var(--font-mono);
+  font-size: var(--app-font-size-caption);
+  line-height: 1.5;
+}
+.config-footer-row {
+  flex: none;
+  margin-top: auto;
+  padding-top: var(--app-space-xs);
 }
 </style>
