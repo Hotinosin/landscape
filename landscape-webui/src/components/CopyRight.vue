@@ -11,29 +11,33 @@ const { t } = useI18n();
   <n-flex
     align="center"
     :justify="icon ? 'start' : 'center'"
-    :style="{ padding: '0 10px', width: icon ? '100%' : undefined }"
+    class="copyright-container"
+    :class="{ 'copyright-container--icon': icon }"
   >
     <n-flex
       v-if="icon"
       align="center"
       justify="space-between"
-      style="width: 100%"
+      class="sidebar-footer-links"
       :wrap="false"
-      :size="[5, 5]"
+      :size="[6, 0]"
     >
       <n-tooltip trigger="hover">
         <template #trigger>
           <n-button
+            class="sidebar-footer-link"
             text
             tag="a"
             href="https://landscape.whileaway.dev/"
             target="_blank"
             rel="noopener noreferrer"
           >
-            <n-icon>
-              <Book />
-            </n-icon>
-            <span>{{ t("about.documentation") }}</span>
+            <template #icon>
+              <n-icon class="sidebar-footer-link__icon">
+                <Book />
+              </n-icon>
+            </template>
+            <span class="sidebar-footer-link__text">{{ t("about.documentation") }}</span>
           </n-button>
         </template>
         {{ t("about.documentation") }}
@@ -41,27 +45,36 @@ const { t } = useI18n();
       <n-tooltip trigger="hover">
         <template #trigger>
           <n-button
+            class="sidebar-footer-link"
             text
             tag="a"
             href="/api/docs"
             target="_blank"
             rel="noopener noreferrer"
           >
-            <n-icon>
-              <Api />
-            </n-icon>
-            <span>API</span>
+            <template #icon>
+              <n-icon class="sidebar-footer-link__icon">
+                <Api />
+              </n-icon>
+            </template>
+            <span class="sidebar-footer-link__text">API</span>
           </n-button>
         </template>
         {{ t("about.api_docs") }}
       </n-tooltip>
       <n-tooltip trigger="hover">
         <template #trigger>
-          <n-button text @click="router.push('/about')">
-            <n-icon>
-              <Information />
-            </n-icon>
-            <span>{{ t("routes.about") }}</span>
+          <n-button
+            class="sidebar-footer-link"
+            text
+            @click="router.push('/about')"
+          >
+            <template #icon>
+              <n-icon class="sidebar-footer-link__icon">
+                <Information />
+              </n-icon>
+            </template>
+            <span class="sidebar-footer-link__text">{{ t("routes.about") }}</span>
           </n-button>
         </template>
         {{ t("about.title") }}
@@ -91,3 +104,53 @@ const { t } = useI18n();
     </n-flex>
   </n-flex>
 </template>
+
+<style scoped>
+.copyright-container--icon {
+  flex: 1;
+  min-width: 0;
+  padding: 0 4px;
+  width: 100%;
+}
+
+.sidebar-footer-links {
+  width: 100%;
+}
+
+.sidebar-footer-link {
+  --n-font-size: var(--app-font-size-caption);
+  --n-icon-size: var(--app-font-size-body);
+  --n-icon-margin: 4px;
+  --n-text-color: var(--app-text-secondary-color);
+  --n-text-color-hover: var(--app-brand-active-color);
+  --n-text-color-pressed: var(--app-brand-active-color);
+  --n-text-color-focus: var(--app-brand-active-color);
+  font-size: var(--app-font-size-caption);
+  color: var(--app-text-secondary-color);
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  transition: color var(--app-motion-fast, 0.2s) ease;
+}
+
+.sidebar-footer-link :deep(.n-button__icon) {
+  font-size: var(--app-font-size-body);
+  margin-right: 4px;
+}
+
+.sidebar-footer-link :deep(.n-button__content) {
+  font-size: var(--app-font-size-caption);
+}
+
+.sidebar-footer-link__icon {
+  font-size: var(--app-font-size-body);
+}
+
+.sidebar-footer-link__text {
+  font-size: var(--app-font-size-caption);
+}
+
+.sidebar-footer-link:hover {
+  color: var(--app-brand-active-color);
+}
+</style>

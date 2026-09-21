@@ -438,4 +438,30 @@ const menuOptions = computed<MenuOption[]>(() => [
 .landscape-sidebar :deep(.plugins-dev-tag) {
   transform-origin: left center;
 }
+
+.landscape-sidebar :deep(.sidebar-footer-link) {
+  --n-font-size: var(--app-font-size-caption);
+  --n-icon-size: var(--app-font-size-body);
+  --n-icon-margin: 4px;
+  --n-text-color: var(--app-text-secondary-color);
+  --n-text-color-hover: var(--app-brand-active-color);
+  --n-text-color-pressed: var(--app-brand-active-color);
+  --n-text-color-focus: var(--app-brand-active-color);
+  font-size: var(--app-font-size-caption);
+  color: var(--app-text-secondary-color);
+}
+
+.landscape-sidebar :deep(.sidebar-footer-link .n-icon),
+.landscape-sidebar :deep(.sidebar-footer-link .n-button__icon) {
+  font-size: var(--app-font-size-body);
+}
+
+.landscape-sidebar :deep(.sidebar-footer-link .n-button__content),
+.landscape-sidebar :deep(.sidebar-footer-link__text) {
+  font-size: var(--app-font-size-caption);
+}
+
+.landscape-sidebar :deep(.sidebar-footer-link:hover) {
+  color: var(--app-brand-active-color);
+}
 </style>
