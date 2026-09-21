@@ -1551,7 +1551,6 @@ async fn plugin_ui(
 pub fn api_router(manager: PluginManager) -> Router {
     Router::new()
         .route("/", get(list_plugins))
-        .route("", get(list_plugins))
         .route("/import", post(import_plugin))
         .route("/{id}", delete(remove_plugin))
         .route("/{id}/start", post(start_plugin))
