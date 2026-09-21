@@ -6,18 +6,22 @@ import {
   get_service_status_tag_type,
 } from "@/lib/services";
 
-defineProps<{ status?: ServiceStatus }>();
+defineProps<{
+  status?: ServiceStatus;
+  type?: "default" | "primary" | "info" | "success" | "warning" | "error";
+  label?: string;
+}>();
 const { t } = useI18n();
 </script>
 
 <template>
   <n-tag
-    :type="get_service_status_tag_type(status)"
+    :type="type ?? get_service_status_tag_type(status)"
     size="small"
     :bordered="false"
   >
     <template #icon><span class="standard-service-status-tag__dot" /></template>
-    {{ get_service_status_label(status, t) }}
+    <slot>{{ label ?? get_service_status_label(status, t) }}</slot>
   </n-tag>
 </template>
 

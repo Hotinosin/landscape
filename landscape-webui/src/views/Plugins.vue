@@ -7,7 +7,6 @@ import {
   NDialogProvider,
   NSelect,
   NSpace,
-  NTag,
   useDialog,
   useMessage,
 } from "naive-ui";
@@ -141,37 +140,19 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
     title: t("plugin.data_plane"),
     key: "interface_ready",
     render: (row) =>
-      h(
-        NTag,
-        {
-          size: "small",
-          bordered: false,
-          type: row.interface_ready ? "success" : "default",
-        },
-        {
-          icon: () => h("span", { class: "standard-service-status-tag__dot" }),
-          default: () =>
-            row.interface_ready ? t("plugin.ready") : t("plugin.offline"),
-        },
-      ),
+      h(StandardServiceStatusTag, {
+        type: row.interface_ready ? "success" : "default",
+        label: row.interface_ready ? t("plugin.ready") : t("plugin.offline"),
+      }),
   },
   {
     title: t("plugin.tproxy"),
     key: "tproxy_ready",
     render: (row) =>
-      h(
-        NTag,
-        {
-          size: "small",
-          bordered: false,
-          type: row.tproxy_ready ? "success" : "default",
-        },
-        {
-          icon: () => h("span", { class: "standard-service-status-tag__dot" }),
-          default: () =>
-            row.tproxy_ready ? t("plugin.ready") : t("plugin.offline"),
-        },
-      ),
+      h(StandardServiceStatusTag, {
+        type: row.tproxy_ready ? "success" : "default",
+        label: row.tproxy_ready ? t("plugin.ready") : t("plugin.offline"),
+      }),
   },
   {
     title: t("plugin.control_plane"),
@@ -190,17 +171,10 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
           },
         );
       }
-      return h(
-        NTag,
-        {
-          size: "small",
-          bordered: false,
-          type: "default",
-        },
-        {
-          default: () => t("plugin.controller_not_ready"),
-        },
-      );
+      return h(StandardServiceStatusTag, {
+        type: "default",
+        label: t("plugin.controller_not_ready"),
+      });
     },
   },
   {
@@ -829,18 +803,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.status-ready {
-  color: var(--app-status-success-color);
-}
-.status-offline {
-  color: var(--app-text-muted-color);
-}
-.standard-service-status-tag__dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-}
 .plugin-upload {
   width: auto;
 }
