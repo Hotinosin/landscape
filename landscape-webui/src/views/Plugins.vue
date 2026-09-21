@@ -138,15 +138,6 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
   { title: t("plugin.name"), key: "name" },
   { title: t("plugin.interface"), key: "host_interface" },
   { title: t("plugin.version"), key: "version" },
-  { title: t("plugin.trust"), key: "trust" },
-  {
-    title: t("plugin.service"),
-    key: "service_running",
-    render: (row) =>
-      h(StandardServiceStatusTag, {
-        status: { t: row.service_running ? "running" : "stop" },
-      }),
-  },
   {
     title: t("plugin.data_plane"),
     key: "interface_ready",
@@ -216,23 +207,13 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
     },
   },
   {
-    title: t("common.actions"),
-    key: "actions",
+    title: t("plugin.service"),
+    key: "service_running",
     render: (row) =>
-      h(NSpace, { size: "small", wrap: false }, () => [
-        h(EditButton, {
-          label: t("plugin.config"),
-          onClick: () => openConfig(row),
+      h(NSpace, { align: "center", size: "small", wrap: false }, () => [
+        h(StandardServiceStatusTag, {
+          status: { t: row.service_running ? "running" : "stop" },
         }),
-        h(
-          NButton,
-          {
-            size: "small",
-            secondary: true,
-            onClick: () => openLogs(row),
-          },
-          { default: () => t("plugin.logs") },
-        ),
         h(NSelect, {
           size: "small",
           style: { width: "105px" },
@@ -252,6 +233,26 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
             onClick: () => handleExecuteAction(row),
           },
           { default: () => t("plugin.execute") },
+        ),
+      ]),
+  },
+  {
+    title: t("common.actions"),
+    key: "actions",
+    render: (row) =>
+      h(NSpace, { size: "small", wrap: false }, () => [
+        h(EditButton, {
+          label: t("plugin.config"),
+          onClick: () => openConfig(row),
+        }),
+        h(
+          NButton,
+          {
+            size: "small",
+            secondary: true,
+            onClick: () => openLogs(row),
+          },
+          { default: () => t("plugin.logs") },
         ),
         h(DeleteButton, {
           item: row.name,
