@@ -792,8 +792,8 @@ onMounted(() => {
               name="effective"
               :tab="t('plugin.tab_effective_config')"
             >
-              <n-flex vertical :size="12" class="config-tab-pane">
-                <n-flex justify="space-between" align="center">
+              <n-flex vertical :size="12" class="config-tab-pane config-tab-pane--effective">
+                <n-flex justify="space-between" align="center" class="config-effective-header">
                   <n-text depth="3">
                     {{ t("plugin.effective_config_desc") }}
                   </n-text>
@@ -809,9 +809,13 @@ onMounted(() => {
                     {{ t("plugin.refresh_effective") }}
                   </n-button>
                 </n-flex>
-                <pre class="config-effective-preview">{{
-                  effectiveConfigText
-                }}</pre>
+                <div class="config-effective-card">
+                  <n-scrollbar class="config-effective-scrollbar">
+                    <pre class="config-effective-preview">{{
+                      effectiveConfigText
+                    }}</pre>
+                  </n-scrollbar>
+                </div>
               </n-flex>
             </n-tab-pane>
           </n-tabs>
@@ -894,22 +898,43 @@ onMounted(() => {
   overflow-y: auto;
   overflow-x: hidden;
 }
+.config-tab-pane--effective {
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.config-effective-header {
+  flex: none;
+}
+.config-effective-card {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  border-radius: var(--app-radius-control);
+  background: var(--app-terminal-background-color);
+  color: var(--app-text-inverse-color);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.config-effective-scrollbar {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
 .config-effective-preview {
   box-sizing: border-box;
   margin: 0;
   padding: var(--app-space-sm);
-  border-radius: var(--app-radius-control);
-  color: var(--app-text-inverse-color);
-  background: var(--app-terminal-background-color);
   font-family: var(--font-mono);
   font-size: var(--app-font-size-caption);
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  flex: 1;
-  min-height: 240px;
-  max-height: none;
-  overflow: auto;
+  color: inherit;
 }
 .config-tab-pane {
   display: flex;
@@ -923,31 +948,50 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 180px;
+  min-height: 200px;
 }
 .config-yaml-input {
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 160px;
+  min-height: 180px;
+  height: 100%;
 }
 .config-yaml-input--full {
-  min-height: 320px;
+  min-height: 380px;
 }
 .config-yaml-input :deep(.n-input-wrapper) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   height: 100%;
-  padding-top: 8px;
-  padding-bottom: 8px;
+  padding: 0;
 }
 .config-yaml-input :deep(.n-input__textarea) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   height: 100%;
+  position: relative;
 }
 .config-yaml-input :deep(.n-input__textarea-el) {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
   height: 100% !important;
+  padding: 8px 12px !important;
+  box-sizing: border-box !important;
   resize: none;
   font-family: var(--font-mono);
   font-size: var(--app-font-size-caption);
   line-height: 1.5;
+  overflow-y: auto !important;
+}
+.config-yaml-input :deep(.n-input__placeholder) {
+  padding: 8px 12px !important;
+  font-family: var(--font-mono);
+  font-size: var(--app-font-size-caption);
 }
 .config-footer-row {
   flex: none;
