@@ -261,7 +261,7 @@ const columns = computed<DataTableColumns<DnsProviderProfile>>(() => [
   {
     title: t("dns_provider.profile_name"),
     key: "name",
-    width: "28%",
+    width: 110,
     render: (row) => frontEndStore.MASK_INFO(row.name),
   },
   {

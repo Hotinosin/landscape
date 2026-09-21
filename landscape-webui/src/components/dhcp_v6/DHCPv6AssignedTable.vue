@@ -67,6 +67,7 @@ const addressColumns = computed<DataTableColumns<AddressRow>>(() => [
   {
     title: t("dhcp_v6.hostname"),
     key: "hostname",
+    width: 110,
     render: (item) =>
       item.mac_str
         ? enrolledDeviceStore.GET_NAME_WITH_FALLBACK(

@@ -63,7 +63,7 @@ const columns = computed<DataTableColumns<FlowTableRow>>(() => [
   {
     title: t("flow.list.status_flow"),
     key: "flow",
-    width: "12%",
+    width: 110,
     render: (row) => renderCell(row, "flow"),
   },
   {

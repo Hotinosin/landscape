@@ -51,7 +51,7 @@ const columns = computed<DataTableColumns<HttpUpstreamRuleConfig>>(() =>
   ].map(([title, cell]) => ({
     title: t(title),
     key: cell,
-    width: cell === "enable" ? 80 : undefined,
+    width: cell === "name" ? 110 : cell === "enable" ? 80 : undefined,
     render: (rule) =>
       h(GatewayRuleListRow, {
         rule,

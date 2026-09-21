@@ -207,7 +207,7 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
   {
     title: t("cert.cert_name"),
     key: "name",
-    minWidth: 120,
+    width: 110,
     ellipsis: { tooltip: true },
     render(row) {
       return frontEndStore.MASK_INFO(row.name);

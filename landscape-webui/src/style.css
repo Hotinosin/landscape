@@ -140,6 +140,7 @@ body {
   ) !important;
 }
 
+
 .n-dynamic-input-item__action .n-button {
   --n-border-radius: var(--app-radius-control) !important;
 }
@@ -208,7 +209,7 @@ body {
   margin: var(--app-data-table-frame-inset);
   overflow: hidden;
   border-radius: var(--app-radius-surface);
-  box-shadow: 0 1px 4px var(--app-shadow-color);
+  box-shadow: 0 1px 2px var(--app-shadow-color);
 }
 
 .standard-virtual-table {

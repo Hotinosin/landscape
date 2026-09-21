@@ -209,7 +209,7 @@ const columns = computed<DataTableColumns<AssignedIpRow>>(() => [
   {
     title: t("dhcp_v4.assigned.hostname"),
     key: "hostname",
-    width: "20%",
+    width: 110,
     render: (row) => renderCell(row, "hostname"),
   },
   {

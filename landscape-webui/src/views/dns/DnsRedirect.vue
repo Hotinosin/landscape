@@ -41,7 +41,7 @@ const columns = computed<DataTableColumns<DNSRedirectRule>>(() =>
   ).map(([title, cell]) => ({
     title,
     key: cell,
-    width: cell === "enable" ? 80 : undefined,
+    width: cell === "status" ? 110 : cell === "enable" ? 80 : undefined,
     render: (rule: DNSRedirectRule) =>
       h(DnsRedirectListRow, {
         rule,

@@ -32,7 +32,7 @@ const columns = computed<DataTableColumns<StaticNatMappingV4Config>>(() =>
   ).map(([title, cell]) => ({
     title,
     key: cell,
-    width: cell === "enable" ? 80 : undefined,
+    width: cell === "status" ? 110 : cell === "enable" ? 80 : undefined,
     align: "left" as const,
     render: (rule: StaticNatMappingV4Config) =>
       h(StaticMappingV4ListRow, {

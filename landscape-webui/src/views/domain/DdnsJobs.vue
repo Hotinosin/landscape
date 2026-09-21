@@ -659,7 +659,7 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
   {
     title: t("ddns.job_name"),
     key: "name",
-    width: 120,
+    width: 110,
     render: (row) => frontEndStore.MASK_INFO(row.name),
   },
   {
@@ -732,7 +732,6 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
         {
           size: "small",
           type: "primary",
-          secondary: true,
           style: "margin-left: 8px",
           loading: row.id ? syncingIds.value.has(row.id) : false,
           disabled: !row.enable,

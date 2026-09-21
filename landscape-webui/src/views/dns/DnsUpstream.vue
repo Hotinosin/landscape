@@ -32,6 +32,7 @@ const columns = computed<DataTableColumns<DnsUpstreamConfig>>(() =>
   ].map(([title, cell]) => ({
     title,
     key: cell,
+    width: cell === "remark" ? 110 : undefined,
     render: (rule) =>
       h(DnsUpstreamListRow, {
         rule,

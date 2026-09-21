@@ -21,7 +21,7 @@ export default {
   offline: "Not ready",
   import: "Install package",
   import_success: "Plugin imported",
-  open_panel: "Open Control Panel",
+  open_panel: "Open",
   manage: "Plugin management",
   auto_refresh: "Auto Refresh",
   execute: "Execute",

@@ -506,7 +506,7 @@ const projectColumns = computed<DataTableColumns<NetDev>>(() => [
   {
     title: t("network.settings.name_iface"),
     key: "name",
-    width: 120,
+    width: 110,
     render: (item) =>
       h(
         "div",

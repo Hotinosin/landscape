@@ -55,7 +55,7 @@ const columns = computed<DataTableColumns<EnrolledDevice>>(() => [
   {
     title: t("device.name"),
     key: "name",
-    width: "18%",
+    width: 110,
     render: (rule) =>
       h(EnrolledDeviceListRow, {
         rule,

@@ -21,7 +21,7 @@ export default {
   offline: "未就绪",
   import: "安装插件包",
   import_success: "插件导入成功",
-  open_panel: "打开控制面板",
+  open_panel: "打开",
   manage: "插件管理",
   auto_refresh: "自动刷新",
   execute: "执行",

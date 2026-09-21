@@ -371,6 +371,12 @@ const menuOptions = computed<MenuOption[]>(() => [
   grid-area: unset;
   height: 16px;
   margin: auto 0;
+  transform: rotate(0deg) !important;
+}
+
+.landscape-sidebar
+  :deep(.n-menu-item-content--collapsed > .n-menu-item-content__arrow) {
+  transform: rotate(-90deg) !important;
 }
 
 .landscape-sidebar :deep(.n-submenu-children .n-menu-item) {

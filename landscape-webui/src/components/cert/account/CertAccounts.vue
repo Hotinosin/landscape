@@ -40,7 +40,7 @@ const columns = computed<DataTableColumns<CertAccountConfig>>(() =>
   ).map(([title, cell, width]) => ({
     title,
     key: cell,
-    width,
+    width: cell === "name" ? 110 : width,
     render: (rule: CertAccountConfig) =>
       h(CertAccountListRow, {
         rule,

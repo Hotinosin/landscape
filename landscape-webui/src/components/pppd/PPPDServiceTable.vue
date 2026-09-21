@@ -26,6 +26,7 @@ const columns = computed<DataTableColumns<PPPDServiceConfig>>(() => [
   {
     title: t("pppoe.editor.ppp_iface_name"),
     key: "iface_name",
+    width: 110,
   },
   {
     title: t("common.username"),

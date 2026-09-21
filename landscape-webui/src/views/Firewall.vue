@@ -24,6 +24,7 @@ const columns = computed<DataTableColumns<FirewallBlacklistConfig>>(() => [
   {
     title: `${t("common.status")} / ${t("common.name")}`,
     key: "status",
+    width: 110,
     render: (rule) => h(FirewallBlacklistListRow, { rule, cell: "status" }),
   },
   {

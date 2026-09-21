@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { Launch, Renew } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import type { DataTableColumns, UploadCustomRequestOptions } from "naive-ui";
 import {
   NButton,
   NDialogProvider,
-  NIcon,
   NSelect,
   NSpace,
   NTag,
@@ -135,7 +134,7 @@ function handleExecuteAction(row: PluginInfo) {
 }
 
 const columns = computed<DataTableColumns<PluginInfo>>(() => [
-  { title: t("plugin.name"), key: "name" },
+  { title: t("plugin.name"), key: "name", width: 110 },
   { title: t("plugin.interface"), key: "host_interface" },
   { title: t("plugin.version"), key: "version" },
   {
@@ -184,11 +183,9 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
           {
             size: "small",
             type: "primary",
-            secondary: true,
             onClick: () => window.open(panelUrl(row), "_blank"),
           },
           {
-            icon: () => h(NIcon, null, { default: () => h(Launch) }),
             default: () => t("plugin.open_panel"),
           },
         );
@@ -228,7 +225,6 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
           {
             size: "small",
             type: "primary",
-            secondary: true,
             loading: !!actionLoading.value[row.id],
             onClick: () => handleExecuteAction(row),
           },
