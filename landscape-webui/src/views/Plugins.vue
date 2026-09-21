@@ -29,6 +29,7 @@ import { syncPluginSessionCookie } from "@/lib/common";
 import { usePageRequest } from "@/composables/usePageRequest";
 import DeleteButton from "@/components/common/DeleteButton.vue";
 import EditButton from "@/components/common/EditButton.vue";
+import StandardServiceStatusTag from "@/components/common/StandardServiceStatusTag.vue";
 
 const { t } = useI18n();
 const message = useMessage();
@@ -56,12 +57,14 @@ const saveBaseLoading = ref(false);
 const saveOverrideLoading = ref(false);
 const refreshEffectiveLoading = ref(false);
 const configError = ref("");
+const validateConfigOnSave = ref(true);
 
 const formOverride = ref({
   mode: "rule",
   allowLan: true,
   tproxyPort: 12345,
   controllerPort: 9090,
+  externalUi: "",
 });
 
 const modeOptions = computed(() => [
@@ -140,20 +143,26 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
     title: t("plugin.service"),
     key: "service_running",
     render: (row) =>
-      h(
-        "span",
-        { class: row.service_running ? "status-ready" : "status-offline" },
-        row.service_running ? t("plugin.running") : t("plugin.stopped"),
-      ),
+      h(StandardServiceStatusTag, {
+        status: { t: row.service_running ? "running" : "stop" },
+      }),
   },
   {
     title: t("plugin.data_plane"),
     key: "interface_ready",
     render: (row) =>
       h(
-        "span",
-        { class: row.interface_ready ? "status-ready" : "status-offline" },
-        row.interface_ready ? t("plugin.ready") : t("plugin.offline"),
+        NTag,
+        {
+          size: "small",
+          bordered: false,
+          type: row.interface_ready ? "success" : "default",
+        },
+        {
+          icon: () => h("span", { class: "standard-service-status-tag__dot" }),
+          default: () =>
+            row.interface_ready ? t("plugin.ready") : t("plugin.offline"),
+        },
       ),
   },
   {
@@ -161,9 +170,17 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
     key: "tproxy_ready",
     render: (row) =>
       h(
-        "span",
-        { class: row.tproxy_ready ? "status-ready" : "status-offline" },
-        row.tproxy_ready ? t("plugin.ready") : t("plugin.offline"),
+        NTag,
+        {
+          size: "small",
+          bordered: false,
+          type: row.tproxy_ready ? "success" : "default",
+        },
+        {
+          icon: () => h("span", { class: "standard-service-status-tag__dot" }),
+          default: () =>
+            row.tproxy_ready ? t("plugin.ready") : t("plugin.offline"),
+        },
       ),
   },
   {
@@ -336,6 +353,13 @@ function parseOverrideForm(yamlText: string) {
   if (ctrlMatch) {
     formOverride.value.controllerPort = parseInt(ctrlMatch[1], 10);
   }
+
+  const uiMatch = yamlText.match(/^external-ui:\s*["']?(.*?)["']?$/m);
+  if (uiMatch) {
+    formOverride.value.externalUi = uiMatch[1].trim();
+  } else {
+    formOverride.value.externalUi = "";
+  }
 }
 
 function syncFormToYaml() {
@@ -374,6 +398,14 @@ function syncFormToYaml() {
     text =
       `external-controller: 0.0.0.0:${formOverride.value.controllerPort}\n` +
       text;
+  }
+
+  const extUiVal = formOverride.value.externalUi.trim();
+  const extUiLine = extUiVal ? `external-ui: "${extUiVal}"` : 'external-ui: ""';
+  if (/^external-ui:\s*.*$/m.test(text)) {
+    text = text.replace(/^external-ui:\s*.*$/m, extUiLine);
+  } else {
+    text = `${extUiLine}\n` + text;
   }
 
   overrideConfigText.value = text;
@@ -420,6 +452,7 @@ async function saveOverride() {
       configPlugin.value.id,
       overrideConfigText.value,
       "override",
+      validateConfigOnSave.value,
     );
     message.success(t("plugin.config_saved"));
     effectiveConfigText.value = await pluginConfig(
@@ -441,7 +474,12 @@ async function saveBase() {
   saveBaseLoading.value = true;
   configError.value = "";
   try {
-    await savePluginConfig(configPlugin.value.id, baseConfigText.value, "base");
+    await savePluginConfig(
+      configPlugin.value.id,
+      baseConfigText.value,
+      "base",
+      validateConfigOnSave.value,
+    );
     message.success(t("plugin.config_saved"));
     effectiveConfigText.value = await pluginConfig(
       configPlugin.value.id,
@@ -474,7 +512,10 @@ async function fetchEffectiveConfig() {
 
 function panelUrl(plugin: PluginInfo) {
   const proxyPath = `/api/plugins/${encodeURIComponent(plugin.id)}/ui`;
-  const uiPath = (plugin.ui_path ?? "").replace(/^\//, "");
+  let uiPath = (plugin.ui_path ?? "").replace(/^\//, "");
+  if (uiPath && !uiPath.endsWith("/")) {
+    uiPath += "/";
+  }
   const setup = new URLSearchParams({
     hostname: window.location.hostname,
     port:
@@ -651,6 +692,17 @@ onMounted(() => {
                           @update:value="syncFormToYaml"
                         />
                       </n-form-item>
+                    <n-grid-item :span="24">
+                      <n-form-item
+                        :label="t('plugin.external_ui')"
+                        :show-feedback="false"
+                      >
+                        <n-input
+                          v-model:value="formOverride.externalUi"
+                          placeholder=""
+                          @input="syncFormToYaml"
+                        />
+                      </n-form-item>
                     </n-grid-item>
 
                     <n-grid-item :span="24">
@@ -676,7 +728,19 @@ onMounted(() => {
                   />
                 </n-flex>
 
-                <n-flex justify="end">
+                <n-flex justify="space-between" align="center">
+                  <n-flex align="center" :size="8">
+                    <n-switch
+                      v-model:value="validateConfigOnSave"
+                      size="small"
+                    />
+                    <n-text
+                      depth="3"
+                      style="font-size: var(--app-font-size-caption)"
+                    >
+                      {{ t("plugin.check_config_on_save") }}
+                    </n-text>
+                  </n-flex>
                   <n-button
                     type="primary"
                     :loading="saveOverrideLoading"
@@ -700,7 +764,19 @@ onMounted(() => {
                   :autosize="{ minRows: 16, maxRows: 24 }"
                   placeholder="# proxies, proxy-groups, rules..."
                 />
-                <n-flex justify="end">
+                <n-flex justify="space-between" align="center">
+                  <n-flex align="center" :size="8">
+                    <n-switch
+                      v-model:value="validateConfigOnSave"
+                      size="small"
+                    />
+                    <n-text
+                      depth="3"
+                      style="font-size: var(--app-font-size-caption)"
+                    >
+                      {{ t("plugin.check_config_on_save") }}
+                    </n-text>
+                  </n-flex>
                   <n-button
                     type="primary"
                     :loading="saveBaseLoading"
@@ -752,6 +828,12 @@ onMounted(() => {
 }
 .status-offline {
   color: var(--app-text-muted-color);
+}
+.standard-service-status-tag__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
 }
 .plugin-upload {
   width: auto;

@@ -47,4 +47,6 @@ export default {
   effective_config_desc: "This is the final merged configuration applied at runtime. Read-only preview.",
   refresh_effective: "Refresh Preview",
   controller_not_ready: "Control Plane Offline",
+  check_config_on_save: "Validate config on save",
+  external_ui: "External UI (external-ui)",
 };

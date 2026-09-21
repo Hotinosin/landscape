@@ -47,4 +47,6 @@ export default {
   effective_config_desc: "这是用户配置与覆写配置深度合并后的最终生效内容，不可直接编辑。",
   refresh_effective: "刷新预览",
   controller_not_ready: "控制面 未就绪",
+  check_config_on_save: "检查配置",
+  external_ui: "外部控制面板 (external-ui)",
 };

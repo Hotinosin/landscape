@@ -280,6 +280,10 @@ impl PluginManager {
         }
     }
 
+    fn is_service_enabled(&self, id: &str) -> bool {
+        self.plugin_dir(id).join("service.enabled").is_file()
+    }
+
     async fn watchdog_tick(&self) {
         let manifests = self.manifests.read().await.clone();
         for (id, manifest) in manifests {
@@ -288,7 +292,7 @@ impl PluginManager {
                 continue;
             }
 
-            if self.user_stopped.lock().await.contains(&id) {
+            if !self.is_service_enabled(&id) || self.user_stopped.lock().await.contains(&id) {
                 continue;
             }
 
@@ -358,6 +362,13 @@ impl PluginManager {
             if self.validate(&manifest).is_ok() {
                 if let Err(error) = self.install(&manifest).await {
                     tracing::warn!(plugin = %manifest.id, %error, "failed to restore plugin runtime");
+                }
+                if self.is_service_enabled(&manifest.id) {
+                    if let Err(error) = self.start_service(&manifest).await {
+                        tracing::warn!(plugin = %manifest.id, %error, "failed to auto-start plugin service");
+                    }
+                } else {
+                    self.user_stopped.lock().await.insert(manifest.id.clone());
                 }
                 self.manifests.write().await.insert(manifest.id.clone(), manifest);
             }
@@ -533,6 +544,13 @@ impl PluginManager {
                     }
                 }
             }
+
+            let ext_ui_key = serde_yaml::Value::String("external-ui".into());
+            if let Some(serde_yaml::Value::String(s)) = map.get(&ext_ui_key) {
+                if s.trim().is_empty() {
+                    map.remove(&ext_ui_key);
+                }
+            }
         }
 
         serde_yaml::to_string(&base_val).map_err(|e| format!("YAML serialization error: {e}"))
@@ -556,11 +574,36 @@ impl PluginManager {
         Ok(())
     }
 
+    async fn prepare_configs(&self, manifest: &PluginManifest) -> Result<(), String> {
+        let Some(service) = &manifest.service else { return Ok(()) };
+        let plugin_dir = self.plugin_dir(&manifest.id);
+        let bundled_config = plugin_dir.join("package").join(&service.default_config);
+        let base_config = self.base_config_path(&manifest.id, service);
+        if bundled_config.is_file() && !base_config.exists() {
+            fs::copy(&bundled_config, &base_config).await.map_err(|e| e.to_string())?;
+        }
+        let override_config = self.override_config_path(&manifest.id);
+        if !override_config.exists() {
+            let default_override = format!(
+                "# Landscape plugin runtime override\ntproxy-port: {}\nexternal-controller: 0.0.0.0:9090\nexternal-controller-unix: {}\nexternal-ui: \"\"\ndns:\n  enable: true\n  nameserver:\n    - {}\n",
+                manifest.network.tproxy_port,
+                manifest.controller_socket.display(),
+                manifest.network.host_ipv4,
+            );
+            let _ = fs::write(&override_config, default_override).await;
+        }
+
+        let effective_content = self.build_effective_config_with_override(manifest, None, None).await?;
+        let effective_config = self.effective_config_path(&manifest.id, service);
+        fs::write(&effective_config, &effective_content).await.map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
     async fn install(&self, manifest: &PluginManifest) -> Result<(), String> {
         self.prepare_dirs(manifest).await?;
         self.setup_network(manifest).await?;
+        self.prepare_configs(manifest).await?;
         self.start_tproxy(manifest).await?;
-        self.start_service(manifest).await?;
         self.register(manifest).await;
         Ok(())
     }
@@ -580,25 +623,10 @@ impl PluginManager {
         let plugin_dir = self.plugin_dir(&manifest.id);
         let executable = plugin_dir.join("package").join(&service.executable);
         let bundled_config = plugin_dir.join("package").join(&service.default_config);
-        let base_config = self.base_config_path(&manifest.id, service);
         if !executable.is_file() || !bundled_config.is_file() {
             return Err("package executable or default config is missing".into());
         }
-        if !base_config.exists() {
-            fs::copy(&bundled_config, &base_config).await.map_err(|e| e.to_string())?;
-        }
-        let override_config = self.override_config_path(&manifest.id);
-        if !override_config.exists() {
-            let default_override = format!(
-                "# Landscape plugin runtime override\ntproxy-port: {}\nexternal-controller: 0.0.0.0:9090\nexternal-controller-unix: {}\ndns:\n  enable: true\n  nameserver:\n    - {}\n",
-                manifest.network.tproxy_port,
-                manifest.controller_socket.display(),
-                manifest.network.host_ipv4,
-            );
-            let _ = fs::write(&override_config, default_override).await;
-        }
-
-        let effective_content = self.build_effective_config_with_override(manifest, None, None).await?;
+        self.prepare_configs(manifest).await?;
         let effective_config = self.effective_config_path(&manifest.id, service);
         fs::write(&effective_config, &effective_content).await.map_err(|e| e.to_string())?;
 
@@ -953,6 +981,7 @@ impl PluginManager {
         let encoded = serde_json::to_vec_pretty(&manifest).map_err(|e| e.to_string())?;
         fs::write(path, encoded).await.map_err(|e| e.to_string())?;
         let _ = fs::remove_file(self.dir.join(format!("{}.json", manifest.id))).await;
+        self.user_stopped.lock().await.insert(manifest.id.clone());
         self.register(&manifest).await;
         self.manifests.write().await.insert(manifest.id.clone(), manifest.clone());
         Ok(PluginInfo {
@@ -967,6 +996,7 @@ impl PluginManager {
 
     async fn remove(&self, id: &str) -> Result<(), String> {
         let manifest = self.manifests.write().await.remove(id).ok_or("plugin not found")?;
+        let _ = fs::remove_file(self.plugin_dir(id).join("service.enabled")).await;
         self.user_stopped.lock().await.remove(id);
         self.restart_failures.lock().await.remove(id);
         self.stop_service(id, true).await;
@@ -993,6 +1023,7 @@ impl PluginManager {
 
     async fn start(&self, id: &str) -> Result<(), String> {
         let manifest = self.get(id).await.ok_or("plugin not found")?;
+        let _ = fs::write(self.plugin_dir(id).join("service.enabled"), "").await;
         self.user_stopped.lock().await.remove(id);
         self.restart_failures.lock().await.remove(id);
         self.start_service(&manifest).await
@@ -1002,6 +1033,7 @@ impl PluginManager {
         if self.get(id).await.is_none() {
             return Err("plugin not found".into());
         }
+        let _ = fs::remove_file(self.plugin_dir(id).join("service.enabled")).await;
         self.user_stopped.lock().await.insert(id.to_string());
         self.restart_failures.lock().await.remove(id);
         self.stop_service(id, force).await;
@@ -1010,6 +1042,7 @@ impl PluginManager {
 
     async fn restart(&self, id: &str) -> Result<(), String> {
         let manifest = self.get(id).await.ok_or("plugin not found")?;
+        let _ = fs::write(self.plugin_dir(id).join("service.enabled"), "").await;
         self.user_stopped.lock().await.remove(id);
         self.restart_failures.lock().await.remove(id);
         self.stop_service(id, false).await;
@@ -1036,7 +1069,7 @@ impl PluginManager {
                     fs::read_to_string(p).await.map_err(|e| e.to_string())
                 } else {
                     Ok(format!(
-                        "# Landscape plugin runtime override\ntproxy-port: {}\nexternal-controller: 0.0.0.0:9090\nexternal-controller-unix: {}\ndns:\n  enable: true\n  nameserver:\n    - {}\n",
+                        "# Landscape plugin runtime override\ntproxy-port: {}\nexternal-controller: 0.0.0.0:9090\nexternal-controller-unix: {}\nexternal-ui: \"\"\ndns:\n  enable: true\n  nameserver:\n    - {}\n",
                         manifest.network.tproxy_port,
                         manifest.controller_socket.display(),
                         manifest.network.host_ipv4,
@@ -1058,7 +1091,13 @@ impl PluginManager {
         }
     }
 
-    async fn save_config(&self, id: &str, layer: Option<&str>, body: &str) -> Result<(), String> {
+    async fn save_config(
+        &self,
+        id: &str,
+        layer: Option<&str>,
+        check: bool,
+        body: &str,
+    ) -> Result<(), String> {
         if body.len() > 1024 * 1024 {
             return Err("config is too large".into());
         }
@@ -1096,10 +1135,12 @@ impl PluginManager {
         let effective_pending = plugin_dir.join("config").join("effective.new");
         fs::write(&effective_pending, effective_content).await.map_err(|e| e.to_string())?;
 
-        if let Err(error) = self.check_service_config(&manifest, &executable, &data, &effective_pending).await {
-            let _ = fs::remove_file(&pending).await;
-            let _ = fs::remove_file(&effective_pending).await;
-            return Err(error);
+        if check {
+            if let Err(error) = self.check_service_config(&manifest, &executable, &data, &effective_pending).await {
+                let _ = fs::remove_file(&pending).await;
+                let _ = fs::remove_file(&effective_pending).await;
+                return Err(error);
+            }
         }
 
         let was_running = self.service_running(id).await;
@@ -1112,7 +1153,9 @@ impl PluginManager {
         fs::rename(&effective_pending, &effective_path).await.map_err(|e| e.to_string())?;
 
         if was_running {
-            self.start_service(&manifest).await?;
+            if let Err(err) = self.start_service(&manifest).await {
+                tracing::warn!(plugin = %id, %err, "failed to restart service after saving config");
+            }
         }
         Ok(())
     }
@@ -1279,6 +1322,15 @@ fn deep_merge_yaml(base: &mut serde_yaml::Value, override_val: &serde_yaml::Valu
     match (base, override_val) {
         (serde_yaml::Value::Mapping(base_map), serde_yaml::Value::Mapping(override_map)) => {
             for (key, val) in override_map {
+                if key == &serde_yaml::Value::String("external-ui".into()) {
+                    if let serde_yaml::Value::String(s) = val {
+                        if s.trim().is_empty() {
+                            continue;
+                        }
+                    } else if val.is_null() {
+                        continue;
+                    }
+                }
                 if let Some(base_field) = base_map.get_mut(key) {
                     deep_merge_yaml(base_field, val);
                 } else {
@@ -1483,6 +1535,8 @@ async fn plugin_logs(
 pub struct ConfigQuery {
     #[serde(default)]
     pub layer: Option<String>,
+    #[serde(default)]
+    pub check: Option<bool>,
 }
 
 #[utoipa::path(
@@ -1531,10 +1585,23 @@ async fn save_plugin_config(
     Query(query): Query<ConfigQuery>,
     body: String,
 ) -> Response {
-    match manager.save_config(&id, query.layer.as_deref(), &body).await {
+    let check = query.check.unwrap_or(true);
+    match manager.save_config(&id, query.layer.as_deref(), check, &body).await {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(e) => error(StatusCode::BAD_REQUEST, e),
     }
+}
+
+async fn plugin_ui_root(
+    State(manager): State<PluginManager>,
+    AxumPath(id): AxumPath<String>,
+    request: Request<Body>,
+) -> Response {
+    let Some(manifest) = manager.get(&id).await else {
+        return error(StatusCode::NOT_FOUND, "plugin not found");
+    };
+    let path = manifest.ui_path.trim_start_matches('/');
+    super::plugin_proxy::proxy_unix(request, &manifest.controller_socket, &format!("/{path}")).await
 }
 
 async fn plugin_ui(
@@ -1545,7 +1612,12 @@ async fn plugin_ui(
     let Some(manifest) = manager.get(&id).await else {
         return error(StatusCode::NOT_FOUND, "plugin not found");
     };
-    super::plugin_proxy::proxy_unix(request, &manifest.controller_socket, &format!("/{path}")).await
+    let target_path = if path.is_empty() {
+        manifest.ui_path.clone()
+    } else {
+        format!("/{path}")
+    };
+    super::plugin_proxy::proxy_unix(request, &manifest.controller_socket, &target_path).await
 }
 
 pub fn api_router(manager: PluginManager) -> Router {
@@ -1585,7 +1657,11 @@ pub fn openapi() -> utoipa::openapi::OpenApi {
 }
 
 pub fn ui_router(manager: PluginManager) -> Router {
-    Router::new().route("/{id}/ui/{*path}", any(plugin_ui)).with_state(manager)
+    Router::new()
+        .route("/{id}/ui", any(plugin_ui_root))
+        .route("/{id}/ui/", any(plugin_ui_root))
+        .route("/{id}/ui/{*path}", any(plugin_ui))
+        .with_state(manager)
 }
 
 #[cfg(test)]
@@ -1737,9 +1813,12 @@ mod tests {
     fn config_query_deserialization() {
         let q_empty: ConfigQuery = serde_json::from_str("{}").unwrap();
         assert_eq!(q_empty.layer, None);
+        assert_eq!(q_empty.check, None);
 
-        let q_layer: ConfigQuery = serde_json::from_str(r#"{"layer": "override"}"#).unwrap();
+        let q_layer: ConfigQuery =
+            serde_json::from_str(r#"{"layer": "override", "check": false}"#).unwrap();
         assert_eq!(q_layer.layer.as_deref(), Some("override"));
+        assert_eq!(q_layer.check, Some(false));
     }
 
     #[test]
@@ -1747,6 +1826,7 @@ mod tests {
         let base_yaml = r#"
 port: 7890
 mode: rule
+external-ui: ui
 dns:
   enable: true
   nameserver:
@@ -1757,6 +1837,7 @@ proxies:
 "#;
         let override_yaml = r#"
 mode: global
+external-ui: ""
 dns:
   nameserver:
     - 169.254.127.1
@@ -1769,6 +1850,7 @@ tproxy-port: 12345
 
         assert_eq!(base_val["port"].as_i64(), Some(7890));
         assert_eq!(base_val["mode"].as_str(), Some("global"));
+        assert_eq!(base_val["external-ui"].as_str(), Some("ui"));
         assert_eq!(base_val["tproxy-port"].as_i64(), Some(12345));
         assert_eq!(base_val["dns"]["enable"].as_bool(), Some(true));
         assert_eq!(base_val["dns"]["enhanced-mode"].as_str(), Some("fake-ip"));

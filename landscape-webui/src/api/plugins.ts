@@ -79,6 +79,10 @@ export async function savePluginConfig(
   id: string,
   config: string,
   layer?: PluginConfigLayer,
+  check = true,
 ): Promise<void> {
-  await savePluginConfigApi(id, config, layer ? { layer } : undefined);
+  await savePluginConfigApi(id, config, {
+    layer,
+    check,
+  } as any);
 }
