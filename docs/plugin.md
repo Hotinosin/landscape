@@ -13,7 +13,7 @@ Network plugins use a standard `.tar.gz` package with a declarative manifest. Ph
   "platform": { "os": "linux", "arch": "aarch64" },
   "host_interface": "land-mihomo",
   "controller_socket": "/run/landscape/plugins/mihomo/controller.sock",
-  "ui_path": "/ui/",
+  "ui_path": "/ui/zashboard/",
   "network": {
     "namespace": "land-mihomo",
     "peer_interface": "plugin0",

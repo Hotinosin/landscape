@@ -466,6 +466,50 @@ impl PluginManager {
         self.dir.join(id)
     }
 
+    pub fn detect_ui_subpath(&self, manifest: &PluginManifest) -> Option<String> {
+        let plugin_dir = self.plugin_dir(&manifest.id);
+        let candidates = [
+            plugin_dir.join("data").join("ui"),
+            plugin_dir.join("ui"),
+        ];
+        for dir in &candidates {
+            if !dir.is_dir() {
+                continue;
+            }
+            if dir.join("index.html").is_file() {
+                return None;
+            }
+            for name in &["zashboard", "dist", "metacubexd", "yacd"] {
+                if dir.join(name).join("index.html").is_file() {
+                    return Some((*name).to_string());
+                }
+            }
+            if let Ok(entries) = stdfs::read_dir(dir) {
+                for entry in entries.flatten() {
+                    if let Ok(file_type) = entry.file_type() {
+                        if file_type.is_dir() && entry.path().join("index.html").is_file() {
+                            if let Ok(name) = entry.file_name().into_string() {
+                                return Some(name);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    fn enrich_manifest_ui(&self, mut manifest: PluginManifest) -> PluginManifest {
+        if manifest.service.as_ref().map(|s| s.kind.as_str()) == Some("mihomo") || manifest.id == "mihomo" {
+            if let Some(sub) = self.detect_ui_subpath(&manifest) {
+                manifest.ui_path = format!("/ui/{sub}/");
+            } else if manifest.ui_path == "/ui/" || manifest.ui_path == "/ui" {
+                manifest.ui_path = "/ui/zashboard/".to_string();
+            }
+        }
+        manifest
+    }
+
     fn base_config_path(&self, id: &str, service: &PluginService) -> PathBuf {
         self.plugin_dir(id).join("config").join(service.config_filename())
     }
@@ -945,6 +989,7 @@ impl PluginManager {
         }
         let mut result = Vec::with_capacity(manifests.len());
         for manifest in manifests {
+            let manifest = self.enrich_manifest_ui(manifest);
             result.push(PluginInfo {
                 interface_ready: get_interface_index_by_name(&manifest.host_interface).is_some(),
                 tproxy_ready: self.tproxy_ready(&manifest.id).await,
@@ -1010,13 +1055,14 @@ impl PluginManager {
         self.user_stopped.lock().await.insert(manifest.id.clone());
         self.register(&manifest).await;
         self.manifests.write().await.insert(manifest.id.clone(), manifest.clone());
+        let info_manifest = self.enrich_manifest_ui(manifest);
         Ok(PluginInfo {
-            interface_ready: get_interface_index_by_name(&manifest.host_interface).is_some(),
-            tproxy_ready: self.tproxy_ready(&manifest.id).await,
-            controller_ready: manifest.controller_socket.exists(),
-            service_running: self.service_running(&manifest.id).await,
+            interface_ready: get_interface_index_by_name(&info_manifest.host_interface).is_some(),
+            tproxy_ready: self.tproxy_ready(&info_manifest.id).await,
+            controller_ready: info_manifest.controller_socket.exists(),
+            service_running: self.service_running(&info_manifest.id).await,
             trust: "UNVERIFIED_SOURCE",
-            manifest,
+            manifest: info_manifest,
         })
     }
 
@@ -1044,7 +1090,8 @@ impl PluginManager {
     }
 
     async fn get(&self, id: &str) -> Option<PluginManifest> {
-        self.manifests.read().await.get(id).cloned()
+        let manifest = self.manifests.read().await.get(id).cloned()?;
+        Some(self.enrich_manifest_ui(manifest))
     }
 
     async fn start(&self, id: &str) -> Result<(), String> {
@@ -1731,6 +1778,78 @@ async fn save_plugin_config(
     }
 }
 
+pub(crate) fn is_clash_api_path(path: &str) -> bool {
+    let segment = path.trim_start_matches('/').split('/').next().unwrap_or("");
+    matches!(
+        segment,
+        "version"
+            | "configs"
+            | "proxies"
+            | "rules"
+            | "connections"
+            | "providers"
+            | "traffic"
+            | "logs"
+            | "memory"
+            | "dns"
+            | "cache"
+            | "group"
+            | "restart"
+            | "upgrade"
+            | "profile"
+            | "script"
+    )
+}
+
+pub(crate) fn resolve_ui_target_path(manifest: &PluginManifest, path: &str) -> String {
+    let clean = path.trim_start_matches('/');
+    let is_mihomo = manifest.service.as_ref().map(|s| s.kind.as_str()) == Some("mihomo")
+        || manifest.id == "mihomo";
+    if !is_mihomo {
+        return if clean.is_empty() {
+            manifest.ui_path.clone()
+        } else {
+            format!("/{clean}")
+        };
+    }
+
+    if clean.is_empty() || clean == "ui" {
+        let p = manifest.ui_path.trim_matches('/');
+        if p.is_empty() {
+            "/ui/".to_string()
+        } else {
+            format!("/{p}/")
+        }
+    } else if is_clash_api_path(clean) {
+        format!("/{clean}")
+    } else if let Some(stripped) = clean.strip_prefix("ui/") {
+        let rest = stripped.trim_start_matches('/');
+        let inner = if let Some(s) = rest.strip_prefix("ui/") {
+            s.trim_start_matches('/')
+        } else {
+            rest
+        };
+        if is_clash_api_path(inner) {
+            format!("/{inner}")
+        } else if inner.is_empty() {
+            let p = manifest.ui_path.trim_matches('/');
+            if p.is_empty() {
+                "/ui/".to_string()
+            } else {
+                format!("/{p}/")
+            }
+        } else if inner == "zashboard" || inner == "dist" || inner == "metacubexd" || inner == "yacd" {
+            format!("/ui/{inner}/")
+        } else {
+            format!("/ui/{inner}")
+        }
+    } else if clean == "zashboard" || clean == "dist" || clean == "metacubexd" || clean == "yacd" {
+        format!("/ui/{clean}/")
+    } else {
+        format!("/ui/{clean}")
+    }
+}
+
 async fn plugin_ui_root(
     State(manager): State<PluginManager>,
     AxumPath(id): AxumPath<String>,
@@ -1739,8 +1858,8 @@ async fn plugin_ui_root(
     let Some(manifest) = manager.get(&id).await else {
         return error(StatusCode::NOT_FOUND, "plugin not found");
     };
-    let path = manifest.ui_path.trim_start_matches('/');
-    super::plugin_proxy::proxy_unix(request, &manifest.controller_socket, &format!("/{path}")).await
+    let target_path = resolve_ui_target_path(&manifest, "");
+    super::plugin_proxy::proxy_unix(request, &manifest.controller_socket, &target_path).await
 }
 
 async fn plugin_ui(
@@ -1751,11 +1870,7 @@ async fn plugin_ui(
     let Some(manifest) = manager.get(&id).await else {
         return error(StatusCode::NOT_FOUND, "plugin not found");
     };
-    let target_path = if path.is_empty() {
-        manifest.ui_path.clone()
-    } else {
-        format!("/{path}")
-    };
+    let target_path = resolve_ui_target_path(&manifest, &path);
     super::plugin_proxy::proxy_unix(request, &manifest.controller_socket, &target_path).await
 }
 
@@ -2022,5 +2137,75 @@ tproxy-port: 12345
             .read_to_string(&mut manifest)
             .unwrap();
         assert!(manifest.contains("protocol_version"));
+    }
+
+    #[test]
+    fn clash_api_path_matching() {
+        assert!(super::is_clash_api_path("version"));
+        assert!(super::is_clash_api_path("/version"));
+        assert!(super::is_clash_api_path("configs"));
+        assert!(super::is_clash_api_path("proxies"));
+        assert!(super::is_clash_api_path("proxies/GLOBAL"));
+        assert!(super::is_clash_api_path("rules"));
+        assert!(super::is_clash_api_path("connections"));
+        assert!(super::is_clash_api_path("providers/proxies"));
+        assert!(super::is_clash_api_path("traffic"));
+        assert!(super::is_clash_api_path("logs"));
+        assert!(super::is_clash_api_path("memory"));
+        assert!(super::is_clash_api_path("dns/query"));
+        assert!(super::is_clash_api_path("cache/fakeip/flush"));
+        assert!(super::is_clash_api_path("group/GLOBAL/delay"));
+        assert!(super::is_clash_api_path("restart"));
+        assert!(super::is_clash_api_path("upgrade"));
+
+        assert!(!super::is_clash_api_path("zashboard"));
+        assert!(!super::is_clash_api_path("zashboard/"));
+        assert!(!super::is_clash_api_path("zashboard/assets/index.js"));
+        assert!(!super::is_clash_api_path("assets/index.js"));
+        assert!(!super::is_clash_api_path("index.html"));
+        assert!(!super::is_clash_api_path("favicon.ico"));
+    }
+
+    #[test]
+    fn ui_target_path_resolution() {
+        let manifest: PluginManifest = serde_json::from_str(
+            r#"{
+            "protocol_version": 1,
+            "id": "mihomo",
+            "name": "Mihomo",
+            "host_interface": "land-mihomo",
+            "controller_socket": "/run/landscape/plugins/mihomo/controller.sock",
+            "ui_path": "/ui/zashboard/",
+            "service": {
+                "kind": "mihomo",
+                "executable": "bin/mihomo",
+                "default_config": "config.yaml"
+            }
+        }"#,
+        )
+        .unwrap();
+
+        // Root UI requests
+        assert_eq!(super::resolve_ui_target_path(&manifest, ""), "/ui/zashboard/");
+        assert_eq!(super::resolve_ui_target_path(&manifest, "/"), "/ui/zashboard/");
+        assert_eq!(super::resolve_ui_target_path(&manifest, "ui"), "/ui/zashboard/");
+        assert_eq!(super::resolve_ui_target_path(&manifest, "ui/"), "/ui/zashboard/");
+        assert_eq!(super::resolve_ui_target_path(&manifest, "/ui/"), "/ui/zashboard/");
+
+        // Single clean ui path to zashboard
+        assert_eq!(super::resolve_ui_target_path(&manifest, "zashboard"), "/ui/zashboard/");
+        assert_eq!(super::resolve_ui_target_path(&manifest, "zashboard/"), "/ui/zashboard/");
+        assert_eq!(super::resolve_ui_target_path(&manifest, "/zashboard/"), "/ui/zashboard/");
+        assert_eq!(super::resolve_ui_target_path(&manifest, "zashboard/assets/index.js"), "/ui/zashboard/assets/index.js");
+
+        // Old duplicate ui/ui/ path handling
+        assert_eq!(super::resolve_ui_target_path(&manifest, "ui/zashboard/"), "/ui/zashboard/");
+        assert_eq!(super::resolve_ui_target_path(&manifest, "ui/ui/zashboard/"), "/ui/zashboard/");
+
+        // Clash API requests
+        assert_eq!(super::resolve_ui_target_path(&manifest, "version"), "/version");
+        assert_eq!(super::resolve_ui_target_path(&manifest, "proxies"), "/proxies");
+        assert_eq!(super::resolve_ui_target_path(&manifest, "configs"), "/configs");
+        assert_eq!(super::resolve_ui_target_path(&manifest, "traffic"), "/traffic");
     }
 }

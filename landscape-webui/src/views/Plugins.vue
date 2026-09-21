@@ -512,21 +512,28 @@ async function fetchEffectiveConfig() {
 
 function panelUrl(plugin: PluginInfo) {
   const proxyPath = `/api/plugins/${encodeURIComponent(plugin.id)}/ui`;
-  let uiPath = (plugin.ui_path ?? "").replace(/^\//, "");
-  if (uiPath && !uiPath.endsWith("/")) {
-    uiPath += "/";
+  let sub = (plugin.ui_path ?? "").replace(/^\/+|\/+$/g, "");
+  if (sub === "ui") {
+    sub = "";
+  } else if (sub.startsWith("ui/")) {
+    sub = sub.slice(3);
   }
+  if (!sub && plugin.id === "mihomo") {
+    sub = "zashboard";
+  }
+  const prefix = sub ? `${proxyPath}/${sub}/` : `${proxyPath}/`;
   const setup = new URLSearchParams({
     hostname: window.location.hostname,
     port:
       window.location.port ||
       (window.location.protocol === "https:" ? "443" : "80"),
+    protocol: window.location.protocol.replace(":", ""),
     secondaryPath: proxyPath,
     type: "clash",
     disableUpgradeCore: "1",
     disableTunMode: "1",
   });
-  return `${proxyPath}/${uiPath}#/setup?${setup}`;
+  return `${prefix}#/setup?${setup}`;
 }
 
 onMounted(() => {
