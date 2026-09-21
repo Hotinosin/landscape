@@ -628,7 +628,6 @@ impl PluginManager {
         }
         self.prepare_configs(manifest).await?;
         let effective_config = self.effective_config_path(&manifest.id, service);
-        fs::write(&effective_config, &effective_content).await.map_err(|e| e.to_string())?;
 
         let namespace = self.namespace(manifest);
         let data = plugin_dir.join("data");
