@@ -692,6 +692,8 @@ onMounted(() => {
                           @update:value="syncFormToYaml"
                         />
                       </n-form-item>
+                    </n-grid-item>
+
                     <n-grid-item :span="24">
                       <n-form-item
                         :label="t('plugin.external_ui')"
