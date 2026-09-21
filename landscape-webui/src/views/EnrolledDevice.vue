@@ -66,37 +66,36 @@ const columns = computed<DataTableColumns<EnrolledDevice>>(() => [
   {
     title: t("device.mac"),
     key: "mac",
-    width: "18%",
+    width: 160,
     render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "mac" }),
   },
   {
     title: t("device.iface"),
     key: "iface",
-    width: "13%",
+    width: 110,
     render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "iface" }),
   },
   {
     title: t("device.ipv4"),
     key: "ipv4",
-    width: "15%",
+    width: 140,
     render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "ipv4" }),
   },
   {
     title: t("device.ipv6"),
     key: "ipv6",
-    width: "17%",
+    width: 180,
     render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "ipv6" }),
   },
   {
     title: t("device.tag"),
     key: "tags",
-    width: "11%",
+    width: 120,
     render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "tags" }),
   },
   {
     title: t("device.remark"),
     key: "remark",
-    width: "14%",
     render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "remark" }),
   },
   {

@@ -69,31 +69,30 @@ const columns = computed<DataTableColumns<FlowTableRow>>(() => [
   {
     title: t("flow.list.ingress_match"),
     key: "ingress",
-    width: "12%",
+    width: 140,
     render: (row) => renderCell(row, "ingress"),
   },
   {
     title: t("flow.list.dns"),
     key: "dns",
-    width: "30%",
     render: (row) => renderCell(row, "dns"),
   },
   {
     title: t("flow.list.target_ip"),
     key: "targetIp",
-    width: "20%",
+    width: 180,
     render: (row) => renderCell(row, "targetIp"),
   },
   {
     title: t("flow.list.egress"),
     key: "egress",
-    width: "10%",
+    width: 120,
     render: (row) => renderCell(row, "egress"),
   },
   {
     title: t("flow.list.remark"),
     key: "remark",
-    width: "10%",
+    width: 120,
     render: (row) => renderCell(row, "remark"),
   },
   {

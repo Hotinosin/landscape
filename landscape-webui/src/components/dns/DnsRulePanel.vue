@@ -33,13 +33,13 @@ type DnsRuleCell =
 const columns = computed<DataTableColumns<DNSRuleConfig>>(() =>
   (
     [
-      [`${t("common.status")} / ${t("common.priority")}`, "status", "18%"],
-      [t("dns.rule_card.match_rules"), "sources", "24%"],
-      [t("dns.rule_card.upstream_config"), "upstream", "18%"],
-      [t("dns.rule_card.traffic_action"), "action", "20%"],
-      [t("common.enable"), "enable", "8%"],
-      [t("common.actions"), "actions", "12%"],
-    ] satisfies Array<[string, DnsRuleCell, string]>
+      [`${t("common.status")} / ${t("common.priority")}`, "status", 110],
+      [t("dns.rule_card.match_rules"), "sources", undefined],
+      [t("dns.rule_card.upstream_config"), "upstream", undefined],
+      [t("dns.rule_card.traffic_action"), "action", undefined],
+      [t("common.enable"), "enable", 80],
+      [t("common.actions"), "actions", 110],
+    ] satisfies Array<[string, DnsRuleCell, number | undefined]>
   ).map(([title, cell, width]) => ({
     title,
     key: cell,

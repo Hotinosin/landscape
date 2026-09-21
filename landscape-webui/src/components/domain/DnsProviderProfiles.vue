@@ -267,7 +267,7 @@ const columns = computed<DataTableColumns<DnsProviderProfile>>(() => [
   {
     title: t("dns_provider.provider"),
     key: "provider_config",
-    width: "10%",
+    width: 120,
     render: (row) =>
       h(
         NTag,
@@ -281,19 +281,18 @@ const columns = computed<DataTableColumns<DnsProviderProfile>>(() => [
   {
     title: t("dns_provider.ddns_default_ttl"),
     key: "ddns_default_ttl",
-    width: "10%",
+    width: 100,
     render: (row) => row.ddns_default_ttl ?? 120,
   },
   {
     title: t("common.remark"),
     key: "remark",
-    width: "24%",
     render: (row) => (row.remark ? frontEndStore.MASK_INFO(row.remark) : "-"),
   },
   {
     title: t("dns_provider.test"),
     key: "test",
-    width: "16%",
+    width: 110,
     render: (row) =>
       h(
         NButton,
@@ -309,7 +308,7 @@ const columns = computed<DataTableColumns<DnsProviderProfile>>(() => [
   {
     title: t("common.actions"),
     key: "actions",
-    width: "12%",
+    width: 110,
     render: (row) =>
       h(NFlex, { size: "small", wrap: false }, () => [
         h(EditButton, {

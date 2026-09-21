@@ -32,12 +32,12 @@ type WanRuleCell = "status" | "sources" | "action" | "enable" | "actions";
 const columns = computed<DataTableColumns<WanIpRuleConfig>>(() =>
   (
     [
-      [`${t("common.status")} / ${t("common.priority")}`, "status", "22%"],
-      [t("flow.wan_rule_card.match_rules"), "sources", "30%"],
-      [t("flow.wan_rule_edit.egress_select"), "action", "25%"],
-      [t("common.enable"), "enable", "8%"],
-      [t("common.actions"), "actions", "15%"],
-    ] satisfies Array<[string, WanRuleCell, string]>
+      [`${t("common.status")} / ${t("common.priority")}`, "status", 110],
+      [t("flow.wan_rule_card.match_rules"), "sources", undefined],
+      [t("flow.wan_rule_edit.egress_select"), "action", undefined],
+      [t("common.enable"), "enable", 80],
+      [t("common.actions"), "actions", 110],
+    ] satisfies Array<[string, WanRuleCell, number | undefined]>
   ).map(([title, cell, width]) => ({
     title,
     key: cell,

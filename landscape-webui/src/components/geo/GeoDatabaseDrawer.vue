@@ -61,9 +61,9 @@ const siteColumns = computed<DataTableColumns<GeoSiteSourceConfig>>(() =>
     key: cell,
     width:
       cell === "status"
-        ? 220
+        ? 110
         : cell === "type"
-          ? 110
+          ? 100
           : cell === "time"
             ? 180
             : 280,
@@ -82,9 +82,9 @@ const ipColumns = computed<DataTableColumns<GeoIpSourceConfig>>(() =>
     key: cell,
     width:
       cell === "status"
-        ? 220
+        ? 110
         : cell === "type"
-          ? 110
+          ? 100
           : cell === "time"
             ? 180
             : 200,

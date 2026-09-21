@@ -19,7 +19,7 @@ type ContainerCell =
 const columns = computed<DataTableColumns<DockerContainerSummary>>(() =>
   (
     [
-      [`${t("common.status")} / ${t("common.name")}`, "name", 200],
+      [`${t("common.status")} / ${t("common.name")}`, "name", 110],
       [t("common.image"), "image", 220],
       [t("common.ip_address"), "ip", 160],
       [t("common.port_mapping"), "ports", 200],

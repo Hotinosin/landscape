@@ -89,7 +89,7 @@ const lookupColumns = computed<DataTableColumns<GeoLookupRow>>(() => [
   {
     title: t("geo.database.lookup_source"),
     key: "source",
-    width: 130,
+    width: 110,
     render: ({ result }) => result.key.name,
   },
   {

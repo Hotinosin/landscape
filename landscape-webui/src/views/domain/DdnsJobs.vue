@@ -397,7 +397,7 @@ const detailColumns = computed<DataTableColumns<DdnsDetailRecord>>(() => [
   {
     title: t("ddns.record_name"),
     key: "name",
-    width: 140,
+    width: 110,
     render: (row) => frontEndStore.MASK_INFO(row.name),
   },
   {

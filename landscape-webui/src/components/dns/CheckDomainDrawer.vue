@@ -113,6 +113,7 @@ const dnsRuleColumns = computed<DataTableColumns<DNSRuleConfig>>(() => [
   {
     title: `${t("common.status")} / ${t("common.priority")}`,
     key: "status",
+    width: 110,
     render: (rule) =>
       h(DnsRuleListRow, { rule, flows: flows.value, cell: "status" }),
   },
@@ -152,6 +153,7 @@ const redirectColumns = computed<DataTableColumns<DNSRedirectRule>>(() =>
               : "dns.redirect_card.response_info",
     ),
     key: cell,
+    width: cell === "status" ? 110 : undefined,
     render: (rule: DNSRedirectRule) => h(DnsRedirectListRow, { rule, cell }),
   })),
 );

@@ -29,18 +29,18 @@ type AccountCell =
 const columns = computed<DataTableColumns<CertAccountConfig>>(() =>
   (
     [
-      [t("common.name"), "name", "14%"],
-      [t("cert.account_provider"), "provider", "14%"],
-      [t("cert.account_email"), "email", "22%"],
-      [t("cert.account_status"), "status", "12%"],
-      [t("cert.account_staging"), "staging", "10%"],
-      [t("cert.account_actions"), "accountActions", "16%"],
-      [t("common.actions"), "actions", "12%"],
-    ] satisfies Array<[string, AccountCell, string]>
+      [t("common.name"), "name", 110],
+      [t("cert.account_provider"), "provider", 130],
+      [t("cert.account_email"), "email", undefined],
+      [t("cert.account_status"), "status", 100],
+      [t("cert.account_staging"), "staging", 90],
+      [t("cert.account_actions"), "accountActions", 160],
+      [t("common.actions"), "actions", 110],
+    ] satisfies Array<[string, AccountCell, number | undefined]>
   ).map(([title, cell, width]) => ({
     title,
     key: cell,
-    width: cell === "name" ? 110 : width,
+    width,
     render: (rule: CertAccountConfig) =>
       h(CertAccountListRow, {
         rule,
