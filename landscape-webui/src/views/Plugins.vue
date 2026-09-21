@@ -4,10 +4,12 @@ import { Launch, Renew } from "@vicons/carbon";
 import type { DataTableColumns, UploadCustomRequestOptions } from "naive-ui";
 import {
   NButton,
-  NButtonGroup,
-  NDropdown,
+  NDialogProvider,
   NIcon,
+  NSelect,
   NSpace,
+  NTag,
+  useDialog,
   useMessage,
 } from "naive-ui";
 import { useI18n } from "vue-i18n";
@@ -26,12 +28,16 @@ import {
 import { syncPluginSessionCookie } from "@/lib/common";
 import { usePageRequest } from "@/composables/usePageRequest";
 import DeleteButton from "@/components/common/DeleteButton.vue";
+import EditButton from "@/components/common/EditButton.vue";
 
 const { t } = useI18n();
 const message = useMessage();
-const activeTab = ref("manage");
+const dialog = useDialog();
+
 const actionLoading = ref<Record<string, boolean>>({});
-const restartLoading = ref<Record<string, boolean>>({});
+const selectedActions = ref<Record<string, string>>({});
+
+// Logs Modal
 const logs = ref("");
 const showLogs = ref(false);
 const logsPlugin = ref<PluginInfo>();
@@ -39,13 +45,91 @@ const logsLoading = ref(false);
 const autoRefreshLogs = ref(false);
 let logsTimer: ReturnType<typeof setInterval> | undefined;
 
-const config = ref("");
+// Config Modal
 const configPlugin = ref<PluginInfo>();
-const saveConfigLoading = ref(false);
+const activeConfigTab = ref<"override" | "base" | "effective">("override");
+const baseConfigText = ref("");
+const overrideConfigText = ref("");
+const effectiveConfigText = ref("");
+const configLoading = ref(false);
+const saveBaseLoading = ref(false);
+const saveOverrideLoading = ref(false);
+const refreshEffectiveLoading = ref(false);
 const configError = ref("");
-const activePlugin = computed(() =>
-  plugins.value.find((plugin) => plugin.id === activeTab.value),
-);
+
+const formOverride = ref({
+  mode: "rule",
+  allowLan: true,
+  tproxyPort: 12345,
+  controllerPort: 9090,
+});
+
+const modeOptions = computed(() => [
+  { label: t("plugin.mode_rule"), value: "rule" },
+  { label: t("plugin.mode_global"), value: "global" },
+  { label: t("plugin.mode_direct"), value: "direct" },
+]);
+
+function getActionOptions(row: PluginInfo) {
+  if (row.service_running) {
+    return [
+      { label: t("plugin.restart"), value: "restart" },
+      { label: t("plugin.stop"), value: "stop" },
+      { label: t("plugin.force_stop"), value: "force_stop" },
+    ];
+  }
+  return [{ label: t("plugin.start"), value: "start" }];
+}
+
+function getSelectedAction(row: PluginInfo): string {
+  if (!selectedActions.value[row.id]) {
+    selectedActions.value[row.id] = row.service_running ? "restart" : "start";
+  }
+  return selectedActions.value[row.id];
+}
+
+function handleExecuteAction(row: PluginInfo) {
+  const action = getSelectedAction(row);
+  const actionLabels: Record<string, string> = {
+    start: t("plugin.start"),
+    restart: t("plugin.restart"),
+    stop: t("plugin.stop"),
+    force_stop: t("plugin.force_stop"),
+  };
+  const label = actionLabels[action] || action;
+
+  dialog.warning({
+    title: t("plugin.confirm_action_title"),
+    content: t("plugin.confirm_action_content", {
+      name: row.name,
+      action: label,
+    }),
+    positiveText: t("common.confirm"),
+    negativeText: t("common.cancel"),
+    onPositiveClick: async () => {
+      actionLoading.value[row.id] = true;
+      try {
+        if (action === "start") {
+          await startPlugin(row.id);
+        } else if (action === "restart") {
+          await restartPlugin(row.id);
+          message.success(t("plugin.restart_success"));
+        } else if (action === "stop") {
+          await stopPlugin(row.id, false);
+        } else if (action === "force_stop") {
+          await stopPlugin(row.id, true);
+        }
+        await refresh();
+      } catch (e: any) {
+        message.error(
+          e.response?.data?.message || e.message || t("common.error"),
+        );
+      } finally {
+        actionLoading.value[row.id] = false;
+      }
+    },
+  });
+}
 
 const columns = computed<DataTableColumns<PluginInfo>>(() => [
   { title: t("plugin.name"), key: "name" },
@@ -85,157 +169,44 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
   {
     title: t("plugin.control_plane"),
     key: "controller_ready",
-    render: (row) =>
-      h(
-        "span",
-        { class: row.controller_ready ? "status-ready" : "status-offline" },
-        row.controller_ready ? t("plugin.ready") : t("plugin.offline"),
-      ),
+    render: (row) => {
+      if (row.controller_ready) {
+        return h(
+          NButton,
+          {
+            size: "small",
+            type: "primary",
+            secondary: true,
+            onClick: () => window.open(panelUrl(row), "_blank"),
+          },
+          {
+            icon: () => h(NIcon, null, { default: () => h(Launch) }),
+            default: () => t("plugin.open_panel"),
+          },
+        );
+      }
+      return h(
+        NTag,
+        {
+          size: "small",
+          bordered: false,
+          type: "default",
+        },
+        {
+          default: () => t("plugin.controller_not_ready"),
+        },
+      );
+    },
   },
   {
     title: t("common.actions"),
     key: "actions",
     render: (row) =>
       h(NSpace, { size: "small", wrap: false }, () => [
-        h(
-          NButton,
-          {
-            size: "small",
-            secondary: true,
-            onClick: () => openConfig(row),
-          },
-          { default: () => t("plugin.config") },
-        ),
-        ...(row.service_running
-          ? [
-              h(
-                NButton,
-                {
-                  size: "small",
-                  secondary: true,
-                  loading: !!restartLoading.value[row.id],
-                  disabled:
-                    !!actionLoading.value[row.id] ||
-                    !!restartLoading.value[row.id],
-                  onClick: async () => {
-                    restartLoading.value[row.id] = true;
-                    try {
-                      await restartPlugin(row.id);
-                      await refresh();
-                      message.success(t("plugin.restart_success"));
-                    } catch (e: any) {
-                      message.error(
-                        e.response?.data?.message ||
-                          e.message ||
-                          t("common.error"),
-                      );
-                    } finally {
-                      restartLoading.value[row.id] = false;
-                    }
-                  },
-                },
-                { default: () => t("plugin.restart") },
-              ),
-              h(
-                NButtonGroup,
-                { size: "small" },
-                () => [
-                  h(
-                    NButton,
-                    {
-                      size: "small",
-                      secondary: true,
-                      loading: !!actionLoading.value[row.id],
-                      disabled:
-                        !!actionLoading.value[row.id] ||
-                        !!restartLoading.value[row.id],
-                      onClick: async () => {
-                        actionLoading.value[row.id] = true;
-                        try {
-                          await stopPlugin(row.id, false);
-                          await refresh();
-                        } catch (e: any) {
-                          message.error(
-                            e.response?.data?.message ||
-                              e.message ||
-                              t("common.error"),
-                          );
-                        } finally {
-                          actionLoading.value[row.id] = false;
-                        }
-                      },
-                    },
-                    { default: () => t("plugin.stop") },
-                  ),
-                  h(
-                    NDropdown,
-                    {
-                      trigger: "click",
-                      options: [
-                        { label: t("plugin.force_stop"), key: "force" },
-                      ],
-                      onSelect: async () => {
-                        actionLoading.value[row.id] = true;
-                        try {
-                          await stopPlugin(row.id, true);
-                          await refresh();
-                        } catch (e: any) {
-                          message.error(
-                            e.response?.data?.message ||
-                              e.message ||
-                              t("common.error"),
-                          );
-                        } finally {
-                          actionLoading.value[row.id] = false;
-                        }
-                      },
-                    },
-                    {
-                      default: () =>
-                        h(
-                          NButton,
-                          {
-                            size: "small",
-                            secondary: true,
-                            style: { padding: "0 6px" },
-                            disabled:
-                              !!actionLoading.value[row.id] ||
-                              !!restartLoading.value[row.id],
-                          },
-                          { default: () => "▾" },
-                        ),
-                    },
-                  ),
-                ],
-              ),
-            ]
-          : [
-              h(
-                NButton,
-                {
-                  size: "small",
-                  secondary: true,
-                  loading: !!actionLoading.value[row.id],
-                  disabled: !!actionLoading.value[row.id],
-                  onClick: async () => {
-                    actionLoading.value[row.id] = true;
-                    try {
-                      await startPlugin(row.id);
-                      await refresh();
-                    } catch (e: any) {
-                      message.error(
-                        e.response?.data?.message ||
-                          e.message ||
-                          t("common.error"),
-                      );
-                    } finally {
-                      actionLoading.value[row.id] = false;
-                    }
-                  },
-                },
-                { default: () => t("plugin.start") },
-              ),
-            ]),
+        h(EditButton, {
+          label: t("plugin.config"),
+          onClick: () => openConfig(row),
+        }),
         h(
           NButton,
           {
@@ -245,19 +216,25 @@ const columns = computed<DataTableColumns<PluginInfo>>(() => [
           },
           { default: () => t("plugin.logs") },
         ),
+        h(NSelect, {
+          size: "small",
+          style: { width: "105px" },
+          value: getSelectedAction(row),
+          options: getActionOptions(row),
+          onUpdateValue: (val: string) => {
+            selectedActions.value[row.id] = val;
+          },
+        }),
         h(
           NButton,
           {
             size: "small",
             type: "primary",
             secondary: true,
-            disabled: !row.controller_ready,
-            onClick: () => openPlugin(row),
+            loading: !!actionLoading.value[row.id],
+            onClick: () => handleExecuteAction(row),
           },
-          {
-            icon: () => h(NIcon, null, { default: () => h(Launch) }),
-            default: () => t("plugin.open_panel"),
-          },
+          { default: () => t("plugin.execute") },
         ),
         h(DeleteButton, {
           item: row.name,
@@ -291,17 +268,12 @@ async function upload({ file, onFinish, onError }: UploadCustomRequestOptions) {
   }
 }
 
-function openPlugin(plugin: PluginInfo) {
-  activeTab.value = plugin.id;
-}
-
 function syncPluginCookie() {
   syncPluginSessionCookie();
 }
 
 async function deletePlugin(plugin: PluginInfo) {
   await removePlugin(plugin.id);
-  if (activeTab.value === plugin.id) activeTab.value = "manage";
   await refresh();
 }
 
@@ -342,31 +314,161 @@ onBeforeUnmount(() => {
   if (logsTimer) clearInterval(logsTimer);
 });
 
-async function openConfig(row: PluginInfo) {
-  configError.value = "";
-  try {
-    config.value = await pluginConfig(row.id);
-    configPlugin.value = row;
-  } catch (e: any) {
-    message.error(e?.message || t("common.error"));
+function parseOverrideForm(yamlText: string) {
+  const modeMatch = yamlText.match(/^mode:\s*["']?(\w+)["']?/m);
+  if (modeMatch && ["rule", "global", "direct"].includes(modeMatch[1])) {
+    formOverride.value.mode = modeMatch[1];
+  }
+
+  const lanMatch = yamlText.match(/^allow-lan:\s*(true|false)/m);
+  if (lanMatch) {
+    formOverride.value.allowLan = lanMatch[1] === "true";
+  }
+
+  const tpMatch = yamlText.match(/^tproxy-port:\s*(\d+)/m);
+  if (tpMatch) {
+    formOverride.value.tproxyPort = parseInt(tpMatch[1], 10);
+  }
+
+  const ctrlMatch = yamlText.match(
+    /^external-controller:\s*["']?[^:\s]*:(\d+)["']?/m,
+  );
+  if (ctrlMatch) {
+    formOverride.value.controllerPort = parseInt(ctrlMatch[1], 10);
   }
 }
 
-async function saveConfig() {
+function syncFormToYaml() {
+  let text = overrideConfigText.value || "";
+
+  if (/^mode:\s*.*$/m.test(text)) {
+    text = text.replace(/^mode:\s*.*$/m, `mode: ${formOverride.value.mode}`);
+  } else {
+    text = `mode: ${formOverride.value.mode}\n` + text;
+  }
+
+  if (/^allow-lan:\s*.*$/m.test(text)) {
+    text = text.replace(
+      /^allow-lan:\s*.*$/m,
+      `allow-lan: ${formOverride.value.allowLan}`,
+    );
+  } else {
+    text = `allow-lan: ${formOverride.value.allowLan}\n` + text;
+  }
+
+  if (/^tproxy-port:\s*.*$/m.test(text)) {
+    text = text.replace(
+      /^tproxy-port:\s*.*$/m,
+      `tproxy-port: ${formOverride.value.tproxyPort}`,
+    );
+  } else {
+    text = `tproxy-port: ${formOverride.value.tproxyPort}\n` + text;
+  }
+
+  if (/^external-controller:\s*.*$/m.test(text)) {
+    text = text.replace(
+      /^external-controller:\s*.*$/m,
+      `external-controller: 0.0.0.0:${formOverride.value.controllerPort}`,
+    );
+  } else {
+    text =
+      `external-controller: 0.0.0.0:${formOverride.value.controllerPort}\n` +
+      text;
+  }
+
+  overrideConfigText.value = text;
+}
+
+function onOverrideYamlInput() {
+  parseOverrideForm(overrideConfigText.value);
+}
+
+async function openConfig(row: PluginInfo) {
+  configPlugin.value = row;
+  activeConfigTab.value = "override";
+  configError.value = "";
+  configLoading.value = true;
+  try {
+    const [base, ovr, eff] = await Promise.all([
+      pluginConfig(row.id, "base"),
+      pluginConfig(row.id, "override"),
+      pluginConfig(row.id, "effective"),
+    ]);
+    baseConfigText.value = base;
+    overrideConfigText.value = ovr;
+    effectiveConfigText.value = eff;
+    parseOverrideForm(ovr);
+  } catch (e: any) {
+    message.error(e?.message || t("common.error"));
+  } finally {
+    configLoading.value = false;
+  }
+}
+
+function closeConfigModal() {
+  configPlugin.value = undefined;
+  configError.value = "";
+}
+
+async function saveOverride() {
   if (!configPlugin.value) return;
-  saveConfigLoading.value = true;
+  saveOverrideLoading.value = true;
   configError.value = "";
   try {
-    await savePluginConfig(configPlugin.value.id, config.value);
-    configPlugin.value = undefined;
-    await refresh();
+    syncFormToYaml();
+    await savePluginConfig(
+      configPlugin.value.id,
+      overrideConfigText.value,
+      "override",
+    );
     message.success(t("plugin.config_saved"));
+    effectiveConfigText.value = await pluginConfig(
+      configPlugin.value.id,
+      "effective",
+    );
+    await refresh();
   } catch (e: any) {
     const errMsg = e.response?.data?.message || e.message || t("common.error");
     configError.value = errMsg;
     message.error(errMsg);
   } finally {
-    saveConfigLoading.value = false;
+    saveOverrideLoading.value = false;
+  }
+}
+
+async function saveBase() {
+  if (!configPlugin.value) return;
+  saveBaseLoading.value = true;
+  configError.value = "";
+  try {
+    await savePluginConfig(configPlugin.value.id, baseConfigText.value, "base");
+    message.success(t("plugin.config_saved"));
+    effectiveConfigText.value = await pluginConfig(
+      configPlugin.value.id,
+      "effective",
+    );
+    await refresh();
+  } catch (e: any) {
+    const errMsg = e.response?.data?.message || e.message || t("common.error");
+    configError.value = errMsg;
+    message.error(errMsg);
+  } finally {
+    saveBaseLoading.value = false;
+  }
+}
+
+async function fetchEffectiveConfig() {
+  if (!configPlugin.value) return;
+  refreshEffectiveLoading.value = true;
+  try {
+    effectiveConfigText.value = await pluginConfig(
+      configPlugin.value.id,
+      "effective",
+    );
+  } catch (e: any) {
+    message.error(e?.message || t("common.error"));
+  } finally {
+    refreshEffectiveLoading.value = false;
   }
 }
 
@@ -375,7 +477,9 @@ function panelUrl(plugin: PluginInfo) {
   const uiPath = (plugin.ui_path ?? "").replace(/^\//, "");
   const setup = new URLSearchParams({
     hostname: window.location.hostname,
-    port: window.location.port,
+    port:
+      window.location.port ||
+      (window.location.protocol === "https:" ? "443" : "80"),
     secondaryPath: proxyPath,
     type: "clash",
     disableUpgradeCore: "1",
@@ -391,85 +495,56 @@ onMounted(() => {
 </script>
 
 <template>
-  <n-flex vertical :wrap="false" class="plugin-tabs">
-    <n-tabs
-      v-model:value="activeTab"
-      type="segment"
-      size="small"
-      style="width: fit-content; min-width: 240px; max-width: 100%"
+  <n-flex vertical class="standard-content-page plugin-page-container">
+    <n-flex
+      align="center"
+      justify="space-between"
+      :wrap="false"
+      class="standard-list-toolbar"
     >
-      <n-tab name="manage">
-        <n-flex align="center" :size="6" :wrap="false">
-          {{ t("plugin.manage") }}
-          <n-tag size="tiny" :bordered="false" class="plugins-dev-tag">
-            dev
-          </n-tag>
-        </n-flex>
-      </n-tab>
-      <n-tab
-        v-for="plugin in plugins.filter((item) => item.controller_ready)"
-        :key="plugin.id"
-        :name="plugin.id"
+      <n-upload
+        class="plugin-upload"
+        accept="application/gzip,application/x-gzip,.tar.gz,.tgz"
+        :show-file-list="false"
+        :custom-request="upload"
       >
-        {{ plugin.name }}
-      </n-tab>
-    </n-tabs>
+        <n-button type="primary">
+          {{ t("plugin.import") }}
+        </n-button>
+      </n-upload>
+      <n-button :loading="loading" secondary @click="refresh">
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
+      </n-button>
+    </n-flex>
 
-    <template v-if="activeTab === 'manage'">
-      <n-flex vertical class="standard-content-page">
-        <n-flex
-          align="center"
-          justify="space-between"
-          :wrap="false"
-          class="standard-list-toolbar"
-        >
-          <n-upload
-            class="plugin-upload"
-            accept="application/gzip,application/x-gzip,.tar.gz,.tgz"
-            :show-file-list="false"
-            :custom-request="upload"
-          >
-            <n-button type="primary">
-              {{ t("plugin.import") }}
-            </n-button>
-          </n-upload>
-          <n-button :loading="loading" secondary @click="refresh">
-            <template #icon
-              ><n-icon><Renew /></n-icon
-            ></template>
-            {{ t("common.refresh") }}
-          </n-button>
-        </n-flex>
+    <StandardRequestStatus
+      :has-succeeded="hasSucceeded"
+      :loading="loading"
+      :error="error"
+      :last-success-at="lastSuccessAt"
+      @retry="refresh"
+    >
+      <StandardDataTable
+        :columns="columns"
+        :data="plugins"
+        :loading="loading"
+        :row-key="(row: PluginInfo) => row.id"
+      />
+    </StandardRequestStatus>
 
-        <StandardRequestStatus
-          :has-succeeded="hasSucceeded"
-          :loading="loading"
-          :error="error"
-          :last-success-at="lastSuccessAt"
-          @retry="refresh"
-        >
-          <StandardDataTable
-            :columns="columns"
-            :data="plugins"
-            :loading="loading"
-            :row-key="(row: PluginInfo) => row.id"
-          />
-        </StandardRequestStatus>
-      </n-flex>
-    </template>
-    <iframe
-      v-else-if="activePlugin"
-      class="plugin-panel-frame"
-      :src="panelUrl(activePlugin)"
-      :title="activePlugin.name"
-    />
+    <!-- Logs Modal -->
     <n-modal v-model:show="showLogs">
       <n-card :title="t('plugin.logs')" style="width: min(900px, 90vw)">
         <template #header-extra>
           <n-flex align="center" :size="12">
             <n-flex align="center" :size="4">
               <n-switch v-model:value="autoRefreshLogs" size="small" />
-              <span style="font-size: var(--app-font-size-caption)">{{ t("plugin.auto_refresh") }}</span>
+              <span style="font-size: var(--app-font-size-caption)">{{
+                t("plugin.auto_refresh")
+              }}</span>
             </n-flex>
             <n-button
               size="tiny"
@@ -487,30 +562,185 @@ onMounted(() => {
         <pre class="plugin-logs">{{ logs }}</pre>
       </n-card>
     </n-modal>
-    <n-modal :show="!!configPlugin" @update:show="configPlugin = undefined">
-      <n-card :title="t('plugin.config')" style="width: min(900px, 90vw)">
-        <n-alert
-          v-if="configError"
-          type="error"
-          style="margin-bottom: 12px"
-          :show-icon="false"
-        >
-          {{ configError }}
-        </n-alert>
-        <n-input
-          v-model:value="config"
-          type="textarea"
-          :autosize="{ minRows: 14, maxRows: 28 }"
-        />
-        <template #footer>
-          <n-button
-            type="primary"
-            :loading="saveConfigLoading"
-            @click="saveConfig"
+
+    <!-- Config Modal -->
+    <n-modal
+      :show="!!configPlugin"
+      :mask-closable="false"
+      @update:show="closeConfigModal"
+    >
+      <n-card
+        :title="
+          t('plugin.config') +
+          (configPlugin ? ` - ${configPlugin.name}` : '')
+        "
+        style="width: min(920px, 92vw)"
+        closable
+        @close="closeConfigModal"
+      >
+        <n-spin :show="configLoading">
+          <n-alert
+            v-if="configError"
+            type="error"
+            style="margin-bottom: var(--app-space-sm)"
+            :show-icon="false"
           >
-            {{ t("common.save") }}
-          </n-button>
-        </template>
+            {{ configError }}
+          </n-alert>
+
+          <n-tabs v-model:value="activeConfigTab" type="line" animated>
+            <!-- Tab 1: 覆写配置 (Override / Mixin) -->
+            <n-tab-pane name="override" :tab="t('plugin.tab_override')">
+              <n-flex vertical :size="12" class="config-tab-pane">
+                <n-text depth="3">
+                  {{ t("plugin.override_desc") }}
+                </n-text>
+
+                <n-card size="small" embedded>
+                  <n-grid :cols="24" :x-gap="16" :y-gap="12">
+                    <n-grid-item :span="12">
+                      <n-form-item
+                        :label="t('plugin.mode')"
+                        :show-feedback="false"
+                      >
+                        <n-select
+                          v-model:value="formOverride.mode"
+                          :options="modeOptions"
+                          @update:value="syncFormToYaml"
+                        />
+                      </n-form-item>
+                    </n-grid-item>
+
+                    <n-grid-item :span="12">
+                      <n-form-item
+                        :label="t('plugin.allow_lan')"
+                        :show-feedback="false"
+                      >
+                        <n-switch
+                          v-model:value="formOverride.allowLan"
+                          @update:value="syncFormToYaml"
+                        />
+                      </n-form-item>
+                    </n-grid-item>
+
+                    <n-grid-item :span="12">
+                      <n-form-item
+                        :label="t('plugin.tproxy_port')"
+                        :show-feedback="false"
+                      >
+                        <n-input-number
+                          v-model:value="formOverride.tproxyPort"
+                          :min="1"
+                          :max="65535"
+                          style="width: 100%"
+                          @update:value="syncFormToYaml"
+                        />
+                      </n-form-item>
+                    </n-grid-item>
+
+                    <n-grid-item :span="12">
+                      <n-form-item
+                        :label="t('plugin.controller_port')"
+                        :show-feedback="false"
+                      >
+                        <n-input-number
+                          v-model:value="formOverride.controllerPort"
+                          :min="1"
+                          :max="65535"
+                          style="width: 100%"
+                          @update:value="syncFormToYaml"
+                        />
+                      </n-form-item>
+                    </n-grid-item>
+
+                    <n-grid-item :span="24">
+                      <n-alert type="info" :show-icon="true">
+                        {{
+                          t("plugin.dns_protected_hint", {
+                            dns: "169.254.127.1",
+                          })
+                        }}
+                      </n-alert>
+                    </n-grid-item>
+                  </n-grid>
+                </n-card>
+
+                <n-flex vertical :size="4">
+                  <n-text strong>{{ t("plugin.advanced_mixin_yaml") }}</n-text>
+                  <n-input
+                    v-model:value="overrideConfigText"
+                    type="textarea"
+                    :autosize="{ minRows: 10, maxRows: 18 }"
+                    placeholder="# Mixin YAML"
+                    @input="onOverrideYamlInput"
+                  />
+                </n-flex>
+
+                <n-flex justify="end">
+                  <n-button
+                    type="primary"
+                    :loading="saveOverrideLoading"
+                    @click="saveOverride"
+                  >
+                    {{ t("common.save") }}
+                  </n-button>
+                </n-flex>
+              </n-flex>
+            </n-tab-pane>
+
+            <!-- Tab 2: 用户配置 (User Config) -->
+            <n-tab-pane name="base" :tab="t('plugin.tab_user_config')">
+              <n-flex vertical :size="12" class="config-tab-pane">
+                <n-text depth="3">
+                  {{ t("plugin.user_config_desc") }}
+                </n-text>
+                <n-input
+                  v-model:value="baseConfigText"
+                  type="textarea"
+                  :autosize="{ minRows: 16, maxRows: 24 }"
+                  placeholder="# proxies, proxy-groups, rules..."
+                />
+                <n-flex justify="end">
+                  <n-button
+                    type="primary"
+                    :loading="saveBaseLoading"
+                    @click="saveBase"
+                  >
+                    {{ t("common.save") }}
+                  </n-button>
+                </n-flex>
+              </n-flex>
+            </n-tab-pane>
+
+            <!-- Tab 3: 最终生效配置 (Effective Config) -->
+            <n-tab-pane
+              name="effective"
+              :tab="t('plugin.tab_effective_config')"
+            >
+              <n-flex vertical :size="12" class="config-tab-pane">
+                <n-flex justify="space-between" align="center">
+                  <n-text depth="3">
+                    {{ t("plugin.effective_config_desc") }}
+                  </n-text>
+                  <n-button
+                    size="small"
+                    secondary
+                    :loading="refreshEffectiveLoading"
+                    @click="fetchEffectiveConfig"
+                  >
+                    <template #icon
+                      ><n-icon><Renew /></n-icon
+                    ></template>
+                    {{ t("plugin.refresh_effective") }}
+                  </n-button>
+                </n-flex>
+                <pre class="config-effective-preview">{{
+                  effectiveConfigText
+                }}</pre>
+              </n-flex>
+            </n-tab-pane>
+          </n-tabs>
+        </n-spin>
       </n-card>
     </n-modal>
   </n-flex>
@@ -526,20 +756,40 @@ onMounted(() => {
 .plugin-upload {
   width: auto;
 }
-.plugin-tabs {
+.plugin-page-container {
   width: 100%;
-  height: 100%;
-}
-.plugin-panel-frame {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  background: var(--app-surface-color);
 }
 .plugin-logs {
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--app-space-sm);
+  border-radius: var(--app-radius-control);
+  color: var(--app-text-inverse-color);
+  background: var(--app-terminal-background-color);
+  font-family: var(--font-mono);
+  font-size: var(--app-font-size-caption);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   max-height: 70vh;
   overflow: auto;
+}
+.config-effective-preview {
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--app-space-sm);
+  border-radius: var(--app-radius-control);
+  color: var(--app-text-inverse-color);
+  background: var(--app-terminal-background-color);
+  font-family: var(--font-mono);
+  font-size: var(--app-font-size-caption);
+  line-height: 1.5;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 55vh;
+  overflow: auto;
+}
+.config-tab-pane {
+  padding-top: var(--app-space-sm);
 }
 </style>

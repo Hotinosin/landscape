@@ -1,5 +1,5 @@
 [workspace.package]
-version = "0.24.3-extension.4"
+version = "0.24.3-extension.5"
 edition = "2021"
 
 
@@ -72,6 +72,7 @@ futures-util = { version = "0.3.34", default-features = false }
 # ============================================================================
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.151" }
+serde_yaml = "0.9.34"
 # Only used by geo's file cache — keep version pinned, do not upgrade
 bincode = { version = "2.0.1", features = ["std", "serde"] }
 toml = "1.1.5"

@@ -11,7 +11,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::{
     Json, Router,
     body::Body,
-    extract::{Multipart, Path as AxumPath, State},
+    extract::{Multipart, Path as AxumPath, Query, State},
     http::{Request, StatusCode},
     response::{IntoResponse, Response},
     routing::{any, delete, get, post},
@@ -442,8 +442,100 @@ impl PluginManager {
         self.dir.join(id)
     }
 
-    fn service_config_path(&self, id: &str, service: &PluginService) -> PathBuf {
+    fn base_config_path(&self, id: &str, service: &PluginService) -> PathBuf {
         self.plugin_dir(id).join("config").join(service.config_filename())
+    }
+
+    fn override_config_path(&self, id: &str) -> PathBuf {
+        self.plugin_dir(id).join("config").join("override.yaml")
+    }
+
+    fn effective_config_path(&self, id: &str, service: &PluginService) -> PathBuf {
+        self.plugin_dir(id).join("config").join(format!("effective.{}", service.config_filename()))
+    }
+
+    async fn build_effective_config_with_override(
+        &self,
+        manifest: &PluginManifest,
+        base_override: Option<&Path>,
+        override_override: Option<&Path>,
+    ) -> Result<String, String> {
+        let service = manifest.service.as_ref().ok_or("plugin has no managed service")?;
+        let base_path = base_override
+            .map(|p| p.to_path_buf())
+            .unwrap_or_else(|| self.base_config_path(&manifest.id, service));
+        let override_path = override_override
+            .map(|p| p.to_path_buf())
+            .unwrap_or_else(|| self.override_config_path(&manifest.id));
+
+        let base_str = if base_path.exists() {
+            fs::read_to_string(&base_path).await.map_err(|e| e.to_string())?
+        } else {
+            let bundled = self.plugin_dir(&manifest.id).join("package").join(&service.default_config);
+            if bundled.exists() {
+                fs::read_to_string(&bundled).await.map_err(|e| e.to_string())?
+            } else {
+                String::new()
+            }
+        };
+
+        let mut base_val: serde_yaml::Value = if base_str.trim().is_empty() {
+            serde_yaml::Value::Mapping(Default::default())
+        } else {
+            serde_yaml::from_str(&base_str).map_err(|e| format!("Base config YAML parse error: {e}"))?
+        };
+
+        if override_path.exists() {
+            let override_str = fs::read_to_string(&override_path).await.unwrap_or_default();
+            if !override_str.trim().is_empty() {
+                let override_val = serde_yaml::from_str::<serde_yaml::Value>(&override_str)
+                    .map_err(|e| format!("Override config YAML parse error: {e}"))?;
+                deep_merge_yaml(&mut base_val, &override_val);
+            }
+        }
+
+        if let serde_yaml::Value::Mapping(map) = &mut base_val {
+            let tproxy_key = serde_yaml::Value::String("tproxy-port".into());
+            let socket_key = serde_yaml::Value::String("external-controller-unix".into());
+            let ext_ctrl_key = serde_yaml::Value::String("external-controller".into());
+            let dns_key = serde_yaml::Value::String("dns".into());
+            let nameserver_key = serde_yaml::Value::String("nameserver".into());
+            let enable_key = serde_yaml::Value::String("enable".into());
+
+            if service.kind == "mihomo" {
+                if !map.contains_key(&tproxy_key) {
+                    map.insert(
+                        tproxy_key,
+                        serde_yaml::Value::Number((manifest.network.tproxy_port as u64).into()),
+                    );
+                }
+                if !map.contains_key(&socket_key) {
+                    map.insert(
+                        socket_key,
+                        serde_yaml::Value::String(manifest.controller_socket.to_string_lossy().into_owned()),
+                    );
+                }
+                if !map.contains_key(&ext_ctrl_key) {
+                    map.insert(
+                        ext_ctrl_key,
+                        serde_yaml::Value::String("0.0.0.0:9090".into()),
+                    );
+                }
+                let host_dns = serde_yaml::Value::String(manifest.network.host_ipv4.to_string());
+                let dns_entry = map.entry(dns_key).or_insert_with(|| serde_yaml::Value::Mapping(Default::default()));
+                if let serde_yaml::Value::Mapping(dns_map) = dns_entry {
+                    dns_map.insert(enable_key, serde_yaml::Value::Bool(true));
+                    let ns_entry = dns_map.entry(nameserver_key).or_insert_with(|| serde_yaml::Value::Sequence(Vec::new()));
+                    if let serde_yaml::Value::Sequence(ns_seq) = ns_entry {
+                        if !ns_seq.contains(&host_dns) {
+                            ns_seq.insert(0, host_dns);
+                        }
+                    }
+                }
+            }
+        }
+
+        serde_yaml::to_string(&base_val).map_err(|e| format!("YAML serialization error: {e}"))
     }
 
     async fn prepare_dirs(&self, manifest: &PluginManifest) -> Result<(), String> {
@@ -488,22 +580,37 @@ impl PluginManager {
         let plugin_dir = self.plugin_dir(&manifest.id);
         let executable = plugin_dir.join("package").join(&service.executable);
         let bundled_config = plugin_dir.join("package").join(&service.default_config);
-        let config = self.service_config_path(&manifest.id, service);
+        let base_config = self.base_config_path(&manifest.id, service);
         if !executable.is_file() || !bundled_config.is_file() {
             return Err("package executable or default config is missing".into());
         }
-        if !config.exists() {
-            fs::copy(&bundled_config, &config).await.map_err(|e| e.to_string())?;
+        if !base_config.exists() {
+            fs::copy(&bundled_config, &base_config).await.map_err(|e| e.to_string())?;
         }
+        let override_config = self.override_config_path(&manifest.id);
+        if !override_config.exists() {
+            let default_override = format!(
+                "# Landscape plugin runtime override\ntproxy-port: {}\nexternal-controller: 0.0.0.0:9090\nexternal-controller-unix: {}\ndns:\n  enable: true\n  nameserver:\n    - {}\n",
+                manifest.network.tproxy_port,
+                manifest.controller_socket.display(),
+                manifest.network.host_ipv4,
+            );
+            let _ = fs::write(&override_config, default_override).await;
+        }
+
+        let effective_content = self.build_effective_config_with_override(manifest, None, None).await?;
+        let effective_config = self.effective_config_path(&manifest.id, service);
+        fs::write(&effective_config, &effective_content).await.map_err(|e| e.to_string())?;
+
         let namespace = self.namespace(manifest);
         let data = plugin_dir.join("data");
-        self.check_service_config(manifest, &executable, &data, &config).await?;
+        self.check_service_config(manifest, &executable, &data, &effective_config).await?;
         let log = OpenOptions::new()
             .create(true)
             .append(true)
             .open(plugin_dir.join("logs/service.log"))
             .map_err(|e| e.to_string())?;
-        let run_args = service.resolve_run_args(&executable, &data, &config, &namespace);
+        let run_args = service.resolve_run_args(&executable, &data, &effective_config, &namespace);
         let mut cmd = Command::new("ip");
         cmd.args(["netns", "exec", &namespace]);
         cmd.arg(&executable);
@@ -533,14 +640,23 @@ impl PluginManager {
         let Some(check_args) = service.resolve_check_args(executable, data, config, &namespace) else {
             return Ok(());
         };
-        let mut cmd = Command::new("ip");
-        cmd.args(["netns", "exec", &namespace]);
-        cmd.arg(executable);
-        cmd.args(&check_args);
-        let check = cmd.output().await.map_err(|e| e.to_string())?;
-        if !check.status.success() {
-            let stderr = String::from_utf8_lossy(&check.stderr);
-            let stdout = String::from_utf8_lossy(&check.stdout);
+        // Prefer running check directly on host so host DNS and outbound network
+        // are available for downloading required geo resources (like Country.mmdb)
+        // even if the plugin service has not been started yet or netns is offline.
+        let output = match Command::new(executable).args(&check_args).output().await {
+            Ok(out) => out,
+            Err(_) if netns_exists(&namespace).await.unwrap_or(false) => {
+                let mut cmd = Command::new("ip");
+                cmd.args(["netns", "exec", &namespace]);
+                cmd.arg(executable);
+                cmd.args(&check_args);
+                cmd.output().await.map_err(|e| e.to_string())?
+            }
+            Err(e) => return Err(e.to_string()),
+        };
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stdout = String::from_utf8_lossy(&output.stdout);
             let detail = if !stderr.trim().is_empty() {
                 stderr.trim().to_string()
             } else {
@@ -667,6 +783,9 @@ impl PluginManager {
             ])
             .await?;
             setup_masquerade(manifest).await?;
+            if let Err(error) = setup_netns_dns(&namespace, &manifest.network.host_ipv4).await {
+                tracing::warn!(plugin = %manifest.id, %error, "NetNS DNS setup failed");
+            }
         }
 
         add_ip_rule(&namespace, false, "0x1/0x1", "100").await?;
@@ -907,14 +1026,39 @@ impl PluginManager {
         Ok(String::from_utf8_lossy(&bytes[start..]).into_owned())
     }
 
-    async fn config(&self, id: &str) -> Result<String, String> {
+    async fn config(&self, id: &str, layer: Option<&str>) -> Result<String, String> {
         let manifest = self.get(id).await.ok_or("plugin not found")?;
         let service = manifest.service.as_ref().ok_or("plugin has no managed service")?;
-        let config_path = self.service_config_path(id, service);
-        fs::read_to_string(config_path).await.map_err(|e| e.to_string())
+        match layer.unwrap_or("base") {
+            "override" => {
+                let p = self.override_config_path(id);
+                if p.exists() {
+                    fs::read_to_string(p).await.map_err(|e| e.to_string())
+                } else {
+                    Ok(format!(
+                        "# Landscape plugin runtime override\ntproxy-port: {}\nexternal-controller: 0.0.0.0:9090\nexternal-controller-unix: {}\ndns:\n  enable: true\n  nameserver:\n    - {}\n",
+                        manifest.network.tproxy_port,
+                        manifest.controller_socket.display(),
+                        manifest.network.host_ipv4,
+                    ))
+                }
+            }
+            "effective" => {
+                self.build_effective_config_with_override(&manifest, None, None).await
+            }
+            _ => {
+                let base_p = self.base_config_path(id, service);
+                if base_p.exists() {
+                    fs::read_to_string(base_p).await.map_err(|e| e.to_string())
+                } else {
+                    let bundled_config = self.plugin_dir(id).join("package").join(&service.default_config);
+                    fs::read_to_string(bundled_config).await.map_err(|e| e.to_string())
+                }
+            }
+        }
     }
 
-    async fn save_config(&self, id: &str, body: &str) -> Result<(), String> {
+    async fn save_config(&self, id: &str, layer: Option<&str>, body: &str) -> Result<(), String> {
         if body.len() > 1024 * 1024 {
             return Err("config is too large".into());
         }
@@ -923,20 +1067,50 @@ impl PluginManager {
         let plugin_dir = self.plugin_dir(id);
         let executable = plugin_dir.join("package").join(&service.executable);
         let data = plugin_dir.join("data");
-        let config = self.service_config_path(id, service);
-        let filename = service.config_filename();
+
+        let is_override = layer == Some("override");
+        let target_path = if is_override {
+            self.override_config_path(id)
+        } else {
+            self.base_config_path(id, service)
+        };
+
+        let filename = target_path.file_name().unwrap().to_string_lossy();
         let pending = plugin_dir.join("config").join(format!("{filename}.new"));
         fs::write(&pending, body).await.map_err(|e| e.to_string())?;
-        if let Err(error) = self.check_service_config(&manifest, &executable, &data, &pending).await
-        {
+
+        let effective_result = if is_override {
+            self.build_effective_config_with_override(&manifest, None, Some(&pending)).await
+        } else {
+            self.build_effective_config_with_override(&manifest, Some(&pending), None).await
+        };
+
+        let effective_content = match effective_result {
+            Ok(content) => content,
+            Err(err) => {
+                let _ = fs::remove_file(&pending).await;
+                return Err(err);
+            }
+        };
+
+        let effective_pending = plugin_dir.join("config").join("effective.new");
+        fs::write(&effective_pending, effective_content).await.map_err(|e| e.to_string())?;
+
+        if let Err(error) = self.check_service_config(&manifest, &executable, &data, &effective_pending).await {
             let _ = fs::remove_file(&pending).await;
+            let _ = fs::remove_file(&effective_pending).await;
             return Err(error);
         }
+
         let was_running = self.service_running(id).await;
         if was_running {
             self.stop_service(id, false).await;
         }
-        fs::rename(&pending, config).await.map_err(|e| e.to_string())?;
+
+        fs::rename(&pending, &target_path).await.map_err(|e| e.to_string())?;
+        let effective_path = self.effective_config_path(id, service);
+        fs::rename(&effective_pending, &effective_path).await.map_err(|e| e.to_string())?;
+
         if was_running {
             self.start_service(&manifest).await?;
         }
@@ -1101,7 +1275,39 @@ async fn add_ip_rule(namespace: &str, ipv6: bool, mark: &str, table: &str) -> Re
     run_ip_allow_exists(&args).await
 }
 
+fn deep_merge_yaml(base: &mut serde_yaml::Value, override_val: &serde_yaml::Value) {
+    match (base, override_val) {
+        (serde_yaml::Value::Mapping(base_map), serde_yaml::Value::Mapping(override_map)) => {
+            for (key, val) in override_map {
+                if let Some(base_field) = base_map.get_mut(key) {
+                    deep_merge_yaml(base_field, val);
+                } else {
+                    base_map.insert(key.clone(), val.clone());
+                }
+            }
+        }
+        (base, override_val) => {
+            *base = override_val.clone();
+        }
+    }
+}
+
+async fn setup_netns_dns(namespace: &str, host_ipv4: &Ipv4Addr) -> Result<(), String> {
+    let netns_dir = Path::new("/etc/netns").join(namespace);
+    fs::create_dir_all(&netns_dir).await.map_err(|e| e.to_string())?;
+    let resolv_conf = netns_dir.join("resolv.conf");
+    let content = format!("# Generated by Landscape Plugin System\nnameserver {host_ipv4}\n");
+    fs::write(&resolv_conf, content).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+async fn remove_netns_dns(namespace: &str) {
+    let netns_dir = Path::new("/etc/netns").join(namespace);
+    let _ = fs::remove_dir_all(&netns_dir).await;
+}
+
 async fn remove_network(namespace: &str, host_interface: &str) -> Result<(), String> {
+    remove_netns_dns(namespace).await;
     if netns_exists(namespace).await? {
         run_ip(&["netns", "del", namespace]).await
     } else if get_interface_index_by_name(host_interface).is_some() {
@@ -1216,7 +1422,7 @@ pub struct StopQuery {
 async fn stop_plugin(
     State(manager): State<PluginManager>,
     AxumPath(id): AxumPath<String>,
-    axum::extract::Query(query): axum::extract::Query<StopQuery>,
+    Query(query): Query<StopQuery>,
 ) -> Response {
     match manager.stop(&id, query.force).await {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
@@ -1272,11 +1478,21 @@ async fn plugin_logs(
     }
 }
 
+#[derive(Debug, Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct ConfigQuery {
+    #[serde(default)]
+    pub layer: Option<String>,
+}
+
 #[utoipa::path(
     get,
     path = "/{id}/config",
     tag = "Plugins",
-    params(("id" = String, Path, description = "Plugin id")),
+    params(
+        ("id" = String, Path, description = "Plugin id"),
+        ConfigQuery
+    ),
     responses(
         (status = 200, description = "Plugin configuration content", body = String, content_type = "text/plain"),
         (status = 404, description = "Plugin not found")
@@ -1285,8 +1501,9 @@ async fn plugin_logs(
 async fn plugin_config(
     State(manager): State<PluginManager>,
     AxumPath(id): AxumPath<String>,
+    Query(query): Query<ConfigQuery>,
 ) -> Response {
-    match manager.config(&id).await {
+    match manager.config(&id, query.layer.as_deref()).await {
         Ok(config) => (StatusCode::OK, config).into_response(),
         Err(e) => error(StatusCode::NOT_FOUND, e),
     }
@@ -1296,7 +1513,10 @@ async fn plugin_config(
     put,
     path = "/{id}/config",
     tag = "Plugins",
-    params(("id" = String, Path, description = "Plugin id")),
+    params(
+        ("id" = String, Path, description = "Plugin id"),
+        ConfigQuery
+    ),
     request_body(content = String, description = "Plugin configuration", content_type = "text/plain"),
     responses(
         (status = 200, description = "Plugin configuration saved"),
@@ -1308,9 +1528,10 @@ async fn plugin_config(
 async fn save_plugin_config(
     State(manager): State<PluginManager>,
     AxumPath(id): AxumPath<String>,
+    Query(query): Query<ConfigQuery>,
     body: String,
 ) -> Response {
-    match manager.save_config(&id, &body).await {
+    match manager.save_config(&id, query.layer.as_deref(), &body).await {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(e) => error(StatusCode::BAD_REQUEST, e),
     }
@@ -1330,6 +1551,7 @@ async fn plugin_ui(
 pub fn api_router(manager: PluginManager) -> Router {
     Router::new()
         .route("/", get(list_plugins))
+        .route("", get(list_plugins))
         .route("/import", post(import_plugin))
         .route("/{id}", delete(remove_plugin))
         .route("/{id}/start", post(start_plugin))
@@ -1374,8 +1596,8 @@ mod tests {
     use flate2::{Compression, write::GzEncoder};
 
     use super::{
-        PluginManifest, PluginService, StopQuery, extract_package, valid_network_name,
-        validate_package_path,
+        ConfigQuery, PluginManifest, PluginService, StopQuery, extract_package,
+        valid_network_name, validate_package_path,
     };
 
     #[test]
@@ -1510,6 +1732,49 @@ mod tests {
 
         let q_force: StopQuery = serde_json::from_str(r#"{"force": true}"#).unwrap();
         assert!(q_force.force);
+    }
+
+    #[test]
+    fn config_query_deserialization() {
+        let q_empty: ConfigQuery = serde_json::from_str("{}").unwrap();
+        assert_eq!(q_empty.layer, None);
+
+        let q_layer: ConfigQuery = serde_json::from_str(r#"{"layer": "override"}"#).unwrap();
+        assert_eq!(q_layer.layer.as_deref(), Some("override"));
+    }
+
+    #[test]
+    fn deep_merge_yaml_works() {
+        let base_yaml = r#"
+port: 7890
+mode: rule
+dns:
+  enable: true
+  nameserver:
+    - 1.1.1.1
+proxies:
+  - name: p1
+    type: ss
+"#;
+        let override_yaml = r#"
+mode: global
+dns:
+  nameserver:
+    - 169.254.127.1
+  enhanced-mode: fake-ip
+tproxy-port: 12345
+"#;
+        let mut base_val: serde_yaml::Value = serde_yaml::from_str(base_yaml).unwrap();
+        let override_val: serde_yaml::Value = serde_yaml::from_str(override_yaml).unwrap();
+        super::deep_merge_yaml(&mut base_val, &override_val);
+
+        assert_eq!(base_val["port"].as_i64(), Some(7890));
+        assert_eq!(base_val["mode"].as_str(), Some("global"));
+        assert_eq!(base_val["tproxy-port"].as_i64(), Some(12345));
+        assert_eq!(base_val["dns"]["enable"].as_bool(), Some(true));
+        assert_eq!(base_val["dns"]["enhanced-mode"].as_str(), Some("fake-ip"));
+        assert_eq!(base_val["dns"]["nameserver"][0].as_str(), Some("169.254.127.1"));
+        assert_eq!(base_val["proxies"][0]["name"].as_str(), Some("p1"));
     }
 
     #[test]

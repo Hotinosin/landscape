@@ -18,7 +18,10 @@ export type { PluginInfo, PluginNetwork };
 
 export async function listPlugins(): Promise<PluginInfo[]> {
   try {
-    const res = await listPluginsApi({ silent: true });
+    const res = await listPluginsApi({
+      url: "/api/v1/plugins",
+      silent: true,
+    } as any);
     if (Array.isArray(res)) return res;
     if (
       res &&
@@ -63,13 +66,19 @@ export async function pluginLogs(id: string): Promise<string> {
   return pluginLogsApi(id);
 }
 
-export async function pluginConfig(id: string): Promise<string> {
-  return pluginConfigApi(id);
+export type PluginConfigLayer = "base" | "override" | "effective";
+
+export async function pluginConfig(
+  id: string,
+  layer?: PluginConfigLayer,
+): Promise<string> {
+  return pluginConfigApi(id, layer ? { layer } : undefined);
 }
 
 export async function savePluginConfig(
   id: string,
   config: string,
+  layer?: PluginConfigLayer,
 ): Promise<void> {
-  await savePluginConfigApi(id, config);
+  await savePluginConfigApi(id, config, layer ? { layer } : undefined);
 }
