@@ -193,11 +193,11 @@ const fn default_tproxy_port() -> u16 {
 }
 
 const fn default_host_ipv4() -> Ipv4Addr {
-    Ipv4Addr::new(169, 254, 127, 1)
+    Ipv4Addr::new(100, 64, 127, 1)
 }
 
 const fn default_peer_ipv4() -> Ipv4Addr {
-    Ipv4Addr::new(169, 254, 127, 2)
+    Ipv4Addr::new(100, 64, 127, 2)
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
@@ -357,8 +357,20 @@ impl PluginManager {
             } else {
                 continue;
             };
-            let Ok(bytes) = fs::read(path).await else { continue };
-            let Ok(manifest) = serde_json::from_slice::<PluginManifest>(&bytes) else { continue };
+            let Ok(bytes) = fs::read(&path).await else { continue };
+            let Ok(mut manifest) = serde_json::from_slice::<PluginManifest>(&bytes) else { continue };
+            let mut manifest_changed = false;
+            if manifest.network.host_ipv4 == Ipv4Addr::new(169, 254, 127, 1) {
+                manifest.network.host_ipv4 = Ipv4Addr::new(100, 64, 127, 1);
+                manifest_changed = true;
+            }
+            if manifest.network.peer_ipv4 == Ipv4Addr::new(169, 254, 127, 2) {
+                manifest.network.peer_ipv4 = Ipv4Addr::new(100, 64, 127, 2);
+                manifest_changed = true;
+            }
+            if manifest_changed {
+                let _ = fs::write(&path, serde_json::to_vec_pretty(&manifest).unwrap_or_default()).await;
+            }
             if self.validate(&manifest).is_ok() {
                 if let Err(error) = self.install(&manifest).await {
                     tracing::warn!(plugin = %manifest.id, %error, "failed to restore plugin runtime");
@@ -369,6 +381,7 @@ impl PluginManager {
                     }
                 } else {
                     self.user_stopped.lock().await.insert(manifest.id.clone());
+                    remove_masquerade(&manifest).await;
                 }
                 self.manifests.write().await.insert(manifest.id.clone(), manifest);
             }
@@ -591,6 +604,11 @@ impl PluginManager {
                 manifest.network.host_ipv4,
             );
             let _ = fs::write(&override_config, default_override).await;
+        } else if let Ok(content) = fs::read_to_string(&override_config).await {
+            if content.contains("169.254.127.1") {
+                let updated = content.replace("169.254.127.1", &manifest.network.host_ipv4.to_string());
+                let _ = fs::write(&override_config, updated).await;
+            }
         }
 
         let effective_content = self.build_effective_config_with_override(manifest, None, None).await?;
@@ -632,6 +650,7 @@ impl PluginManager {
         let namespace = self.namespace(manifest);
         let data = plugin_dir.join("data");
         self.check_service_config(manifest, &executable, &data, &effective_config).await?;
+        setup_masquerade(manifest).await?;
         let log = OpenOptions::new()
             .create(true)
             .append(true)
@@ -646,9 +665,16 @@ impl PluginManager {
             .stdout(Stdio::from(log.try_clone().map_err(|e| e.to_string())?))
             .stderr(Stdio::from(log))
             .kill_on_drop(true);
-        let mut child = cmd.spawn().map_err(|e| e.to_string())?;
+        let mut child = match cmd.spawn() {
+            Ok(c) => c,
+            Err(e) => {
+                remove_masquerade(manifest).await;
+                return Err(e.to_string());
+            }
+        };
         tokio::time::sleep(tokio::time::Duration::from_millis(250)).await;
         if let Some(status) = child.try_wait().map_err(|e| e.to_string())? {
+            remove_masquerade(manifest).await;
             return Err(format!("{} exited with {status}", service.kind));
         }
         self.services.lock().await.insert(manifest.id.clone(), child);
@@ -703,33 +729,35 @@ impl PluginManager {
             if force {
                 let _ = child.kill().await;
                 let _ = child.wait().await;
-                return;
-            }
-
-            #[cfg(unix)]
-            {
-                use nix::sys::signal::{self, Signal};
-                use nix::unistd::Pid;
-                if let Some(pid) = child.id() {
-                    let _ = signal::kill(Pid::from_raw(pid as i32), Signal::SIGTERM);
+            } else {
+                #[cfg(unix)]
+                {
+                    use nix::sys::signal::{self, Signal};
+                    use nix::unistd::Pid;
+                    if let Some(pid) = child.id() {
+                        let _ = signal::kill(Pid::from_raw(pid as i32), Signal::SIGTERM);
+                    }
                 }
-            }
-            #[cfg(not(unix))]
-            {
-                let _ = child.kill().await;
-            }
-
-            match tokio::time::timeout(tokio::time::Duration::from_secs(3), child.wait()).await {
-                Ok(_) => {}
-                Err(_) => {
-                    tracing::warn!(
-                        plugin = %id,
-                        "service did not exit within 3s after SIGTERM, force killing"
-                    );
+                #[cfg(not(unix))]
+                {
                     let _ = child.kill().await;
-                    let _ = child.wait().await;
+                }
+
+                match tokio::time::timeout(tokio::time::Duration::from_secs(3), child.wait()).await {
+                    Ok(_) => {}
+                    Err(_) => {
+                        tracing::warn!(
+                            plugin = %id,
+                            "service did not exit within 3s after SIGTERM, force killing"
+                        );
+                        let _ = child.kill().await;
+                        let _ = child.wait().await;
+                    }
                 }
             }
+        }
+        if let Some(manifest) = self.get(id).await {
+            remove_masquerade(&manifest).await;
         }
     }
 
@@ -809,7 +837,6 @@ impl PluginManager {
                 "netns", "exec", &namespace, "ip", "route", "replace", "default", "via", &gateway,
             ])
             .await?;
-            setup_masquerade(manifest).await?;
             if let Err(error) = setup_netns_dns(&namespace, &manifest.network.host_ipv4).await {
                 tracing::warn!(plugin = %manifest.id, %error, "NetNS DNS setup failed");
             }
@@ -1239,6 +1266,81 @@ async fn run_nft(args: &[&str]) -> Result<(), String> {
     }
 }
 
+async fn run_iptables(args: &[&str]) -> Result<(), String> {
+    let output = Command::new("iptables").args(args).output().await.map_err(|e| e.to_string())?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+    }
+}
+
+async fn sync_iptables_forward(manifest: &PluginManifest, enable: bool) {
+    let iface = &manifest.host_interface;
+    let _ = run_iptables(&["-D", "FORWARD", "-i", iface, "-j", "ACCEPT"]).await;
+    let _ = run_iptables(&[
+        "-D",
+        "FORWARD",
+        "-o",
+        iface,
+        "-m",
+        "conntrack",
+        "--ctstate",
+        "RELATED,ESTABLISHED",
+        "-j",
+        "ACCEPT",
+    ])
+    .await;
+    let _ = run_iptables(&[
+        "-D",
+        "FORWARD",
+        "-o",
+        iface,
+        "-m",
+        "state",
+        "--state",
+        "RELATED,ESTABLISHED",
+        "-j",
+        "ACCEPT",
+    ])
+    .await;
+
+    if enable {
+        let _ = run_iptables(&["-I", "FORWARD", "1", "-i", iface, "-j", "ACCEPT"]).await;
+        if run_iptables(&[
+            "-I",
+            "FORWARD",
+            "1",
+            "-o",
+            iface,
+            "-m",
+            "conntrack",
+            "--ctstate",
+            "RELATED,ESTABLISHED",
+            "-j",
+            "ACCEPT",
+        ])
+        .await
+        .is_err()
+        {
+            let _ = run_iptables(&[
+                "-I",
+                "FORWARD",
+                "1",
+                "-o",
+                iface,
+                "-m",
+                "state",
+                "--state",
+                "RELATED,ESTABLISHED",
+                "-j",
+                "ACCEPT",
+            ])
+            .await;
+        }
+    }
+}
+
 async fn setup_masquerade(manifest: &PluginManifest) -> Result<(), String> {
     if fs::read_to_string("/proc/sys/net/ipv4/ip_forward").await.map_err(|e| e.to_string())?.trim()
         != "1"
@@ -1260,19 +1362,57 @@ async fn setup_masquerade(manifest: &PluginManifest) -> Result<(), String> {
         .await?;
         let source = format!("{}/32", manifest.network.peer_ipv4);
         run_nft(&["add", "rule", "ip", &table, "postrouting", "ip", "saddr", &source, "masquerade"])
-            .await
+            .await?;
+
+        run_nft(&[
+            "add",
+            "chain",
+            "ip",
+            &table,
+            "forward",
+            "{ type filter hook forward priority -5; policy accept; }",
+        ])
+        .await?;
+        run_nft(&[
+            "add",
+            "rule",
+            "ip",
+            &table,
+            "forward",
+            "iifname",
+            &manifest.host_interface,
+            "accept",
+        ])
+        .await?;
+        run_nft(&[
+            "add",
+            "rule",
+            "ip",
+            &table,
+            "forward",
+            "oifname",
+            &manifest.host_interface,
+            "ct",
+            "state",
+            "established,related",
+            "accept",
+        ])
+        .await
     }
     .await
     {
         let _ = run_nft(&["delete", "table", "ip", &table]).await;
         return Err(error);
     }
+
+    sync_iptables_forward(manifest, true).await;
     Ok(())
 }
 
 async fn remove_masquerade(manifest: &PluginManifest) {
     let table = nft_table(manifest);
     let _ = run_nft(&["delete", "table", "ip", &table]).await;
+    sync_iptables_forward(manifest, false).await;
 }
 
 async fn netns_exists(namespace: &str) -> Result<bool, String> {
@@ -1839,7 +1979,7 @@ mode: global
 external-ui: ""
 dns:
   nameserver:
-    - 169.254.127.1
+    - 100.64.127.1
   enhanced-mode: fake-ip
 tproxy-port: 12345
 "#;
@@ -1853,7 +1993,7 @@ tproxy-port: 12345
         assert_eq!(base_val["tproxy-port"].as_i64(), Some(12345));
         assert_eq!(base_val["dns"]["enable"].as_bool(), Some(true));
         assert_eq!(base_val["dns"]["enhanced-mode"].as_str(), Some("fake-ip"));
-        assert_eq!(base_val["dns"]["nameserver"][0].as_str(), Some("169.254.127.1"));
+        assert_eq!(base_val["dns"]["nameserver"][0].as_str(), Some("100.64.127.1"));
         assert_eq!(base_val["proxies"][0]["name"].as_str(), Some("p1"));
     }
 

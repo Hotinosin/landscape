@@ -711,7 +711,7 @@ onMounted(() => {
                       <n-alert type="info" :show-icon="true">
                         {{
                           t("plugin.dns_protected_hint", {
-                            dns: "169.254.127.1",
+                            dns: "100.64.127.1",
                           })
                         }}
                       </n-alert>

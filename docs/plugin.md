@@ -18,8 +18,8 @@ Network plugins use a standard `.tar.gz` package with a declarative manifest. Ph
     "namespace": "land-mihomo",
     "peer_interface": "plugin0",
     "tproxy_port": 12345,
-    "host_ipv4": "169.254.127.1",
-    "peer_ipv4": "169.254.127.2"
+    "host_ipv4": "100.64.127.1",
+    "peer_ipv4": "100.64.127.2"
   },
   "service": {
     "kind": "mihomo",
