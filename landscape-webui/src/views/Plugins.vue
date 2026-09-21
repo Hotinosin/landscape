@@ -556,7 +556,10 @@ onMounted(() => {
 
     <!-- Logs Modal -->
     <n-modal v-model:show="showLogs">
-      <n-card :title="t('plugin.logs')" style="width: min(900px, 90vw)">
+      <n-card
+        :title="t('plugin.logs')"
+        style="width: min(900px, calc(100vw - 32px))"
+      >
         <template #header-extra>
           <n-flex align="center" :size="12">
             <n-flex align="center" :size="4">
@@ -589,11 +592,13 @@ onMounted(() => {
       @update:show="closeConfigModal"
     >
       <n-card
+        class="plugin-config-modal"
         :title="
           t('plugin.config') +
           (configPlugin ? ` - ${configPlugin.name}` : '')
         "
-        style="width: min(920px, 92vw)"
+        style="width: min(900px, calc(100vw - 32px))"
+        content-style="min-height: 0; display: flex; flex-direction: column; flex: 1; overflow: hidden"
         closable
         @close="closeConfigModal"
       >
@@ -607,7 +612,12 @@ onMounted(() => {
             {{ configError }}
           </n-alert>
 
-          <n-tabs v-model:value="activeConfigTab" type="line" animated>
+          <n-tabs
+            v-model:value="activeConfigTab"
+            type="line"
+            :animated="false"
+            pane-class="plugin-config-tab-pane"
+          >
             <!-- Tab 1: 覆写配置 (Override / Mixin) -->
             <n-tab-pane name="override" :tab="t('plugin.tab_override')">
               <n-flex vertical :size="12" class="config-tab-pane">
@@ -649,6 +659,7 @@ onMounted(() => {
                       >
                         <n-input-number
                           v-model:value="formOverride.tproxyPort"
+                          disabled
                           :min="1"
                           :max="65535"
                           style="width: 100%"
@@ -824,6 +835,57 @@ onMounted(() => {
   max-height: 70vh;
   overflow: auto;
 }
+.plugin-config-modal {
+  display: flex;
+  flex-direction: column;
+  height: min(800px, calc(100vh - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: visible;
+}
+.plugin-config-modal :deep(> .n-card-header) {
+  flex: none;
+}
+.plugin-config-modal :deep(> .n-card-content),
+.plugin-config-modal :deep(> .n-card__content) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.plugin-config-modal :deep(.n-spin-container),
+.plugin-config-modal :deep(.n-spin-content) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+.plugin-config-modal :deep(.n-tabs) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+.plugin-config-modal :deep(.n-tabs-nav) {
+  flex: none;
+}
+.plugin-config-modal :deep(.n-tabs-pane-wrapper) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+.plugin-config-modal :deep(.plugin-config-tab-pane) {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
 .config-effective-preview {
   box-sizing: border-box;
   margin: 0;
@@ -841,5 +903,6 @@ onMounted(() => {
 }
 .config-tab-pane {
   padding-top: var(--app-space-sm);
+  padding-bottom: var(--app-space-sm);
 }
 </style>
