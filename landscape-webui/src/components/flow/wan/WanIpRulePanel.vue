@@ -27,15 +27,17 @@ const message = useMessage();
 const rules = ref<WanIpRuleConfig[]>([]);
 const loading = ref(false);
 const showCreateModal = ref(false);
-type WanRuleCell = "status" | "sources" | "action" | "enable" | "actions";
+type WanRuleCell =
+  "name" | "sources" | "action" | "enable" | "remark" | "actions";
 
 const columns = computed<DataTableColumns<WanIpRuleConfig>>(() =>
   (
     [
-      [`${t("common.status")} / ${t("common.priority")}`, "status", 110],
+      [t("common.name"), "name", 110],
       [t("flow.wan_rule_card.match_rules"), "sources", undefined],
       [t("flow.wan_rule_edit.egress_select"), "action", undefined],
       [t("common.enable"), "enable", 80],
+      [t("common.remark"), "remark", 120],
       [t("common.actions"), "actions", 110],
     ] satisfies Array<[string, WanRuleCell, number | undefined]>
   ).map(([title, cell, width]) => ({
@@ -96,11 +98,7 @@ watch(() => props.flow_id, readRules);
   <n-spin :show="loading">
     <n-flex vertical class="rule-panel">
       <n-flex class="standard-list-align">
-        <n-button
-          size="small"
-          type="primary"
-          @click="showCreateModal = true"
-        >
+        <n-button size="small" type="primary" @click="showCreateModal = true">
           {{ t("common.add_new") }}
         </n-button>
         <n-button size="small" @click="exportConfig">
@@ -143,6 +141,7 @@ watch(() => props.flow_id, readRules);
 
 <style scoped>
 .rule-list {
+  min-height: 160px;
   max-height: min(440px, calc(100vh - 300px));
 }
 </style>

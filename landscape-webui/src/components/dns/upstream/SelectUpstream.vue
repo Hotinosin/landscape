@@ -21,7 +21,9 @@ const upstream_options = computed(() => {
       .filter((e) => e.id)
       .map((e) => ({
         value: e.id,
-        label: e.remark ? `${e.remark}` : e.id,
+        label: e.remark
+          ? `${e.name || t("common.unnamed")} - ${e.remark}`
+          : e.name || t("common.unnamed"),
       })),
     { value: createOption, label: t("dns.select_upstream.create") },
   ];

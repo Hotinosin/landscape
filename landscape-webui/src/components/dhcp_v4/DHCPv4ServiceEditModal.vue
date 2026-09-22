@@ -219,7 +219,7 @@ const network_mask = computed({
     :embedded="iface_info.embedded"
     width="var(--app-secondary-modal-width)"
     max-height="80vh"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
     @dirty="emit('dirty')"
   >
     <div

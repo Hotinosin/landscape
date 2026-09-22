@@ -397,7 +397,7 @@ const detailColumns = computed<DataTableColumns<DdnsDetailRecord>>(() => [
   {
     title: t("ddns.record_name"),
     key: "name",
-    width: 110,
+    width: 120,
     render: (row) => frontEndStore.MASK_INFO(row.name),
   },
   {
@@ -659,7 +659,7 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
   {
     title: t("ddns.job_name"),
     key: "name",
-    width: 110,
+    width: 120,
     render: (row) => frontEndStore.MASK_INFO(row.name),
   },
   {

@@ -148,7 +148,7 @@ const rules: FormRules = {
     :switch-disabled="!rule"
     width="var(--app-secondary-modal-width)"
     :dirty="isModified"
-    @after-enter="enter"
+    :prepare="enter"
   >
     <n-form
       v-if="rule"
@@ -157,6 +157,14 @@ const rules: FormRules = {
       :model="rule"
       :rules="rules"
     >
+      <StandardSettingRow
+        :label="t('geo.common.name_unique')"
+        path="name"
+        required
+      >
+        <n-input v-model:value="rule.name" clearable />
+      </StandardSettingRow>
+
       <StandardSettingRow
         :label="t('geo.common.source_type')"
         control-width="wide"
@@ -170,10 +178,6 @@ const rules: FormRules = {
             t("geo.common.source_direct_mode")
           }}</n-radio>
         </n-radio-group>
-      </StandardSettingRow>
-
-      <StandardSettingRow :label="t('geo.common.name_unique')" path="name">
-        <n-input v-model:value="rule.name" clearable />
       </StandardSettingRow>
 
       <!-- URL mode -->

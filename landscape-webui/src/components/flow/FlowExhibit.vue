@@ -40,8 +40,8 @@ async function refresh() {
     <template #trigger>
       <n-flex align="center">
         {{
-          config.remark
-            ? frontEndStore.MASK_INFO(config.remark)
+          config.name
+            ? frontEndStore.MASK_INFO(config.name)
             : t("common.unnamed")
         }}
         <n-tag

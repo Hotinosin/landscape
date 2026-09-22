@@ -10,7 +10,7 @@ import BlacklistSourceExhibit from "./BlacklistSourceExhibit.vue";
 import { useI18n } from "vue-i18n";
 const props = defineProps<{
   rule: FirewallBlacklistConfig;
-  cell: "status" | "enable" | "source" | "count" | "actions";
+  cell: "name" | "remark" | "enable" | "source" | "count" | "actions";
 }>();
 const emit = defineEmits(["refresh"]);
 const show = ref(false);
@@ -33,8 +33,16 @@ async function updateEnabled(enable: boolean) {
 }
 </script>
 <template>
-  <StatusTitle v-if="cell === 'status'" :enable="rule.enable" :name="rule.name" :remark="rule.remark" />
-  <StandardEnableSwitch v-else-if="cell === 'enable'" :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" />
+  <StatusTitle v-if="cell === 'name'" :enable="rule.enable" :name="rule.name" />
+  <n-ellipsis v-else-if="cell === 'remark'">{{
+    rule.remark || "—"
+  }}</n-ellipsis>
+  <StandardEnableSwitch
+    v-else-if="cell === 'enable'"
+    :value="rule.enable"
+    :loading="enableLoading"
+    @update:value="updateEnabled"
+  />
   <n-flex v-else-if="cell === 'source'" size="small">
     <BlacklistSourceExhibit
       v-for="(source, i) in rule.source"
@@ -47,7 +55,7 @@ async function updateEnabled(enable: boolean) {
   <n-flex v-else justify="start" :wrap="false">
     <EditButton @click="show = true" />
     <DeleteButton
-      :item="rule.name || rule.remark || t('common.unnamed')"
+      :item="rule.name || t('common.unnamed')"
       :on-confirm="remove"
     />
   </n-flex>

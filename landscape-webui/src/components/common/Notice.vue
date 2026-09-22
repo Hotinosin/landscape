@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { HelpFilled } from "@vicons/carbon";
+import { Help } from "@vicons/carbon";
 </script>
 <template>
   <n-flex :size="[5, 0]" justify="start" align="center">
@@ -12,7 +12,7 @@ import { HelpFilled } from "@vicons/carbon";
       <template #trigger>
         <n-button text>
           <template #icon>
-            <n-icon><HelpFilled /></n-icon>
+            <n-icon><Help /></n-icon>
           </template>
         </n-button>
       </template>

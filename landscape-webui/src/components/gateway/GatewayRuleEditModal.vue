@@ -428,7 +428,7 @@ async function saveRule() {
     :switch-disabled="!rule || isLegacyRule"
     width="min(900px, calc(100vw - 32px))"
     :dirty="isModified"
-    @after-enter="enter"
+    :prepare="enter"
   >
     <div v-if="rule" class="editor-shell">
       <n-scrollbar class="editor-scrollbar" :x-scrollable="false">

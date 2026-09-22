@@ -10,6 +10,7 @@ export default {
   delete_confirm_content: "即将删除“{item}”，删除后将无法恢复。",
   delete_confirm_generic: "即将删除所选内容，删除后将无法恢复。",
   no_remark: "无备注",
+  name_required: "名称不能为空",
   no_data: "暂无数据",
   not_configured: "未配置",
   starting: "启动中",

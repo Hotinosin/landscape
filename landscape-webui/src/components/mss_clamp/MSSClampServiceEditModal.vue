@@ -53,7 +53,7 @@ defineExpose({ save: save_config });
     v-model:enabled="service_config.enable"
     :title="t('network.mss_clamp.title')"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
   >
     <n-form v-if="service_config.enable" :model="service_config">
       <StandardSettingRow :label="t('network.mss_clamp.clamp_value')">

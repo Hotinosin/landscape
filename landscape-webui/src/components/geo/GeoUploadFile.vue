@@ -43,7 +43,7 @@ async function handle_upload(options: UploadCustomRequestOptions) {
   <ConfigModal
     v-model:show="show"
     :show-switch="false"
-    width="var(--app-compact-modal-width)"
+    width="var(--app-tertiary-modal-width)"
     :title="t('geo.upload.drag_prompt')"
   >
     <n-spin :show="loading">

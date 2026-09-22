@@ -13,7 +13,7 @@ import { useI18n } from "vue-i18n";
 const props = defineProps<{
   rule: DNSRuleConfig;
   flows: FlowConfig[];
-  cell: "status" | "enable" | "action" | "upstream" | "sources" | "actions";
+  cell: "name" | "enable" | "action" | "upstream" | "sources" | "actions";
 }>();
 const emit = defineEmits(["refresh"]);
 const { t } = useI18n();
@@ -40,9 +40,10 @@ async function updateEnabled(enable: boolean) {
 
 <template>
   <StatusTitle
-    v-if="cell === 'status'"
+    v-if="cell === 'name'"
     :enable="rule.enable"
-    :remark="`${rule.index}: ${title}`"
+    :name="title"
+    :prefix="rule.index"
   />
   <StandardEnableSwitch
     v-else-if="cell === 'enable'"

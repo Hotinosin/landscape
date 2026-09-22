@@ -1,6 +1,6 @@
 export default {
   rule_edit: {
-    title: "规则编辑",
+    title: "DNS 规则编辑",
     priority: "优先级",
     priority_help:
       "数值越小优先级越高，规则按数值从小到大匹配，命中后停止。例如 1 高于 1000。",
@@ -8,7 +8,8 @@ export default {
     filter_result: "是否过滤结果",
     flow_action: "规则出口",
     upstream_select: "DNS 上游选择",
-    source_rules_title: "处理域名匹配规则 (无规则将全部匹配, 规则不分先后)",
+    source_rules_title: "域名匹配规则",
+    source_rules_help: "无规则将全部匹配，规则不分先后",
     copy: "复制",
     paste_replace: "替换粘贴",
     paste_append: "增量粘贴",

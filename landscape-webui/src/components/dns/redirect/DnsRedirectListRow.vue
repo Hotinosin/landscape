@@ -2,13 +2,24 @@
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { DNSRedirectRule } from "@landscape-router/types/api/schemas";
-import { delete_dns_redirect, push_dns_redirect } from "@/api/dns_rule/redirect";
+import {
+  delete_dns_redirect,
+  push_dns_redirect,
+} from "@/api/dns_rule/redirect";
 import { useFrontEndStore } from "@/stores/front_end_config";
 
 const props = defineProps<{
   rule: DNSRedirectRule;
   cell:
-    "status" | "enable" | "flows" | "rules" | "mode" | "response" | "metadata" | "actions";
+    | "name"
+    | "remark"
+    | "enable"
+    | "flows"
+    | "rules"
+    | "mode"
+    | "response"
+    | "metadata"
+    | "actions";
 }>();
 const emit = defineEmits(["refresh"]);
 const { t } = useI18n();
@@ -49,10 +60,16 @@ async function updateEnabled(enable: boolean) {
 </script>
 
 <template>
-  <template v-if="cell === 'status'">
-    <StatusTitle :enable="rule.enable" :name="rule.name" :remark="rule.remark" /> </template
+  <template v-if="cell === 'name'">
+    <StatusTitle :enable="rule.enable" :name="rule.name" /> </template
+  ><template v-else-if="cell === 'remark'">
+    <n-ellipsis>{{ rule.remark || "—" }}</n-ellipsis> </template
   ><template v-else-if="cell === 'enable'">
-    <StandardEnableSwitch :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" /> </template
+    <StandardEnableSwitch
+      :value="rule.enable"
+      :loading="enableLoading"
+      @update:value="updateEnabled"
+    /> </template
   ><template v-else-if="cell === 'flows'">
     <n-flex v-if="rule.apply_flows.length" size="small">
       <n-tag
@@ -98,7 +115,7 @@ async function updateEnabled(enable: boolean) {
     <n-flex :wrap="false">
       <EditButton @click="showEditModal = true" />
       <DeleteButton
-        :item="frontEndStore.MASK_INFO(rule.name || rule.remark || t('common.unnamed'))"
+        :item="frontEndStore.MASK_INFO(rule.name || t('common.unnamed'))"
         :on-confirm="remove"
       />
     </n-flex>

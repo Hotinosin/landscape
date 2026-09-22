@@ -158,6 +158,10 @@ function createTheme(
     tokens,
     overrides: {
       common: {
+        fontFamily:
+          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+        fontFamilyMono:
+          'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
         fontWeightStrong: "600",
         heightMedium: tokens.controlHeight,
         borderRadius: tokens.radiusControl,
@@ -216,7 +220,7 @@ function createTheme(
         paddingMedium: "14px 20px 16px",
       },
       Tag: {
-        heightSmall: "24px",
+        heightSmall: "28px",
         fontSizeSmall: "10px",
         borderRadius: tokens.radiusControl,
       },

@@ -122,12 +122,16 @@ async function append_import_rules(rules: any[]) {
     v-model:enabled="rule_enabled"
     :show-switch="false"
     :title="t('dns.rule_edit.title')"
-    width="var(--app-tertiary-modal-width)"
+    width="var(--app-secondary-modal-width)"
     :dirty="isModified"
-    @after-enter="enter"
+    :prepare="enter"
   >
     <!-- {{ isModified }} -->
-    <n-form style="flex: 1" ref="formRef" :model="rule">
+    <n-form style="flex: 1" :model="rule">
+      <StandardSettingRow :label="t('dns.rule_edit.name')">
+        <n-input v-model:value="rule.name" type="text" />
+      </StandardSettingRow>
+
       <StandardSettingRow>
         <template #label>
           <Notice>
@@ -151,13 +155,9 @@ async function append_import_rules(rules: any[]) {
           />
         </n-radio-group>
       </StandardSettingRow>
-      <StandardSettingRow :label="t('dns.rule_edit.name')">
-        <n-input v-model:value="rule.name" type="text" />
-      </StandardSettingRow>
-
       <StandardSettingRow
         :label="t('dns.rule_edit.flow_action')"
-        control-width="wide"
+        layout="stacked"
       >
         <FlowMarkEdit v-model:mark="rule.mark"></FlowMarkEdit>
       </StandardSettingRow>
@@ -165,10 +165,11 @@ async function append_import_rules(rules: any[]) {
       <StandardSettingRow :label="t('dns.rule_edit.upstream_select')">
         <SelectUpstream v-model:upstream_id="rule.upstream_id" />
       </StandardSettingRow>
-      <StandardSettingRow control-width="wide">
-        <template #label>
-          {{ t("dns.rule_edit.source_rules_title") }}
-        </template>
+      <StandardSettingRow
+        :label="t('dns.rule_edit.source_rules_title')"
+        :hint="t('dns.rule_edit.source_rules_help')"
+        layout="stacked"
+      >
         <n-flex vertical style="width: 100%">
           <n-flex justify="end">
             <n-button :focusable="false" size="tiny" @click="export_config">

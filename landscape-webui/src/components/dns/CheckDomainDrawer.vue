@@ -111,11 +111,11 @@ const redirect_rule = ref<DNSRedirectRule>();
 const flows = ref<FlowConfig[]>([]);
 const dnsRuleColumns = computed<DataTableColumns<DNSRuleConfig>>(() => [
   {
-    title: `${t("common.status")} / ${t("common.priority")}`,
-    key: "status",
-    width: 110,
+    title: t("common.name"),
+    key: "name",
+    width: 120,
     render: (rule) =>
-      h(DnsRuleListRow, { rule, flows: flows.value, cell: "status" }),
+      h(DnsRuleListRow, { rule, flows: flows.value, cell: "name" }),
   },
   {
     title: t("dns.rule_card.match_rules"),
@@ -136,26 +136,26 @@ const dnsRuleColumns = computed<DataTableColumns<DNSRuleConfig>>(() => [
       h(DnsRuleListRow, { rule, flows: flows.value, cell: "action" }),
   },
 ]);
-type RedirectCell = "status" | "flows" | "rules" | "mode" | "response";
+type RedirectCell = "name" | "flows" | "rules" | "mode" | "response";
 const redirectColumns = computed<DataTableColumns<DNSRedirectRule>>(() =>
-  (
-    ["status", "flows", "rules", "mode", "response"] satisfies RedirectCell[]
-  ).map((cell) => ({
-    title: t(
-      cell === "status"
-        ? "common.status"
-        : cell === "flows"
-          ? "dns.redirect_card.apply_to"
-          : cell === "rules"
-            ? "dns.rule_card.match_rules"
-            : cell === "mode"
-              ? "dns.redirect_card.answer_mode"
-              : "dns.redirect_card.response_info",
-    ),
-    key: cell,
-    width: cell === "status" ? 110 : undefined,
-    render: (rule: DNSRedirectRule) => h(DnsRedirectListRow, { rule, cell }),
-  })),
+  (["name", "flows", "rules", "mode", "response"] satisfies RedirectCell[]).map(
+    (cell) => ({
+      title: t(
+        cell === "name"
+          ? "common.name"
+          : cell === "flows"
+            ? "dns.redirect_card.apply_to"
+            : cell === "rules"
+              ? "dns.rule_card.match_rules"
+              : cell === "mode"
+                ? "dns.redirect_card.answer_mode"
+                : "dns.redirect_card.response_info",
+      ),
+      key: cell,
+      width: cell === "name" ? 110 : undefined,
+      render: (rule: DNSRedirectRule) => h(DnsRedirectListRow, { rule, cell }),
+    }),
+  ),
 );
 const busy = computed(
   () => loading.value || deleteCacheLoading.value || refreshCacheLoading.value,
@@ -258,7 +258,7 @@ async function quick_btn(record_type: LandscapeDnsRecordType, domain: string) {
 
 <template>
   <ConfigModal
-    @after-enter="init_req(true)"
+    :prepare="() => init_req(true)"
     @after-leave="init_req(false)"
     v-model:show="show"
     :show-switch="false"

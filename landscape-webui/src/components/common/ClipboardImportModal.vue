@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { read_context_from_clipboard } from "@/lib/common";
 import ConfirmModal from "@/components/common/ConfirmModal.vue";
+import CodeViewer from "@/components/common/CodeViewer.vue";
 
 const props = defineProps<{
   onConfirm: (value: any) => unknown;
@@ -76,27 +77,13 @@ async function confirm() {
         <n-alert v-else type="error">
           {{ t("common.paste_failed") }}
         </n-alert>
-        <n-scrollbar v-if="preview" style="max-height: 320px">
-          <pre class="clipboard-import-preview">{{ preview }}</pre>
-        </n-scrollbar>
+        <CodeViewer
+          v-if="preview"
+          :content="preview"
+          max-height="320px"
+          style="min-height: 120px"
+        />
       </n-flex>
     </n-spin>
   </ConfirmModal>
 </template>
-
-<style scoped>
-.clipboard-import-preview {
-  box-sizing: border-box;
-  min-height: 120px;
-  margin: 0;
-  padding: 12px;
-  border-radius: var(--app-radius-control);
-  color: var(--app-text-inverse-color);
-  background: var(--app-terminal-background-color);
-  font-family: var(--font-mono);
-  font-size: var(--app-font-size-caption);
-  line-height: 1.5;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-</style>

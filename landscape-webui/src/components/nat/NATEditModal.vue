@@ -83,7 +83,7 @@ defineExpose({ save: save_config, getSummary });
     v-model:enabled="nat_service_config.enable"
     :title="t('nat.service_edit.title')"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
   >
     <n-form :model="nat_service_config">
       <StandardSettingRow

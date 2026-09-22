@@ -61,9 +61,9 @@ function renderCell(
 
 const columns = computed<DataTableColumns<FlowTableRow>>(() => [
   {
-    title: t("flow.list.status_flow"),
+    title: t("common.name"),
     key: "flow",
-    width: 110,
+    width: 120,
     render: (row) => renderCell(row, "flow"),
   },
   {
@@ -90,17 +90,17 @@ const columns = computed<DataTableColumns<FlowTableRow>>(() => [
     render: (row) => renderCell(row, "egress"),
   },
   {
-    title: t("flow.list.remark"),
-    key: "remark",
-    width: 120,
-    render: (row) => renderCell(row, "remark"),
-  },
-  {
     title: t("common.enable"),
     key: "enable",
     width: 80,
     align: "left",
     render: (row) => renderCell(row, "enable"),
+  },
+  {
+    title: t("flow.list.remark"),
+    key: "remark",
+    width: 120,
+    render: (row) => renderCell(row, "remark"),
   },
   {
     title: t("flow.list.actions"),

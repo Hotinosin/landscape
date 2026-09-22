@@ -334,7 +334,7 @@ async function save() {
     width="var(--app-secondary-modal-width)"
     :title="t('cert.cert_edit_title')"
     :dirty="isModified"
-    @after-enter="enter"
+    :prepare="enter"
   >
     <n-form
       v-if="rule"
@@ -344,16 +344,16 @@ async function save() {
       label-placement="left"
       label-width="auto"
     >
+      <n-form-item :label="t('cert.cert_name')" path="name">
+        <n-input v-model:value="rule.name" />
+      </n-form-item>
+
       <n-form-item :label="t('cert.cert_type')">
         <n-select
           :value="cert_type_kind"
           :options="cert_type_options"
           @update:value="on_cert_type_change"
         />
-      </n-form-item>
-
-      <n-form-item :label="t('cert.cert_name')" path="name">
-        <n-input v-model:value="rule.name" />
       </n-form-item>
 
       <n-form-item :label="t('cert.for_api')">

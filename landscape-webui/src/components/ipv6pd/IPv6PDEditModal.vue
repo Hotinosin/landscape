@@ -113,7 +113,7 @@ defineExpose({ save: save_config });
     v-model:enabled="service_config.enable"
     :title="t('lan_ipv6.ipv6_pd_config')"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
   >
     <!-- {{ service_config }} -->
     <n-form :model="service_config">

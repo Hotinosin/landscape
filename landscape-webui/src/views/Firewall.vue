@@ -22,10 +22,10 @@ const { t } = useI18n();
 
 const columns = computed<DataTableColumns<FirewallBlacklistConfig>>(() => [
   {
-    title: `${t("common.status")} / ${t("common.name")}`,
-    key: "status",
-    width: 110,
-    render: (rule) => h(FirewallBlacklistListRow, { rule, cell: "status" }),
+    title: t("common.name"),
+    key: "name",
+    width: 120,
+    render: (rule) => h(FirewallBlacklistListRow, { rule, cell: "name" }),
   },
   {
     title: t("firewall.blacklist_edit.source"),
@@ -47,6 +47,11 @@ const columns = computed<DataTableColumns<FirewallBlacklistConfig>>(() => [
         cell: "enable",
         onRefresh: read_configs,
       }),
+  },
+  {
+    title: t("common.remark"),
+    key: "remark",
+    render: (rule) => h(FirewallBlacklistListRow, { rule, cell: "remark" }),
   },
   {
     title: t("common.actions"),

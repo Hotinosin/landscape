@@ -250,7 +250,7 @@ const isIndeterminate = computed(() => {
     :show-switch="false"
     width="var(--app-secondary-modal-width)"
     :dirty="isModified"
-    @after-enter="enter"
+    :prepare="enter"
   >
     <n-flex vertical>
       <n-form
@@ -260,6 +260,14 @@ const isIndeterminate = computed(() => {
         ref="formRef"
         :model="rule"
       >
+        <StandardSettingRow :label="t('nat.mapping.name')" control-width="wide">
+          <n-input
+            v-model:value="rule.name"
+            :placeholder="t('nat.mapping.name_placeholder')"
+            clearable
+          />
+        </StandardSettingRow>
+
         <StandardSettingRow
           :label="t('nat.mapping.allowed_protocols')"
           control-width="wide"
@@ -380,17 +388,6 @@ const isIndeterminate = computed(() => {
               @update:value="syncRuleTarget"
             />
           </n-flex>
-        </StandardSettingRow>
-
-        <StandardSettingRow
-          :label="t('nat.mapping.name')"
-          control-width="wide"
-        >
-          <n-input
-            v-model:value="rule.name"
-            :placeholder="t('nat.mapping.name_placeholder')"
-            clearable
-          />
         </StandardSettingRow>
 
         <StandardSettingRow

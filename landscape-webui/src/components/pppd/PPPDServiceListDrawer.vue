@@ -96,7 +96,7 @@ onMounted(() => {
   <ConfigModal
     v-else
     v-model:show="show"
-    @after-enter="inti_drawer"
+    :prepare="inti_drawer"
     :show-switch="false"
     :title="
       t('pppoe.pppd_drawer.configure_pppd', {

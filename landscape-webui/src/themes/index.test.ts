@@ -83,7 +83,7 @@ describe("theme behavior", () => {
       expect(theme.overrides.common?.heightMedium).toBe("34px");
       expect(theme.overrides.Button?.heightSmall).toBe("28px");
       expect(theme.overrides.Tabs?.tabPaddingSmallSegment).toBe("3.5px 0");
-      expect(theme.overrides.Tag?.heightSmall).toBe("24px");
+      expect(theme.overrides.Tag?.heightSmall).toBe("28px");
       expect(theme.overrides.Tag?.fontSizeSmall).toBe("10px");
       expect(theme.overrides.Card?.paddingSmall).toBe("12px 16px 16px");
       expect(theme.overrides.DataTable?.thPaddingMedium).toBe(

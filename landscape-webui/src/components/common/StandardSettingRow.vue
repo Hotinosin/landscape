@@ -33,7 +33,11 @@ withDefaults(
       <span v-if="required" class="standard-setting-row__required"> *</span>
       <n-tooltip v-if="hint" trigger="hover" placement="top">
         <template #trigger>
-          <span class="standard-setting-row__hint-icon" role="button" tabindex="0">
+          <span
+            class="standard-setting-row__hint-icon"
+            role="button"
+            tabindex="0"
+          >
             <n-icon><Help /></n-icon>
           </span>
         </template>
@@ -67,7 +71,7 @@ withDefaults(
 
 <style scoped>
 .standard-setting-row {
-  align-items: center;
+  align-items: start;
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--app-setting-control-width);
   gap: var(--app-space-lg);
@@ -80,7 +84,6 @@ withDefaults(
   display: flex;
   flex-direction: column;
   gap: var(--app-space-xs);
-  height: 100%;
 }
 
 .standard-setting-row--wide {
@@ -143,16 +146,22 @@ withDefaults(
 
 .standard-setting-row__control--stacked {
   width: 100%;
-  margin-top: auto;
 }
 
-.standard-setting-row__control:not(.standard-setting-row__control--auto) :deep(.n-form-item),
-.standard-setting-row__control:not(.standard-setting-row__control--auto) :deep(.n-form-item-blank),
-.standard-setting-row__control:not(.standard-setting-row__control--auto) :deep(.n-form-item-blank > *),
-.standard-setting-row__control:not(.standard-setting-row__control--auto) :deep(.n-input),
-.standard-setting-row__control:not(.standard-setting-row__control--auto) :deep(.n-input-number),
-.standard-setting-row__control:not(.standard-setting-row__control--auto) :deep(.n-select),
-.standard-setting-row__control:not(.standard-setting-row__control--auto) > :deep(*) {
+.standard-setting-row__control:not(.standard-setting-row__control--auto)
+  :deep(.n-form-item),
+.standard-setting-row__control:not(.standard-setting-row__control--auto)
+  :deep(.n-form-item-blank),
+.standard-setting-row__control:not(.standard-setting-row__control--auto)
+  :deep(.n-form-item-blank > *),
+.standard-setting-row__control:not(.standard-setting-row__control--auto)
+  :deep(.n-input),
+.standard-setting-row__control:not(.standard-setting-row__control--auto)
+  :deep(.n-input-number),
+.standard-setting-row__control:not(.standard-setting-row__control--auto)
+  :deep(.n-select),
+.standard-setting-row__control:not(.standard-setting-row__control--auto)
+  > :deep(*) {
   width: 100%;
 }
 
@@ -199,8 +208,10 @@ withDefaults(
     flex-direction: column;
   }
 
-  .standard-setting-row:not(.standard-setting-row--compact) .standard-setting-row__control,
-  .standard-setting-row:not(.standard-setting-row--compact) .standard-setting-row__control--wide {
+  .standard-setting-row:not(.standard-setting-row--compact)
+    .standard-setting-row__control,
+  .standard-setting-row:not(.standard-setting-row--compact)
+    .standard-setting-row__control--wide {
     width: 100%;
   }
 }

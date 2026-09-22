@@ -7,7 +7,7 @@ import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
 const props = defineProps<{
   rule: DnsUpstreamConfig;
-  cell: "ip" | "port" | "domain" | "mode" | "remark" | "actions";
+  cell: "ip" | "port" | "domain" | "mode" | "name" | "remark" | "actions";
 }>();
 const emit = defineEmits(["refresh"]);
 const show = ref(false);
@@ -50,28 +50,19 @@ async function remove() {
       >H3</n-tag
     ></template
   >
+  <template v-else-if="cell === 'name'">
+    <n-ellipsis v-if="rule.name">{{ rule.name }}</n-ellipsis>
+    <n-text v-else depth="3">—</n-text>
+  </template>
   <template v-else-if="cell === 'remark'">
-    <div class="upstream-title-cell">
-      <n-ellipsis v-if="rule.name" class="upstream-title-name">
-        {{ rule.name }}
-      </n-ellipsis>
-      <n-ellipsis
-        v-if="rule.remark"
-        :class="['upstream-title-remark', { 'is-secondary': !!rule.name }]"
-        :depth="rule.name ? 3 : undefined"
-      >
-        {{ rule.remark }}
-      </n-ellipsis>
-      <n-text v-if="!rule.name && !rule.remark" depth="3">
-        {{ t("dns.upstream_card.no_remark") }}
-      </n-text>
-    </div>
+    <n-ellipsis v-if="rule.remark">{{ rule.remark }}</n-ellipsis>
+    <n-text v-else depth="3">—</n-text>
   </template>
   <template v-else>
     <n-flex :wrap="false">
       <EditButton @click="show = true" />
       <DeleteButton
-        :item="front.MASK_INFO(rule.name || rule.remark || t('dns.upstream_card.no_remark'))"
+        :item="front.MASK_INFO(rule.name || t('common.unnamed'))"
         :on-confirm="remove"
       />
     </n-flex>
@@ -82,19 +73,3 @@ async function remove() {
     />
   </template>
 </template>
-
-<style scoped>
-.upstream-title-cell {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  line-height: 1.3;
-}
-.upstream-title-name {
-  font-weight: 500;
-}
-.upstream-title-remark.is-secondary {
-  font-size: var(--app-font-size-caption);
-  color: var(--app-text-muted-color);
-}
-</style>

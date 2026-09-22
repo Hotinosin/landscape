@@ -17,6 +17,7 @@ import { useI18n } from "vue-i18n";
 import { usePageRequest } from "@/composables/usePageRequest";
 import GatewayRuleListRow from "@/components/gateway/GatewayRuleListRow.vue";
 import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
 const {
   data: rules,
@@ -41,7 +42,7 @@ const message = useMessage();
 
 const columns = computed<DataTableColumns<HttpUpstreamRuleConfig>>(() =>
   [
-    ["gateway.list_status_name", "name"],
+    ["common.name", "name"],
     ["gateway.match_type", "type"],
     ["gateway.domains", "domains"],
     ["gateway.upstream", "upstream"],
@@ -212,72 +213,12 @@ watch(
         </n-text>
       </n-flex>
       <n-flex align="center" :size="8">
-        <n-popover
-          v-if="status"
-          v-model:show="show_settings"
-          trigger="click"
-          placement="bottom-end"
-        >
-          <template #trigger>
-            <n-button secondary>
-              <template #icon>
-                <n-icon :component="Settings" />
-              </template>
-              {{ t("gateway.settings") }}
-            </n-button>
+        <n-button v-if="status" secondary @click="show_settings = true">
+          <template #icon>
+            <n-icon :component="Settings" />
           </template>
-
-          <n-flex
-            vertical
-            size="small"
-            style="padding: 4px; min-width: 320px; max-width: 360px"
-          >
-            <n-text strong>{{ t("gateway.runtime_title") }}</n-text>
-            <n-form>
-              <StandardSettingRow
-                :label="t('gateway.enabled')"
-                control-width="auto"
-              >
-                <n-switch v-model:value="gatewayEnabled" size="medium" />
-              </StandardSettingRow>
-              <StandardSettingRow :label="t('gateway.http_port')">
-                <n-input-number
-                  v-model:value="httpPort"
-                  :min="1"
-                  :max="65535"
-                />
-              </StandardSettingRow>
-              <StandardSettingRow :label="t('gateway.https_port')">
-                <n-input-number
-                  v-model:value="httpsPort"
-                  :min="1"
-                  :max="65535"
-                />
-              </StandardSettingRow>
-            </n-form>
-
-            <n-alert type="info" :show-icon="false">
-              {{ t("gateway.restart_hint") }}
-            </n-alert>
-
-            <n-flex justify="end" :size="8">
-              <n-button
-                :loading="savingConfig"
-                @click="handleSaveGatewayConfig"
-              >
-                {{ t("gateway.save_runtime") }}
-              </n-button>
-              <n-button
-                type="primary"
-                :disabled="status?.supported === false"
-                :loading="restartingGateway"
-                @click="handleSaveAndRestartGateway"
-              >
-                {{ t("gateway.save_and_restart") }}
-              </n-button>
-            </n-flex>
-          </n-flex>
-        </n-popover>
+          {{ t("gateway.settings") }}
+        </n-button>
         <n-button :loading="rulesLoading" secondary @click="refreshAll">
           <template #icon
             ><n-icon><Renew /></n-icon
@@ -300,5 +241,55 @@ watch(
       @refresh="refreshAll"
       v-model:show="show_edit_modal"
     />
+    <ConfigModal
+      v-model:show="show_settings"
+      :show-switch="false"
+      width="var(--app-compact-modal-width)"
+      :title="t('gateway.runtime_title')"
+      :title-tip="t('gateway.restart_hint')"
+      :prepare="refresh_config"
+    >
+      <n-form>
+        <StandardSettingRow
+          :label="t('gateway.enabled')"
+          control-width="auto"
+        >
+          <n-switch v-model:value="gatewayEnabled" size="medium" />
+        </StandardSettingRow>
+        <StandardSettingRow :label="t('gateway.http_port')">
+          <n-input-number
+            v-model:value="httpPort"
+            :min="1"
+            :max="65535"
+          />
+        </StandardSettingRow>
+        <StandardSettingRow :label="t('gateway.https_port')">
+          <n-input-number
+            v-model:value="httpsPort"
+            :min="1"
+            :max="65535"
+          />
+        </StandardSettingRow>
+      </n-form>
+
+      <template #footer>
+        <n-flex justify="end" :size="8">
+          <n-button
+            :loading="savingConfig"
+            @click="handleSaveGatewayConfig"
+          >
+            {{ t("gateway.save_runtime") }}
+          </n-button>
+          <n-button
+            type="primary"
+            :disabled="status?.supported === false"
+            :loading="restartingGateway"
+            @click="handleSaveAndRestartGateway"
+          >
+            {{ t("gateway.save_and_restart") }}
+          </n-button>
+        </n-flex>
+      </template>
+    </ConfigModal>
   </n-flex>
 </template>

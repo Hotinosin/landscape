@@ -1,6 +1,7 @@
 import type {
   FlowMark,
   DNSRuleConfig,
+  DnsUpstreamConfig,
   FilterResult,
   RuleSource,
 } from "@landscape-router/types/api/schemas";
@@ -12,6 +13,17 @@ export enum DnsUpstreamModeTsEnum {
   Tls = "tls",
   Https = "https",
   Quic = "quic",
+}
+
+export const DEFAULT_DOH_ENDPOINT = "/dns-query";
+
+export function fill_default_dns_http_endpoint(config: DnsUpstreamConfig) {
+  if (
+    config.mode.t === DnsUpstreamModeTsEnum.Https &&
+    !config.mode.http_endpoint?.trim()
+  ) {
+    config.mode.http_endpoint = DEFAULT_DOH_ENDPOINT;
+  }
 }
 
 export const UPSTREAM_OPTIONS = [

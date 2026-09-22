@@ -6,7 +6,6 @@ import {
   nextTick,
   onMounted,
   onUnmounted,
-  provide,
   ref,
   watch,
 } from "vue";
@@ -134,7 +133,6 @@ const router = useRouter();
 const dialog = useDialog();
 const neutralButtonProps = useNeutralDialogButtonProps();
 const message = useMessage();
-provide("app-modal-depth", 2);
 const ifaceStore = useIfaceNodeStore();
 const frontEndStore = useFrontEndStore();
 const statusStores = {
@@ -506,7 +504,7 @@ const projectColumns = computed<DataTableColumns<NetDev>>(() => [
   {
     title: t("network.settings.name_iface"),
     key: "name",
-    width: 110,
+    width: 120,
     render: (item) =>
       h(
         "div",

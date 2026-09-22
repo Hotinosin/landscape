@@ -28,6 +28,8 @@ import { usePageRequest } from "@/composables/usePageRequest";
 import DeleteButton from "@/components/common/DeleteButton.vue";
 import EditButton from "@/components/common/EditButton.vue";
 import StandardServiceStatusTag from "@/components/common/StandardServiceStatusTag.vue";
+import CodeViewer from "@/components/common/CodeViewer.vue";
+import CodeEditor from "@/components/common/CodeEditor.vue";
 
 const { t } = useI18n();
 const message = useMessage();
@@ -133,7 +135,7 @@ function handleExecuteAction(row: PluginInfo) {
 }
 
 const columns = computed<DataTableColumns<PluginInfo>>(() => [
-  { title: t("plugin.name"), key: "name", width: 110 },
+  { title: t("plugin.name"), key: "name", width: 120 },
   { title: t("plugin.interface"), key: "host_interface" },
   { title: t("plugin.version"), key: "version" },
   {
@@ -581,7 +583,12 @@ onMounted(() => {
             </n-button>
           </n-flex>
         </template>
-        <pre class="plugin-logs">{{ logs }}</pre>
+        <CodeViewer
+          :content="logs"
+          show-copy
+          auto-scroll-bottom
+          max-height="70vh"
+        />
       </n-card>
     </n-modal>
 
@@ -710,10 +717,8 @@ onMounted(() => {
 
                 <n-flex vertical :size="4" class="config-yaml-section">
                   <n-text strong>{{ t("plugin.advanced_mixin_yaml") }}</n-text>
-                  <n-input
+                  <CodeEditor
                     v-model:value="overrideConfigText"
-                    type="textarea"
-                    class="config-yaml-input"
                     placeholder="# Mixin YAML"
                     @input="onOverrideYamlInput"
                   />
@@ -753,11 +758,10 @@ onMounted(() => {
                 <n-text depth="3">
                   {{ t("plugin.user_config_desc") }}
                 </n-text>
-                <n-input
+                <CodeEditor
                   v-model:value="baseConfigText"
-                  type="textarea"
-                  class="config-yaml-input config-yaml-input--full"
                   placeholder="# proxies, proxy-groups, rules..."
+                  min-height="380px"
                 />
                 <n-flex
                   justify="space-between"
@@ -809,13 +813,10 @@ onMounted(() => {
                     {{ t("plugin.refresh_effective") }}
                   </n-button>
                 </n-flex>
-                <div class="config-effective-card">
-                  <n-scrollbar class="config-effective-scrollbar">
-                    <pre class="config-effective-preview">{{
-                      effectiveConfigText
-                    }}</pre>
-                  </n-scrollbar>
-                </div>
+                <CodeViewer
+                  :content="effectiveConfigText"
+                  show-copy
+                />
               </n-flex>
             </n-tab-pane>
           </n-tabs>
@@ -831,21 +832,6 @@ onMounted(() => {
 }
 .plugin-page-container {
   width: 100%;
-}
-.plugin-logs {
-  box-sizing: border-box;
-  margin: 0;
-  padding: var(--app-space-sm);
-  border-radius: var(--app-radius-control);
-  color: var(--app-text-inverse-color);
-  background: var(--app-terminal-background-color);
-  font-family: var(--font-mono);
-  font-size: var(--app-font-size-caption);
-  line-height: 1.5;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  max-height: 70vh;
-  overflow: auto;
 }
 .plugin-config-modal {
   display: flex;
@@ -909,33 +895,6 @@ onMounted(() => {
 .config-effective-header {
   flex: none;
 }
-.config-effective-card {
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-  border-radius: var(--app-radius-control);
-  background: var(--app-terminal-background-color);
-  color: var(--app-text-inverse-color);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-.config-effective-scrollbar {
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-}
-.config-effective-preview {
-  box-sizing: border-box;
-  margin: 0;
-  padding: var(--app-space-sm);
-  font-family: var(--font-mono);
-  font-size: var(--app-font-size-caption);
-  line-height: 1.5;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: inherit;
-}
 .config-tab-pane {
   display: flex;
   flex-direction: column;
@@ -949,49 +908,6 @@ onMounted(() => {
   flex-direction: column;
   flex: 1;
   min-height: 200px;
-}
-.config-yaml-input {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 180px;
-  height: 100%;
-}
-.config-yaml-input--full {
-  min-height: 380px;
-}
-.config-yaml-input :deep(.n-input-wrapper) {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  height: 100%;
-  padding: 0;
-}
-.config-yaml-input :deep(.n-input__textarea) {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  height: 100%;
-  position: relative;
-}
-.config-yaml-input :deep(.n-input__textarea-el) {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  padding: 8px 12px !important;
-  box-sizing: border-box !important;
-  resize: none;
-  font-family: var(--font-mono);
-  font-size: var(--app-font-size-caption);
-  line-height: 1.5;
-  overflow-y: auto !important;
-}
-.config-yaml-input :deep(.n-input__placeholder) {
-  padding: 8px 12px !important;
-  font-family: var(--font-mono);
-  font-size: var(--app-font-size-caption);
 }
 .config-footer-row {
   flex: none;

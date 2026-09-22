@@ -269,7 +269,7 @@ function replace_group_sources(
     :title="t('lan_ipv6.title')"
     :switch-disabled="!service_config"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
     @dirty="emit('dirty')"
   >
     <n-form

@@ -177,7 +177,7 @@ const attribute_options = computed(() => {
     </n-popover>
     <n-input-group style="flex: 1; min-width: 0">
       <n-select
-        :style="{ width: '36%' }"
+        :style="{ width: '42%' }"
         v-model:value="name"
         filterable
         :placeholder="t('common.select_geo_name')"

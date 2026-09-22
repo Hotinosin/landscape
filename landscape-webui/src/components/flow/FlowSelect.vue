@@ -31,7 +31,7 @@ const loading = ref(false);
 const flowOptions = computed(() => {
   const options = flowRules.value.map((e) => ({
     value: e.flow_id,
-    label: e.remark ? `${e.flow_id} - ${e.remark}` : `Flow ${e.flow_id}`,
+    label: `${e.flow_id} - ${e.name || t("common.unnamed")}${e.remark ? ` - ${e.remark}` : ""}`,
   }));
 
   if (props.includeAll) {

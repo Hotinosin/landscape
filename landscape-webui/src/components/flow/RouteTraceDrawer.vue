@@ -547,7 +547,7 @@ const verdictColumns = computed<DataTableColumns<SingleVerdictResult>>(() => [
     width="var(--app-secondary-modal-width)"
     max-height="calc(100vh - 120px)"
     :title="t('flow.trace.title')"
-    @after-enter="onOpen"
+    :prepare="onOpen"
   >
     <n-flex vertical :size="16">
       <section class="route-trace-section">

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { h } from "vue";
-import { NModal } from "naive-ui";
+import { NCard, NModal } from "naive-ui";
 import ConfigModal from "./ConfigModal.vue";
 
 const mockWarning = vi.fn();
@@ -24,6 +24,39 @@ vi.mock("vue-i18n", async (importOriginal) => ({
 describe("ConfigModal", () => {
   beforeEach(() => {
     mockWarning.mockReset();
+  });
+
+  it("waits for preparation before showing the modal", async () => {
+    let finishPreparation!: () => void;
+    const prepare = vi.fn(
+      () => new Promise<void>((resolve) => (finishPreparation = resolve)),
+    );
+    const wrapper = mount(ConfigModal, {
+      props: { title: "Test Modal", show: true, prepare },
+    });
+
+    expect(wrapper.findComponent(NModal).props("show")).toBe(false);
+    finishPreparation();
+    await flushPromises();
+    expect(wrapper.findComponent(NModal).props("show")).toBe(true);
+  });
+
+  it("uses the secondary width when opened inside another modal", () => {
+    const wrapper = mount(ConfigModal, {
+      props: { title: "Parent Modal", show: true },
+      slots: {
+        default: () =>
+          h(ConfigModal, {
+            title: "Nested Modal",
+            show: true,
+            width: "var(--app-secondary-modal-width)",
+          }),
+      },
+    });
+
+    expect(wrapper.findAllComponents(NCard)[1].attributes("style")).toContain(
+      "width: var(--app-tertiary-modal-width)",
+    );
   });
 
   it("closes immediately without confirmation when dirty is false", async () => {
@@ -93,7 +126,11 @@ describe("ConfigModal", () => {
       slots: {
         footer: (slotProps: any) => {
           capturedClose = slotProps.close;
-          return h("button", { class: "test-cancel", onClick: slotProps.close }, "Cancel");
+          return h(
+            "button",
+            { class: "test-cancel", onClick: slotProps.close },
+            "Cancel",
+          );
         },
       },
     });
@@ -125,7 +162,11 @@ describe("ConfigModal", () => {
       slots: {
         footer: (slotProps: any) => {
           capturedClose = slotProps.close;
-          return h("button", { class: "test-cancel", onClick: slotProps.close }, "Cancel");
+          return h(
+            "button",
+            { class: "test-cancel", onClick: slotProps.close },
+            "Cancel",
+          );
         },
       },
     });

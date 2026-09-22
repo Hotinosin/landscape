@@ -420,7 +420,7 @@ async function saveRule() {
     :dirty="isModified"
     :title="props.rule_id ? t('device.edit_title') : t('device.add_title')"
     width="var(--app-secondary-modal-width)"
-    @after-enter="enter"
+    :prepare="enter"
     @after-leave="exit"
   >
     <n-form
@@ -431,7 +431,7 @@ async function saveRule() {
       label-placement="left"
       label-width="100"
     >
-      <StandardSettingRow :label="t('device.name')" path="name">
+      <StandardSettingRow :label="t('device.name')" path="name" required>
         <n-input
           v-model:value="rule.name"
           :placeholder="t('device.name_placeholder')"
@@ -523,7 +523,10 @@ async function saveRule() {
               </div>
             </StandardSettingRow>
 
-            <StandardSettingRow :label="t('device.dhcp_filter_options')">
+            <StandardSettingRow
+              :label="t('device.dhcp_filter_options')"
+              layout="stacked"
+            >
               <DHCPFilterOptionsEditor v-model="rule.dhcp_filter_options!" />
             </StandardSettingRow>
           </n-collapse-item>

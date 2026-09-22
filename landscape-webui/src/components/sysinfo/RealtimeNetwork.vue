@@ -82,7 +82,14 @@ const wanCount = computed(
     :header-style="overviewCardStyles.header"
     :content-style="overviewCardStyles.content"
   >
-    <template #header>{{ t("sysinfo.realtime_network") }}</template>
+    <template #header>
+      <n-flex align="center" :size="4" :wrap="false">
+        <span>{{ t("sysinfo.realtime_network") }}</span>
+        <n-tag size="tiny" :bordered="false" class="plugins-dev-tag">
+          dev
+        </n-tag>
+      </n-flex>
+    </template>
     <template #header-extra>
       <n-tag size="small" :bordered="false"> {{ wanCount }} WAN </n-tag>
     </template>

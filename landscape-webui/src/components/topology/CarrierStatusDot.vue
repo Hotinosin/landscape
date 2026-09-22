@@ -12,15 +12,15 @@ const themeVars = useThemeVars();
     :title="title"
     :style="{
       backgroundColor: active ? themeVars.successColor : themeVars.borderColor,
-      boxShadow: `0 0 0 4px ${changeColor(themeVars.textColor3, { alpha: 0.12 })}`,
+      boxShadow: `0 0 0 2px ${changeColor(themeVars.textColor3, { alpha: 0.12 })}`,
     }"
   />
 </template>
 
 <style scoped>
 .topology-carrier-dot {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   flex: none;
   border-radius: var(--app-radius-pill);
 }

@@ -261,7 +261,7 @@ const columns = computed<DataTableColumns<DnsProviderProfile>>(() => [
   {
     title: t("dns_provider.profile_name"),
     key: "name",
-    width: 110,
+    width: 120,
     render: (row) => frontEndStore.MASK_INFO(row.name),
   },
   {
@@ -285,11 +285,6 @@ const columns = computed<DataTableColumns<DnsProviderProfile>>(() => [
     render: (row) => row.ddns_default_ttl ?? 120,
   },
   {
-    title: t("common.remark"),
-    key: "remark",
-    render: (row) => (row.remark ? frontEndStore.MASK_INFO(row.remark) : "-"),
-  },
-  {
     title: t("dns_provider.test"),
     key: "test",
     width: 110,
@@ -304,6 +299,11 @@ const columns = computed<DataTableColumns<DnsProviderProfile>>(() => [
         },
         () => t("cert.action_verify"),
       ),
+  },
+  {
+    title: t("common.remark"),
+    key: "remark",
+    render: (row) => (row.remark ? frontEndStore.MASK_INFO(row.remark) : "-"),
   },
   {
     title: t("common.actions"),
@@ -557,9 +557,7 @@ onMounted(refresh);
             {{ t("cert.action_verify") }}
           </n-button>
           <n-flex :size="8">
-            <n-button @click="close">{{
-              t("common.cancel")
-            }}</n-button>
+            <n-button @click="close">{{ t("common.cancel") }}</n-button>
             <n-button
               type="primary"
               :loading="saving"

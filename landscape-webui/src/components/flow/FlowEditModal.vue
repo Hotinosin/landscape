@@ -161,7 +161,7 @@ function normalizeFlowTargets(
     :show-switch="false"
     :width="modalWidth"
     :dirty="isModified"
-    @after-enter="enter"
+    :prepare="enter"
     @after-leave="exit"
   >
     <n-tabs v-model:value="activeTab" type="line">
@@ -169,21 +169,22 @@ function normalizeFlowTargets(
         v-if="!default_flow"
         name="flow"
         :tab="t('flow.edit.tab_flow')"
+        display-directive="show"
       >
         <n-form v-if="rule" style="flex: 1" ref="formRef" :model="rule">
+          <StandardSettingRow :label="t('flow.edit.name')">
+            <n-input
+              :type="frontEndStore.presentation_mode ? 'password' : 'text'"
+              v-model:value="rule.name"
+              :placeholder="t('flow.edit.name_placeholder')"
+            />
+          </StandardSettingRow>
           <StandardSettingRow :label="t('flow.edit.flow_id_label')">
             <n-input-number
               :min="1"
               :max="255"
               v-model:value="rule.flow_id"
               clearable
-            />
-          </StandardSettingRow>
-          <StandardSettingRow :label="t('flow.edit.name')">
-            <n-input
-              :type="frontEndStore.presentation_mode ? 'password' : 'text'"
-              v-model:value="rule.name"
-              :placeholder="t('flow.edit.name_placeholder')"
             />
           </StandardSettingRow>
           <StandardSettingRow :label="t('flow.edit.remark')">
@@ -223,14 +224,22 @@ function normalizeFlowTargets(
           </StandardSettingRow>
         </n-form>
       </n-tab-pane>
-      <n-tab-pane name="dns" :tab="t('flow.edit.tab_dns')">
+      <n-tab-pane
+        name="dns"
+        :tab="t('flow.edit.tab_dns')"
+        display-directive="show"
+      >
         <DnsRulePanel
           :flow_id="rule?.flow_id ?? 0"
           :flows="flows"
           @changed="emit('refresh')"
         />
       </n-tab-pane>
-      <n-tab-pane name="target_ip" :tab="t('flow.edit.tab_target_ip')">
+      <n-tab-pane
+        name="target_ip"
+        :tab="t('flow.edit.tab_target_ip')"
+        display-directive="show"
+      >
         <WanIpRulePanel
           :flow_id="rule?.flow_id ?? 0"
           :flows="flows"

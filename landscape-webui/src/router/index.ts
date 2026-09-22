@@ -3,7 +3,7 @@ import {
   createWebHistory,
   type RouteRecordRaw,
 } from "vue-router";
-import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
+import { clearLandscapeSession, LANDSCAPE_TOKEN_KEY } from "@/lib/common";
 
 import service_status_route from "./service_status";
 import metric_route from "./metric";
@@ -153,8 +153,23 @@ const routes: Array<RouteRecordRaw> = [
 
 const router = createRouter({ history: createWebHistory(), routes });
 
+export function isExpiredToken(token: string, now = Date.now()): boolean {
+  try {
+    const payload = token.split(".")[1];
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const { exp } = JSON.parse(
+      atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "=")),
+    );
+    return typeof exp !== "number" || exp * 1000 <= now;
+  } catch {
+    return true;
+  }
+}
+
 router.beforeEach((to) => {
-  if (to.path !== "/login" && !localStorage.getItem(LANDSCAPE_TOKEN_KEY)) {
+  const token = localStorage.getItem(LANDSCAPE_TOKEN_KEY);
+  if (to.path !== "/login" && (!token || isExpiredToken(token))) {
+    if (token) clearLandscapeSession();
     return { path: "/login", state: { redirect: to.fullPath } };
   }
 });

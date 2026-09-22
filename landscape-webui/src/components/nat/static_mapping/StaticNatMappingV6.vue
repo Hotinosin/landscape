@@ -18,21 +18,22 @@ const {
 });
 const { t } = useI18n();
 type MappingCell =
-  "status" | "target" | "protocol" | "ports" | "enable" | "actions";
+  "name" | "target" | "protocol" | "ports" | "enable" | "remark" | "actions";
 const columns = computed<DataTableColumns<StaticNatMappingV6Config>>(() =>
   (
     [
-      [`${t("common.status")} / ${t("common.name")}`, "status"],
+      [t("common.name"), "name"],
       [t("common.ipv6_target"), "target"],
       [t("common.type"), "protocol"],
       [t("common.port_mapping"), "ports"],
       [t("common.enable"), "enable"],
+      [t("common.remark"), "remark"],
       [t("common.actions"), "actions"],
     ] satisfies Array<[string, MappingCell]>
   ).map(([title, cell]) => ({
     title,
     key: cell,
-    width: cell === "status" ? 110 : cell === "enable" ? 80 : undefined,
+    width: cell === "name" ? 110 : cell === "enable" ? 80 : undefined,
     align: "left" as const,
     render: (rule: StaticNatMappingV6Config) =>
       h(StaticMappingV6ListRow, {

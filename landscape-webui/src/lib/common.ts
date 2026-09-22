@@ -115,59 +115,83 @@ export function is_mac(value: string): boolean {
 }
 
 /**
- * IPv4 专门打码：遮蔽头尾，展示中间
- * 192.168.1.123 -> ***.168.1.***
+ * IPv4 打码：全部隐藏
+ * 192.168.1.123 -> ***.***.***.***
  */
 export function mask_ipv4(value: string): string {
-  const parts = value.split(".");
-  if (parts.length !== 4) return value;
-  return `***.${parts[1]}.${parts[2]}.***`;
+  const trimmed = value.trim();
+  if (trimmed.includes("/")) {
+    const [ip, prefix] = trimmed.split("/");
+    if (is_ipv4(ip)) return `***.***.***.***/${prefix}`;
+  }
+  return "***.***.***.***";
 }
 
 /**
- * IPv6 专门打码：遮蔽头尾，展示中间
+ * IPv6 打码：全部隐藏
  */
 export function mask_ipv6(value: string): string {
-  const parts = value.split(":");
-  if (parts.length < 3) return value;
-  // 遮蔽前两个和后两个（如果足够长）
-  const maskCount = parts.length > 4 ? 2 : 1;
-  return parts
-    .map((p, i) => {
-      if (i < maskCount || i >= parts.length - maskCount) return "****";
-      return p;
-    })
-    .join(":");
+  const trimmed = value.trim();
+  if (trimmed.includes("/")) {
+    const [ip, prefix] = trimmed.split("/");
+    if (is_ipv6(ip)) return `${mask_ipv6(ip)}/${prefix}`;
+  }
+  if (trimmed.includes("::")) {
+    return "****::****";
+  }
+  const parts = trimmed.split(":");
+  if (parts.length < 3) return "******";
+  return parts.map(() => "****").join(":");
 }
 
 /**
- * MAC 专门打码：遮蔽头尾，展示中间
- * AA:BB:CC:DD:EE:FF -> **:**:CC:DD:**:**
+ * MAC 打码：全部隐藏
+ * AA:BB:CC:DD:EE:FF -> **:**:**:**:**:**
  */
 export function mask_mac(value: string): string {
   const separator = value.includes(":") ? ":" : "-";
-  const parts = value.split(separator);
-  if (parts.length !== 6) return value;
-  return `**${separator}**${separator}${parts[2]}${separator}${parts[3]}${separator}**${separator}**`;
+  const parts = value.trim().split(separator);
+  if (parts.length !== 6) return "**:**:**:**:**:**";
+  return parts.map(() => "**").join(separator);
 }
 
 export function mask_string(value: string | undefined | null): string {
   if (!value) return "***";
 
-  if (is_mac(value)) return mask_mac(value);
-  if (is_ipv4(value)) return mask_ipv4(value);
-  if (is_ipv6(value)) return mask_ipv6(value);
+  const trimmed = value.trim();
+  if (!trimmed) return "***";
 
-  const length = value.length;
+  if (is_mac(trimmed)) return mask_mac(trimmed);
+  if (is_ipv4(trimmed)) return mask_ipv4(trimmed);
+  if (is_ipv6(trimmed)) return mask_ipv6(trimmed);
 
-  if (length <= 4) {
-    return value.substring(0, 1) + "*****";
-  } else if (length <= 10) {
-    return value.substring(0, 3) + "*****";
-  } else {
-    const start = Math.floor((length - 5) / 2);
-    return "*****" + value.substring(start, start + 5) + "*****";
+  // CIDR 地址
+  if (trimmed.includes("/")) {
+    const slashIdx = trimmed.indexOf("/");
+    const ip = trimmed.slice(0, slashIdx);
+    const prefix = trimmed.slice(slashIdx + 1);
+    if (is_ipv4(ip)) return `${mask_ipv4(ip)}/${prefix}`;
+    if (is_ipv6(ip)) return `${mask_ipv6(ip)}/${prefix}`;
   }
+
+  // IP:端口
+  if (trimmed.includes(":")) {
+    const lastColon = trimmed.lastIndexOf(":");
+    const host = trimmed.slice(0, lastColon);
+    const port = trimmed.slice(lastColon + 1);
+    if (/^\d+$/.test(port)) {
+      if (is_ipv4(host)) return `${mask_ipv4(host)}:****`;
+      if (
+        host.startsWith("[") &&
+        host.endsWith("]") &&
+        is_ipv6(host.slice(1, -1))
+      ) {
+        return `[${mask_ipv6(host.slice(1, -1))}]:****`;
+      }
+    }
+  }
+
+  return "******";
 }
 
 function sleep(ms: number) {

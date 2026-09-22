@@ -253,7 +253,7 @@ const emit = defineEmits([
               <n-flex vertical :size="[-4, 0]" style="flex: 1">
                 <span
                   style="
-                    font-size: var(--app-font-size-label);
+                    font-size: var(--app-font-size-caption);
                     font-weight: 600;
                     white-space: nowrap;
                   "
@@ -285,7 +285,7 @@ const emit = defineEmits([
               <n-flex vertical :size="[-4, 0]" style="flex: 1">
                 <span
                   style="
-                    font-size: var(--app-font-size-label);
+                    font-size: var(--app-font-size-caption);
                     font-weight: 600;
                     white-space: nowrap;
                   "
@@ -328,13 +328,19 @@ const emit = defineEmits([
 <style scoped>
 .box {
   border: 2px solid transparent;
-  transition: border-color 0.25s ease;
+  font-size: var(--app-font-size-caption);
+  line-height: 18px;
+  transition: background-color 0.25s ease;
   width: 100%;
   box-sizing: border-box;
 }
 
 .box:hover {
-  border-color: var(--app-brand-color);
+  background-color: color-mix(
+    in srgb,
+    var(--app-brand-color) 15%,
+    var(--app-surface-color)
+  ) !important;
 }
 
 .metric-muted {

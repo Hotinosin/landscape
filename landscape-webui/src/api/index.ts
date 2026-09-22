@@ -79,11 +79,10 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
             localStorage.getItem(LANDSCAPE_TOKEN_KEY),
           );
         if (currentSessionUnauthorized) {
+          const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
           clearLandscapeSession();
           useHistoryRouteStore().resetRoutes();
-
-          const currentPath = router.currentRoute.value.fullPath;
-          router.push({
+          void router.replace({
             path: "/login",
             state: currentPath === "/login" ? {} : { redirect: currentPath },
           });

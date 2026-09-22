@@ -79,7 +79,7 @@ defineExpose({ save: save_config, getSummary });
     :title-tip="t('network.settings.allow_lan_access_tip')"
     :switch-disabled="service_config === null"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
   >
     <template #footer>
       <n-flex justify="end">

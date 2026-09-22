@@ -10,7 +10,8 @@ import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
 const props = defineProps<{
   rule: StaticNatMappingV4Config;
-  cell: "status" | "enable" | "target" | "protocol" | "ports" | "actions";
+  cell:
+    "name" | "remark" | "enable" | "target" | "protocol" | "ports" | "actions";
 }>();
 const emit = defineEmits(["refresh"]);
 const show = ref(false);
@@ -41,13 +42,12 @@ async function updateEnabled(enable: boolean) {
 }
 </script>
 <template>
-  <template v-if="cell === 'status'">
-    <StatusTitle
-      :enable="rule.enable"
-      :name="rule.name"
-      :remark="rule.remark"
-    />
+  <template v-if="cell === 'name'">
+    <StatusTitle :enable="rule.enable" :name="rule.name" />
   </template>
+  <n-ellipsis v-else-if="cell === 'remark'">{{
+    rule.remark || "—"
+  }}</n-ellipsis>
   <template v-else-if="cell === 'enable'">
     <StandardEnableSwitch
       :value="rule.enable"
@@ -83,7 +83,7 @@ async function updateEnabled(enable: boolean) {
     <n-flex justify="start" :wrap="false">
       <EditButton @click="show = true" />
       <DeleteButton
-        :item="rule.name || rule.remark || t('common.unnamed')"
+        :item="rule.name || t('common.unnamed')"
         :on-confirm="remove"
       />
     </n-flex>

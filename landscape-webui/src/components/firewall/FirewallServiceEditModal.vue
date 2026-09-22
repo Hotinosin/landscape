@@ -65,7 +65,7 @@ defineExpose({ save: save_config, getSummary });
     v-model:enabled="service_config.enable"
     :title="t('firewall.service_edit.title')"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
   >
     <template #footer>
       <n-flex justify="end">

@@ -50,7 +50,7 @@ const showIpModal = ref(false);
 const refreshing = ref<Source | null>(null);
 const sourceCells = ["status", "type", "time", "actions"] as const;
 const sourceTitles = computed(() => [
-  `${t("common.status")} / ${t("common.name")}`,
+  t("common.name"),
   t("geo.item_card.source_type"),
   t("geo.item_card.next_update_time"),
   t("common.actions"),
@@ -171,7 +171,7 @@ async function forceRefresh(source: Source) {
   <ConfigModal
     v-model:show="showModel"
     :show-switch="false"
-    width="min(1000px, calc(100vw - 32px))"
+    width="min(900px, calc(100vw - 32px))"
     :title="t('geo.database.config_title')"
   >
     <n-tabs v-model:value="activeTab" type="line">

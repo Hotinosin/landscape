@@ -9,17 +9,11 @@ import type { DockerContainerSummary } from "@/lib/docker";
 const dockerStatus = useDockerStore();
 const { t } = useI18n();
 type ContainerCell =
-  | "name"
-  | "image"
-  | "ip"
-  | "ports"
-  | "status"
-  | "created"
-  | "actions";
+  "name" | "image" | "ip" | "ports" | "status" | "created" | "actions";
 const columns = computed<DataTableColumns<DockerContainerSummary>>(() =>
   (
     [
-      [`${t("common.status")} / ${t("common.name")}`, "name", 110],
+      [t("common.name"), "name", 110],
       [t("common.image"), "image", 220],
       [t("common.ip_address"), "ip", 160],
       [t("common.port_mapping"), "ports", 200],

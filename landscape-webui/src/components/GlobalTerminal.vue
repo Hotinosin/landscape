@@ -264,7 +264,7 @@ function mountTerminal() {
     rows: 24,
     cursorBlink: true,
     fontFamily:
-      '"v-mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
+      'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
     allowProposedApi: true,
   });
 

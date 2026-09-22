@@ -23,11 +23,12 @@ const router = useRouter();
 
 const columns = computed<DataTableColumns<DnsUpstreamConfig>>(() =>
   [
-    [`${t("common.name")} / ${t("common.remark")}`, "remark"],
+    [t("common.name"), "name"],
     [t("dns.upstream_card.request_mode"), "mode"],
     [t("dns.upstream_card.domain_addr"), "domain"],
     [t("dns.upstream_card.request_port"), "port"],
     [t("dns.upstream_card.upstream_ip"), "ip"],
+    [t("common.remark"), "remark"],
     [t("common.actions"), "actions"],
   ].map(([title, cell]) => ({
     title,
@@ -36,7 +37,8 @@ const columns = computed<DataTableColumns<DnsUpstreamConfig>>(() =>
     render: (rule) =>
       h(DnsUpstreamListRow, {
         rule,
-        cell: cell as "ip" | "port" | "domain" | "mode" | "remark" | "actions",
+        cell: cell as
+          "ip" | "port" | "domain" | "mode" | "name" | "remark" | "actions",
         ...(cell === "actions" ? { onRefresh: refresh_rules } : {}),
       }),
   })),

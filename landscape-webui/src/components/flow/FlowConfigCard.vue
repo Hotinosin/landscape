@@ -79,7 +79,7 @@ const show_remark = computed(
       <n-flex>
         <EditButton @click="show_edit = true" />
         <DeleteButton
-          :item="`${config.flow_id}: ${config.name || config.remark || t('common.unnamed')}`"
+          :item="`${config.flow_id}: ${config.name || t('common.unnamed')}`"
           :on-confirm="del"
         />
       </n-flex>

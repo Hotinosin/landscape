@@ -151,7 +151,7 @@ function setRpsToZero() {
     :embedded="props.embedded"
     :show-switch="false"
     :title="t('network.iface_cpu_balance.title')"
-    @after-enter="get_current_config"
+    :prepare="get_current_config"
   >
     <n-flex vertical>
       <n-alert type="info">

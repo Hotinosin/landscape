@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onMounted } from "vue";
+import { computed, inject, onMounted, provide, ref, watch } from "vue";
 import type { CSSProperties } from "vue";
 import { useDialog } from "naive-ui";
 import { useI18n } from "vue-i18n";
@@ -12,6 +12,7 @@ const show = defineModel<boolean>("show", { required: true });
 const enabled = defineModel<boolean>("enabled", { default: true });
 const emit = defineEmits(["after-enter", "dirty"]);
 const modalDepth = inject("app-modal-depth", 1);
+provide("app-modal-depth", modalDepth + 1);
 const dialog = useDialog();
 const { t } = useI18n();
 const neutralButtonProps = useNeutralDialogButtonProps();
@@ -29,6 +30,7 @@ const props = withDefaults(
     fixedTop?: boolean;
     topOffset?: string;
     dirty?: boolean;
+    prepare?: () => void | Promise<void>;
   }>(),
   {
     width: "var(--app-secondary-modal-width)",
@@ -43,15 +45,36 @@ const props = withDefaults(
   },
 );
 
+const renderedShow = ref(false);
+let prepareSequence = 0;
+watch(
+  show,
+  async (visible) => {
+    const sequence = ++prepareSequence;
+    renderedShow.value = false;
+    if (!visible || props.embedded) return;
+    if (!props.prepare) {
+      renderedShow.value = true;
+      return;
+    }
+    try {
+      await props.prepare();
+    } finally {
+      if (show.value && sequence === prepareSequence) renderedShow.value = true;
+    }
+  },
+  { immediate: true, flush: "sync" },
+);
+
 const cardStyle = computed<CSSProperties>(() => {
+  const requestedWidth =
+    typeof props.width === "number" ? `${props.width}px` : props.width;
   const style: CSSProperties = {
     width: props.embedded
       ? "100%"
-      : modalDepth > 1 && props.width === "var(--app-secondary-modal-width)"
+      : modalDepth > 1 && requestedWidth === "var(--app-secondary-modal-width)"
         ? "var(--app-tertiary-modal-width)"
-        : typeof props.width === "number"
-          ? `${props.width}px`
-          : props.width,
+        : requestedWidth,
   };
 
   if (!props.embedded && props.maxHeight) {
@@ -105,8 +128,11 @@ function requestClose() {
   });
 }
 
-onMounted(() => {
-  if (props.embedded) emit("after-enter");
+onMounted(async () => {
+  if (props.embedded) {
+    await props.prepare?.();
+    emit("after-enter");
+  }
 });
 </script>
 
@@ -137,7 +163,7 @@ onMounted(() => {
   <n-modal
     v-else
     v-bind="$attrs"
-    :show="show"
+    :show="renderedShow"
     :auto-focus="false"
     @update:show="(value: boolean) => !value && requestClose()"
     @after-enter="emit('after-enter')"

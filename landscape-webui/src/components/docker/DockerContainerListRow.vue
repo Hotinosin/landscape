@@ -40,7 +40,7 @@ async function act(fn: (name: string) => Promise<unknown>) {
   <template v-if="cell === 'name'">
     <StatusTitle
       :enable="container.State === 'running'"
-      :remark="front.MASK_INFO(title)"
+      :name="front.MASK_INFO(title)"
     /> </template
   ><template v-else-if="cell === 'image'">
     <n-ellipsis style="max-width: 320px">{{
@@ -48,24 +48,14 @@ async function act(fn: (name: string) => Promise<unknown>) {
     }}</n-ellipsis> </template
   ><template v-else-if="cell === 'ip'">
     <n-flex v-if="ips.length" :size="4" wrap>
-      <n-tag
-        v-for="ip in ips"
-        :key="ip"
-        size="small"
-        :bordered="false"
-      >
+      <n-tag v-for="ip in ips" :key="ip" size="small" :bordered="false">
         {{ front.MASK_INFO(ip) }}
       </n-tag>
     </n-flex>
     <span v-else>—</span> </template
   ><template v-else-if="cell === 'ports'">
     <n-flex v-if="ports.length" :size="4" wrap>
-      <n-tag
-        v-for="p in ports"
-        :key="p"
-        size="small"
-        :bordered="false"
-      >
+      <n-tag v-for="p in ports" :key="p" size="small" :bordered="false">
         {{ front.MASK_INFO(p) }}
       </n-tag>
     </n-flex>

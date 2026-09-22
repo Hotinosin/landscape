@@ -779,7 +779,7 @@ function cancelEmptyDraftAction() {
   <ConfigModal
     v-model:show="show"
     :show-switch="false"
-    width="var(--app-compact-modal-width)"
+    width="var(--app-tertiary-modal-width)"
     :title="
       group
         ? t('lan_ipv6.prefix_group_editor_title', {
@@ -787,7 +787,7 @@ function cancelEmptyDraftAction() {
           })
         : parentLabel
     "
-    @after-enter="enter"
+    :prepare="enter"
   >
     <n-flex vertical :size="12">
       <n-alert v-if="staleSelectionsCleared" type="warning" :bordered="false">

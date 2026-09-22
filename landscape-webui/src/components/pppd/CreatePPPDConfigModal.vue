@@ -98,7 +98,7 @@ async function confirm_config() {
     :show-switch="false"
     width="var(--app-secondary-modal-width)"
     :dirty="isModified"
-    @after-enter="init_conf_value"
+    :prepare="init_conf_value"
   >
     <n-form
       class="pppd-config-form"

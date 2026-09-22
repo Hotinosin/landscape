@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { FlowMarkType } from "@/lib/default_value";
 import type { FlowMark } from "@landscape-router/types/api/schemas";
-import { computed } from "vue";
 import FlowSelect from "./FlowSelect.vue";
 import { useI18n } from "vue-i18n";
+import StandardEnableSwitch from "@/components/common/StandardEnableSwitch.vue";
 
 const mark = defineModel<FlowMark>("mark", { required: true });
 const { t } = useI18n();
@@ -27,13 +27,6 @@ const mark_type_option = [
   },
 ];
 
-const show_other_function = computed(() => {
-  return (
-    mark.value.action.t == FlowMarkType.KeepGoing ||
-    mark.value.action.t == FlowMarkType.Direct
-  );
-});
-
 function mark_action_update(value: FlowMarkType) {
   switch (value) {
     case FlowMarkType.KeepGoing:
@@ -47,7 +40,6 @@ function mark_action_update(value: FlowMarkType) {
       break;
     }
     case FlowMarkType.Redirect: {
-      mark.value.allow_reuse_port = false;
       break;
     }
   }
@@ -55,45 +47,52 @@ function mark_action_update(value: FlowMarkType) {
 </script>
 
 <template>
-  <n-flex align="center" style="flex: 1" v-if="show_other_function">
+  <n-flex class="flow-mark-edit" align="center" :wrap="false">
     <n-select
-      style="width: 50%"
+      class="flow-mark-edit__action"
       v-model:value="mark.action.t"
       @update:value="mark_action_update"
       :options="mark_type_option"
       :placeholder="t('flow.mark_edit.select_match_type')"
     />
 
-    <n-flex align="center">
-      <span>&nbsp;{{ t("flow.mark_edit.nat1_label") }}</span>
-      <n-switch
-        v-model:value="mark.allow_reuse_port"
-        :round="false"
-        size="medium"
-      />
-    </n-flex>
-  </n-flex>
-  <n-input-group v-else-if="mark.action.t === FlowMarkType.Redirect">
-    <n-select
-      style="width: 50%"
-      v-model:value="mark.action.t"
-      @update:value="mark_action_update"
-      :options="mark_type_option"
-      :placeholder="t('flow.mark_edit.select_match_type')"
-    />
     <FlowSelect
+      v-if="mark.action.t === FlowMarkType.Redirect"
+      class="flow-mark-edit__flow"
       v-model="mark.flow_id"
       :include-all="false"
       :placeholder="t('flow.mark_edit.flow_id_placeholder')"
-      width="50%"
+      width="auto"
     />
-  </n-input-group>
-  <n-select
-    v-else
-    style="width: 50%"
-    v-model:value="mark.action.t"
-    @update:value="mark_action_update"
-    :options="mark_type_option"
-    :placeholder="t('flow.mark_edit.select_match_type')"
-  />
+
+    <n-flex
+      v-if="mark.action.t !== FlowMarkType.Drop"
+      class="flow-mark-edit__nat1"
+      align="center"
+      :wrap="false"
+    >
+      <span>&nbsp;{{ t("flow.mark_edit.nat1_label") }}</span>
+      <StandardEnableSwitch v-model:value="mark.allow_reuse_port" />
+    </n-flex>
+  </n-flex>
 </template>
+
+<style scoped>
+.flow-mark-edit {
+  width: 100%;
+}
+
+.flow-mark-edit__action {
+  flex: 1;
+  min-width: 180px;
+}
+
+.flow-mark-edit__flow {
+  flex: 1;
+  min-width: 160px;
+}
+
+.flow-mark-edit__nat1 {
+  flex: none;
+}
+</style>

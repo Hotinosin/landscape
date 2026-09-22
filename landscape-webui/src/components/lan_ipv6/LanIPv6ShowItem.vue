@@ -4,7 +4,7 @@ import type { DataTableColumns } from "naive-ui";
 import { NTag, NTime } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
-import { HelpFilled, Time } from "@vicons/carbon";
+import { Time } from "@vicons/carbon";
 import type { IPv6NAInfo } from "@landscape-router/types/api/schemas";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { usePreferenceStore } from "@/stores/preference";

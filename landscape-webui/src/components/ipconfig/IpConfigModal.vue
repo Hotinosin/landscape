@@ -191,7 +191,7 @@ function select_ip_model(value: IfaceIpMode) {
     :title="t('interface.title')"
     :show-switch="false"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
     @dirty="emit('dirty')"
   >
     <n-flex

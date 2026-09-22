@@ -54,9 +54,19 @@ async function force_refresh() {
 }
 </script>
 <template>
-  <StatusTitle v-if="cell === 'status'" :enable="geo_site.enable" :remark="title" />
+  <StatusTitle
+    v-if="cell === 'status'"
+    :enable="geo_site.enable"
+    :name="title"
+  />
   <n-tag v-else-if="cell === 'type'" :bordered="false" size="small">
-      {{ geo_site.source.t === "url" ? "URL" : geo_site.source.t === "adguard_home" ? "AdGuard" : "Direct" }}
+    {{
+      geo_site.source.t === "url"
+        ? "URL"
+        : geo_site.source.t === "adguard_home"
+          ? "AdGuard"
+          : "Direct"
+    }}
   </n-tag>
   <template v-else-if="cell === 'time'">
     <n-time
@@ -67,25 +77,29 @@ async function force_refresh() {
     />
     <span v-else>—</span>
   </template>
-    <n-flex v-else-if="cell === 'actions'" :wrap="false" size="small">
-      <n-button v-if="geo_site.source.t === 'url'" size="small" @click="show_upload = true">
-        {{ t("geo.item_card.upload") }}
-      </n-button>
-      <ConfirmModal
-        v-if="geo_site.source.t !== 'direct'"
-        :positive-button-props="{ loading: refreshing }"
-        @positive-click="force_refresh"
-      >
-        <template #trigger>
-          <n-button size="small">
-            {{ t("geo.item_card.refresh_source") }}
-          </n-button>
-        </template>
-        {{ t("geo.item_card.force_refresh_confirm") }}
-      </ConfirmModal>
-      <EditButton @click="show_edit_modal = true" />
-      <DeleteButton :item="geo_site.name" :on-confirm="del" />
-    </n-flex>
+  <n-flex v-else-if="cell === 'actions'" :wrap="false" size="small">
+    <n-button
+      v-if="geo_site.source.t === 'url'"
+      size="small"
+      @click="show_upload = true"
+    >
+      {{ t("geo.item_card.upload") }}
+    </n-button>
+    <ConfirmModal
+      v-if="geo_site.source.t !== 'direct'"
+      :positive-button-props="{ loading: refreshing }"
+      @positive-click="force_refresh"
+    >
+      <template #trigger>
+        <n-button size="small">
+          {{ t("geo.item_card.refresh_source") }}
+        </n-button>
+      </template>
+      {{ t("geo.item_card.force_refresh_confirm") }}
+    </ConfirmModal>
+    <EditButton @click="show_edit_modal = true" />
+    <DeleteButton :item="geo_site.name" :on-confirm="del" />
+  </n-flex>
   <template v-if="cell === 'actions'">
     <GeoSiteEditModal
       :id="geo_site.id"

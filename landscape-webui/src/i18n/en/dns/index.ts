@@ -1,6 +1,6 @@
 export default {
   rule_edit: {
-    title: "Rule Editor",
+    title: "DNS Rule Editor",
     priority: "Priority",
     priority_help:
       "Lower numbers have higher priority. Rules are evaluated from low to high and stop at the first match; 1 is higher than 1000.",
@@ -8,8 +8,8 @@ export default {
     filter_result: "Filter result",
     flow_action: "Rule Egress",
     upstream_select: "DNS upstream",
-    source_rules_title:
-      "Domain match rules (empty means match all, rule order is ignored)",
+    source_rules_title: "Domain match rules",
+    source_rules_help: "Empty means match all; rule order is ignored",
     copy: "Copy",
     paste_replace: "Paste Replace",
     paste_append: "Paste Append",

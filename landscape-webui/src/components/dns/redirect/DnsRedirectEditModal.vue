@@ -125,7 +125,7 @@ const flow_rules = ref<any[]>([]);
 const flow_options = computed(() => {
   const result = flow_rules.value.map((e) => ({
     value: e.flow_id,
-    label: e.remark ? `${e.flow_id} - ${e.remark}` : e.flow_id,
+    label: `${e.flow_id} - ${e.name || t("common.unnamed")}${e.remark ? ` - ${e.remark}` : ""}`,
   }));
   result.unshift({
     label: t("dns.redirect_edit.default_flow"),
@@ -171,7 +171,7 @@ async function append_import_rules(rules: any[]) {
     :switch-disabled="!rule"
     width="var(--app-secondary-modal-width)"
     :dirty="isModified"
-    @after-enter="enter"
+    :prepare="enter"
   >
     <!-- {{ isModified }} -->
     <n-form

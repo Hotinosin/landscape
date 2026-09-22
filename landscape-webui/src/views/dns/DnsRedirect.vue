@@ -18,7 +18,8 @@ const {
 });
 const { t } = useI18n();
 type RedirectCell =
-  | "status"
+  | "name"
+  | "remark"
   | "flows"
   | "rules"
   | "mode"
@@ -29,19 +30,20 @@ type RedirectCell =
 const columns = computed<DataTableColumns<DNSRedirectRule>>(() =>
   (
     [
-      [`${t("common.status")} / ${t("common.name")}`, "status"],
+      [t("common.name"), "name"],
       [t("dns.redirect_card.apply_to"), "flows"],
       [t("dns.rule_card.match_rules"), "rules"],
       [t("dns.redirect_card.answer_mode"), "mode"],
       [t("dns.redirect_card.response_info"), "response"],
       [t("dns.redirect_card.block_metadata_queries"), "metadata"],
       [t("common.enable"), "enable"],
+      [t("common.remark"), "remark"],
       [t("common.actions"), "actions"],
     ] satisfies Array<[string, RedirectCell]>
   ).map(([title, cell]) => ({
     title,
     key: cell,
-    width: cell === "status" ? 110 : cell === "enable" ? 80 : undefined,
+    width: cell === "name" ? 110 : cell === "enable" ? 80 : undefined,
     render: (rule: DNSRedirectRule) =>
       h(DnsRedirectListRow, {
         rule,

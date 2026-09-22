@@ -129,7 +129,7 @@ const selectedFlowId = computed({
 });
 const flowOptions = computed(() => {
   const opts = flows.value.map((f) => ({
-    label: f.remark ? `${f.flow_id} - ${f.remark}` : `Flow ${f.flow_id}`,
+    label: `${f.flow_id} - ${f.name || t("common.unnamed")}${f.remark ? ` - ${f.remark}` : ""}`,
     value: f.flow_id,
   }));
   return [

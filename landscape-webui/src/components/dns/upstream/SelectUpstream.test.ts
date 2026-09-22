@@ -40,4 +40,19 @@ describe("SelectUpstream", () => {
     const updates = wrapper.emitted("update:upstream_id") ?? [];
     expect(updates[updates.length - 1]).toEqual(["new-upstream"]);
   });
+
+  it("shows upstream names and remarks without using the remark as the name", async () => {
+    getDnsUpstreams.mockResolvedValue([
+      { id: "named", name: "Ali", remark: "Primary" },
+      { id: "legacy", name: null, remark: "Legacy" },
+    ]);
+
+    const wrapper = shallowMount(SelectUpstream);
+    await flushPromises();
+
+    expect((wrapper.vm as any).upstream_options.slice(0, 2)).toEqual([
+      { value: "named", label: "Ali - Primary" },
+      { value: "legacy", label: "common.unnamed - Legacy" },
+    ]);
+  });
 });

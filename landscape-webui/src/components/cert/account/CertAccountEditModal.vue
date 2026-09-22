@@ -158,7 +158,7 @@ async function save() {
     :dirty="isModified"
     :width="props.width ?? 'var(--app-secondary-modal-width)'"
     :title="t('cert.account_edit_title')"
-    @after-enter="enter"
+    :prepare="enter"
   >
     <n-form
       v-if="rule"

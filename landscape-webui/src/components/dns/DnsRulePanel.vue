@@ -28,12 +28,12 @@ const loading = ref(false);
 const showCreateModal = ref(false);
 const showQueryModal = ref(false);
 type DnsRuleCell =
-  "status" | "sources" | "upstream" | "action" | "enable" | "actions";
+  "name" | "sources" | "upstream" | "action" | "enable" | "actions";
 
 const columns = computed<DataTableColumns<DNSRuleConfig>>(() =>
   (
     [
-      [`${t("common.status")} / ${t("common.priority")}`, "status", 110],
+      [t("common.name"), "name", 110],
       [t("dns.rule_card.match_rules"), "sources", undefined],
       [t("dns.rule_card.upstream_config"), "upstream", undefined],
       [t("dns.rule_card.traffic_action"), "action", undefined],
@@ -98,11 +98,7 @@ watch(() => props.flow_id, readRules);
   <n-spin :show="loading">
     <n-flex vertical class="rule-panel">
       <n-flex class="standard-list-align">
-        <n-button
-          size="small"
-          type="primary"
-          @click="showCreateModal = true"
-        >
+        <n-button size="small" type="primary" @click="showCreateModal = true">
           {{ t("common.add_new") }}
         </n-button>
         <n-button size="small" @click="exportConfig">
@@ -152,6 +148,7 @@ watch(() => props.flow_id, readRules);
 
 <style scoped>
 .rule-list {
+  min-height: 160px;
   max-height: min(440px, calc(100vh - 300px));
 }
 </style>

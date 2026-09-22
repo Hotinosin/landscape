@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { useMessage, type DataTableColumns } from "naive-ui";
 import { isIP } from "is-ip";
-import { computed, h } from "vue";
-import { ref } from "vue";
+import { computed, h, ref, watch } from "vue";
 import type { DnsUpstreamConfig } from "@landscape-router/types/api/schemas";
 import {
   get_dns_upstream,
@@ -10,7 +9,11 @@ import {
   test_dns_upstream_h3,
   type DnsUpstreamH3TestResult,
 } from "@/api/dns_rule/upstream";
-import { DnsUpstreamModeTsEnum, UPSTREAM_OPTIONS } from "@/lib/dns";
+import {
+  DnsUpstreamModeTsEnum,
+  fill_default_dns_http_endpoint,
+  UPSTREAM_OPTIONS,
+} from "@/lib/dns";
 import { copy_context_to_clipboard } from "@/lib/common";
 import { useI18n } from "vue-i18n";
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
@@ -36,6 +39,11 @@ const show = defineModel<boolean>("show", { required: true });
 const origin_rule_json = ref<string>("");
 
 const rule = ref<DnsUpstreamConfig>();
+
+watch(
+  () => rule.value?.mode.t,
+  () => rule.value && fill_default_dns_http_endpoint(rule.value),
+);
 
 const commit_spin = ref(false);
 const h3TestLoading = ref(false);
@@ -106,19 +114,19 @@ const h3AttemptColumns = computed<DataTableColumns<H3Attempt>>(() => [
   {
     title: "#",
     key: "index",
-    width: 52,
+    width: 44,
     render: (_attempt, index) => index + 1,
   },
   {
     title: t("dns.upstream_edit.latency"),
     key: "latency",
-    width: 110,
+    width: 90,
     render: (attempt) => `${attempt.latency_ms.toFixed(2)} ms`,
   },
   {
     title: t("dns.upstream_edit.connection"),
     key: "connection",
-    width: 110,
+    width: 80,
     render: (attempt, index) =>
       attempt.error
         ? "-"
@@ -171,6 +179,7 @@ async function enter() {
       enable_ip_validation: false,
     };
   }
+  fill_default_dns_http_endpoint(rule.value);
   origin_rule_json.value = JSON.stringify(rule.value);
 }
 
@@ -186,6 +195,11 @@ const ipRule = {
 };
 
 const rules = {
+  name: {
+    required: true,
+    trigger: ["input", "blur"],
+    message: () => t("common.name_required"),
+  },
   ips: {
     trigger: ["blur", "change"],
     validator(_: unknown, value: string[]) {
@@ -214,31 +228,13 @@ const rules = {
     },
   },
 
-  "mode.http_endpoint": {
-    trigger: ["blur", "input"],
-    level: "warning",
-    validator(_: unknown, value: string) {
-      if (!value || value.trim() === "") {
-        return new Error(t("dns.upstream_edit.warn_default_endpoint"));
-      }
-      return true;
-    },
-  },
 };
 
 async function saveRule() {
   if (rule.value) {
     try {
       await formRef.value?.validate();
-      // 如果是 HTTPS 模式且 endpoint 为空
-      if (
-        rule.value.mode.t === DnsUpstreamModeTsEnum.Https &&
-        (!rule.value.mode.http_endpoint ||
-          rule.value.mode.http_endpoint.trim() === "")
-      ) {
-        message.warning(t("dns.upstream_edit.warn_empty_endpoint_fill"));
-        rule.value.mode.http_endpoint = null as any;
-      }
+      fill_default_dns_http_endpoint(rule.value);
       if (
         rule.value.mode.t === DnsUpstreamModeTsEnum.Https &&
         !supportsHttp3.value
@@ -267,6 +263,7 @@ async function export_config() {
 async function import_rules(rules: DnsUpstreamConfig) {
   try {
     if (rule.value) {
+      fill_default_dns_http_endpoint(rules);
       rule.value = rules;
     }
   } catch (e) {}
@@ -280,7 +277,7 @@ async function import_rules(rules: DnsUpstreamConfig) {
     width="var(--app-secondary-modal-width)"
     :title="t('dns.upstream_edit.title')"
     :dirty="isModified"
-    @after-enter="enter"
+    :prepare="enter"
   >
     <template #header-extra>
       <n-flex>
@@ -304,7 +301,11 @@ async function import_rules(rules: DnsUpstreamConfig) {
       ref="formRef"
       :model="rule"
     >
-      <StandardSettingRow :label="t('dns.upstream_edit.name')">
+      <StandardSettingRow
+        :label="t('dns.upstream_edit.name')"
+        path="name"
+        required
+      >
         <n-input
           :placeholder="t('dns.upstream_edit.name_placeholder')"
           v-model:value="rule.name"
@@ -454,7 +455,7 @@ async function import_rules(rules: DnsUpstreamConfig) {
     v-model:show="showH3TestResult"
     :show-switch="false"
     :title="t('dns.upstream_edit.h3_test_title')"
-    width="var(--app-tertiary-modal-width)"
+    width="var(--app-compact-modal-width)"
   >
     <n-spin v-if="h3TestLoading" style="display: block; padding: 32px" />
     <template v-else>
@@ -499,7 +500,6 @@ async function import_rules(rules: DnsUpstreamConfig) {
         :columns="h3AttemptColumns"
         :data="h3TestResult.attempts"
         :row-key="h3AttemptRowKey"
-        :scroll-x="500"
         size="small"
       />
     </template>

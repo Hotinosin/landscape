@@ -52,7 +52,7 @@ defineExpose({ save: save_config });
     v-model:enabled="service_config.enable"
     :title="t('wifi.title')"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
   >
     <n-form :model="service_config">
       <StandardSettingRow :label="t('wifi.config')" layout="stacked">

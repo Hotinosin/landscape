@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useThemeVars } from "naive-ui";
-import { HelpFilled } from "@vicons/carbon";
+import { Help } from "@vicons/carbon";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 const { t } = useI18n();
@@ -37,7 +37,7 @@ const show_other_macs = computed(() => {
         <n-flex justify="center" align="center">
           <n-button text>
             <template #icon>
-              <n-icon><HelpFilled /></n-icon>
+              <n-icon><Help /></n-icon>
             </template>
           </n-button>
         </n-flex>

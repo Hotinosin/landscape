@@ -22,11 +22,11 @@ function leave() {
 </script>
 <template>
   <ConfigModal
-    @after-enter="flush_tasks()"
+    :prepare="flush_tasks"
     @after-leave="leave"
     v-model:show="show"
     :show-switch="false"
-    width="var(--app-compact-modal-width)"
+    width="var(--app-tertiary-modal-width)"
     :title="t('docker.docker_pull.download_history')"
   >
     <n-flex style="height: 100%" vertical>

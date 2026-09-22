@@ -131,7 +131,7 @@ const has_edge_label = computed({
     :show-switch="false"
     width="var(--app-secondary-modal-width)"
     :title="t('docker.docker_run.title', { image: props.image_name })"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
   >
     <n-form v-if="formModel" :model="formModel">
       <StandardSettingRow

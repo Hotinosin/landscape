@@ -15,7 +15,7 @@ import WanRuleEditModal from "./WanRuleEditModal.vue";
 const props = defineProps<{
   rule: WanIpRuleConfig;
   flows: FlowConfig[];
-  cell: "status" | "enable" | "action" | "sources" | "actions";
+  cell: "name" | "remark" | "enable" | "action" | "sources" | "actions";
 }>();
 const emit = defineEmits(["refresh"]);
 const { t } = useI18n();
@@ -47,13 +47,20 @@ async function updateEnabled(enable: boolean) {
 
 <template>
   <StatusTitle
-    v-if="cell === 'status'"
+    v-if="cell === 'name'"
     :enable="rule.enable"
     :name="rule.name"
-    :remark="rule.remark"
     :prefix="rule.index"
   />
-  <StandardEnableSwitch v-else-if="cell === 'enable'" :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" />
+  <n-ellipsis v-else-if="cell === 'remark'">{{
+    rule.remark || "—"
+  }}</n-ellipsis>
+  <StandardEnableSwitch
+    v-else-if="cell === 'enable'"
+    :value="rule.enable"
+    :loading="enableLoading"
+    @update:value="updateEnabled"
+  />
   <FlowRuleEgress
     v-else-if="cell === 'action'"
     :mark="rule.mark"
@@ -76,7 +83,7 @@ async function updateEnabled(enable: boolean) {
   <n-flex v-else-if="cell === 'actions'" size="small" :wrap="false">
     <EditButton @click="showEdit = true" />
     <DeleteButton
-      :item="`${rule.index}: ${rule.name || rule.remark || t('common.unnamed')}`"
+      :item="`${rule.index}: ${rule.name || t('common.unnamed')}`"
       :on-confirm="remove"
     />
   </n-flex>

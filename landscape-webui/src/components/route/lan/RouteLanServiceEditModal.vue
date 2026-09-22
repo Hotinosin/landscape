@@ -100,7 +100,7 @@ function onCreate(): StaticRouteConfig {
     :title="t('network.route_lan.title')"
     :switch-disabled="service_config === null"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
   >
     <n-form v-if="service_config !== null" :model="service_config">
       <StandardSettingRow

@@ -32,7 +32,7 @@ const show_pull_history = ref(false);
 </script>
 <template>
   <ConfigModal
-    @after-enter="flush_images()"
+    :prepare="flush_images"
     v-model:show="show"
     :show-switch="false"
     width="var(--app-compact-modal-width)"

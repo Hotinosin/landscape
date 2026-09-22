@@ -63,7 +63,7 @@ function reflush_zone() {
 
 <template>
   <ConfigModal
-    @after-enter="reflush_zone"
+    :prepare="reflush_zone"
     v-model:show="showModal"
     :show-switch="false"
     :dirty="temp_zone !== iface_info.zone"

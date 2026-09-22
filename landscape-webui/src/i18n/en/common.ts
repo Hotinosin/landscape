@@ -12,6 +12,7 @@ export default {
   delete_confirm_generic:
     "You are about to delete the selected item. This cannot be undone.",
   no_remark: "No remark",
+  name_required: "Name is required",
   no_data: "No data",
   not_configured: "N/A",
   starting: "Starting",

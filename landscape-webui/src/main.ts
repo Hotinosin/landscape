@@ -5,9 +5,6 @@ import axios from "axios";
 import router from "./router";
 import i18n from "./i18n";
 
-import "vfonts/Lato.css";
-import "vfonts/FiraCode.css";
-
 import "./style.css";
 
 import App from "./App.vue";

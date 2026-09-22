@@ -140,7 +140,7 @@ async function saveConfig() {
     :switch-disabled="!config"
     width="var(--app-secondary-modal-width)"
     :dirty="isModified"
-    @after-enter="enter"
+    :prepare="enter"
   >
     <n-form v-if="config" style="flex: 1" :model="config">
       <StandardSettingRow :label="t('firewall.blacklist_edit.name')">

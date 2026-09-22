@@ -166,22 +166,22 @@ async function append_import_rules(rules: any[]) {
     :switch-disabled="!rule"
     width="var(--app-secondary-modal-width)"
     :dirty="isModified"
-    @after-enter="enter"
+    :prepare="enter"
   >
     <!-- {{ isModified }} -->
     <n-form v-if="rule" style="flex: 1" ref="formRef" :model="rule">
-      <StandardSettingRow :label="t('flow.wan_rule_edit.priority')">
-        <n-input-number v-model:value="rule.index" clearable />
-      </StandardSettingRow>
-      <StandardSettingRow :label="t('flow.wan_rule_edit.egress_select')">
-        <FlowMarkEdit v-model:mark="rule.mark"></FlowMarkEdit>
-      </StandardSettingRow>
       <StandardSettingRow :label="t('flow.wan_rule_edit.name')">
         <n-input
           v-model:value="rule.name"
           :placeholder="t('flow.wan_rule_edit.name_placeholder')"
           clearable
         />
+      </StandardSettingRow>
+      <StandardSettingRow :label="t('flow.wan_rule_edit.priority')">
+        <n-input-number v-model:value="rule.index" clearable />
+      </StandardSettingRow>
+      <StandardSettingRow :label="t('flow.wan_rule_edit.egress_select')">
+        <FlowMarkEdit v-model:mark="rule.mark"></FlowMarkEdit>
       </StandardSettingRow>
       <StandardSettingRow :label="t('flow.wan_rule_edit.remark')">
         <n-input
@@ -190,7 +190,7 @@ async function append_import_rules(rules: any[]) {
           type="text"
         />
       </StandardSettingRow>
-      <StandardSettingRow control-width="wide">
+      <StandardSettingRow layout="stacked">
         <template #label>
           {{ t("flow.wan_rule_edit.matched_ips") }}
         </template>
