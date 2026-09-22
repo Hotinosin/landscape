@@ -3,10 +3,10 @@ export default {
   edit_title: "编辑设备绑定",
   add_title: "添加设备绑定",
 
-  name: "展示名称",
+  name: "名称",
   actions: "操作",
   name_placeholder: "例如: 我的手机",
-  name_required: "请输入展示名称",
+  name_required: "请输入名称",
 
   hostname: "主机名",
   hostname_placeholder: "例如: my-device",

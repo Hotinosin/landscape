@@ -14,6 +14,7 @@ vi.mock("@xterm/xterm", () => ({
       onData: vi.fn(),
       onResize: vi.fn(),
       focus: vi.fn(),
+      scrollToBottom: vi.fn(),
     };
   }),
 }));
@@ -109,5 +110,32 @@ describe("PTY session lifecycle", () => {
     expect(store.isConnected).toBe(true);
     store.disconnect();
     expect(current.close).toHaveBeenCalledOnce();
+  });
+
+  it("safely fits active terminal and preserves bottom scroll alignment", () => {
+    const store = usePtyStore();
+    const mockFit = vi.fn();
+    const terminal = new Terminal() as any;
+    terminal.element = { parentElement: { clientWidth: 800, clientHeight: 600 } };
+    terminal.buffer = { active: { viewportY: 10, baseY: 10 } };
+
+    store.attachTerminal(terminal, { fit: mockFit } as any);
+    store.fit();
+
+    expect(mockFit).toHaveBeenCalledOnce();
+    expect(terminal.scrollToBottom).toHaveBeenCalledOnce();
+  });
+
+  it("skips fit calculation when container has collapsed dimensions (< 50px)", () => {
+    const store = usePtyStore();
+    const mockFit = vi.fn();
+    const terminal = new Terminal() as any;
+    terminal.element = { parentElement: { clientWidth: 0, clientHeight: 0 } };
+
+    store.attachTerminal(terminal, { fit: mockFit } as any);
+    store.fit();
+
+    expect(mockFit).not.toHaveBeenCalled();
+    expect(terminal.scrollToBottom).not.toHaveBeenCalled();
   });
 });

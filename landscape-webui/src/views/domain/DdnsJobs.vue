@@ -29,10 +29,11 @@ import {
 import ConfigModal from "@/components/common/ConfigModal.vue";
 import EditButton from "@/components/common/EditButton.vue";
 import DeleteButton from "@/components/common/DeleteButton.vue";
+import StandardEnableSwitch from "@/components/common/StandardEnableSwitch.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import { useI18n } from "vue-i18n";
-import { Add, Renew } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import DnsProviderQuickCreateModal from "@/components/domain/DnsProviderQuickCreateModal.vue";
 import { usePageRequest } from "@/composables/usePageRequest";
 
@@ -58,6 +59,7 @@ const showProviderCreateModal = ref(false);
 const showDetailDrawer = ref(false);
 const saving = ref(false);
 const syncingIds = ref<Set<string>>(new Set());
+const enablingIds = ref<Set<string>>(new Set());
 const editingId = ref<string | null>(null);
 const detailJobId = ref<string | null>(null);
 const formRef = ref();
@@ -80,6 +82,16 @@ const formEnabled = computed({
     form.value.enable = value;
   },
 });
+
+const originFormJson = ref("");
+function getSnapshot() {
+  return JSON.stringify({
+    form: form.value,
+    sources: sourceInputs.value,
+    records: recordInputs.value,
+  });
+}
+const isModified = computed(() => getSnapshot() !== originFormJson.value);
 
 const enrolledDeviceStore = useEnrolledDeviceStore();
 const familyOptions = [
@@ -122,7 +134,7 @@ const providerOptions = computed(() => [
     value: item.id!,
   })),
   {
-    label: `+ ${t("common.create")} ${t("dns_provider.provider_profile")}`,
+    label: `${t("common.create")} ${t("dns_provider.provider_profile")}`,
     value: CREATE_PROVIDER_OPTION,
   },
 ]);
@@ -188,6 +200,7 @@ function resetForm(item?: DdnsJob) {
     },
   ];
   recordInputs.value = item?.records?.map((record) => record.name) ?? ["@"];
+  originFormJson.value = getSnapshot();
 }
 
 const listRequest = usePageRequest(
@@ -232,6 +245,10 @@ const listRequest = usePageRequest(
 const items = computed(() => listRequest.data.value.jobs);
 const loading = listRequest.loading;
 const refresh = listRequest.refresh;
+
+function rowKey(row: DdnsJob) {
+  return row.id ?? row.name;
+}
 
 function providerName(id: string) {
   return providerProfiles.value.find((item) => item.id === id)?.name ?? id;
@@ -373,6 +390,80 @@ function detailRecords(job: DdnsJob | null) {
       ipv6: fallbackFamilyRuntime(job.enable ?? true, record.enable ?? true),
     }))
   );
+}
+
+type DdnsDetailRecord = ReturnType<typeof detailRecords>[number];
+const detailColumns = computed<DataTableColumns<DdnsDetailRecord>>(() => [
+  {
+    title: t("ddns.record_name"),
+    key: "name",
+    width: 120,
+    render: (row) => frontEndStore.MASK_INFO(row.name),
+  },
+  {
+    title: "IPv4",
+    key: "ipv4_status",
+    width: 100,
+    render: (row) => renderFamilyStatus(row.ipv4.status),
+  },
+  {
+    title: "IPv4 IP",
+    key: "ipv4_ip",
+    width: 180,
+    render: (row) => formatIp(row.ipv4.last_published_ips),
+  },
+  {
+    title: t("cert.cert_status_message"),
+    key: "ipv4_message",
+    width: 220,
+    render: (row) => formatRuntimeSummary(row.ipv4),
+  },
+  {
+    title: t("ddns.next_retry_at"),
+    key: "ipv4_retry",
+    width: 170,
+    render: (row) => formatRetry(row.ipv4),
+  },
+  {
+    title: "IPv4 Error",
+    key: "ipv4_error",
+    width: 180,
+    render: (row) => formatError(row.ipv4.last_error),
+  },
+  {
+    title: "IPv6",
+    key: "ipv6_status",
+    width: 100,
+    render: (row) => renderFamilyStatus(row.ipv6.status),
+  },
+  {
+    title: "IPv6 IP",
+    key: "ipv6_ip",
+    width: 220,
+    render: (row) => formatIp(row.ipv6.last_published_ips),
+  },
+  {
+    title: t("cert.cert_status_message"),
+    key: "ipv6_message",
+    width: 220,
+    render: (row) => formatRuntimeSummary(row.ipv6),
+  },
+  {
+    title: t("ddns.next_retry_at"),
+    key: "ipv6_retry",
+    width: 170,
+    render: (row) => formatRetry(row.ipv6),
+  },
+  {
+    title: "IPv6 Error",
+    key: "ipv6_error",
+    width: 180,
+    render: (row) => formatError(row.ipv6.last_error),
+  },
+]);
+
+function detailRowKey(row: DdnsDetailRecord) {
+  return row.name;
 }
 
 function mergeRecordItems(records: string[], existing: DdnsRecordConfig[]) {
@@ -546,6 +637,19 @@ async function syncNow(id: string) {
   }
 }
 
+async function updateEnabled(job: DdnsJob, enable: boolean) {
+  if (!job.id) return;
+  enablingIds.value.add(job.id);
+  try {
+    await push_ddns_job({ ...job, enable });
+    await refresh();
+  } catch (e: any) {
+    message.error(e?.response?.data || e?.message || "Operation failed");
+  } finally {
+    enablingIds.value.delete(job.id);
+  }
+}
+
 function openDetailDrawer(job: DdnsJob) {
   detailJobId.value = job.id ?? null;
   showDetailDrawer.value = true;
@@ -603,11 +707,11 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
     key: "enable",
     width: 90,
     render: (row) =>
-      h(
-        NTag,
-        { size: "small", type: row.enable ? "success" : "default" },
-        () => (row.enable ? t("common.enable") : t("common.disable")),
-      ),
+      h(StandardEnableSwitch, {
+        value: row.enable ?? true,
+        loading: row.id ? enablingIds.value.has(row.id) : false,
+        "onUpdate:value": (enable: boolean) => updateEnabled(row, enable),
+      }),
   },
   {
     title: t("common.actions"),
@@ -628,7 +732,6 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
         {
           size: "small",
           type: "primary",
-          secondary: true,
           style: "margin-left: 8px",
           loading: row.id ? syncingIds.value.has(row.id) : false,
           disabled: !row.enable,
@@ -678,8 +781,6 @@ onMounted(async () => {
           resetForm();
           showModal = true;
         "
-        ><template #icon
-          ><n-icon><Add /></n-icon></template
         >{{ t("common.create") }}</n-button
       >
       <n-button :loading="loading" secondary @click="refresh">
@@ -695,98 +796,54 @@ onMounted(async () => {
       :data="items"
       :loading="loading"
       :error="listRequest.error.value"
+      :row-key="rowKey"
+      :scroll-x="1200"
       @retry="listRequest.retry"
     />
 
-    <n-modal
+    <ConfigModal
       v-model:show="showDetailDrawer"
+      :show-switch="false"
+      width="min(900px, calc(100vw - 32px))"
+      max-height="calc(100vh - 120px)"
+      :title="detailDrawerTitle"
     >
-      <n-card
-        style="width: min(900px, calc(100vw - 32px))"
-        :title="detailDrawerTitle"
-        :bordered="false"
-        closable
-        content-style="max-height: calc(100vh - 120px); overflow: auto"
-        @close="showDetailDrawer = false"
-      >
-        <template v-if="selectedDetailJob">
-          <n-flex vertical :size="12">
-            <n-flex :size="8" wrap>
-              <n-tag size="small">{{
-                frontEndStore.MASK_INFO(selectedDetailJob.zone_name)
-              }}</n-tag>
-              <component :is="() => sourceTags(selectedDetailJob)" />
-              <n-tag
-                size="small"
-                :type="statusType(aggregateStatus(selectedDetailJob))"
-              >
-                {{ aggregateStatus(selectedDetailJob) }}
-              </n-tag>
-            </n-flex>
-
-            <div>
-              {{ formatRuntimeSummary(getJobRuntime(selectedDetailJob)) }}
-            </div>
-
-            <div class="ddns-detail-table-wrapper">
-              <table class="ddns-detail-table">
-                <thead>
-                  <tr>
-                    <th>{{ t("ddns.record_name") }}</th>
-                    <th>IPv4</th>
-                    <th>IPv4 IP</th>
-                    <th>{{ t("cert.cert_status_message") }}</th>
-                    <th>{{ t("ddns.next_retry_at") }}</th>
-                    <th>IPv4 Error</th>
-                    <th>IPv6</th>
-                    <th>IPv6 IP</th>
-                    <th>{{ t("cert.cert_status_message") }}</th>
-                    <th>{{ t("ddns.next_retry_at") }}</th>
-                    <th>IPv6 Error</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="record in detailRecords(selectedDetailJob)"
-                    :key="record.name"
-                  >
-                    <td>{{ frontEndStore.MASK_INFO(record.name) }}</td>
-                    <td>
-                      <n-tag
-                        size="small"
-                        :type="statusType(record.ipv4.status)"
-                      >
-                        {{ record.ipv4.status ?? "idle" }}
-                      </n-tag>
-                    </td>
-                    <td>{{ formatIp(record.ipv4.last_published_ips) }}</td>
-                    <td>{{ formatRuntimeSummary(record.ipv4) }}</td>
-                    <td>{{ formatRetry(record.ipv4) }}</td>
-                    <td>{{ formatError(record.ipv4.last_error) }}</td>
-                    <td>
-                      <n-tag
-                        size="small"
-                        :type="statusType(record.ipv6.status)"
-                      >
-                        {{ record.ipv6.status ?? "idle" }}
-                      </n-tag>
-                    </td>
-                    <td>{{ formatIp(record.ipv6.last_published_ips) }}</td>
-                    <td>{{ formatRuntimeSummary(record.ipv6) }}</td>
-                    <td>{{ formatRetry(record.ipv6) }}</td>
-                    <td>{{ formatError(record.ipv6.last_error) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+      <template v-if="selectedDetailJob">
+        <n-flex vertical :size="12">
+          <n-flex :size="8" wrap>
+            <n-tag size="small">{{
+              frontEndStore.MASK_INFO(selectedDetailJob.zone_name)
+            }}</n-tag>
+            <component :is="() => sourceTags(selectedDetailJob)" />
+            <n-tag
+              size="small"
+              :type="statusType(aggregateStatus(selectedDetailJob))"
+            >
+              {{ aggregateStatus(selectedDetailJob) }}
+            </n-tag>
           </n-flex>
-        </template>
-      </n-card>
-    </n-modal>
+
+          <div>
+            {{ formatRuntimeSummary(getJobRuntime(selectedDetailJob)) }}
+          </div>
+
+          <StandardDataTable
+            :columns="detailColumns"
+            :data="detailRecords(selectedDetailJob)"
+            :row-key="detailRowKey"
+            :scroll-x="1880"
+            :max-height="480"
+            size="small"
+          />
+        </n-flex>
+      </template>
+    </ConfigModal>
 
     <ConfigModal
       v-model:show="showModal"
       v-model:enabled="formEnabled"
+      :show-switch="false"
+      :dirty="isModified"
       :title="t('ddns.ddns_jobs')"
       width="var(--app-secondary-modal-width)"
     >
@@ -797,9 +854,12 @@ onMounted(async () => {
         label-placement="left"
         label-width="auto"
       >
-        <n-form-item :label="t('ddns.job_name')" path="name"
-          ><n-input v-model:value="form.name"
-        /></n-form-item>
+        <n-form-item :label="t('ddns.job_name')" path="name">
+          <n-input
+            v-model:value="form.name"
+            :placeholder="t('ddns.job_name_placeholder')"
+          />
+        </n-form-item>
         <n-form-item :label="t('ddns.zone_name')" path="zone_name">
           <n-input v-model:value="form.zone_name" placeholder="example.com" />
         </n-form-item>
@@ -875,31 +935,29 @@ onMounted(async () => {
             @update:value="updateProviderProfile"
           />
         </n-form-item>
-        <n-form-item :label="t('ddns.ttl')">
-          <n-flex vertical style="width: 100%" :size="8">
-            <n-flex :wrap="false" align="center" style="width: 100%" :size="8">
-              <n-switch v-model:value="useProfileDefaultTtl">
-                <template #checked>{{ t("ddns.follow_profile_ttl") }}</template>
-                <template #unchecked>{{ t("ddns.custom_ttl") }}</template>
-              </n-switch>
+        <n-form-item>
+          <template #label>
+            <span class="ddns-ttl-label">
+              <span>{{ t("ddns.follow_profile_ttl") }}</span>
+              <small v-if="useProfileDefaultTtl">
+                {{ t("ddns.current_ttl", { ttl: selectedProviderDefaultTtl }) }}
+              </small>
+            </span>
+          </template>
+          <n-flex align="center" :wrap="false" :size="8" style="width: 100%">
+            <n-switch v-model:value="useProfileDefaultTtl" size="medium" />
+            <template v-if="!useProfileDefaultTtl">
+              <n-text style="white-space: nowrap">
+                {{ t("ddns.custom_ttl") }}
+              </n-text>
               <n-input-number
-                :value="
-                  useProfileDefaultTtl ? selectedProviderDefaultTtl : form.ttl
-                "
-                :disabled="useProfileDefaultTtl"
+                :value="form.ttl"
                 :min="1"
                 :precision="0"
                 style="flex: 1"
                 @update:value="form.ttl = $event ?? undefined"
               />
-            </n-flex>
-            <div class="ddns-form-hint">
-              {{
-                useProfileDefaultTtl
-                  ? `${t("ddns.follow_profile_ttl_hint")} ${selectedProviderDefaultTtl}`
-                  : t("ddns.custom_ttl_hint")
-              }}
-            </div>
+            </template>
           </n-flex>
         </n-form-item>
       </n-form>
@@ -908,14 +966,19 @@ onMounted(async () => {
         {{ t("ddns.zone_records_hint") }}
       </n-alert>
 
-      <template #footer>
+      <template #footer="{ close }">
         <n-flex justify="space-between">
-          <n-button @click="showModal = false">{{
+          <n-button @click="close">{{
             t("common.cancel")
           }}</n-button>
-          <n-button type="primary" :loading="saving" @click="save">{{
-            t("common.save")
-          }}</n-button>
+          <n-button
+            type="primary"
+            :loading="saving"
+            :disabled="!isModified"
+            @click="save"
+          >
+            {{ t("common.save") }}
+          </n-button>
         </n-flex>
       </template>
     </ConfigModal>
@@ -927,29 +990,15 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.ddns-detail-table-wrapper {
-  overflow-x: auto;
+.ddns-ttl-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-xs);
 }
 
-.ddns-form-hint {
+.ddns-ttl-label small {
   color: var(--app-text-muted-color);
   font-size: var(--app-font-size-caption);
-}
-
-.ddns-detail-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.ddns-detail-table th,
-.ddns-detail-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--app-border-muted-color);
-  text-align: left;
-  vertical-align: top;
-}
-
-.ddns-detail-table th {
-  font-weight: 600;
+  font-weight: 400;
 }
 </style>

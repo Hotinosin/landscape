@@ -47,7 +47,34 @@ async function save_config() {
   show_model.value = false;
 }
 
-defineExpose({ save: save_config });
+function getSummary() {
+  const range = (value: { start: number; end: number }) =>
+    `${value.start}–${value.end}`;
+  return [
+    {
+      label: t("nat.service_edit.title"),
+      value: t(
+        nat_service_config.value.enable
+          ? "network.settings.enabled"
+          : "network.settings.disabled",
+      ),
+    },
+    {
+      label: t("nat.service_edit.tcp_port_range"),
+      value: range(nat_service_config.value.nat_config.tcp_range),
+    },
+    {
+      label: t("nat.service_edit.udp_port_range"),
+      value: range(nat_service_config.value.nat_config.udp_range),
+    },
+    {
+      label: t("nat.service_edit.icmp_id_range"),
+      value: range(nat_service_config.value.nat_config.icmp_in_range),
+    },
+  ];
+}
+
+defineExpose({ save: save_config, getSummary });
 </script>
 
 <template>
@@ -56,7 +83,7 @@ defineExpose({ save: save_config });
     v-model:enabled="nat_service_config.enable"
     :title="t('nat.service_edit.title')"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
   >
     <n-form :model="nat_service_config">
       <StandardSettingRow
@@ -82,7 +109,7 @@ defineExpose({ save: save_config });
 
     <template #footer>
       <n-flex justify="end">
-        <n-button round type="primary" @click="save_config">
+        <n-button type="primary" @click="save_config">
           {{ t("common.update") }}
         </n-button>
       </n-flex>

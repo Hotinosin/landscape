@@ -66,7 +66,7 @@ async function import_file() {
         <n-button>{{ t("config.select_init_file") }}</n-button>
       </n-upload>
       <n-space align="center">
-        <n-switch v-model:value="upload_only" />
+        <n-switch v-model:value="upload_only" size="medium" />
         <n-text>{{ t("config.upload_only") }}</n-text>
       </n-space>
       <n-alert v-if="!upload_only" type="warning" :show-icon="false">

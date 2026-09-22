@@ -1,21 +1,18 @@
 <script lang="ts" setup>
-import { computed, h, ref, onMounted, onUnmounted } from "vue";
+import { computed, h, ref, onMounted } from "vue";
 import type { DataTableColumns } from "naive-ui";
 import type { EnrolledDevice } from "@landscape-router/types/api/schemas";
 import { useI18n } from "vue-i18n";
-import EnrolledDeviceCard from "@/components/device/EnrolledDeviceCard.vue";
+import EnrolledDeviceListRow from "@/components/device/EnrolledDeviceListRow.vue";
 import EnrolledDeviceEditModal from "@/components/device/EnrolledDeviceEditModal.vue";
-import { Add, Renew } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
-import { useFetchIntervalStore } from "@/stores/fetch_interval";
-import { useFrontEndStore } from "@/stores/front_end_config";
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
 import { usePageRequest } from "@/composables/usePageRequest";
+import { validate_enrolled_device_ip } from "@/api/enrolled_device";
 
 const { t } = useI18n();
 const enrolledDeviceStore = useEnrolledDeviceStore();
-const fetchIntervalStore = useFetchIntervalStore();
-const frontEndStore = useFrontEndStore();
 
 const deviceRequest = usePageRequest(
   async () => {
@@ -27,57 +24,79 @@ const deviceRequest = usePageRequest(
 
 onMounted(async () => {
   await deviceRequest.execute();
-  fetchIntervalStore.enable_interval = false;
-});
-
-onUnmounted(() => {
-  fetchIntervalStore.enable_interval = true;
+  await validateDevices(deviceRequest.data.value);
 });
 
 const show_edit_modal = ref(false);
+const validity = ref<Record<string, boolean | null>>({});
+
+function deviceKey(device: EnrolledDevice) {
+  return String(device.id ?? device.mac);
+}
+
+async function validateDevices(devices: EnrolledDevice[]) {
+  const entries = await Promise.all(
+    devices.map(async (device): Promise<[string, boolean | null]> => {
+      if (!device.iface_name || !device.ipv4) return [deviceKey(device), true];
+      try {
+        return [
+          deviceKey(device),
+          await validate_enrolled_device_ip(device.iface_name, device.ipv4),
+        ];
+      } catch {
+        return [deviceKey(device), null];
+      }
+    }),
+  );
+  validity.value = Object.fromEntries(entries);
+}
 
 const columns = computed<DataTableColumns<EnrolledDevice>>(() => [
   {
     title: t("device.name"),
     key: "name",
-    width: "18%",
+    width: 120,
     render: (rule) =>
-      h(EnrolledDeviceCard, { rule, display_style: "list", cell: "name" }),
+      h(EnrolledDeviceListRow, {
+        rule,
+        cell: "name",
+        valid: validity.value[deviceKey(rule)],
+      }),
   },
   {
     title: t("device.mac"),
     key: "mac",
-    width: "18%",
-    render: (rule) =>
-      h(EnrolledDeviceCard, { rule, display_style: "list", cell: "mac" }),
+    width: 160,
+    render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "mac" }),
   },
   {
     title: t("device.iface"),
     key: "iface",
-    width: "13%",
-    render: (rule) =>
-      h(EnrolledDeviceCard, { rule, display_style: "list", cell: "iface" }),
+    width: 110,
+    render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "iface" }),
   },
   {
     title: t("device.ipv4"),
     key: "ipv4",
-    width: "15%",
-    render: (rule) =>
-      h(EnrolledDeviceCard, { rule, display_style: "list", cell: "ipv4" }),
+    width: 140,
+    render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "ipv4" }),
   },
   {
     title: t("device.ipv6"),
     key: "ipv6",
-    width: "17%",
-    render: (rule) =>
-      h(EnrolledDeviceCard, { rule, display_style: "list", cell: "ipv6" }),
+    width: 180,
+    render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "ipv6" }),
   },
   {
     title: t("device.tag"),
     key: "tags",
-    width: "11%",
-    render: (rule) =>
-      h(EnrolledDeviceCard, { rule, display_style: "list", cell: "tags" }),
+    width: 120,
+    render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "tags" }),
+  },
+  {
+    title: t("device.remark"),
+    key: "remark",
+    render: (rule) => h(EnrolledDeviceListRow, { rule, cell: "remark" }),
   },
   {
     title: t("device.actions"),
@@ -85,23 +104,29 @@ const columns = computed<DataTableColumns<EnrolledDevice>>(() => [
     width: 120,
     align: "left",
     render: (rule) =>
-      h(EnrolledDeviceCard, { rule, display_style: "list", cell: "actions" }),
+      h(EnrolledDeviceListRow, {
+        rule,
+        cell: "actions",
+        onRefresh: manualRefresh,
+      }),
   },
 ]);
 
 async function manualRefresh() {
   await deviceRequest.refresh();
+  await validateDevices(deviceRequest.data.value);
 }
 </script>
 
 <template>
   <n-flex vertical class="standard-content-page">
-    <n-flex align="center" class="standard-list-toolbar">
+    <n-flex
+      align="center"
+      justify="space-between"
+      class="standard-list-toolbar"
+    >
       <n-button type="primary" @click="show_edit_modal = true">
-        <template #icon>
-          <n-icon><Add /></n-icon>
-        </template>
-        {{ t("device.add_btn") }}
+        {{ t("common.create") }}
       </n-button>
       <n-button
         :loading="deviceRequest.refreshing.value"
@@ -115,34 +140,7 @@ async function manualRefresh() {
       </n-button>
     </n-flex>
 
-    <StandardPageState
-      v-if="frontEndStore.display_style === 'card'"
-      :state="deviceRequest.state.value"
-      :empty-text="t('device.empty_desc')"
-      @retry="deviceRequest.retry"
-    >
-      <template #empty-extra>
-        <n-button @click="show_edit_modal = true">
-          {{ t("device.add_now") }}
-        </n-button>
-      </template>
-      <n-grid
-        x-gap="12"
-        y-gap="12"
-        :cols="
-          frontEndStore.display_style === 'card' ? '1 600:2 1000:3 1400:4' : 1
-        "
-      >
-        <n-grid-item v-for="item in deviceRequest.data.value" :key="item.id">
-          <EnrolledDeviceCard
-            :rule="item"
-            :display_style="frontEndStore.display_style"
-          />
-        </n-grid-item>
-      </n-grid>
-    </StandardPageState>
     <StandardDataTable
-      v-else
       :columns="columns"
       :data="deviceRequest.data.value"
       :loading="deviceRequest.loading.value"

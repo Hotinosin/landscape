@@ -3,7 +3,7 @@ import {
   createWebHistory,
   type RouteRecordRaw,
 } from "vue-router";
-import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
+import { clearLandscapeSession, LANDSCAPE_TOKEN_KEY } from "@/lib/common";
 
 import service_status_route from "./service_status";
 import metric_route from "./metric";
@@ -15,9 +15,9 @@ const inner_zone: Array<RouteRecordRaw> = [
     component: () => import("@/views/Landscape.vue"),
   },
   {
-    path: "/dns/redirect",
-    name: "routes.dns-redirect",
-    component: () => import("@/views/dns/DnsRedirect.vue"),
+    path: "/network/allocations",
+    name: "routes.address-allocation",
+    component: () => import("@/views/NetworkAllocations.vue"),
   },
   {
     path: "/network/settings",
@@ -26,19 +26,31 @@ const inner_zone: Array<RouteRecordRaw> = [
   },
   ...service_status_route,
   {
-    path: "/dns/upstream",
-    name: "routes.dns-upstream",
+    path: "/dns/config",
+    name: "routes.dns-config",
     component: () => import("@/views/dns/DnsUpstream.vue"),
   },
   {
+    path: "/dns/upstream",
+    redirect: "/dns/config",
+  },
+  {
+    path: "/dns/redirect",
+    name: "routes.dns-redirect",
+    component: () => import("@/views/dns/DnsRedirect.vue"),
+  },
+  {
+    path: "/firewall-nat/port-mapping",
+    name: "routes.port-mapping",
+    component: () => import("@/views/PortMappings.vue"),
+  },
+  {
     path: "/firewall-nat/nat/v4",
-    name: "routes.nat-v4",
-    component: () => import("@/views/StaticNatMappingV4.vue"),
+    redirect: { path: "/firewall-nat/port-mapping", query: { tab: "ipv4" } },
   },
   {
     path: "/firewall-nat/nat/v6",
-    name: "routes.nat-v6",
-    component: () => import("@/views/StaticNatMappingV6.vue"),
+    redirect: { path: "/firewall-nat/port-mapping", query: { tab: "ipv6" } },
   },
   {
     path: "/flow",
@@ -82,8 +94,7 @@ const inner_zone: Array<RouteRecordRaw> = [
   },
   {
     path: "/domains/dns-providers",
-    name: "routes.dns-provider-profiles",
-    component: () => import("@/views/domain/DnsProviderProfiles.vue"),
+    redirect: "/domains/credentials",
   },
   {
     path: "/domains/ddns",
@@ -92,8 +103,12 @@ const inner_zone: Array<RouteRecordRaw> = [
   },
   {
     path: "/domains/cert-accounts",
-    name: "routes.cert-accounts",
-    component: () => import("@/views/cert/CertAccounts.vue"),
+    redirect: "/domains/credentials",
+  },
+  {
+    path: "/domains/credentials",
+    name: "routes.credentials",
+    component: () => import("@/views/domain/Credentials.vue"),
   },
   {
     path: "/domains/certs",
@@ -133,8 +148,23 @@ const routes: Array<RouteRecordRaw> = [
 
 const router = createRouter({ history: createWebHistory(), routes });
 
+export function isExpiredToken(token: string, now = Date.now()): boolean {
+  try {
+    const payload = token.split(".")[1];
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const { exp } = JSON.parse(
+      atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "=")),
+    );
+    return typeof exp !== "number" || exp * 1000 <= now;
+  } catch {
+    return true;
+  }
+}
+
 router.beforeEach((to) => {
-  if (to.path !== "/login" && !localStorage.getItem(LANDSCAPE_TOKEN_KEY)) {
+  const token = localStorage.getItem(LANDSCAPE_TOKEN_KEY);
+  if (to.path !== "/login" && (!token || isExpiredToken(token))) {
+    if (token) clearLandscapeSession();
     return { path: "/login", state: { redirect: to.fullPath } };
   }
 });

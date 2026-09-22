@@ -158,7 +158,12 @@ function createTheme(
     tokens,
     overrides: {
       common: {
+        fontFamily:
+          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+        fontFamilyMono:
+          'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
         fontWeightStrong: "600",
+        heightMedium: tokens.controlHeight,
         borderRadius: tokens.radiusControl,
         borderRadiusSmall: tokens.radiusControl,
         bodyColor: tokens.canvasColor,
@@ -211,9 +216,12 @@ function createTheme(
       },
       Card: {
         borderRadius: tokens.radiusSurface,
+        paddingSmall: "12px 16px 16px",
+        paddingMedium: "14px 20px 16px",
       },
       Tag: {
         heightSmall: "28px",
+        fontSizeSmall: "10px",
         borderRadius: tokens.radiusControl,
       },
       Switch: {
@@ -234,8 +242,15 @@ function createTheme(
       },
       Tabs: {
         tabBorderRadius: tokens.radiusControl,
+        tabPaddingSmallSegment: "3.5px 0",
+        colorSegment: tokens.surfaceMutedColor,
+        tabColorSegment: tokens.surfaceOverlayColor,
       },
       DataTable: {
+        thPaddingSmall: "var(--app-data-table-padding-small)",
+        tdPaddingSmall: "var(--app-data-table-padding-small)",
+        thPaddingMedium: "var(--app-data-table-padding-medium)",
+        tdPaddingMedium: "var(--app-data-table-padding-medium)",
         borderColor: tokens.borderSubtleColor,
         borderColorModal: tokens.borderSubtleColor,
         borderColorPopover: tokens.borderSubtleColor,

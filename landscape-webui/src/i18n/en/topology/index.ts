@@ -60,6 +60,8 @@ export default {
     ifindex: "Ifindex",
     carrier: "Carrier",
     boot: "Enable in boot",
+    boot_enabled: "Enabled",
+    boot_disabled: "Disabled",
     zone: "Zone",
     wifi_type: "Wi-Fi Type",
     peer_link: "Peer Link",

@@ -53,7 +53,7 @@ defineExpose({ save: save_config });
     v-model:enabled="service_config.enable"
     :title="t('network.mss_clamp.title')"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
   >
     <n-form v-if="service_config.enable" :model="service_config">
       <StandardSettingRow :label="t('network.mss_clamp.clamp_value')">
@@ -70,7 +70,7 @@ defineExpose({ save: save_config });
 
     <template #footer>
       <n-flex justify="end">
-        <n-button round type="primary" @click="save_config">
+        <n-button type="primary" @click="save_config">
           {{ t("common.update") }}
         </n-button>
       </n-flex>

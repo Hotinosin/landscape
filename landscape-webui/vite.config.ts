@@ -53,7 +53,28 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      chunkSizeWarningLimit: 5000,
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: (id: string) => {
+            if (id.includes("node_modules")) {
+              if (
+                id.includes("echarts") ||
+                id.includes("zrender") ||
+                id.includes("vue-echarts")
+              ) {
+                return "vendor-echarts";
+              }
+              if (id.includes("@xterm")) {
+                return "vendor-xterm";
+              }
+              if (id.includes("@vue-flow")) {
+                return "vendor-vueflow";
+              }
+            }
+          },
+        },
+      },
     },
     server: {
       host: dev_host,
@@ -66,6 +87,23 @@ export default defineConfig(({ mode }) => {
           configure: (proxy: any, options: any) => {
             // proxy will be an instance of 'http-proxy'
           },
+        },
+        "/ws": {
+          target: `ws://${address}:${port}`,
+          changeOrigin: true,
+          ws: true,
+          rewrite: (path: any) => path.replace(/^\/ws/, ""),
+        },
+      },
+    },
+    preview: {
+      host: dev_host,
+      proxy: {
+        "/api": {
+          target: `https://${address}:${port}`,
+          changeOrigin: true,
+          secure: false,
+          ws: true,
         },
         "/ws": {
           target: `ws://${address}:${port}`,

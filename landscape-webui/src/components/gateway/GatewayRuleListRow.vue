@@ -7,7 +7,8 @@ import { useFrontEndStore } from "@/stores/front_end_config";
 
 const props = defineProps<{
   rule: HttpUpstreamRuleConfig;
-  cell: "name" | "enable" | "type" | "domains" | "upstream" | "paths" | "actions";
+  cell:
+    "name" | "enable" | "type" | "domains" | "upstream" | "paths" | "actions";
 }>();
 const emit = defineEmits(["refresh"]);
 const { t } = useI18n();
@@ -56,10 +57,14 @@ async function updateEnabled(enable: boolean) {
 
 <template>
   <template v-if="cell === 'name'">
-    <StatusTitle :enable="rule.enable" :remark="front.MASK_INFO(rule.name)" />
+    <StatusTitle :enable="rule.enable" :name="front.MASK_INFO(rule.name)" />
   </template>
   <template v-else-if="cell === 'enable'">
-    <StandardEnableSwitch :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" />
+    <StandardEnableSwitch
+      :value="rule.enable"
+      :loading="enableLoading"
+      @update:value="updateEnabled"
+    />
   </template>
   <template v-else-if="cell === 'type'">
     <n-tag :bordered="false">{{ matchType }}</n-tag>
@@ -89,7 +94,6 @@ async function updateEnabled(enable: boolean) {
     <GatewayRuleEditModal
       v-model:show="showEdit"
       :rule_id="rule.id"
-      :show-switch="false"
       @refresh="emit('refresh')"
     />
   </template>

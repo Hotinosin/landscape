@@ -13,7 +13,7 @@ import RealtimeNetwork from "./RealtimeNetwork.vue";
 describe("RealtimeNetwork", () => {
   beforeEach(() => setActivePinia(createPinia()));
 
-  it("starts empty, samples only a new successful report, and keeps summary fields", async () => {
+  it("renders samples already collected by the metric store", async () => {
     const ifaceStore = useIfaceNodeStore();
     const metricStore = useMetricStore();
     ifaceStore.net_devs = [
@@ -42,6 +42,8 @@ describe("RealtimeNetwork", () => {
     ];
     metricStore.resourceStates.iface.lastSuccessAt = 1_000;
     metricStore.resourceStates.iface.hasSucceeded = true;
+    metricStore.networkTrend.upload = [[1_000, 0]];
+    metricStore.networkTrend.download = [[1_000, 20]];
 
     const wrapper = mount(RealtimeNetwork, {
       global: {
@@ -49,24 +51,15 @@ describe("RealtimeNetwork", () => {
         stubs: { MetricLineChart: true },
       },
     });
-    expect(wrapper.text()).toContain("正在采集趋势");
     expect(wrapper.text()).toContain("活跃连接");
     expect(wrapper.text()).toContain("数据包速率");
-
-    metricStore.resourceStates.iface.lastSuccessAt = 2_000;
-    await wrapper.vm.$nextTick();
     const charts = wrapper.findAllComponents(MetricLineChart);
     expect(charts).toHaveLength(1);
-    expect(charts[0].props("series")[0].data).toEqual([[2_000, 0]]);
+    expect(charts[0].props("series")[0].data).toEqual([[1_000, 0]]);
 
     metricStore.resourceStates.iface.error = new Error("offline");
     await wrapper.vm.$nextTick();
-    expect(charts[0].props("series")[0].data).toEqual([[2_000, 0]]);
-
-    metricStore.resourceStates.iface.error = undefined;
-    metricStore.resourceStates.iface.lastSuccessAt = 3_000;
-    await wrapper.vm.$nextTick();
-    expect(charts[0].props("series")[0].data).toEqual([[2_000, 0]]);
+    expect(charts[0].props("series")[0].data).toEqual([[1_000, 0]]);
 
     wrapper.unmount();
     const remounted = mount(RealtimeNetwork, {
@@ -77,6 +70,6 @@ describe("RealtimeNetwork", () => {
     });
     expect(
       remounted.findComponent(MetricLineChart).props("series")[0].data,
-    ).toEqual([[2_000, 0]]);
+    ).toEqual([[1_000, 0]]);
   });
 });

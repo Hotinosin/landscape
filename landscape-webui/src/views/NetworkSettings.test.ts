@@ -152,7 +152,7 @@ describe("NetworkSettings", () => {
     const vm = await mountPage();
     expect(
       vm.projectGroups.map((group: { type: string }) => group.type),
-    ).toEqual(["wan", "lan", "other"]);
+    ).toEqual(["wan", "lan"]);
     expect(
       vm.projectGroups
         .find((group: { type: string }) => group.type === "lan")

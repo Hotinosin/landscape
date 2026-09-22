@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import DnsRulePanel from "@/components/dns/DnsRulePanel.vue";
 import { useI18n } from "vue-i18n";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 const { t } = useI18n();
 interface Props {
   flow_id?: number;
@@ -21,18 +22,7 @@ const title = computed(() => {
 });
 </script>
 <template>
-  <n-drawer
-    v-model:show="show"
-    width="min(960px, 92vw)"
-    placement="right"
-  >
-    <n-drawer-content
-      :title="title"
-      closable
-      :native-scrollbar="false"
-      body-content-style="height: 100%; padding: 14px 16px"
-    >
-      <DnsRulePanel :flow_id="flow_id" />
-    </n-drawer-content>
-  </n-drawer>
+  <ConfigModal v-model:show="show" :show-switch="false" :title="title">
+    <DnsRulePanel :flow_id="flow_id" />
+  </ConfigModal>
 </template>

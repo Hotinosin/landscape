@@ -14,11 +14,8 @@ import {
   get_flow_dst_ip_rules,
   push_many_dst_ip_rule,
 } from "@/api/dst_ip_rule";
-import {
-  copy_context_to_clipboard,
-  read_context_from_clipboard,
-} from "@/lib/common";
-import { Add, Copy, Paste } from "@vicons/carbon";
+import { copy_context_to_clipboard } from "@/lib/common";
+import { Copy, Paste } from "@vicons/carbon";
 
 const props = withDefaults(
   defineProps<{ flow_id?: number; flows?: FlowConfig[] }>(),
@@ -30,15 +27,18 @@ const message = useMessage();
 const rules = ref<WanIpRuleConfig[]>([]);
 const loading = ref(false);
 const showCreateModal = ref(false);
+type WanRuleCell = "status" | "sources" | "action" | "enable" | "actions";
 
 const columns = computed<DataTableColumns<WanIpRuleConfig>>(() =>
-  [
-    [`${t("common.status")} / ${t("common.priority")}`, "status", "22%"],
-    [t("flow.wan_rule_card.match_rules"), "sources", "30%"],
-    [t("flow.wan_rule_edit.egress_select"), "action", "25%"],
-    [t("common.enable"), "enable", "8%"],
-    [t("common.actions"), "actions", "15%"],
-  ].map(([title, cell, width]) => ({
+  (
+    [
+      [t("common.remark"), "status", 120],
+      [t("flow.wan_rule_card.match_rules"), "sources", undefined],
+      [t("flow.wan_rule_edit.egress_select"), "action", undefined],
+      [t("common.enable"), "enable", 80],
+      [t("common.actions"), "actions", 110],
+    ] satisfies Array<[string, WanRuleCell, number | undefined]>
+  ).map(([title, cell, width]) => ({
     title,
     key: cell,
     width,
@@ -46,7 +46,7 @@ const columns = computed<DataTableColumns<WanIpRuleConfig>>(() =>
       h(WanRuleListRow, {
         rule,
         flows: props.flows,
-        cell: cell as any,
+        cell,
         onRefresh: handleRulesChanged,
       }),
   })),
@@ -73,9 +73,8 @@ async function exportConfig() {
   );
 }
 
-async function importRules() {
+async function importRules(imported: WanIpRuleConfig[]) {
   try {
-    const imported = JSON.parse(await read_context_from_clipboard());
     for (const rule of imported) rule.flow_id = props.flow_id;
     await push_many_dst_ip_rule(imported);
     message.success("Import Success");
@@ -96,24 +95,27 @@ watch(() => props.flow_id, readRules);
 <template>
   <n-spin :show="loading">
     <n-flex vertical class="rule-panel">
-      <n-flex>
-        <n-button type="primary" @click="showCreateModal = true">
-          <template #icon><n-icon><Add /></n-icon></template>
+      <n-flex class="standard-list-align">
+        <n-button size="small" type="primary" @click="showCreateModal = true">
           {{ t("common.add_new") }}
         </n-button>
-        <n-button @click="exportConfig">
-          <template #icon><n-icon><Copy /></n-icon></template>
+        <n-button size="small" @click="exportConfig">
+          <template #icon
+            ><n-icon><Copy /></n-icon
+          ></template>
           {{ t("common.copy") }}
         </n-button>
-        <ConfirmModal @positive-click="importRules">
+        <ClipboardImportModal :on-confirm="importRules">
           <template #trigger>
-            <n-button>
-              <template #icon><n-icon><Paste /></n-icon></template>
+            <n-button size="small">
+              <template #icon
+                ><n-icon><Paste /></n-icon
+              ></template>
               {{ t("common.paste") }}
             </n-button>
           </template>
           {{ t("flow.wan_rule_drawer.confirm_import") }}
-        </ConfirmModal>
+        </ClipboardImportModal>
       </n-flex>
       <n-scrollbar class="rule-list">
         <StandardDataTable
@@ -136,11 +138,8 @@ watch(() => props.flow_id, readRules);
 </template>
 
 <style scoped>
-.rule-panel {
-  height: 520px;
-}
 .rule-list {
-  flex: 1;
-  min-height: 0;
+  min-height: 160px;
+  max-height: min(440px, calc(100vh - 300px));
 }
 </style>

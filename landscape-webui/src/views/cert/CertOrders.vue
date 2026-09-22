@@ -10,19 +10,14 @@ import {
 import type { CertConfig } from "@landscape-router/types/api/schemas";
 import { h, ref, onMounted, onUnmounted, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  NButton,
-  NTag,
-  NFlex,
-  type DataTableColumns,
-} from "naive-ui";
+import { NButton, NTag, NFlex, type DataTableColumns } from "naive-ui";
 import CertOrderEditModal from "@/components/cert/order/CertOrderEditModal.vue";
 import ConfirmModal from "@/components/common/ConfirmModal.vue";
 import CertInfoModal from "@/components/cert/order/CertInfoModal.vue";
 import EditButton from "@/components/common/EditButton.vue";
 import DeleteButton from "@/components/common/DeleteButton.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
-import { Add } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import { usePageRequest } from "@/composables/usePageRequest";
 
 const certRequest = usePageRequest(get_certs, {
@@ -43,6 +38,10 @@ let refresh_queued = false;
 const has_processing = computed(() =>
   items.value.some((item) => item.status === "processing"),
 );
+
+function rowKey(row: CertConfig) {
+  return row.id ?? row.name;
+}
 
 async function refresh() {
   if (refresh_promise) {
@@ -67,7 +66,7 @@ async function refresh() {
 
 function start_polling() {
   if (poll_timer) return;
-  poll_timer = setInterval(refresh, 5000);
+  poll_timer = setInterval(() => !document.hidden && void refresh(), 5000);
 }
 
 function stop_polling() {
@@ -208,7 +207,7 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
   {
     title: t("cert.cert_name"),
     key: "name",
-    minWidth: 120,
+    width: 120,
     ellipsis: { tooltip: true },
     render(row) {
       return frontEndStore.MASK_INFO(row.name);
@@ -422,12 +421,15 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
 
 <template>
   <n-flex vertical class="standard-content-page">
-    <n-flex class="standard-list-toolbar">
+    <n-flex justify="space-between" class="standard-list-toolbar">
       <n-button type="primary" @click="open_edit(null)">
-        <template #icon
-          ><n-icon><Add /></n-icon
-        ></template>
         {{ t("common.create") }}
+      </n-button>
+      <n-button :loading="certRequest.loading.value" secondary @click="refresh">
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
       </n-button>
     </n-flex>
 
@@ -438,6 +440,7 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
       :error="certRequest.error.value"
       size="small"
       :scroll-x="960"
+      :row-key="rowKey"
       @retry="refresh"
     />
 

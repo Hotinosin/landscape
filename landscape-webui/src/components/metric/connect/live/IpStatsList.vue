@@ -32,6 +32,10 @@ type SortKey = "ip" | keyof FlowIpRealtimeStat["stats"];
 const sortKey = ref<SortKey>("egress_bps");
 const sortOrder = ref<"asc" | "desc">("desc");
 
+function rowKey(row: FlowIpRealtimeStat) {
+  return row.ip;
+}
+
 const columns = computed(() => [
   {
     title: props.ipLabel,
@@ -238,7 +242,12 @@ const processedData = computed(() => {
 
 <template>
   <n-flex vertical :wrap="false" class="ip-stats-list">
-    <n-flex align="center" justify="space-between" style="margin-bottom: 12px">
+    <n-flex
+      class="standard-list-title--small"
+      align="center"
+      justify="space-between"
+      style="margin-bottom: 12px"
+    >
       <n-h3 v-if="title" style="margin: 0">{{ title }}</n-h3>
       <span v-else />
       <n-text depth="3">
@@ -254,6 +263,8 @@ const processedData = computed(() => {
         :columns="columns"
         :data="processedData"
         :pagination="false"
+        :row-key="rowKey"
+        :scroll-x="900"
         @update:sorter="handleSort"
       />
     </div>

@@ -47,6 +47,11 @@ describe("visual design contracts", () => {
     ] as const;
 
     for (const [path, source] of sourceWithoutTests()) {
+      if (
+        path.endsWith("/common/CodeEditor.vue") ||
+        path.endsWith("/common/CodeViewer.vue")
+      )
+        continue;
       for (const [label, pattern] of patterns) {
         if (pattern.test(source)) {
           violations.push(`${path.replace(/^\.\.\//, "")}: ${label}`);

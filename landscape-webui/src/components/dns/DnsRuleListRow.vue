@@ -13,14 +13,14 @@ import { useI18n } from "vue-i18n";
 const props = defineProps<{
   rule: DNSRuleConfig;
   flows: FlowConfig[];
-  cell: "status" | "enable" | "action" | "upstream" | "sources" | "actions";
+  cell: "name" | "enable" | "action" | "upstream" | "sources" | "actions";
 }>();
 const emit = defineEmits(["refresh"]);
 const { t } = useI18n();
 const showEdit = ref(false);
 const enableLoading = ref(false);
 
-const title = computed(() => props.rule.name || t("common.no_remark"));
+const title = computed(() => props.rule.name || t("common.unnamed"));
 
 async function remove() {
   if (!props.rule.id) return;
@@ -39,8 +39,18 @@ async function updateEnabled(enable: boolean) {
 </script>
 
 <template>
-  <StatusTitle v-if="cell === 'status'" :enable="rule.enable" :remark="`${rule.index}: ${title}`" />
-  <StandardEnableSwitch v-else-if="cell === 'enable'" :value="rule.enable" :loading="enableLoading" @update:value="updateEnabled" />
+  <StatusTitle
+    v-if="cell === 'name'"
+    :enable="rule.enable"
+    :name="title"
+    :prefix="rule.index"
+  />
+  <StandardEnableSwitch
+    v-else-if="cell === 'enable'"
+    :value="rule.enable"
+    :loading="enableLoading"
+    @update:value="updateEnabled"
+  />
   <FlowRuleEgress
     v-else-if="cell === 'action'"
     :mark="rule.mark"
@@ -71,7 +81,6 @@ async function updateEnabled(enable: boolean) {
     v-model:show="showEdit"
     :flow_id="rule.flow_id"
     :rule_id="rule.id"
-    :show-switch="false"
     @refresh="emit('refresh')"
   />
 </template>

@@ -35,13 +35,13 @@ const iface_wan_options = computed(() =>
   iface_wans.value.map((name) => ({ label: name, value: name })),
 );
 
-const docker_options = computed(() =>
-  docker_containers.value.map((e) => {
+const docker_options = computed(() => [
+  ...docker_containers.value.map((e) => {
     let name = e.Names[0] ?? "";
     if (name.startsWith("/")) name = name.slice(1);
     return { label: name, value: name };
   }),
-);
+]);
 
 enum FlowTargetEnum {
   Interface = "interface",

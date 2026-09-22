@@ -2,22 +2,53 @@ import { useThemeVars } from "naive-ui";
 
 export const LAND_REDIRECT_ID_KEY = "ld_flow_edge";
 
+export interface DockerPort {
+  IP?: string;
+  PrivatePort: number;
+  PublicPort?: number;
+  Type?: string;
+}
+
+export interface DockerNetworkEndpoint {
+  IPAddress?: string;
+  IPPrefixLen?: number;
+  Gateway?: string;
+  GlobalIPv6Address?: string;
+  GlobalIPv6PrefixLen?: number;
+  MacAddress?: string;
+}
+
+export interface DockerNetworkSettings {
+  Networks?: Record<string, DockerNetworkEndpoint>;
+}
+
 export class DockerContainerSummary {
+  Id: string | undefined;
   Created: number | undefined;
   Names: string[] | undefined;
   State: DockerContainerStatus | undefined;
   Image: string | undefined;
+  Ports: DockerPort[] | undefined;
+  NetworkSettings: DockerNetworkSettings | undefined;
 
   constructor(obj?: {
+    Id?: string;
     Created?: number;
     Names?: string[];
     State?: DockerContainerStatus;
     Image?: string;
+    Ports?: DockerPort[];
+    NetworkSettings?: DockerNetworkSettings;
   }) {
-    this.Created = obj?.Created;
-    this.Names = obj?.Names;
-    this.State = obj?.State;
-    this.Image = obj?.Image;
+    const raw = obj as any;
+    this.Id = obj?.Id ?? raw?.id;
+    this.Created = obj?.Created ?? raw?.created;
+    this.Names = obj?.Names ?? raw?.names;
+    this.State = obj?.State ?? raw?.state;
+    this.Image = obj?.Image ?? raw?.image;
+    this.Ports = obj?.Ports ?? raw?.ports;
+    this.NetworkSettings =
+      obj?.NetworkSettings ?? raw?.network_settings ?? raw?.networkSettings;
   }
 
   get_color() {
@@ -25,6 +56,63 @@ export class DockerContainerSummary {
     return this.State === DockerContainerStatus.running
       ? themeVars.value.successColor
       : "";
+  }
+
+  getIpAddresses(): string[] {
+    const networks =
+      this.NetworkSettings?.Networks ??
+      (this.NetworkSettings as any)?.networks;
+    if (!networks) return [];
+    const seen = new Set<string>();
+    const ips: string[] = [];
+    for (const net of Object.values(networks) as any[]) {
+      const ipv4 = net?.IPAddress ?? net?.ip_address ?? net?.ipAddress;
+      if (ipv4 && typeof ipv4 === "string" && !seen.has(ipv4)) {
+        seen.add(ipv4);
+        ips.push(ipv4);
+      }
+      const ipv6 =
+        net?.GlobalIPv6Address ??
+        net?.global_ipv6_address ??
+        net?.globalIpv6Address;
+      if (ipv6 && typeof ipv6 === "string" && !seen.has(ipv6)) {
+        seen.add(ipv6);
+        ips.push(ipv6);
+      }
+    }
+    return ips;
+  }
+
+  formatPorts(): string[] {
+    if (!this.Ports || this.Ports.length === 0) return [];
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const raw of this.Ports as any[]) {
+      const typ = raw?.Type ?? raw?.type ?? "tcp";
+      const proto = typ ? `/${typ}` : "";
+      const priv =
+        raw?.PrivatePort ?? raw?.private_port ?? raw?.privatePort;
+      const pub =
+        raw?.PublicPort ?? raw?.public_port ?? raw?.publicPort;
+      const ip = raw?.IP ?? raw?.ip;
+      let formatted: string;
+      if (pub != null) {
+        if (ip && ip !== "0.0.0.0" && ip !== "::") {
+          formatted = `${ip}:${pub}->${priv}${proto}`;
+        } else {
+          formatted = `${pub}->${priv}${proto}`;
+        }
+      } else if (priv != null) {
+        formatted = `${priv}${proto}`;
+      } else {
+        continue;
+      }
+      if (!seen.has(formatted)) {
+        seen.add(formatted);
+        result.push(formatted);
+      }
+    }
+    return result;
   }
 }
 

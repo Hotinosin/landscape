@@ -5,36 +5,34 @@ import { computed, h, ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import type { DataTableColumns } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import { useFrontEndStore } from "@/stores/front_end_config";
 import DnsUpstreamListRow from "@/components/dns/upstream/DnsUpstreamListRow.vue";
-import { Add } from "@vicons/carbon";
+import { Renew } from "@vicons/carbon";
 import { usePageRequest } from "@/composables/usePageRequest";
 
 const {
   data: redirect_rules,
   error,
   loading,
-  state,
   refresh: refresh_rules,
 } = usePageRequest(get_dns_upstreams, {
   initialData: [] as DnsUpstreamConfig[],
 });
 const { t } = useI18n();
-const frontEndStore = useFrontEndStore();
 const route = useRoute();
 const router = useRouter();
 
 const columns = computed<DataTableColumns<DnsUpstreamConfig>>(() =>
   [
-    ["common.remark", "remark"],
-    ["dns.upstream_card.request_mode", "mode"],
-    ["dns.upstream_card.domain_addr", "domain"],
-    ["dns.upstream_card.request_port", "port"],
-    ["dns.upstream_card.upstream_ip", "ip"],
-    ["common.actions", "actions"],
+    [t("common.remark"), "remark"],
+    [t("dns.upstream_card.request_mode"), "mode"],
+    [t("dns.upstream_card.domain_addr"), "domain"],
+    [t("dns.upstream_card.request_port"), "port"],
+    [t("dns.upstream_card.upstream_ip"), "ip"],
+    [t("common.actions"), "actions"],
   ].map(([title, cell]) => ({
-    title: t(title),
+    title,
     key: cell,
+    width: cell === "remark" ? 120 : undefined,
     render: (rule) =>
       h(DnsUpstreamListRow, {
         rule,
@@ -79,32 +77,26 @@ function modalVisibleChanged(show: boolean) {
 </script>
 <template>
   <n-flex vertical class="standard-content-page">
-    <n-flex class="standard-list-toolbar">
+    <n-flex justify="space-between" class="standard-list-toolbar">
       <n-button type="primary" @click="createUpstream">
-        <template #icon
-          ><n-icon><Add /></n-icon
-        ></template>
         {{ t("common.create") }}
+      </n-button>
+      <n-button :loading="loading" secondary @click="refresh_rules">
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
       </n-button>
     </n-flex>
     <StandardDataTable
-      v-if="frontEndStore.display_style === 'list'"
       :columns="columns"
       :data="redirect_rules"
       :loading="loading"
       :error="error"
       :row-key="rowKey"
+      :scroll-x="900"
       @retry="refresh_rules"
     />
-    <StandardPageState v-else :state="state" @retry="refresh_rules">
-      <n-grid x-gap="12" y-gap="10" cols="1 600:2 1200:3 1600:3">
-        <n-grid-item v-for="rule in redirect_rules" :key="rule.id">
-          <DnsUpstreamCard @refresh="refresh_rules()" :rule="rule">
-          </DnsUpstreamCard>
-        </n-grid-item>
-      </n-grid>
-    </StandardPageState>
-
     <UpstreamEditModal
       :rule_id="edit_rule_id"
       @refresh="refresh_rules"

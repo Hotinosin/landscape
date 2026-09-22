@@ -18,12 +18,13 @@ const isHistory = computed(() => viewMode.value.startsWith("history"));
 </script>
 
 <template>
-  <n-flex align="center" :wrap="false">
+  <n-flex align="center" :wrap="false" class="connect-view-switcher">
     <n-tabs
       v-model:value="viewMode"
       type="segment"
       size="small"
-      style="min-width: 700px"
+      class="connect-view-tabs"
+      :style="{ width: isHistory ? '480px' : '640px' }"
     >
       <template v-if="isHistory">
         <n-tab name="history">{{ $t("metric.connect.view.connection") }}</n-tab>
@@ -53,6 +54,15 @@ const isHistory = computed(() => viewMode.value.startsWith("history"));
 </template>
 
 <style scoped>
+.connect-view-switcher {
+  flex: 0 0 auto;
+}
+
+.connect-view-tabs {
+  flex: 0 0 auto;
+  max-width: 640px;
+}
+
 .pulse-dot {
   width: 8px;
   height: 8px;

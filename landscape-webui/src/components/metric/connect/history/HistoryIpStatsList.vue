@@ -33,6 +33,10 @@ const emit = defineEmits(["update:sort", "search:ip"]);
 
 const themeVars = useThemeVars();
 
+function rowKey(row: IpHistoryStat) {
+  return row.ip;
+}
+
 // 使用 computed 确保当 props.sortKey 或 props.sortOrder 改变时，列定义会更新
 const columns = computed(() => [
   {
@@ -236,7 +240,12 @@ const handleSort = (sorter: DataTableSortState | null) => {
 
 <template>
   <n-flex vertical :wrap="false" class="history-ip-stats-list">
-    <n-flex align="center" justify="space-between" style="margin-bottom: 12px">
+    <n-flex
+      class="standard-list-title--small"
+      align="center"
+      justify="space-between"
+      style="margin-bottom: 12px"
+    >
       <n-h3 v-if="title" style="margin: 0">{{ title }}</n-h3>
       <span v-else />
       <n-text depth="3">
@@ -252,6 +261,8 @@ const handleSort = (sorter: DataTableSortState | null) => {
         :columns="columns"
         :data="stats"
         :pagination="false"
+        :row-key="rowKey"
+        :scroll-x="900"
         @update:sorter="handleSort"
       />
     </div>

@@ -57,7 +57,18 @@ async function save_config() {
   }
 }
 
-defineExpose({ save: save_config });
+const getSummary = () => [
+  {
+    label: t("network.route_wan.title"),
+    value: t(
+      service_enabled.value
+        ? "network.settings.enabled"
+        : "network.settings.disabled",
+    ),
+  },
+];
+
+defineExpose({ save: save_config, getSummary });
 </script>
 
 <template>
@@ -65,13 +76,14 @@ defineExpose({ save: save_config });
     v-model:show="show_model"
     v-model:enabled="service_enabled"
     :title="t('network.route_wan.title')"
+    :title-tip="t('network.settings.allow_lan_access_tip')"
     :switch-disabled="service_config === null"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
   >
     <template #footer>
       <n-flex justify="end">
-        <n-button round type="primary" @click="save_config">
+        <n-button type="primary" @click="save_config">
           {{ t("common.update") }}
         </n-button>
       </n-flex>

@@ -46,6 +46,9 @@ const binding = computed(() => {
     ? found
     : undefined;
 });
+const isEnrolled = computed(
+  () => !!enrolledDeviceStore.GET_BINDING(props.row.mac),
+);
 const hasMismatch = computed(
   () => !!binding.value?.ipv4 && binding.value.ipv4 !== props.row.ip,
 );
@@ -111,6 +114,7 @@ const hasMismatch = computed(
 
   <EditButton
     v-else-if="cell === 'actions'"
+    :label="isEnrolled ? undefined : t('dhcp_v4.assigned.add_device')"
     :disabled="row.kind === 'observed' && !row.macs.size"
     @click="
       emit(

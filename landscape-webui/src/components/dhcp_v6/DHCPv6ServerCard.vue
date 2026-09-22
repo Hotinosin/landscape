@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import type { LanIPv6ServiceConfigV2 } from "@landscape-router/types/api/schemas";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
+import StandardEnableSwitch from "@/components/common/StandardEnableSwitch.vue";
 
 const { t } = useI18n({ useScope: "global" });
 
@@ -78,6 +80,8 @@ function update_ia_na_field(field: string, value: number | null) {
 
   if (typeof value === "number") {
     (dhcpv6.ia_na as any)[field] = value;
+  } else if (field === "pool_end") {
+    dhcpv6.ia_na.pool_end = undefined;
   }
 }
 
@@ -104,127 +108,162 @@ function update_ia_pd_field(field: string, value: number | null) {
 </script>
 
 <template>
-  <n-card style="flex: 3; min-width: 0" size="small" :bordered="false">
-    <template #header>
-      <div
-        style="
-          display: flex;
-          align-items: center;
-          gap: var(--app-space-section);
-          flex: 1;
+  <section>
+    <n-divider title-placement="left" class="network-settings__divider">
+      {{ t("lan_ipv6.dhcpv6_server") }}
+    </n-divider>
+    <StandardSettingRow
+      :label="t('lan_ipv6.dhcpv6_server')"
+      control-width="auto"
+    >
+      <StandardEnableSwitch
+        :value="!!config?.config.dhcpv6?.enable"
+        @update:value="
+          (val: boolean) => {
+            initialize_dhcpv6_if_needed();
+            if (config?.config?.dhcpv6) config.config.dhcpv6.enable = val;
+          }
         "
-      >
-        <span>{{ t("lan_ipv6.dhcpv6_server") }}</span>
-        <n-switch
-          style="margin-left: auto"
-          :value="!!config?.config.dhcpv6?.enable"
+      />
+    </StandardSettingRow>
+
+    <n-divider title-placement="left" class="network-settings__divider">
+      {{ t("lan_ipv6.ia_na") }}
+    </n-divider>
+    <StandardSettingRow
+      :label="t('lan_ipv6.enable_ia_na')"
+      control-width="auto"
+    >
+      <n-switch
+        :value="!!config?.config.dhcpv6?.ia_na"
+        @update:value="initialize_ia_na"
+        size="medium"
+      />
+    </StandardSettingRow>
+    <template v-if="config?.config.dhcpv6?.ia_na">
+      <StandardSettingRow>
+        <template #label>
+          <Notice>
+            {{ t("lan_ipv6.ia_na_max_prefix_len") }}
+            <template #msg>{{
+              t("lan_ipv6.ia_na_max_prefix_len_desc")
+            }}</template>
+          </Notice>
+        </template>
+        <n-input-number
+          :value="config.config.dhcpv6.ia_na.max_prefix_len ?? 64"
           @update:value="
-            (val: boolean) => {
-              initialize_dhcpv6_if_needed();
-              if (config?.config?.dhcpv6) {
-                config.config.dhcpv6.enable = val;
-              }
-            }
+            (val: number | null) => update_ia_na_field('max_prefix_len', val)
           "
-        >
-          <template #checked> {{ t("lan_ipv6.enabled") }} </template>
-          <template #unchecked> {{ t("lan_ipv6.disabled") }} </template>
-        </n-switch>
-      </div>
+          :min="1"
+          :max="127"
+        />
+      </StandardSettingRow>
+      <StandardSettingRow>
+        <template #label>
+          <Notice>
+            {{ t("lan_ipv6.ia_na_pool_start") }}
+            <template #msg>{{ t("lan_ipv6.ia_na_pool_start_desc") }}</template>
+          </Notice>
+        </template>
+        <n-input-number
+          :value="config.config.dhcpv6.ia_na.pool_start ?? 256"
+          @update:value="
+            (val: number | null) => update_ia_na_field('pool_start', val)
+          "
+          :min="1"
+        />
+      </StandardSettingRow>
+      <StandardSettingRow :label="t('dhcp_v6.pool_end')">
+        <n-input-number
+          :value="config.config.dhcpv6.ia_na.pool_end"
+          @update:value="
+            (val: number | null) => update_ia_na_field('pool_end', val)
+          "
+          :min="config.config.dhcpv6.ia_na.pool_start + 1"
+          :placeholder="t('dhcp_v6.pool_end_placeholder')"
+          clearable
+        />
+      </StandardSettingRow>
+      <StandardSettingRow :label="t('dhcp_v6.preferred_lifetime')">
+        <n-input-number
+          :value="config.config.dhcpv6.ia_na.preferred_lifetime"
+          @update:value="
+            (val: number | null) =>
+              update_ia_na_field('preferred_lifetime', val)
+          "
+          :min="1"
+        />
+      </StandardSettingRow>
+      <StandardSettingRow :label="t('dhcp_v6.valid_lifetime')">
+        <n-input-number
+          :value="config.config.dhcpv6.ia_na.valid_lifetime"
+          @update:value="
+            (val: number | null) => update_ia_na_field('valid_lifetime', val)
+          "
+          :min="1"
+        />
+      </StandardSettingRow>
     </template>
 
-    <n-flex :gap="12" align="start">
-      <!-- Left: IA_NA -->
-      <div style="flex: 1; min-width: 0">
-        <n-divider title-placement="left" style="margin: 0 0 8px">
-          {{ t("lan_ipv6.ia_na") }}
-        </n-divider>
-        <n-grid :x-gap="12" :y-gap="8" cols="2" item-responsive>
-          <n-form-item-gi span="2" :label="t('lan_ipv6.enable_ia_na')">
-            <n-switch
-              :value="!!config?.config.dhcpv6?.ia_na"
-              @update:value="initialize_ia_na"
-            />
-          </n-form-item-gi>
-          <template v-if="config?.config.dhcpv6?.ia_na">
-            <n-form-item-gi span="2">
-              <template #label>
-                <Notice>
-                  {{ t("lan_ipv6.ia_na_max_prefix_len") }}
-                  <template #msg>
-                    {{ t("lan_ipv6.ia_na_max_prefix_len_desc") }}
-                  </template>
-                </Notice>
-              </template>
-              <n-input-number
-                style="flex: 1"
-                :value="config?.config.dhcpv6?.ia_na?.max_prefix_len ?? 64"
-                @update:value="
-                  (val: number | null) =>
-                    update_ia_na_field('max_prefix_len', val)
-                "
-                :min="1"
-                :max="127"
-              />
-            </n-form-item-gi>
-            <n-form-item-gi span="2">
-              <template #label>
-                <Notice>
-                  {{ t("lan_ipv6.ia_na_pool_start") }}
-                  <template #msg>
-                    {{ t("lan_ipv6.ia_na_pool_start_desc") }}
-                  </template>
-                </Notice>
-              </template>
-              <n-input-number
-                style="flex: 1"
-                :value="config?.config.dhcpv6?.ia_na?.pool_start ?? 256"
-                @update:value="
-                  (val: number | null) => update_ia_na_field('pool_start', val)
-                "
-                :min="1"
-              />
-            </n-form-item-gi>
-          </template>
-        </n-grid>
-      </div>
-
-      <!-- Right: IA_PD -->
-      <div style="flex: 1; min-width: 0">
-        <n-divider title-placement="left" style="margin: 0 0 8px">
-          {{ t("lan_ipv6.ia_pd") }}
-        </n-divider>
-        <n-grid :x-gap="12" :y-gap="8" cols="2" item-responsive>
-          <n-form-item-gi span="2" :label="t('lan_ipv6.enable_ia_pd')">
-            <n-switch
-              :value="!!config?.config.dhcpv6?.ia_pd"
-              @update:value="initialize_ia_pd"
-            />
-          </n-form-item-gi>
-          <template v-if="config?.config.dhcpv6?.ia_pd">
-            <n-form-item-gi span="2">
-              <template #label>
-                <Notice>
-                  {{ t("lan_ipv6.ia_pd_delegate_prefix_len") }}
-                  <template #msg>
-                    {{ t("lan_ipv6.ia_pd_delegate_prefix_len_desc") }}
-                  </template>
-                </Notice>
-              </template>
-              <n-input-number
-                style="flex: 1"
-                :value="config?.config.dhcpv6?.ia_pd?.delegate_prefix_len ?? 64"
-                @update:value="
-                  (val: number | null) =>
-                    update_ia_pd_field('delegate_prefix_len', val)
-                "
-                :min="1"
-                :max="128"
-              />
-            </n-form-item-gi>
-          </template>
-        </n-grid>
-      </div>
-    </n-flex>
-  </n-card>
+    <n-divider title-placement="left" class="network-settings__divider">
+      {{ t("lan_ipv6.ia_pd") }}
+    </n-divider>
+    <StandardSettingRow
+      :label="t('lan_ipv6.enable_ia_pd')"
+      control-width="auto"
+    >
+      <n-switch
+        :value="!!config?.config.dhcpv6?.ia_pd"
+        @update:value="initialize_ia_pd"
+        size="medium"
+      />
+    </StandardSettingRow>
+    <template v-if="config?.config.dhcpv6?.ia_pd">
+      <StandardSettingRow>
+        <template #label>
+          <Notice>
+            {{ t("lan_ipv6.ia_pd_delegate_prefix_len") }}
+            <template #msg>{{
+              t("lan_ipv6.ia_pd_delegate_prefix_len_desc")
+            }}</template>
+          </Notice>
+        </template>
+        <n-input-number
+          :value="config.config.dhcpv6.ia_pd.delegate_prefix_len ?? 64"
+          @update:value="
+            (val: number | null) =>
+              update_ia_pd_field('delegate_prefix_len', val)
+          "
+          :min="1"
+          :max="128"
+        />
+      </StandardSettingRow>
+      <StandardSettingRow :label="t('dhcp_v6.preferred_lifetime')">
+        <n-input-number
+          :value="config.config.dhcpv6.ia_pd.preferred_lifetime"
+          @update:value="
+            (val: number | null) =>
+              update_ia_pd_field('preferred_lifetime', val)
+          "
+          :min="1"
+        />
+      </StandardSettingRow>
+      <StandardSettingRow :label="t('dhcp_v6.valid_lifetime')">
+        <n-input-number
+          :value="config.config.dhcpv6.ia_pd.valid_lifetime"
+          @update:value="
+            (val: number | null) => update_ia_pd_field('valid_lifetime', val)
+          "
+          :min="1"
+        />
+      </StandardSettingRow>
+    </template>
+  </section>
 </template>
+
+<style scoped>
+.network-settings__divider {
+  margin: 0;
+}
+</style>

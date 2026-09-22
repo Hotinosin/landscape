@@ -26,7 +26,10 @@ async function login() {
   clearLandscapeSession();
   try {
     const result = await do_login(login_info.value);
-    if (!result.success) return;
+    if (!result.success) {
+      message.error(t("common.error"));
+      return;
+    }
     localStorage.setItem(LANDSCAPE_TOKEN_KEY, result.token);
     frontEndStore.INSERT_USERNAME(login_info.value.username);
     let redirect = (history.state?.redirect as string) || "/";
@@ -36,6 +39,8 @@ async function login() {
     message.success(
       t("config.welcome", { username: login_info.value.username }),
     );
+  } catch (e: any) {
+    message.error(e.response?.data?.message || e.message || t("common.error"));
   } finally {
     loading.value = false;
   }

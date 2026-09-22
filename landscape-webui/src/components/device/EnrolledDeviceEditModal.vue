@@ -16,6 +16,8 @@ import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import CustomDhcpOptionEditor from "@/components/dhcp_v4/options/CustomDhcpOptionEditor.vue";
 import DHCPFilterOptionsEditor from "@/components/dhcp_v4/options/DHCPFilterOptionsEditor.vue";
 import { expand_ipv6, ipv6_iid_has_wan_marker } from "@/lib/common";
+import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 const enrolledDeviceStore = useEnrolledDeviceStore();
 
@@ -35,7 +37,6 @@ const { t } = useI18n();
 const emit = defineEmits(["refresh"]);
 
 const show = defineModel<boolean>("show", { required: true });
-
 const origin_rule_json = ref<string>("");
 const rule = ref<EnrolledDevice>({
   name: "",
@@ -413,13 +414,13 @@ async function saveRule() {
 </script>
 
 <template>
-  <n-modal
-    :auto-focus="false"
+  <ConfigModal
     v-model:show="show"
-    style="width: var(--app-secondary-modal-width)"
-    preset="card"
+    :show-switch="false"
+    :dirty="isModified"
     :title="props.rule_id ? t('device.edit_title') : t('device.add_title')"
-    @after-enter="enter"
+    width="var(--app-secondary-modal-width)"
+    :prepare="enter"
     @after-leave="exit"
   >
     <n-form
@@ -430,111 +431,113 @@ async function saveRule() {
       label-placement="left"
       label-width="100"
     >
-      <n-grid :cols="2" x-gap="12">
-        <n-form-item-gi :span="2" :label="t('device.name')" path="name">
+      <StandardSettingRow :label="t('device.name')" path="name" required>
+        <n-input
+          v-model:value="rule.name"
+          :placeholder="t('device.name_placeholder')"
+        />
+      </StandardSettingRow>
+
+      <StandardSettingRow :label="t('device.hostname')" path="hostname">
+        <n-input
+          v-model:value="rule.hostname"
+          :placeholder="t('device.hostname_placeholder')"
+        />
+      </StandardSettingRow>
+
+      <StandardSettingRow :label="t('device.mac')" path="mac">
+        <n-input
+          v-model:value="rule.mac"
+          :placeholder="t('device.mac_placeholder')"
+        />
+      </StandardSettingRow>
+
+      <StandardSettingRow :label="t('device.iface')" path="iface_name">
+        <n-select
+          v-model:value="rule.iface_name"
+          :options="ifaceOptions"
+          :placeholder="t('device.iface_placeholder')"
+          clearable
+        />
+      </StandardSettingRow>
+
+      <StandardSettingRow :label="t('device.fake_name')" path="fake_name">
+        <n-input
+          v-model:value="rule.fake_name"
+          :placeholder="t('device.fake_name_placeholder')"
+        />
+      </StandardSettingRow>
+
+      <StandardSettingRow
+        :label="t('device.ipv4')"
+        path="ipv4"
+        :validation-status="ipv4RangeStatus"
+        :feedback="ipv4RangeFeedback"
+      >
+        <n-input
+          v-model:value="rule.ipv4"
+          :placeholder="t('device.ipv4_placeholder')"
+        />
+      </StandardSettingRow>
+
+      <StandardSettingRow :label="t('device.ipv6')" path="ipv6">
+        <n-space align="center" :wrap="false" :size="4">
           <n-input
-            v-model:value="rule.name"
-            :placeholder="t('device.name_placeholder')"
+            v-model:value="rule.ipv6"
+            :placeholder="t('device.ipv6_placeholder')"
+            style="flex: 1"
           />
-        </n-form-item-gi>
+          <n-button size="small" secondary @click="generateRandomIpv6Suffix">
+            {{ t("device.ipv6_random") }}
+          </n-button>
+        </n-space>
+      </StandardSettingRow>
 
-        <n-form-item-gi :span="2" :label="t('device.hostname')" path="hostname">
-          <n-input
-            v-model:value="rule.hostname"
-            :placeholder="t('device.hostname_placeholder')"
-          />
-        </n-form-item-gi>
+      <StandardSettingRow :label="t('device.tag')" path="tag">
+        <n-dynamic-tags v-model:value="rule.tag" />
+      </StandardSettingRow>
 
-        <n-form-item-gi :span="2" :label="t('device.mac')" path="mac">
-          <n-input
-            v-model:value="rule.mac"
-            :placeholder="t('device.mac_placeholder')"
-          />
-        </n-form-item-gi>
+      <StandardSettingRow :label="t('device.remark')" path="remark">
+        <n-input
+          v-model:value="rule.remark"
+          type="textarea"
+          :placeholder="t('device.remark_placeholder')"
+        />
+      </StandardSettingRow>
 
-        <n-form-item-gi :span="2" :label="t('device.iface')" path="iface_name">
-          <n-select
-            v-model:value="rule.iface_name"
-            :options="ifaceOptions"
-            :placeholder="t('device.iface_placeholder')"
-            clearable
-          />
-        </n-form-item-gi>
-
-        <n-form-item-gi
-          :span="2"
-          :label="t('device.fake_name')"
-          path="fake_name"
-        >
-          <n-input
-            v-model:value="rule.fake_name"
-            :placeholder="t('device.fake_name_placeholder')"
-          />
-        </n-form-item-gi>
-
-        <n-form-item-gi
-          :label="t('device.ipv4')"
-          path="ipv4"
-          :validation-status="ipv4RangeStatus"
-          :feedback="ipv4RangeFeedback"
-        >
-          <n-input
-            v-model:value="rule.ipv4"
-            :placeholder="t('device.ipv4_placeholder')"
-          />
-        </n-form-item-gi>
-
-        <n-form-item-gi :span="2" :label="t('device.ipv6')" path="ipv6">
-          <n-space align="center" :wrap="false" :size="4">
-            <n-input
-              v-model:value="rule.ipv6"
-              :placeholder="t('device.ipv6_placeholder')"
-              style="flex: 1"
-            />
-            <n-button size="small" secondary @click="generateRandomIpv6Suffix">
-              {{ t("device.ipv6_random") }}
-            </n-button>
-          </n-space>
-        </n-form-item-gi>
-
-        <n-form-item-gi :span="2" :label="t('device.tag')" path="tag">
-          <n-dynamic-tags v-model:value="rule.tag" />
-        </n-form-item-gi>
-
-        <n-form-item-gi :span="2" :label="t('device.remark')" path="remark">
-          <n-input
-            v-model:value="rule.remark"
-            type="textarea"
-            :placeholder="t('device.remark_placeholder')"
-          />
-        </n-form-item-gi>
-
-        <n-form-item-gi :span="2" :show-label="false">
-          <n-collapse>
-            <n-collapse-item
-              :title="t('device.advanced_settings')"
-              name="advanced-settings"
+      <div>
+        <n-collapse>
+          <n-collapse-item
+            :title="t('device.advanced_settings')"
+            name="advanced-settings"
+          >
+            <StandardSettingRow
+              :label="t('device.dhcp_custom_options')"
+              layout="stacked"
             >
-              <n-form-item :label="t('device.dhcp_custom_options')">
+              <div class="custom-options-scroll">
                 <CustomDhcpOptionEditor
                   ref="optionEditorRef"
                   v-model="rule.dhcp_custom_options!"
                 />
-              </n-form-item>
+              </div>
+            </StandardSettingRow>
 
-              <n-form-item :label="t('device.dhcp_filter_options')">
-                <DHCPFilterOptionsEditor v-model="rule.dhcp_filter_options!" />
-              </n-form-item>
-            </n-collapse-item>
-          </n-collapse>
-        </n-form-item-gi>
-      </n-grid>
+            <StandardSettingRow
+              :label="t('device.dhcp_filter_options')"
+              layout="stacked"
+            >
+              <DHCPFilterOptionsEditor v-model="rule.dhcp_filter_options!" />
+            </StandardSettingRow>
+          </n-collapse-item>
+        </n-collapse>
+      </div>
     </n-form>
 
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="end">
         <n-space>
-          <n-button @click="show = false">{{ t("device.cancel") }}</n-button>
+          <n-button @click="close">{{ t("device.cancel") }}</n-button>
           <n-button
             type="primary"
             :loading="commit_spin"
@@ -546,5 +549,15 @@ async function saveRule() {
         </n-space>
       </n-flex>
     </template>
-  </n-modal>
+  </ConfigModal>
 </template>
+
+<style scoped>
+.custom-options-scroll {
+  box-sizing: border-box;
+  max-height: calc(80vh - 220px);
+  overflow-y: auto;
+  padding-right: 6px;
+  width: 100%;
+}
+</style>

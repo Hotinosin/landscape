@@ -2,6 +2,8 @@
 import { create_bridge } from "@/api/network";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
+import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 const showModal = defineModel<boolean>("show", { required: true });
 const { t } = useI18n();
@@ -23,24 +25,28 @@ async function add_bridge() {
 </script>
 
 <template>
-  <n-modal v-model:show="showModal">
-    <n-card
-      style="width: var(--app-secondary-modal-width); display: flex"
-      :title="t('common.create_bridge_device')"
-      :bordered="false"
-      role="dialog"
-      aria-modal="true"
-    >
-      <n-input-group>
-        <n-input
-          v-model:value="bridge_name"
-          :style="{ width: '50%', flex: '1' }"
-          placeholder="bridge name"
-        />
-        <n-button :loading="loading" type="primary" @click="add_bridge" ghost>
+  <ConfigModal
+    v-model:show="showModal"
+    :show-switch="false"
+    :dirty="Boolean(bridge_name)"
+    :title="t('common.create_bridge_device')"
+  >
+    <StandardSettingRow :label="t('common.name')">
+      <n-input v-model:value="bridge_name" placeholder="bridge name" />
+    </StandardSettingRow>
+
+    <template #footer="{ close }">
+      <n-flex justify="end">
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
+        <n-button
+          :loading="loading"
+          :disabled="!bridge_name"
+          type="primary"
+          @click="add_bridge"
+        >
           {{ t("common.add_bridge") }}
         </n-button>
-      </n-input-group>
-    </n-card>
-  </n-modal>
+      </n-flex>
+    </template>
+  </ConfigModal>
 </template>

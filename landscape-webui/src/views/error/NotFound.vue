@@ -16,7 +16,7 @@ const goHome = () => {
       :description="$t('not_found.not_found_desc')"
     >
       <template #footer>
-        <n-button type="primary" secondary @click="goHome">
+        <n-button type="primary" @click="goHome">
           {{ $t("not_found.back_home") }}
         </n-button>
       </template>

@@ -8,29 +8,53 @@ import { NIcon } from "naive-ui";
 
 import {
   Settings,
-  CicsSystemGroup,
-  ModelBuilder,
-  ChartCombo,
-  ServerDns,
-  Devices,
   Dashboard,
+  Network3,
+  Flow,
+  ChartCombo,
   Certificate,
   ChevronLeft,
   ChevronRight,
-  Gateway,
-  Terminal,
   Firewall as Wall,
-  ContainerServices as Docker,
-  Globe as BookGlobe20Regular,
+  Application,
+  NetworkAdminControl,
+  IbmCloudSubnets,
+  Devices,
+  FlowStream,
+  DnsServices,
+  Rule,
+  Earth,
+  SecurityServices,
+  ConnectionTwoWay,
+  DataConnected,
+  CertificateCheck,
+  Credentials,
+  Activity,
+  TimePlot,
+  ChartLineData,
+  Gateway,
+  ContainerServices,
+  Terminal,
 } from "@vicons/carbon";
 
 import CopyRight from "@/components/CopyRight.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
+import { prefetchRoute } from "@/router/prefetch";
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 const frontEndStore = useFrontEndStore();
+
+function nodeProps(option: MenuOption) {
+  return {
+    onMouseenter() {
+      if (typeof option.key === "string") {
+        prefetchRoute(option.key);
+      }
+    },
+  };
+}
 
 const menuThemeOverrides = {
   itemHeight: "var(--app-control-height)",
@@ -52,6 +76,12 @@ const menuThemeOverrides = {
 const menu_active_key = ref<string>("");
 
 const activeMenuByPath: Record<string, string> = {
+  "/dns/upstream": "dns/config",
+  "/network/dhcp-v4": "network/allocations",
+  "/network/ipv6-ra": "network/allocations",
+  "/network/ipv6-pd": "network/settings",
+  "/firewall-nat/nat/v4": "firewall-nat/port-mapping",
+  "/firewall-nat/nat/v6": "firewall-nat/port-mapping",
   "/metrics/conn/iface": "metrics/conn/live",
   "/metrics/conn/src": "metrics/conn/live",
   "/metrics/conn/dst": "metrics/conn/live",
@@ -89,82 +119,73 @@ const menuOptions = computed<MenuOption[]>(() => [
   {
     label: t("routes.dashboard"),
     key: "",
-    icon: renderIcon(CicsSystemGroup),
-  },
-  {
-    label: t("routes.flow"),
-    key: "flow",
-    icon: renderIcon(ModelBuilder),
-  },
-  {
-    label: t("routes.mac-binding"),
-    key: "mac-binding",
-    icon: renderIcon(Devices),
-  },
-  {
-    label: t("routes.network-status"),
-    key: "network-status",
     icon: renderIcon(Dashboard),
+  },
+  {
+    label: t("routes.network"),
+    key: "network",
+    icon: renderIcon(Network3),
     children: [
       {
-        label: t("routes.dhcp-v4"),
-        key: "network/dhcp-v4",
-        disabled: false,
+        label: t("routes.interface-config"),
+        key: "network/settings",
+        icon: renderIcon(NetworkAdminControl),
       },
       {
-        label: t("routes.ipv6-pd"),
-        key: "network/ipv6-pd",
+        label: t("routes.address-allocation"),
+        key: "network/allocations",
+        icon: renderIcon(IbmCloudSubnets),
       },
       {
-        label: t("routes.ipv6-ra"),
-        key: "network/ipv6-ra",
-        disabled: false,
+        label: t("routes.mac-binding"),
+        key: "mac-binding",
+        icon: renderIcon(Devices),
       },
     ],
   },
   {
-    label: t("routes.network-settings"),
-    key: "network/settings",
-    icon: renderIcon(Settings),
+    label: t("routes.traffic-policy"),
+    key: "traffic-policy",
+    icon: renderIcon(Flow),
+    children: [
+      {
+        label: t("routes.flow"),
+        key: "flow",
+        icon: renderIcon(FlowStream),
+      },
+      {
+        label: t("routes.dns-config"),
+        key: "dns/config",
+        icon: renderIcon(DnsServices),
+      },
+      {
+        label: t("routes.dns-redirect"),
+        key: "dns/redirect",
+        icon: renderIcon(Rule),
+      },
+      {
+        label: t("routes.geo"),
+        key: "geo/domain",
+        icon: renderIcon(Earth),
+      },
+    ],
   },
   {
-    label: t("routes.firewall-nat"),
-    key: "firewall-nat",
+    label: t("routes.security-forwarding"),
+    key: "security-forwarding",
     icon: renderIcon(Wall),
     children: [
       {
         label: t("routes.firewall"),
         key: "firewall-nat/firewall",
+        icon: renderIcon(SecurityServices),
       },
       {
-        label: t("routes.nat-v4"),
-        key: "firewall-nat/nat/v4",
-      },
-      {
-        label: t("routes.nat-v6"),
-        key: "firewall-nat/nat/v6",
+        label: t("routes.port-mapping"),
+        key: "firewall-nat/port-mapping",
+        icon: renderIcon(ConnectionTwoWay),
       },
     ],
-  },
-  {
-    label: t("routes.dns"),
-    key: "dns",
-    icon: renderIcon(ServerDns),
-    children: [
-      {
-        label: t("routes.dns-upstream"),
-        key: "dns/upstream",
-      },
-      {
-        label: t("routes.dns-redirect"),
-        key: "dns/redirect",
-      },
-    ],
-  },
-  {
-    label: t("routes.geo"),
-    key: "geo/domain",
-    icon: renderIcon(BookGlobe20Regular),
   },
   {
     label: t("routes.domains"),
@@ -172,32 +193,21 @@ const menuOptions = computed<MenuOption[]>(() => [
     icon: renderIcon(Certificate),
     children: [
       {
-        label: t("routes.dns-provider-profiles"),
-        key: "domains/dns-providers",
-      },
-      {
         label: t("routes.ddns"),
         key: "domains/ddns",
-      },
-      {
-        label: t("routes.cert-accounts"),
-        key: "domains/cert-accounts",
+        icon: renderIcon(DataConnected),
       },
       {
         label: t("routes.certs"),
         key: "domains/certs",
+        icon: renderIcon(CertificateCheck),
+      },
+      {
+        label: t("routes.credentials"),
+        key: "domains/credentials",
+        icon: renderIcon(Credentials),
       },
     ],
-  },
-  {
-    label: t("routes.gateway"),
-    key: "gateway",
-    icon: renderIcon(Gateway),
-  },
-  {
-    label: t("routes.docker"),
-    key: "docker",
-    icon: renderIcon(Docker),
   },
   {
     label: t("routes.metric-group"),
@@ -207,21 +217,41 @@ const menuOptions = computed<MenuOption[]>(() => [
       {
         label: t("routes.connect-live"),
         key: "metrics/conn/live",
+        icon: renderIcon(Activity),
       },
       {
         label: t("routes.connect-history"),
         key: "metrics/conn/history",
+        icon: renderIcon(TimePlot),
       },
       {
         label: t("routes.dns-metric"),
         key: "metrics/dns",
+        icon: renderIcon(ChartLineData),
       },
     ],
   },
   {
-    label: t("routes.webshell"),
-    key: "webshell",
-    icon: renderIcon(Terminal),
+    label: t("routes.apps-tools"),
+    key: "apps-tools",
+    icon: renderIcon(Application),
+    children: [
+      {
+        label: t("routes.gateway"),
+        key: "gateway",
+        icon: renderIcon(Gateway),
+      },
+      {
+        label: t("routes.docker"),
+        key: "docker",
+        icon: renderIcon(ContainerServices),
+      },
+      {
+        label: t("routes.webshell"),
+        key: "webshell",
+        icon: renderIcon(Terminal),
+      },
+    ],
   },
   {
     label: t("routes.config"),
@@ -237,7 +267,7 @@ const menuOptions = computed<MenuOption[]>(() => [
     bordered
     collapse-mode="width"
     :collapsed-width="64"
-    :width="240"
+    :width="220"
     :collapsed="collapsed"
     :show-trigger="false"
     class="landscape-sidebar"
@@ -261,8 +291,11 @@ const menuOptions = computed<MenuOption[]>(() => [
         <n-menu
           v-model:value="menu_active_key"
           @update:value="click_menu"
+          :node-props="nodeProps"
           :collapsed="collapsed"
           :collapsed-width="64"
+          :root-indent="40"
+          :indent="20"
           :icon-size="18"
           :collapsed-icon-size="18"
           :theme-overrides="menuThemeOverrides"
@@ -312,6 +345,47 @@ const menuOptions = computed<MenuOption[]>(() => [
   overflow: visible;
 }
 
+.landscape-sidebar :deep(.n-menu-item) {
+  margin-top: 2px;
+}
+
+.landscape-sidebar :deep(.n-menu-item-content > .n-menu-item-content__arrow) {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 16px;
+  grid-area: unset;
+  height: 16px;
+  margin: auto 0;
+  transform: rotate(0deg) !important;
+}
+
+.landscape-sidebar
+  :deep(.n-menu-item-content--collapsed > .n-menu-item-content__arrow) {
+  transform: rotate(-90deg) !important;
+}
+
+.landscape-sidebar :deep(.n-submenu-children .n-menu-item) {
+  --n-item-height: 30px;
+}
+
+.landscape-sidebar :deep(.n-submenu-children .n-menu-item-content-header) {
+  font-size: var(--app-font-size-caption);
+}
+
+.landscape-sidebar :deep(.n-submenu-children .n-menu-item-content__icon) {
+  font-size: var(--app-font-size-body);
+}
+
+.landscape-sidebar :deep(.n-submenu-children .n-menu-item-content::before) {
+  left: 40px;
+}
+
+.landscape-sidebar
+  :deep(.n-submenu-children .n-menu-item-content--selected::after) {
+  left: 32px;
+}
+
 .sidebar-footer-content {
   flex: 1;
   height: 100%;
@@ -345,5 +419,31 @@ const menuOptions = computed<MenuOption[]>(() => [
 
 .sidebar-collapse-button:hover {
   color: var(--app-brand-color);
+}
+
+.landscape-sidebar :deep(.sidebar-footer-link) {
+  --n-font-size: var(--app-font-size-caption);
+  --n-icon-size: var(--app-font-size-body);
+  --n-icon-margin: 4px;
+  --n-text-color: var(--app-text-secondary-color);
+  --n-text-color-hover: var(--app-brand-active-color);
+  --n-text-color-pressed: var(--app-brand-active-color);
+  --n-text-color-focus: var(--app-brand-active-color);
+  font-size: var(--app-font-size-caption);
+  color: var(--app-text-secondary-color);
+}
+
+.landscape-sidebar :deep(.sidebar-footer-link .n-icon),
+.landscape-sidebar :deep(.sidebar-footer-link .n-button__icon) {
+  font-size: var(--app-font-size-body);
+}
+
+.landscape-sidebar :deep(.sidebar-footer-link .n-button__content),
+.landscape-sidebar :deep(.sidebar-footer-link__text) {
+  font-size: var(--app-font-size-caption);
+}
+
+.landscape-sidebar :deep(.sidebar-footer-link:hover) {
+  color: var(--app-brand-active-color);
 }
 </style>

@@ -74,7 +74,7 @@ watch(activeTheme, (theme) => applyThemeToDocument(theme), {
     style="display: flex; flex: 1"
     :theme-overrides="themeOverrides"
   >
-    <n-message-provider>
+    <n-message-provider container-style="top: 48px">
       <n-notification-provider>
         <n-dialog-provider>
           <Env></Env>

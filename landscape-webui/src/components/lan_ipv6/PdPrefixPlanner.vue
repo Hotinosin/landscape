@@ -611,6 +611,9 @@ onBeforeUnmount(() => {
 }
 
 .planner-canvas-wrap {
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow: auto;
   border: 1px solid var(--n-border-color);
   border-radius: var(--app-radius-large, 12px);

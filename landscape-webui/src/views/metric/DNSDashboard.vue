@@ -473,7 +473,7 @@ defineExpose({ refresh: loadSummary });
 }
 
 .metric-card {
-  background: var(--app-surface-subtle-color);
+  background: var(--app-surface-color);
   border-radius: var(--app-radius-panel, 8px);
   height: 100%;
 }
@@ -494,7 +494,11 @@ defineExpose({ refresh: loadSummary });
   display: flex;
   justify-content: space-between;
   margin-top: 8px;
-  background: var(--app-surface-subtle-color);
+  background: color-mix(
+    in srgb,
+    var(--app-surface-subtle-color) 50%,
+    var(--app-surface-color)
+  );
   padding: 2px 6px;
   border-radius: var(--app-radius-indicator);
 }
@@ -648,7 +652,7 @@ defineExpose({ refresh: loadSummary });
 
 /* Latency Card Styles */
 .latency-card {
-  background: var(--app-surface-subtle-color);
+  background: var(--app-surface-color);
 }
 
 .latency-header {
@@ -681,7 +685,11 @@ defineExpose({ refresh: loadSummary });
   flex-direction: column;
   align-items: center;
   padding: 6px 4px;
-  background: var(--app-surface-subtle-color);
+  background: color-mix(
+    in srgb,
+    var(--app-surface-subtle-color) 50%,
+    var(--app-surface-color)
+  );
   border-radius: var(--app-radius-control, 6px);
 }
 

@@ -6,18 +6,33 @@ export interface PageRequestOptions<T> {
   isEmpty?: (data: T) => boolean;
   onSuccess?: (data: T) => void | Promise<void>;
   onError?: (error: unknown) => void;
+  cacheKey?: string;
+  ttlMs?: number;
+}
+
+const pageCache = new Map<string, { data: unknown; timestamp: number }>();
+
+export function clearPageCache(key?: string) {
+  if (key) pageCache.delete(key);
+  else pageCache.clear();
 }
 
 export function usePageRequest<T>(
   request: () => Promise<T>,
   options: PageRequestOptions<T>,
 ) {
-  const data = shallowRef(options.initialData) as ShallowRef<T>;
+  const cached = options.cacheKey ? pageCache.get(options.cacheKey) : undefined;
+  const initialVal = cached !== undefined ? (cached.data as T) : options.initialData;
+  const data = shallowRef(initialVal) as ShallowRef<T>;
   const error = shallowRef<unknown>();
-  const initialized = ref(false);
-  const hasSucceeded = ref(false);
-  const lastSuccessAt = ref<number | null>(null);
-  const stale = ref(false);
+  const initialized = ref(cached !== undefined);
+  const hasSucceeded = ref(cached !== undefined);
+  const lastSuccessAt = ref<number | null>(cached ? cached.timestamp : null);
+  const stale = ref(
+    Boolean(
+      cached && options.ttlMs && Date.now() - cached.timestamp > options.ttlMs,
+    ),
+  );
   const pendingCount = ref(0);
   let latestRequest = 0;
 
@@ -48,6 +63,12 @@ export function usePageRequest<T>(
       const result = await request();
       if (requestId === latestRequest) {
         data.value = result;
+        if (options.cacheKey) {
+          pageCache.set(options.cacheKey, {
+            data: result,
+            timestamp: Date.now(),
+          });
+        }
         await options.onSuccess?.(result);
         if (requestId === latestRequest) {
           initialized.value = true;

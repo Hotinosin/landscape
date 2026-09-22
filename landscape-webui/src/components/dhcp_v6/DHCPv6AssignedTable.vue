@@ -12,6 +12,7 @@ import { usePreferenceStore } from "@/stores/preference";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import { useI18n } from "vue-i18n";
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
+import MacAddress from "@/components/common/MacAddress.vue";
 
 const { t } = useI18n();
 const prefStore = usePreferenceStore();
@@ -66,6 +67,7 @@ const addressColumns = computed<DataTableColumns<AddressRow>>(() => [
   {
     title: t("dhcp_v6.hostname"),
     key: "hostname",
+    width: 110,
     render: (item) =>
       item.mac_str
         ? enrolledDeviceStore.GET_NAME_WITH_FALLBACK(
@@ -77,8 +79,7 @@ const addressColumns = computed<DataTableColumns<AddressRow>>(() => [
   {
     title: t("dhcp_v6.mac"),
     key: "mac",
-    render: (item) =>
-      item.mac_str ? frontEndStore.MASK_INFO(item.mac_str) : "-",
+    render: (item) => h(MacAddress, { value: item.mac_str, emptyText: "-" }),
   },
   {
     title: t("dhcp_v6.ipv6_address"),
@@ -139,7 +140,8 @@ const prefixColumns = computed<DataTableColumns<PrefixRow>>(() => [
 </script>
 
 <template>
-  <n-card size="small" :title="iface_name">
+  <div style="width: 100%">
+    <n-divider title-placement="left">{{ iface_name }}</n-divider>
     <!-- IA_NA Addresses -->
     <template v-if="show_addresses.length > 0">
       <n-divider title-placement="left" class="section-divider">
@@ -150,6 +152,7 @@ const prefixColumns = computed<DataTableColumns<PrefixRow>>(() => [
         :data="show_addresses"
         size="small"
         :row-key="(row) => `${row.ip}-${row.real_active_time}`"
+        :scroll-x="720"
       />
     </template>
 
@@ -163,6 +166,7 @@ const prefixColumns = computed<DataTableColumns<PrefixRow>>(() => [
         :data="show_prefixes"
         size="small"
         :row-key="(row) => `${row.duid}-${row.prefix}`"
+        :scroll-x="720"
       />
     </template>
 
@@ -171,7 +175,7 @@ const prefixColumns = computed<DataTableColumns<PrefixRow>>(() => [
       :description="t('dhcp_v6.no_records')"
       class="empty-state"
     />
-  </n-card>
+  </div>
 </template>
 
 <style scoped>

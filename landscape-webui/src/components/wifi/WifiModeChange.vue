@@ -16,7 +16,16 @@ const props = defineProps<{
   iface_name: string;
   wifi_info?: WifiMode;
   show_switch: ServiceExhibitSwitch;
+  labeled?: boolean;
 }>();
+
+const isAp = computed(() => props.show_switch.wifi);
+const currentModeLabel = computed(() =>
+  t(isAp.value ? "wifi.ap_mode" : "wifi.client_mode"),
+);
+const targetModeLabel = computed(() =>
+  t(isAp.value ? "wifi.client_mode" : "wifi.ap_mode"),
+);
 
 async function change_mode() {
   let change_mode = WifiMode.Undefined;
@@ -38,7 +47,11 @@ async function change_mode() {
     @positive-click="change_mode()"
   >
     <template #trigger>
+      <n-button v-if="labeled">{{
+        t("wifi.switch_to", { mode: targetModeLabel })
+      }}</n-button>
       <n-button
+        v-else
         text
         :focusable="false"
         style="font-size: var(--app-font-size-title)"
@@ -50,6 +63,11 @@ async function change_mode() {
         </n-icon>
       </n-button>
     </template>
-    {{ t("wifi.change_mode_confirm") }}
+    {{
+      t("wifi.change_mode_confirm", {
+        current: currentModeLabel,
+        target: targetModeLabel,
+      })
+    }}
   </ConfirmModal>
 </template>

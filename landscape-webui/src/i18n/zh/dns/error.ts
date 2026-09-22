@@ -1,5 +1,5 @@
 export default {
-  "dns_check.flow_not_found": "找不到 DNS Flow 运行时 (Flow: {0})",
+  "dns_check.flow_not_found": "找不到 DNS Flow 策略运行时 (Flow ID: {0})",
   "dns_check.refresh_requires_rule":
     "当前域名没有匹配到可刷新的上游 DNS 规则: {0}",
   "dns_check.refresh_redirected":

@@ -13,6 +13,7 @@ import RouteWanServiceEditModal from "@/components/route/wan/RouteWanServiceEdit
 import WifiModeChange from "@/components/wifi/WifiModeChange.vue";
 import WifiServiceEditModal from "@/components/wifi/WifiServiceEditModal.vue";
 import CarrierStatusDot from "@/components/topology/CarrierStatusDot.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import { Link } from "@vicons/carbon";
 import { useThemeVars } from "naive-ui";
 import { changeColor } from "seemly";
@@ -25,8 +26,8 @@ import { formatPackets, formatRate } from "@/lib/util";
 import {
   ServiceExhibitSwitch,
   ServiceStatus,
-  get_service_status_color,
   get_service_status_label,
+  get_service_status_tag_type,
 } from "@/lib/services";
 import { useDHCPv4ConfigStore } from "@/stores/status_dhcp_v4";
 import { useFirewallConfigStore } from "@/stores/status_firewall";
@@ -39,7 +40,6 @@ import { useRouteLanConfigStore } from "@/stores/status_route_lan";
 import { useRouteWanConfigStore } from "@/stores/status_route_wan";
 import { useWifiConfigStore } from "@/stores/status_wifi";
 import { useIfaceNodeStore } from "@/stores/iface_node";
-import { useFrontEndStore } from "@/stores/front_end_config";
 import type { IfaceRealtimeStat } from "@landscape-router/types/api/schemas";
 
 const props = withDefaults(
@@ -63,7 +63,6 @@ const { t } = useI18n();
 const themeVars = useThemeVars();
 const show_switch = computed(() => new ServiceExhibitSwitch(props.node));
 const ifaceNodeStore = useIfaceNodeStore();
-const frontEndStore = useFrontEndStore();
 const show_mss_clamp_edit = ref(false);
 const iface_dhcp_v4_service_edit_show = ref(false);
 const iface_wifi_edit_show = ref(false);
@@ -88,34 +87,34 @@ const routeWanConfigStore = useRouteWanConfigStore();
 const mssClampConfigStore = useMSSClampConfigStore();
 
 const ip_config_status = computed(
-  () => ipConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => ipConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const dhcp_v4_status = computed(
-  () => dhcpv4ConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => dhcpv4ConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const nat_status = computed(
-  () => natConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => natConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const firewall_status = computed(
-  () => firewallConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => firewallConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const ipv6pd_status = computed(
-  () => ipv6PDStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => ipv6PDStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const lan_ipv6_status = computed(
-  () => lanIpv6Store.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => lanIpv6Store.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const wifi_status = computed(
-  () => wifiConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => wifiConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const route_lan_status = computed(
-  () => routeLanConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => routeLanConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const route_wan_status = computed(
-  () => routeWanConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => routeWanConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const mss_clamp_status = computed(
-  () => mssClampConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => mssClampConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 
 const status_type = computed(() => {
@@ -177,20 +176,6 @@ function displayValue(value?: string | number | null) {
 
 function serviceStatusText(status?: ServiceStatus) {
   return get_service_status_label(status, t);
-}
-
-function serviceStatusColor(status?: ServiceStatus) {
-  return get_service_status_color(status, themeVars.value);
-}
-
-function serviceStatusStyle(status?: ServiceStatus) {
-  const color = serviceStatusColor(status);
-
-  return {
-    borderColor: changeColor(color, { alpha: status ? 0.45 : 0.22 }),
-    backgroundColor: changeColor(color, { alpha: status ? 0.12 : 0.06 }),
-    color,
-  };
 }
 
 async function refreshGraph() {
@@ -375,7 +360,7 @@ const node_style = computed(() => ({
           class="topology-node__handle"
         />
 
-        <n-popover :disabled="!summary" trigger="hover" placement="top">
+        <n-popover trigger="hover" placement="top" style="width: 210px">
           <template #trigger>
             <div class="topology-node__card">
               <div class="topology-node__title-row">
@@ -409,8 +394,8 @@ const node_style = computed(() => ({
                       <n-icon><Link /></n-icon>
                     </template>
                   </n-button>
-                  <n-tag size="tiny" :type="status_type">
-                    {{ node.dev_status.t }}
+                  <n-tag size="small" :type="status_type" :bordered="false">
+                    {{ node.dev_status.t.toUpperCase() }}
                   </n-tag>
                 </div>
               </div>
@@ -418,12 +403,18 @@ const node_style = computed(() => ({
               <div class="topology-node__tags">
                 <n-tag
                   v-if="node.zone_type !== IfaceZoneType.undefined"
-                  size="tiny"
+                  size="small"
                   :type="zone_type"
+                  :bordered="false"
                 >
                   {{ zone_label }}
                 </n-tag>
-                <n-tag v-for="tag in role_tags" :key="tag" size="tiny" tertiary>
+                <n-tag
+                  v-for="tag in role_tags"
+                  :key="tag"
+                  size="small"
+                  :bordered="false"
+                >
                   {{ tag }}
                 </n-tag>
               </div>
@@ -452,28 +443,50 @@ const node_style = computed(() => ({
               </div>
             </div>
           </template>
-          <n-descriptions label-placement="left" :column="1" size="small">
-            <n-descriptions-item :label="t('topology.panel.ifindex')">
-              {{ node.index }}
-            </n-descriptions-item>
-            <n-descriptions-item :label="t('topology.panel.boot')">
-              {{
-                t(
-                  node.enable_in_boot
-                    ? "topology.panel.yes"
-                    : "topology.panel.no",
-                )
-              }}
-            </n-descriptions-item>
-            <n-descriptions-item :label="t('topology.node.perm_mac')">
-              {{
-                node.perm_mac ? frontEndStore.MASK_INFO(node.perm_mac) : "N/A"
-              }}
-            </n-descriptions-item>
-            <n-descriptions-item :label="t('topology.panel.peer_link')">
-              {{ displayValue(node.peer_link_id) }}
-            </n-descriptions-item>
-          </n-descriptions>
+          <div class="topology-node__details">
+            <StandardSettingRow
+              :label="t('topology.panel.ifindex')"
+              control-width="auto"
+            >
+              <span>
+                {{ node.index }}
+              </span>
+            </StandardSettingRow>
+            <StandardSettingRow
+              :label="t('topology.panel.boot')"
+              control-width="auto"
+            >
+              <n-tag
+                size="small"
+                :type="node.enable_in_boot ? 'success' : 'error'"
+                :bordered="false"
+              >
+                {{
+                  t(
+                    node.enable_in_boot
+                      ? "topology.panel.boot_enabled"
+                      : "topology.panel.boot_disabled",
+                  )
+                }}
+              </n-tag>
+            </StandardSettingRow>
+            <StandardSettingRow
+              :label="t('topology.node.perm_mac')"
+              control-width="auto"
+            >
+              <span>
+                <MacAddress :value="node.perm_mac" empty-text="N/A" />
+              </span>
+            </StandardSettingRow>
+            <StandardSettingRow
+              :label="t('topology.panel.peer_link')"
+              control-width="auto"
+            >
+              <span>
+                {{ displayValue(node.peer_link_id) }}
+              </span>
+            </StandardSettingRow>
+          </div>
         </n-popover>
 
         <Handle
@@ -494,18 +507,19 @@ const node_style = computed(() => ({
           trigger="hover"
         >
           <template #trigger>
-            <span
-              class="topology-node__service-pill"
+            <n-tag
               role="button"
               tabindex="0"
+              size="small"
+              :type="get_service_status_tag_type(item.status)"
+              :bordered="false"
               :data-testid="`topology-node-${node.index}-service-${item.key}`"
-              :style="serviceStatusStyle(item.status)"
               @click.stop="openServiceEditor(item.key)"
               @keydown.enter.stop.prevent="openServiceEditor(item.key)"
               @keydown.space.stop.prevent="openServiceEditor(item.key)"
             >
-              <span>{{ item.short_label }}</span>
-            </span>
+              {{ item.short_label }}
+            </n-tag>
           </template>
           {{ item.label }} · {{ serviceStatusText(item.status) }}
         </n-tooltip>
@@ -608,6 +622,10 @@ const node_style = computed(() => ({
   flex-direction: column;
   gap: var(--app-space-sm);
   box-sizing: border-box;
+}
+
+.topology-node__details :deep(.standard-setting-row:last-child) {
+  margin-bottom: 0;
 }
 
 .topology-node__card-shell {
@@ -724,30 +742,13 @@ const node_style = computed(() => ({
   box-sizing: border-box;
 }
 
-.topology-node__service-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 7px;
-  border-radius: var(--app-radius-pill);
-  border: 1px solid var(--topology-node-service-border);
-  background: var(--topology-node-service-bg);
-  color: var(--topology-node-service-text);
-  font-size: var(--app-font-size-detail);
-  font-weight: 600;
-  line-height: 1;
+.topology-node__services .n-tag {
   cursor: pointer;
-  transition:
-    background-color var(--app-motion-normal, 180ms) ease,
-    border-color var(--app-motion-normal, 180ms) ease,
-    transform var(--app-motion-normal, 180ms) ease;
+  transition: transform var(--app-motion-normal, 180ms) ease;
 }
 
-.topology-node__service-pill:hover {
+.topology-node__services .n-tag:hover {
   transform: translateY(-1px);
-}
-
-.topology-node__service-pill--muted {
-  opacity: 0.78;
 }
 
 .topology-node__handle {

@@ -14,7 +14,7 @@ export default {
   duid: "DUID",
   no_records: "No DHCPv6 assignment records",
 
-  // DHCPv6ConfigSection
+  // DHCPv6 server settings
   enable_dhcpv6: "Enable DHCPv6",
   m_flag_warning:
     "DHCPv6 is enabled but RA M flag is not set. Clients may not request DHCPv6 addresses.",

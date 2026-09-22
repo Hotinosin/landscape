@@ -53,13 +53,23 @@ async function refresh() {
 }
 </script>
 <template>
-  <StatusTitle v-if="cell === 'status'" :enable="geo_ip_source.enable" :remark="title" />
+  <StatusTitle
+    v-if="cell === 'status'"
+    :enable="geo_ip_source.enable"
+    :name="title"
+  />
   <n-flex v-else-if="cell === 'type'" :wrap="false" size="small">
-      <n-tag :bordered="false" size="small">{{ geo_ip_source.source.t === "url" ? "URL" : "Direct" }}</n-tag>
-      <n-tag v-if="geo_ip_source.source.t === 'url'" :bordered="false" size="small">
-        {{ (geo_ip_source.source.format || "dat").toUpperCase() }}
-      </n-tag>
-    </n-flex>
+    <n-tag :bordered="false" size="small">{{
+      geo_ip_source.source.t === "url" ? "URL" : "Direct"
+    }}</n-tag>
+    <n-tag
+      v-if="geo_ip_source.source.t === 'url'"
+      :bordered="false"
+      size="small"
+    >
+      {{ (geo_ip_source.source.format || "dat").toUpperCase() }}
+    </n-tag>
+  </n-flex>
   <template v-else-if="cell === 'time'">
     <n-time
       v-if="geo_ip_source.source.t === 'url'"
@@ -69,23 +79,29 @@ async function refresh() {
     />
     <span v-else>—</span>
   </template>
-    <n-flex v-else-if="cell === 'actions'" :wrap="false" size="small">
-      <n-button v-if="geo_ip_source.source.t === 'url'" size="small" @click="show_upload = true">
-        {{ t("geo.item_card.upload") }}
-      </n-button>
-      <ConfirmModal
-        v-if="geo_ip_source.source.t === 'url'"
-        :positive-button-props="{ loading: refreshing }"
-        @positive-click="refresh"
-      >
-        <template #trigger>
-          <n-button size="small">{{ t("geo.item_card.refresh_source") }}</n-button>
-        </template>
-        {{ t("geo.item_card.force_refresh_confirm") }}
-      </ConfirmModal>
-      <EditButton @click="show_edit_modal = true" />
-      <DeleteButton :item="geo_ip_source.name" :on-confirm="del" />
-    </n-flex>
+  <n-flex v-else-if="cell === 'actions'" :wrap="false" size="small">
+    <n-button
+      v-if="geo_ip_source.source.t === 'url'"
+      size="small"
+      @click="show_upload = true"
+    >
+      {{ t("geo.item_card.upload") }}
+    </n-button>
+    <ConfirmModal
+      v-if="geo_ip_source.source.t === 'url'"
+      :positive-button-props="{ loading: refreshing }"
+      @positive-click="refresh"
+    >
+      <template #trigger>
+        <n-button size="small">{{
+          t("geo.item_card.refresh_source")
+        }}</n-button>
+      </template>
+      {{ t("geo.item_card.force_refresh_confirm") }}
+    </ConfirmModal>
+    <EditButton @click="show_edit_modal = true" />
+    <DeleteButton :item="geo_ip_source.name" :on-confirm="del" />
+  </n-flex>
   <template v-if="cell === 'actions'">
     <GeoIpEditModal
       :id="geo_ip_source.id"

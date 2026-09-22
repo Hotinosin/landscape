@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import type {
   RouteLanServiceConfig,
   StaticRouteConfig,
@@ -59,7 +60,29 @@ async function save_config() {
   }
 }
 
-defineExpose({ save: save_config });
+function getSummary() {
+  const route = service_config.value?.static_routes?.[0];
+  return [
+    {
+      label: t("network.route_lan.title"),
+      value: t(
+        service_enabled.value
+          ? "network.settings.enabled"
+          : "network.settings.disabled",
+      ),
+    },
+    ...(route
+      ? [
+          {
+            label: t("network.route_lan.subnet_range"),
+            value: `${route.subnet}/${route.sub_prefix} → ${route.next_hop}`,
+          },
+        ]
+      : []),
+  ];
+}
+
+defineExpose({ save: save_config, getSummary });
 
 function onCreate(): StaticRouteConfig {
   return {
@@ -77,10 +100,13 @@ function onCreate(): StaticRouteConfig {
     :title="t('network.route_lan.title')"
     :switch-disabled="service_config === null"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
   >
     <n-form v-if="service_config !== null" :model="service_config">
-      <n-form-item :label="t('network.route_lan.static_route_limit')">
+      <StandardSettingRow
+        :label="t('network.route_lan.static_route_limit')"
+        layout="stacked"
+      >
         <n-dynamic-input
           item-style="padding-right: 15px"
           :max="1"
@@ -112,12 +138,12 @@ function onCreate(): StaticRouteConfig {
             </n-input-group>
           </template>
         </n-dynamic-input>
-      </n-form-item>
+      </StandardSettingRow>
     </n-form>
 
     <template #footer>
       <n-flex justify="end">
-        <n-button round type="primary" @click="save_config">
+        <n-button type="primary" @click="save_config">
           {{ t("common.update") }}
         </n-button>
       </n-flex>

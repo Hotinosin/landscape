@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import { computed, h, ref } from "vue";
 import type { DataTableColumns } from "naive-ui";
 import StandardDataTable from "@/components/common/StandardDataTable.vue";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
 const { t } = useI18n();
 const show = ref(false);
@@ -78,39 +79,48 @@ const skippedColumns = computed<DataTableColumns<RuleRow>>(() => [
       }}</n-text>
     </div>
   </n-popover>
-  <n-modal v-model:show="show" style="width: var(--app-compact-modal-width)">
-    <n-card size="small" closable :title="sup('title')" @close="show = false">
-      <n-flex vertical :size="10">
-        <n-flex vertical :size="4">
-          <n-text type="success" strong class="section-title">{{
-            sup("supported_title")
-          }}</n-text>
-          <StandardDataTable
-            :columns="supportedColumns"
-            :data="supportedRules"
-            size="small"
-            :row-key="(row) => row.rule"
-          />
-        </n-flex>
-
-        <n-flex vertical :size="4">
-          <n-text type="error" strong class="section-title">{{
-            sup("skipped_title")
-          }}</n-text>
-          <StandardDataTable
-            :columns="skippedColumns"
-            :data="skippedRules"
-            size="small"
-            :row-key="(row) => row.rule"
-          />
-        </n-flex>
-
-        <n-alert type="info" :show-icon="false" class="rule-note">
-          {{ sup("reason") }}
-        </n-alert>
+  <ConfigModal
+    v-model:show="show"
+    :show-switch="false"
+    width="var(--app-compact-modal-width)"
+    :title="sup('title')"
+  >
+    <n-flex vertical :size="10">
+      <n-flex vertical :size="4">
+        <n-text
+          type="success"
+          strong
+          class="section-title standard-list-title--small"
+          >{{ sup("supported_title") }}</n-text
+        >
+        <StandardDataTable
+          :columns="supportedColumns"
+          :data="supportedRules"
+          size="small"
+          :row-key="(row) => row.rule"
+        />
       </n-flex>
-    </n-card>
-  </n-modal>
+
+      <n-flex vertical :size="4">
+        <n-text
+          type="error"
+          strong
+          class="section-title standard-list-title--small"
+          >{{ sup("skipped_title") }}</n-text
+        >
+        <StandardDataTable
+          :columns="skippedColumns"
+          :data="skippedRules"
+          size="small"
+          :row-key="(row) => row.rule"
+        />
+      </n-flex>
+
+      <n-alert type="info" :show-icon="false" class="rule-note">
+        {{ sup("reason") }}
+      </n-alert>
+    </n-flex>
+  </ConfigModal>
 </template>
 
 <style scoped>

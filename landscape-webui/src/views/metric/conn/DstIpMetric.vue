@@ -88,7 +88,7 @@ onMounted(() => {
       <n-card
         size="small"
         :bordered="false"
-        style="margin-bottom: 12px; background-color: var(--app-surface-color)"
+        class="metric-navigation-card"
       >
         <n-flex align="center" justify="space-between">
           <ConnectViewSwitcher />

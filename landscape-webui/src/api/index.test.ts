@@ -8,6 +8,7 @@ import {
   LANDSCAPE_SESSION_CLEARED,
 } from "@/lib/common";
 import { applyInterceptors, isCurrentSessionRequest } from "./index";
+import router from "@/router";
 
 describe("isCurrentSessionRequest", () => {
   it("ignores a late unauthorized response from before login", () => {
@@ -101,5 +102,37 @@ describe("session response lifecycle", () => {
     } finally {
       window.removeEventListener(LANDSCAPE_SESSION_CLEARED, cleanup);
     }
+  });
+
+  it("redirects an expired deep link to login", async () => {
+    setActivePinia(createPinia());
+    localStorage.setItem(LANDSCAPE_TOKEN_KEY, "expired-token");
+    window.history.replaceState({}, "", "/domains/certs");
+    await router.push("/domains/certs");
+    const client = applyInterceptors(
+      axios.create({
+        adapter: async (config) => {
+          throw new AxiosError(
+            "Unauthorized",
+            "ERR_BAD_REQUEST",
+            config,
+            null,
+            {
+              config,
+              status: 401,
+              statusText: "Unauthorized",
+              headers: {},
+              data: {},
+            },
+          );
+        },
+      }),
+    );
+
+    await expect(client.get("/certs")).rejects.toEqual({});
+    await flushPromises();
+
+    expect(router.currentRoute.value.path).toBe("/login");
+    expect(history.state.redirect).toBe("/domains/certs");
   });
 });

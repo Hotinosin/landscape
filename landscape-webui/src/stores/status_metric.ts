@@ -16,6 +16,12 @@ import type {
   ConnectGlobalStats,
 } from "@landscape-router/types/api/schemas";
 import type { NetworkTrendState } from "@/components/sysinfo/networkTrend";
+import {
+  addNetworkTrendSample,
+  resetNetworkTrend,
+} from "@/components/sysinfo/networkTrend";
+import { useIfaceNodeStore } from "@/stores/iface_node";
+import { IfaceZoneType } from "@landscape-router/types/api/schemas";
 
 export type FlowIpRealtimeStat = IpRealtimeStat & { flow_id?: number };
 export type MetricResource = "connections" | "src" | "dst" | "iface";
@@ -44,6 +50,7 @@ const newState = (): MetricResourceState => ({
 });
 
 export const useMetricStore = defineStore("dns_metric", () => {
+  const ifaceStore = useIfaceNodeStore();
   const metric_status = ref<ServiceStatus>({ t: ServiceStatusType.Stop });
   const firewall_info = ref<ConnectRealtimeStatus[]>([]);
   const src_ip_stats = ref<IpRealtimeStat[]>([]);
@@ -64,6 +71,7 @@ export const useMetricStore = defineStore("dns_metric", () => {
   const statusState = reactive(newState());
   const globalHistoryState = reactive(newState());
   const inFlight = new Map<string, Promise<void>>();
+  let networkTrendIntervalMs = 3000;
 
   const is_down = computed(
     () =>
@@ -128,8 +136,48 @@ export const useMetricStore = defineStore("dns_metric", () => {
     iface: () =>
       get_iface_stats().then((result) => {
         iface_stats.value = result;
+        recordNetworkTrend(result);
       }),
   };
+
+  function recordNetworkTrend(result: IfaceRealtimeStat[]) {
+    const wanIndexes = ifaceStore.net_devs
+      .filter((iface) => iface.zone_type === IfaceZoneType.wan)
+      .map((iface) => iface.index)
+      .sort((left, right) => left - right);
+    const wanSignature = wanIndexes.join(",");
+    if (networkTrend.wanSignature !== wanSignature) {
+      resetNetworkTrend(networkTrend);
+      networkTrend.wanSignature = wanSignature;
+    }
+
+    const wanIndexSet = new Set(wanIndexes);
+    const reports = result
+      .filter((item) => wanIndexSet.has(item.ifindex))
+      .sort((left, right) => left.ifindex - right.ifindex);
+    if (!wanIndexes.length || reports.some((item) => !item.last_report_time))
+      return;
+
+    addNetworkTrendSample(
+      networkTrend,
+      {
+        timestamp: Date.now(),
+        reportKey: reports
+          .map((item) => `${item.ifindex}:${item.last_report_time}`)
+          .join("|"),
+        reportTime: reports.length
+          ? Math.max(...reports.map((item) => item.last_report_time))
+          : (networkTrend.lastReportTime ?? 0),
+        wanSignature,
+        upload: reports.reduce((sum, item) => sum + item.stats.egress_bps, 0),
+        download: reports.reduce(
+          (sum, item) => sum + item.stats.ingress_bps,
+          0,
+        ),
+      },
+      networkTrendIntervalMs,
+    );
+  }
 
   const loadResource = (name: MetricResource) =>
     run(name, resourceStates[name], loaders[name]);
@@ -142,13 +190,15 @@ export const useMetricStore = defineStore("dns_metric", () => {
     if (failure) throw failure.reason;
   }
 
-  async function UPDATE_INFO() {
+  async function UPDATE_INFO(refreshIntervalMs = 3000) {
+    networkTrendIntervalMs = refreshIntervalMs;
     const results = await Promise.allSettled([
       run("status", statusState, () =>
         get_metric_status().then((result) => {
           metric_status.value = result;
         }),
       ),
+      loadResource("iface"),
       UPDATE_DEMAND(),
     ]);
     const failure = results.find(

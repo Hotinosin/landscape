@@ -55,7 +55,7 @@ const showEdit = ref(false);
         :upstreams="upstreams"
       />
     </n-flex>
-    <n-text v-else depth="3">{{ t("flow.list.no_dns_rules") }}</n-text>
+    <n-text v-else depth="3">—</n-text>
   </template>
   <template v-else-if="cell === 'targetIp'">
     <n-flex v-if="target_ip_rules?.length" vertical size="small">
@@ -67,7 +67,7 @@ const showEdit = ref(false);
         :flows="flows"
       />
     </n-flex>
-    <n-text v-else depth="3">{{ t("flow.list.no_target_ip_rules") }}</n-text>
+    <n-text v-else depth="3">—</n-text>
   </template>
   <template v-else-if="cell === 'egress'">
     <n-text depth="3">{{ t("flow.default_card.process_by_default") }}</n-text>

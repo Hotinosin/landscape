@@ -1,29 +1,33 @@
 <script setup lang="ts">
 import { useDockerStore } from "@/stores/status_docker";
-import DockerContainerCard from "@/components/docker/DockerContainerCard.vue";
 import DockerContainerListRow from "@/components/docker/DockerContainerListRow.vue";
-import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
 import { computed, h } from "vue";
 import type { DataTableColumns } from "naive-ui";
 import type { DockerContainerSummary } from "@/lib/docker";
 
 const dockerStatus = useDockerStore();
-const frontEndStore = useFrontEndStore();
 const { t } = useI18n();
+type ContainerCell =
+  "name" | "image" | "ip" | "ports" | "status" | "created" | "actions";
 const columns = computed<DataTableColumns<DockerContainerSummary>>(() =>
-  [
-    [`${t("common.status")} / ${t("common.name")}`, "name"],
-    [t("common.image"), "image"],
-    [t("common.status"), "status"],
-    [t("common.created_at"), "created"],
-    [t("common.actions"), "actions"],
-  ].map(([title, cell]) => ({
+  (
+    [
+      [t("common.name"), "name", 110],
+      [t("common.image"), "image", 220],
+      [t("common.ip_address"), "ip", 160],
+      [t("common.port_mapping"), "ports", 200],
+      [t("common.status"), "status", 110],
+      [t("common.created_at"), "created", 170],
+      [t("common.actions"), "actions", 160],
+    ] satisfies Array<[string, ContainerCell, number]>
+  ).map(([title, cell, width]) => ({
     title,
     key: cell,
+    width,
     align: "left" as const,
     render: (container: DockerContainerSummary) =>
-      h(DockerContainerListRow, { container, cell: cell as any }),
+      h(DockerContainerListRow, { container, cell }),
   })),
 );
 function rowKey(row: DockerContainerSummary) {
@@ -32,23 +36,12 @@ function rowKey(row: DockerContainerSummary) {
 </script>
 <template>
   <StandardDataTable
-    v-if="frontEndStore.display_style === 'list'"
     :columns="columns"
     :data="dockerStatus.container_summarys"
     :loading="dockerStatus.loading"
     :error="dockerStatus.error"
     :row-key="rowKey"
+    :scroll-x="1220"
     @retry="dockerStatus.retry"
   />
-  <StandardPageState
-    v-else
-    :state="dockerStatus.state"
-    @retry="dockerStatus.retry"
-  >
-    <n-grid x-gap="12" y-gap="12" cols="1 600:3 1200:4 1900:6">
-      <n-gi :span="1" v-for="container in dockerStatus.container_summarys">
-        <DockerContainerCard :container="container" />
-      </n-gi>
-    </n-grid>
-  </StandardPageState>
 </template>

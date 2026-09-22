@@ -45,7 +45,18 @@ async function save_config() {
   show_model.value = false;
 }
 
-defineExpose({ save: save_config });
+const getSummary = () => [
+  {
+    label: t("firewall.service_edit.title"),
+    value: t(
+      service_config.value.enable
+        ? "network.settings.enabled"
+        : "network.settings.disabled",
+    ),
+  },
+];
+
+defineExpose({ save: save_config, getSummary });
 </script>
 
 <template>
@@ -54,11 +65,11 @@ defineExpose({ save: save_config });
     v-model:enabled="service_config.enable"
     :title="t('firewall.service_edit.title')"
     width="var(--app-secondary-modal-width)"
-    @after-enter="on_modal_enter"
+    :prepare="on_modal_enter"
   >
     <template #footer>
       <n-flex justify="end">
-        <n-button round type="primary" @click="save_config">
+        <n-button type="primary" @click="save_config">
           {{ t("common.update") }}
         </n-button>
       </n-flex>

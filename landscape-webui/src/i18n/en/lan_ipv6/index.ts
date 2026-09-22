@@ -61,6 +61,8 @@ export default {
     "M and O flags are automatically enabled in this mode to direct devices to the DHCPv6 server.",
 
   route_priority: "Default Route Priority",
+  route_priority_desc:
+    "Controls the priority of the IPv6 default route advertised by this interface. Clients prefer the higher-priority route when multiple default routes are available.",
   priority_low: "Low",
   priority_medium: "Medium (Default)",
   priority_high: "High",
@@ -79,8 +81,8 @@ export default {
   service_kind_pd: "DHCPv6 PD",
   source_type_static: "Static Prefix",
   source_type_pd: "IPv6 PD",
-  add_static_prefix: "Add Static Prefix",
-  add_pd_prefix: "Add Upstream PD",
+  add_static_prefix: "New Static Prefix",
+  add_pd_prefix: "New Upstream PD",
   delete: "Delete",
   prefix_overview: "Prefix Overview",
   prefix_overview_desc:
@@ -282,16 +284,21 @@ export default {
     prefix_len_status: "Prefix Length Status",
     prefix_len_matches: "Meets Expectation",
     prefix_len_mismatch: "Does Not Meet Expectation",
+    delegation_active: "Active",
+    delegation_inactive: "Inactive",
     last_update: "Last Update",
     dhcpv6_client_prefix_time: "Time when DHCPv6 Client obtained the prefix",
   },
 
   // IPv6PDEditModal
   ipv6_pd_config: "IPv6-PD Client Config",
+  pd_runtime_status: "Upstream IPv6 Delegation Status",
   mac_required: "MAC address cannot be empty",
   mac_hint: "MAC address used for request",
   mac_hint_desc: "PPP interfaces use a generated virtual MAC address",
   expected_pd_len: "Expected Upstream PD Prefix Length",
+  expected_pd_len_desc:
+    "Enter the prefix length expected from your ISP (56–64). A smaller number provides more /64 subnets: /56 provides 256, /60 provides 16, and /64 provides 1. Match the value your ISP delegates; this setting does not request or force that length.",
   expected_pd_len_invalid:
     "Expected upstream PD prefix length must be an integer from 56 to 64",
 

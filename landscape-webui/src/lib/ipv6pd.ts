@@ -11,7 +11,7 @@ export class IPV6PDServiceConfig {
     update_at?: number;
   }) {
     this.iface_name = obj?.iface_name ?? "";
-    this.enable = obj?.enable ?? true;
+    this.enable = obj?.enable ?? false;
     this.config = new IPV6PDConfig(obj?.config ?? {});
     this.update_at = obj?.update_at;
   }

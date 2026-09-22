@@ -15,7 +15,7 @@ export default {
   reset: "Reset",
   // Query Types
   all_types: "All Types",
-  all_flows: "All Flows",
+  all_flows: "All Flow Policies",
   // Status
   all_status: "All Status",
   status_hit: "Hit (Cache)",
@@ -33,7 +33,7 @@ export default {
   col_resp_code: "Resp Code",
   col_status: "Status",
   col_duration: "Duration (ms)",
-  col_flow: "Flow Info",
+  col_flow: "Flow Policy Info",
   col_answers: "Answers",
   // Dashboard
   dash: {
@@ -70,7 +70,7 @@ export default {
       "Hit rate is based on effective queries (excluding blocks, filters, and errors).",
   },
   tip: {
-    default_flow: "Default Flow",
+    default_flow: "Default Flow Policy",
     search_domain: "Search this domain",
     check_domain: "Test domain query result",
   },

@@ -12,6 +12,7 @@ import {
   cacheAccentColor,
   cacheThemeStyle,
   normalizeThemePreference,
+  normalizeThemeStyle,
   readCachedAccentColor,
   readCachedThemeStyle,
   readCachedThemePreference,
@@ -45,7 +46,6 @@ export const usePreferenceStore = defineStore("preference", () => {
       language.value = normalizeLanguage(config.language, currentLocale);
       timezone.value = config.timezone || "Asia/Shanghai";
       theme.value = normalizeThemePreference(config.theme, theme.value);
-
       applyPreference();
     } catch (error) {
       console.error("Failed to load generic UI config", error);
