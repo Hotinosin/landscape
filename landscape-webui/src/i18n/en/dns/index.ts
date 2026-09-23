@@ -104,22 +104,24 @@ export default {
     warn_default_endpoint:
       "Empty value will fallback to `/dns-query` (warning can be ignored)",
     warn_empty_endpoint_fill: "URL is empty, fallback to `/dns-query`",
-    test_h3: "Test H3",
-    h3_test_title: "DoH3 Connection Test",
-    h3_test_success: "H3 connected and returned a DNS response",
-    h3_test_partial: "H3 connection is unstable; only some queries succeeded",
-    h3_test_failed: "H3 connection failed; see each attempt below",
-    h3_test_timeout:
-      "H3 connection timed out; check whether UDP/443 is allowed",
-    h3_test_network_unreachable:
+    test: "Test",
+    doq_reuse_test: "DoQ Reuse Test",
+    quic_test_title: "{protocol} Connection Test",
+    quic_test_success: "{protocol} connected and returned a DNS response",
+    quic_test_partial:
+      "{protocol} connection is unstable; only some queries succeeded",
+    quic_test_failed: "{protocol} connection failed; see each attempt below",
+    quic_test_timeout:
+      "{protocol} connection timed out; check whether its UDP port is allowed",
+    quic_test_network_unreachable:
       "Network unreachable; check the default route and egress",
-    h3_test_tls_failed:
-      "H3 TLS handshake failed; check the domain, certificate, and system time",
-    h3_test_request_failed:
+    quic_test_tls_failed:
+      "{protocol} TLS handshake failed; check the domain, certificate, and system time",
+    quic_test_request_failed:
       "The test request failed; check the backend service and retry",
     test_domain: "Test Domain",
     reuse_average: "Average Reused-request Latency",
-    connection_count: "H3 Connections Created",
+    connection_count: "QUIC Connections Created",
     connection: "Connection",
     connection_new: "New",
     connection_reused: "Reused",

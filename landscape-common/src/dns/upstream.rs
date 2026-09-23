@@ -10,33 +10,33 @@ pub enum DnsUpstreamError {
     #[api_error(id = "dns_upstream.not_found", status = 404)]
     NotFound(ConfigId),
 
-    #[error("H3 test requires a DNS-over-HTTPS upstream")]
-    #[api_error(id = "dns_upstream.h3_test_requires_https", status = 400)]
-    H3TestRequiresHttps,
+    #[error("QUIC test requires a DNS-over-HTTPS or DNS-over-QUIC upstream")]
+    #[api_error(id = "dns_upstream.quic_test_requires_quic", status = 400)]
+    QuicTestRequiresQuic,
 
-    #[error("Invalid H3 test config: {0}")]
-    #[api_error(id = "dns_upstream.h3_test_invalid_config", status = 400)]
-    H3TestInvalidConfig(String),
+    #[error("Invalid QUIC test config: {0}")]
+    #[api_error(id = "dns_upstream.quic_test_invalid_config", status = 400)]
+    QuicTestInvalidConfig(String),
 
-    #[error("Failed to create H3 test resolver")]
-    #[api_error(id = "dns_upstream.h3_test_resolver_failed", status = 500)]
-    H3TestResolverFailed,
+    #[error("Failed to create QUIC test resolver")]
+    #[api_error(id = "dns_upstream.quic_test_resolver_failed", status = 500)]
+    QuicTestResolverFailed,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-pub struct DnsUpstreamH3TestAttempt {
+pub struct DnsUpstreamQuicTestAttempt {
     pub latency_ms: f64,
     pub answers: Vec<String>,
     pub connection_reused: Option<bool>,
-    pub error_kind: Option<DnsUpstreamH3TestErrorKind>,
+    pub error_kind: Option<DnsUpstreamQuicTestErrorKind>,
     pub error: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "snake_case")]
-pub enum DnsUpstreamH3TestErrorKind {
+pub enum DnsUpstreamQuicTestErrorKind {
     Timeout,
     Network,
     Tls,
@@ -45,11 +45,20 @@ pub enum DnsUpstreamH3TestErrorKind {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-pub struct DnsUpstreamH3TestResult {
+pub struct DnsUpstreamQuicTestResult {
+    pub protocol: DnsUpstreamQuicProtocol,
     pub query_domain: String,
-    pub attempts: Vec<DnsUpstreamH3TestAttempt>,
+    pub attempts: Vec<DnsUpstreamQuicTestAttempt>,
     pub connection_count: usize,
     pub reuse_average_ms: Option<f64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(rename_all = "lowercase")]
+pub enum DnsUpstreamQuicProtocol {
+    H3,
+    Doq,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]

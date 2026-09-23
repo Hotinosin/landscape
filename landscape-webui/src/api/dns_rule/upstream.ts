@@ -8,7 +8,8 @@ import {
 import type { DnsUpstreamConfig } from "@landscape-router/types/api/schemas";
 import customInstance from "@landscape-router/types/mutator";
 
-export type DnsUpstreamH3TestResult = {
+export type DnsUpstreamQuicTestResult = {
+  protocol: "h3" | "doq";
   query_domain: string;
   attempts: Array<{
     latency_ms: number;
@@ -45,11 +46,11 @@ export async function push_many_dns_upstream(
   await addManyDnsUpstreams(rule);
 }
 
-export function test_dns_upstream_h3(
+export function test_dns_upstream_quic(
   rule: DnsUpstreamConfig,
-): Promise<DnsUpstreamH3TestResult> {
-  return customInstance<{ data?: DnsUpstreamH3TestResult }>({
-    url: "/api/v1/dns/upstreams/test-h3",
+): Promise<DnsUpstreamQuicTestResult> {
+  return customInstance<{ data?: DnsUpstreamQuicTestResult }>({
+    url: "/api/v1/dns/upstreams/test-quic",
     method: "POST",
     data: rule,
   });

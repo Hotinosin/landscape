@@ -44,39 +44,49 @@ pub mod listener;
 pub mod mdns;
 pub mod server;
 
-pub async fn test_doh3_upstream(
+pub async fn test_quic_upstream(
     mut config: landscape_common::dns::config::DnsUpstreamConfig,
 ) -> Result<
-    landscape_common::dns::upstream::DnsUpstreamH3TestResult,
+    landscape_common::dns::upstream::DnsUpstreamQuicTestResult,
     landscape_common::dns::upstream::DnsUpstreamError,
 > {
     use hickory_proto::rr::RecordType;
     use landscape_common::dns::upstream::{
-        DnsUpstreamError, DnsUpstreamH3TestAttempt, DnsUpstreamH3TestErrorKind,
-        DnsUpstreamH3TestResult,
+        DnsUpstreamError, DnsUpstreamQuicProtocol, DnsUpstreamQuicTestAttempt,
+        DnsUpstreamQuicTestErrorKind, DnsUpstreamQuicTestResult,
     };
 
-    let landscape_common::dns::upstream::DnsUpstreamMode::Https { domain, http_endpoint, http3 } =
-        &mut config.mode
-    else {
-        return Err(DnsUpstreamError::H3TestRequiresHttps);
+    let (protocol, domain) = match &mut config.mode {
+        landscape_common::dns::upstream::DnsUpstreamMode::Https {
+            domain,
+            http_endpoint,
+            http3,
+        } => {
+            if http_endpoint
+                .as_deref()
+                .is_some_and(|path| !path.is_empty() && !path.starts_with('/'))
+            {
+                return Err(DnsUpstreamError::QuicTestInvalidConfig(
+                    "HTTP endpoint must start with '/'".into(),
+                ));
+            }
+            *http3 = true;
+            (DnsUpstreamQuicProtocol::H3, domain.trim())
+        }
+        landscape_common::dns::upstream::DnsUpstreamMode::Quic { domain } => {
+            (DnsUpstreamQuicProtocol::Doq, domain.trim())
+        }
+        _ => return Err(DnsUpstreamError::QuicTestRequiresQuic),
     };
-    let domain = domain.trim();
     if domain.is_empty() || hickory_proto::rr::Name::from_ascii(domain).is_err() {
-        return Err(DnsUpstreamError::H3TestInvalidConfig("invalid upstream domain".into()));
+        return Err(DnsUpstreamError::QuicTestInvalidConfig("invalid upstream domain".into()));
     }
     if config.ips.is_empty() {
-        return Err(DnsUpstreamError::H3TestInvalidConfig(
+        return Err(DnsUpstreamError::QuicTestInvalidConfig(
             "at least one upstream IP is required".into(),
         ));
     }
-    if http_endpoint.as_deref().is_some_and(|path| !path.is_empty() && !path.starts_with('/')) {
-        return Err(DnsUpstreamError::H3TestInvalidConfig(
-            "HTTP endpoint must start with '/'".into(),
-        ));
-    }
     let query_domain = format!("{}.", domain.trim_end_matches('.'));
-    *http3 = true;
 
     let connection_counter = Arc::new(AtomicUsize::new(0));
     let Some(resolver) = connection::create_resolver_with_quic_counter(
@@ -85,7 +95,7 @@ pub async fn test_doh3_upstream(
         config,
         connection_counter.clone(),
     ) else {
-        return Err(DnsUpstreamError::H3TestResolverFailed);
+        return Err(DnsUpstreamError::QuicTestResolverFailed);
     };
     let mut attempts = Vec::with_capacity(5);
 
@@ -101,7 +111,7 @@ pub async fn test_doh3_upstream(
         let connection_reused = (!attempts.is_empty())
             .then(|| connection_counter.load(Ordering::Relaxed) == connections_before);
         attempts.push(match result {
-            Ok(Ok(lookup)) => DnsUpstreamH3TestAttempt {
+            Ok(Ok(lookup)) => DnsUpstreamQuicTestAttempt {
                 latency_ms,
                 answers: lookup.answers().iter().map(|record| record.data.to_string()).collect(),
                 connection_reused,
@@ -112,17 +122,17 @@ pub async fn test_doh3_upstream(
                 let error = error.to_string();
                 let normalized = error.to_ascii_lowercase();
                 let error_kind = if normalized.contains("timed out") {
-                    DnsUpstreamH3TestErrorKind::Timeout
+                    DnsUpstreamQuicTestErrorKind::Timeout
                 } else if normalized.contains("network is unreachable")
                     || normalized.contains("no route to host")
                 {
-                    DnsUpstreamH3TestErrorKind::Network
+                    DnsUpstreamQuicTestErrorKind::Network
                 } else if normalized.contains("tls") || normalized.contains("certificate") {
-                    DnsUpstreamH3TestErrorKind::Tls
+                    DnsUpstreamQuicTestErrorKind::Tls
                 } else {
-                    DnsUpstreamH3TestErrorKind::Resolve
+                    DnsUpstreamQuicTestErrorKind::Resolve
                 };
-                DnsUpstreamH3TestAttempt {
+                DnsUpstreamQuicTestAttempt {
                     latency_ms,
                     answers: vec![],
                     connection_reused: None,
@@ -130,11 +140,11 @@ pub async fn test_doh3_upstream(
                     error: Some(error),
                 }
             }
-            Err(_) => DnsUpstreamH3TestAttempt {
+            Err(_) => DnsUpstreamQuicTestAttempt {
                 latency_ms,
                 answers: vec![],
                 connection_reused: None,
-                error_kind: Some(DnsUpstreamH3TestErrorKind::Timeout),
+                error_kind: Some(DnsUpstreamQuicTestErrorKind::Timeout),
                 error: Some("request timed out after 3 seconds".into()),
             },
         });
@@ -149,12 +159,43 @@ pub async fn test_doh3_upstream(
     let reuse_average_ms =
         (!reused.is_empty()).then(|| reused.iter().sum::<f64>() / reused.len() as f64);
 
-    Ok(DnsUpstreamH3TestResult {
+    Ok(DnsUpstreamQuicTestResult {
+        protocol,
         query_domain,
         attempts,
         connection_count: connection_counter.load(Ordering::Relaxed),
         reuse_average_ms,
     })
+}
+
+#[cfg(test)]
+mod quic_upstream_tests {
+    use super::test_quic_upstream;
+    use landscape_common::dns::{
+        config::DnsUpstreamConfig,
+        upstream::{DnsUpstreamError, DnsUpstreamMode},
+    };
+
+    #[tokio::test]
+    async fn quic_test_accepts_h3_and_doq_modes_only() {
+        let err = test_quic_upstream(DnsUpstreamConfig::default()).await.unwrap_err();
+        assert!(matches!(err, DnsUpstreamError::QuicTestRequiresQuic));
+
+        for mode in [
+            DnsUpstreamMode::Https {
+                domain: "dns.example.com".into(),
+                http_endpoint: Some("/dns-query".into()),
+                http3: true,
+            },
+            DnsUpstreamMode::Quic { domain: "dns.example.com".into() },
+        ] {
+            let mut config = DnsUpstreamConfig::default();
+            config.mode = mode;
+            config.ips.clear();
+            let err = test_quic_upstream(config).await.unwrap_err();
+            assert!(matches!(err, DnsUpstreamError::QuicTestInvalidConfig(_)));
+        }
+    }
 }
 
 static RESOLVER_CONF: &str = "/etc/resolv.conf";

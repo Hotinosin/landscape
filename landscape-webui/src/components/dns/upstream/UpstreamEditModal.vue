@@ -6,8 +6,8 @@ import type { DnsUpstreamConfig } from "@landscape-router/types/api/schemas";
 import {
   get_dns_upstream,
   push_dns_upstream,
-  test_dns_upstream_h3,
-  type DnsUpstreamH3TestResult,
+  test_dns_upstream_quic,
+  type DnsUpstreamQuicTestResult,
 } from "@/api/dns_rule/upstream";
 import {
   DnsUpstreamModeTsEnum,
@@ -46,10 +46,10 @@ watch(
 );
 
 const commit_spin = ref(false);
-const h3TestLoading = ref(false);
-const h3TestResult = ref<DnsUpstreamH3TestResult>();
-const h3TestError = ref("");
-const showH3TestResult = ref(false);
+const quicTestLoading = ref(false);
+const quicTestResult = ref<DnsUpstreamQuicTestResult>();
+const quicTestError = ref("");
+const showQuicTestResult = ref(false);
 const isModified = computed(() => {
   return JSON.stringify(rule.value) !== origin_rule_json.value;
 });
@@ -74,43 +74,50 @@ const http3Enabled = computed({
     }
   },
 });
-const h3SuccessCount = computed(
+const quicProtocol = computed(() =>
+  rule.value?.mode.t === DnsUpstreamModeTsEnum.Quic ? "DoQ" : "H3",
+);
+const quicSuccessCount = computed(
   () =>
-    h3TestResult.value?.attempts.filter((attempt) => !attempt.error).length ??
+    quicTestResult.value?.attempts.filter((attempt) => !attempt.error).length ??
     0,
 );
-const h3TestSucceeded = computed(
+const quicTestSucceeded = computed(
   () =>
-    Boolean(h3TestResult.value?.attempts.length) &&
-    h3SuccessCount.value === h3TestResult.value?.attempts.length,
+    Boolean(quicTestResult.value?.attempts.length) &&
+    quicSuccessCount.value === quicTestResult.value?.attempts.length,
 );
-const h3TestPartial = computed(
-  () => h3SuccessCount.value > 0 && !h3TestSucceeded.value,
+const quicTestPartial = computed(
+  () => quicSuccessCount.value > 0 && !quicTestSucceeded.value,
 );
-const h3TestMessage = computed(() => {
-  if (h3TestSucceeded.value) return t("dns.upstream_edit.h3_test_success");
-  if (h3TestPartial.value) return t("dns.upstream_edit.h3_test_partial");
-  if (h3TestError.value) return t("dns.upstream_edit.h3_test_request_failed");
+const quicTestMessage = computed(() => {
+  const params = { protocol: quicProtocol.value };
+  if (quicTestSucceeded.value)
+    return t("dns.upstream_edit.quic_test_success", params);
+  if (quicTestPartial.value)
+    return t("dns.upstream_edit.quic_test_partial", params);
+  if (quicTestError.value)
+    return t("dns.upstream_edit.quic_test_request_failed");
 
-  const errorKinds = h3TestResult.value?.attempts
+  const errorKinds = quicTestResult.value?.attempts
     .map((attempt) => attempt.error_kind)
     .filter(Boolean);
   if (errorKinds?.includes("timeout")) {
-    return t("dns.upstream_edit.h3_test_timeout");
+    return t("dns.upstream_edit.quic_test_timeout", params);
   }
   if (errorKinds?.includes("network")) {
-    return t("dns.upstream_edit.h3_test_network_unreachable");
+    return t("dns.upstream_edit.quic_test_network_unreachable");
   }
   if (errorKinds?.includes("tls")) {
-    return t("dns.upstream_edit.h3_test_tls_failed");
+    return t("dns.upstream_edit.quic_test_tls_failed", params);
   }
-  return t("dns.upstream_edit.h3_test_failed");
+  return t("dns.upstream_edit.quic_test_failed", params);
 });
-type H3Attempt = DnsUpstreamH3TestResult["attempts"][number];
-function h3AttemptRowKey(attempt: H3Attempt) {
+type QuicAttempt = DnsUpstreamQuicTestResult["attempts"][number];
+function quicAttemptRowKey(attempt: QuicAttempt) {
   return JSON.stringify(attempt);
 }
-const h3AttemptColumns = computed<DataTableColumns<H3Attempt>>(() => [
+const quicAttemptColumns = computed<DataTableColumns<QuicAttempt>>(() => [
   {
     title: "#",
     key: "index",
@@ -148,21 +155,23 @@ const h3AttemptColumns = computed<DataTableColumns<H3Attempt>>(() => [
   },
 ]);
 
-async function testH3() {
+async function testQuic() {
   if (!rule.value) return;
-  showH3TestResult.value = true;
-  h3TestLoading.value = true;
-  h3TestResult.value = undefined;
-  h3TestError.value = "";
+  showQuicTestResult.value = true;
+  quicTestLoading.value = true;
+  quicTestResult.value = undefined;
+  quicTestError.value = "";
   try {
-    h3TestResult.value = await test_dns_upstream_h3(rule.value);
+    quicTestResult.value = await test_dns_upstream_quic(rule.value);
   } catch (error: any) {
-    h3TestError.value =
+    quicTestError.value =
       error?.message ||
       error?.error_id ||
-      t("dns.upstream_edit.h3_test_failed");
+      t("dns.upstream_edit.quic_test_failed", {
+        protocol: quicProtocol.value,
+      });
   } finally {
-    h3TestLoading.value = false;
+    quicTestLoading.value = false;
   }
 }
 
@@ -227,7 +236,6 @@ const rules = {
       return true;
     },
   },
-
 };
 
 async function saveRule() {
@@ -374,10 +382,25 @@ async function import_rules(rules: DnsUpstreamConfig) {
       >
         <n-flex align="center" :wrap="false" :size="8">
           <n-switch v-model:value="http3Enabled" size="medium" />
-          <n-button size="small" :loading="h3TestLoading" @click="testH3">
-            {{ t("dns.upstream_edit.test_h3") }}
+          <n-button
+            v-if="http3Enabled"
+            size="small"
+            :loading="quicTestLoading"
+            @click="testQuic"
+          >
+            {{ t("dns.upstream_edit.test") }}
           </n-button>
         </n-flex>
+      </StandardSettingRow>
+
+      <StandardSettingRow
+        v-else-if="rule.mode.t === DnsUpstreamModeTsEnum.Quic"
+        :label="t('dns.upstream_edit.doq_reuse_test')"
+        control-width="auto"
+      >
+        <n-button size="small" :loading="quicTestLoading" @click="testQuic">
+          {{ t("dns.upstream_edit.test") }}
+        </n-button>
       </StandardSettingRow>
 
       <StandardSettingRow
@@ -452,54 +475,54 @@ async function import_rules(rules: DnsUpstreamConfig) {
     </template>
   </ConfigModal>
   <ConfigModal
-    v-model:show="showH3TestResult"
+    v-model:show="showQuicTestResult"
     :show-switch="false"
-    :title="t('dns.upstream_edit.h3_test_title')"
+    :title="t('dns.upstream_edit.quic_test_title', { protocol: quicProtocol })"
     width="var(--app-compact-modal-width)"
   >
-    <n-spin v-if="h3TestLoading" style="display: block; padding: 32px" />
+    <n-spin v-if="quicTestLoading" style="display: block; padding: 32px" />
     <template v-else>
       <n-alert
         :type="
-          h3TestSucceeded ? 'success' : h3TestPartial ? 'warning' : 'error'
+          quicTestSucceeded ? 'success' : quicTestPartial ? 'warning' : 'error'
         "
         :bordered="false"
       >
-        {{ h3TestMessage }}
+        {{ quicTestMessage }}
       </n-alert>
       <n-text
-        v-if="h3TestError"
+        v-if="quicTestError"
         type="error"
         style="display: block; margin-top: 12px"
       >
-        {{ h3TestError }}
+        {{ quicTestError }}
       </n-text>
       <n-descriptions
-        v-if="h3TestResult"
+        v-if="quicTestResult"
         :column="2"
         label-placement="left"
         style="margin-top: 12px"
       >
         <n-descriptions-item :label="t('dns.upstream_edit.test_domain')">
-          {{ h3TestResult.query_domain }}
+          {{ quicTestResult.query_domain }}
         </n-descriptions-item>
         <n-descriptions-item :label="t('dns.upstream_edit.reuse_average')">
           {{
-            h3TestResult.reuse_average_ms == null
+            quicTestResult.reuse_average_ms == null
               ? "-"
-              : `${h3TestResult.reuse_average_ms.toFixed(2)} ms`
+              : `${quicTestResult.reuse_average_ms.toFixed(2)} ms`
           }}
         </n-descriptions-item>
         <n-descriptions-item :label="t('dns.upstream_edit.connection_count')">
-          {{ h3TestResult.connection_count }}
+          {{ quicTestResult.connection_count }}
         </n-descriptions-item>
       </n-descriptions>
       <StandardDataTable
-        v-if="h3TestResult"
-        class="h3-attempt-table"
-        :columns="h3AttemptColumns"
-        :data="h3TestResult.attempts"
-        :row-key="h3AttemptRowKey"
+        v-if="quicTestResult"
+        class="quic-attempt-table"
+        :columns="quicAttemptColumns"
+        :data="quicTestResult.attempts"
+        :row-key="quicAttemptRowKey"
         size="small"
       />
     </template>
@@ -507,7 +530,7 @@ async function import_rules(rules: DnsUpstreamConfig) {
 </template>
 
 <style scoped>
-.h3-attempt-table {
+.quic-attempt-table {
   margin-top: var(--app-space-section);
 }
 
