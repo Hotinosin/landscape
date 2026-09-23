@@ -7,10 +7,6 @@ use zerotrie::ZeroTrieSimpleAscii;
 
 use crate::domain::{normalize_domain_text, ParsedDomain};
 
-pub(crate) fn domain_config_matches_normalized(config: &DomainConfig, normalized: &str) -> bool {
-    domain_rule_matches_normalized(&config.match_type, &config.value, normalized)
-}
-
 pub fn domain_rule_matches_normalized(
     match_type: &DomainMatchType,
     value: &str,
@@ -380,7 +376,11 @@ mod tests {
         ] {
             let runtime = DomainMatcher::new(vec![config.clone()]);
             assert_eq!(
-                super::domain_config_matches_normalized(&config, domain.name()),
+                super::domain_rule_matches_normalized(
+                    &config.match_type,
+                    &config.value,
+                    domain.name(),
+                ),
                 runtime.is_match_normalized(domain.name())
             );
         }
