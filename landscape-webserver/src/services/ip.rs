@@ -8,8 +8,8 @@ use landscape_common::wan_service::ip_config::{IfaceIpModelConfig, IfaceIpServic
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use landscape_common::service::ServiceConfigError;
 use landscape::netlink::address::all_addresses_by_iface_name;
+use landscape_common::service::ServiceConfigError;
 use serde::Serialize;
 
 use crate::api::JsonBody;
