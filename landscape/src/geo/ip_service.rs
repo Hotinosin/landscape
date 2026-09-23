@@ -365,10 +365,7 @@ impl GeoIpService {
             .ok_or_else(|| GeoError::IpConfigNotFound(name.clone()))?;
         let result = self.parse_source_bytes(&config.source, file_bytes).await?;
         self.replace_cache_by_name(&name, result).await;
-        self.store
-            .set(config)
-            .await
-            .map_err(|e| GeoError::IpConfigStoreFailed(e.to_string()))?;
+        self.store.set(config).await.map_err(|e| GeoError::IpConfigStoreFailed(e.to_string()))?;
         self.notify_dst_ip_updated();
         Ok(())
     }
