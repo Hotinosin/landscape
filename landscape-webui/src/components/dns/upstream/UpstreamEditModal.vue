@@ -39,6 +39,7 @@ async function enter() {
     rule.value = await get_dns_upstream(props.rule_id);
   } else {
     rule.value = {
+      name: null,
       remark: "",
       mode: { t: DnsUpstreamModeTsEnum.Plaintext },
       ips: [],
@@ -174,6 +175,10 @@ async function import_rules() {
       :cols="8"
     >
       <n-grid :cols="8">
+        <n-form-item-gi :span="4" :label="t('common.name')">
+          <n-input v-model:value="rule.name" />
+        </n-form-item-gi>
+
         <n-form-item-gi :span="4" :label="t('dns.upstream_edit.remark')">
           <n-input
             :placeholder="t('dns.upstream_edit.remark_placeholder')"

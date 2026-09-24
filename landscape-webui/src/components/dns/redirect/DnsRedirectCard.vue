@@ -25,6 +25,9 @@ const blockMetadataQueriesText = computed(() =>
     ? t("dns.redirect_card.block_metadata_queries_on")
     : t("dns.redirect_card.block_metadata_queries_off"),
 );
+const title = computed(
+  () => props.rule.name?.trim() || props.rule.remark || t("common.unnamed"),
+);
 
 async function del() {
   if (props.rule.id) {
@@ -37,7 +40,7 @@ async function del() {
 <template>
   <n-card size="small">
     <template #header>
-      <StatusTitle :enable="rule.enable" :remark="rule.remark"></StatusTitle>
+      <StatusTitle :enable="rule.enable" :remark="title"></StatusTitle>
     </template>
 
     <n-descriptions
@@ -47,6 +50,12 @@ async function del() {
       :column="1"
       size="small"
     >
+      <n-descriptions-item
+        v-if="rule.name && rule.remark"
+        :label="t('common.remark')"
+      >
+        {{ rule.remark }}
+      </n-descriptions-item>
       <n-descriptions-item :label="t('dns.redirect_card.apply_to')">
         <n-flex v-if="rule.apply_flows.length > 0">
           <n-tag v-for="value in rule.apply_flows" :bordered="false">

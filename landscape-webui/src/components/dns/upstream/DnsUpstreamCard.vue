@@ -36,15 +36,16 @@ const domain = computed(() => {
     return frontEndStore.MASK_INFO(props.rule.mode.domain);
   }
 });
+const title = computed(
+  () => props.rule.name?.trim() || props.rule.remark || t("common.unnamed"),
+);
 </script>
 
 <template>
   <n-card size="small">
     <template #header>
       <n-ellipsis>
-        {{
-          rule.remark !== "" ? rule.remark : t("dns.upstream_card.no_remark")
-        }}
+        {{ title }}
       </n-ellipsis>
     </template>
     <n-descriptions
@@ -54,6 +55,13 @@ const domain = computed(() => {
       :column="2"
       size="small"
     >
+      <n-descriptions-item
+        v-if="rule.name && rule.remark"
+        span="2"
+        :label="t('common.remark')"
+      >
+        {{ rule.remark }}
+      </n-descriptions-item>
       <n-descriptions-item :label="t('dns.upstream_card.request_mode')">
         {{ upstream_mode_exhibit_name(rule.mode.t) }}
       </n-descriptions-item>

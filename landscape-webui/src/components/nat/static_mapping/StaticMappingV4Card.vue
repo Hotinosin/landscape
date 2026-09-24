@@ -14,6 +14,9 @@ const frontEndStore = useFrontEndStore();
 const { t } = useI18n();
 
 const rule = defineModel<StaticNatMappingV4Config>("rule", { required: true });
+const title = computed(
+  () => rule.value.name?.trim() || rule.value.remark || t("common.unnamed"),
+);
 
 const target = computed(
   () => rule.value.lan_target ?? { t: "address" as const, ipv4: "" },
@@ -62,8 +65,12 @@ async function del() {
       @click="openEditModal()"
     >
       <template #header>
-        <StatusTitle :enable="rule.enable" :remark="rule.remark"></StatusTitle>
+        <StatusTitle :enable="rule.enable" :remark="title"></StatusTitle>
       </template>
+
+      <n-text v-if="rule.name && rule.remark" depth="3">
+        {{ rule.remark }}
+      </n-text>
 
       <template #header-extra>
         <n-flex size="small">

@@ -19,10 +19,12 @@ async function del() {
     emit("refresh");
   }
 }
-const title_name = computed(() =>
-  rule.value.remark == null || rule.value.remark === ""
-    ? t("common.no_remark")
-    : rule.value.remark,
+const title_name = computed(
+  () =>
+    rule.value.name?.trim() ||
+    (rule.value.remark == null || rule.value.remark === ""
+      ? t("common.no_remark")
+      : rule.value.remark),
 );
 </script>
 <template>
@@ -36,6 +38,12 @@ const title_name = computed(() =>
       </template>
       <!-- {{ rule }} -->
       <n-descriptions bordered label-placement="top" :column="1">
+        <n-descriptions-item
+          v-if="rule.name && rule.remark"
+          :label="t('common.remark')"
+        >
+          {{ rule.remark }}
+        </n-descriptions-item>
         <n-descriptions-item :label="t('flow.wan_rule_edit.egress_select')">
           <FlowMarkExhibit
             :mark="rule.mark"
