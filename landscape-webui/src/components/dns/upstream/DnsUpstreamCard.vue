@@ -55,13 +55,6 @@ const title = computed(
       :column="2"
       size="small"
     >
-      <n-descriptions-item
-        v-if="rule.name && rule.remark"
-        span="2"
-        :label="t('common.remark')"
-      >
-        {{ rule.remark }}
-      </n-descriptions-item>
       <n-descriptions-item :label="t('dns.upstream_card.request_mode')">
         {{ upstream_mode_exhibit_name(rule.mode.t) }}
       </n-descriptions-item>
@@ -82,6 +75,13 @@ const title = computed(
             </n-flex>
           </n-flex>
         </n-scrollbar>
+      </n-descriptions-item>
+      <n-descriptions-item
+        v-if="rule.name && rule.remark"
+        span="2"
+        :label="t('common.remark')"
+      >
+        {{ rule.remark }}
       </n-descriptions-item>
     </n-descriptions>
 

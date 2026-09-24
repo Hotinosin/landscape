@@ -50,12 +50,6 @@ async function del() {
       :column="1"
       size="small"
     >
-      <n-descriptions-item
-        v-if="rule.name && rule.remark"
-        :label="t('common.remark')"
-      >
-        {{ rule.remark }}
-      </n-descriptions-item>
       <n-descriptions-item :label="t('dns.redirect_card.apply_to')">
         <n-flex v-if="rule.apply_flows.length > 0">
           <n-tag v-for="value in rule.apply_flows" :bordered="false">
@@ -105,6 +99,12 @@ async function del() {
           </n-flex>
         </n-scrollbar>
         <!-- {{ rule.match_rules }} -->
+      </n-descriptions-item>
+      <n-descriptions-item
+        v-if="rule.name && rule.remark"
+        :label="t('common.remark')"
+      >
+        {{ rule.remark }}
       </n-descriptions-item>
     </n-descriptions>
 

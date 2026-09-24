@@ -191,10 +191,6 @@ async function append_import_rules() {
           <n-input v-model:value="rule.name" />
         </n-form-item-gi>
 
-        <n-form-item-gi :span="3" :label="t('dns.redirect_edit.remark')">
-          <n-input v-model:value="rule.remark" />
-        </n-form-item-gi>
-
         <n-form-item-gi :span="1">
           <template #label>
             <Notice>
@@ -319,6 +315,10 @@ async function append_import_rules() {
 
           <DomainMatchInput v-model:source="rule.match_rules">
           </DomainMatchInput>
+        </n-form-item-gi>
+
+        <n-form-item-gi :span="4" :label="t('dns.redirect_edit.remark')">
+          <n-input v-model:value="rule.remark" />
         </n-form-item-gi>
       </n-grid>
     </n-form>

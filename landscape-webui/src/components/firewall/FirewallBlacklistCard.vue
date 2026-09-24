@@ -35,9 +35,6 @@ const title_name = computed(
       <template #header>
         <StatusTitle :enable="rule.enable" :remark="title_name" />
       </template>
-      <n-text v-if="rule.name && rule.remark" depth="3">
-        {{ rule.remark }}
-      </n-text>
       <div style="height: 120px">
         <n-scrollbar v-if="rule.source.length > 0" style="height: 100%">
           <n-flex>
@@ -59,6 +56,9 @@ const title_name = computed(
           </template>
         </n-empty>
       </div>
+      <n-text v-if="rule.name && rule.remark" depth="3">
+        {{ rule.remark }}
+      </n-text>
       <template #header-extra>
         <n-flex>
           <n-button

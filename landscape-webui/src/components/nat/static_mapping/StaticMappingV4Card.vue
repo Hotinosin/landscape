@@ -68,10 +68,6 @@ async function del() {
         <StatusTitle :enable="rule.enable" :remark="title"></StatusTitle>
       </template>
 
-      <n-text v-if="rule.name && rule.remark" depth="3">
-        {{ rule.remark }}
-      </n-text>
-
       <template #header-extra>
         <n-flex size="small">
           <n-button
@@ -136,6 +132,10 @@ async function del() {
           </div>
         </n-scrollbar>
       </div>
+
+      <n-text v-if="rule.name && rule.remark" depth="3">
+        {{ rule.remark }}
+      </n-text>
 
       <div class="card-footer">
         <n-text depth="3" style="font-size: 12px">

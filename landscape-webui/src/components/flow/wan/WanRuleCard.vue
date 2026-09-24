@@ -38,12 +38,6 @@ const title_name = computed(
       </template>
       <!-- {{ rule }} -->
       <n-descriptions bordered label-placement="top" :column="1">
-        <n-descriptions-item
-          v-if="rule.name && rule.remark"
-          :label="t('common.remark')"
-        >
-          {{ rule.remark }}
-        </n-descriptions-item>
         <n-descriptions-item :label="t('flow.wan_rule_edit.egress_select')">
           <FlowMarkExhibit
             :mark="rule.mark"
@@ -61,6 +55,12 @@ const title_name = computed(
               </n-icon>
             </template>
           </n-empty>
+        </n-descriptions-item>
+        <n-descriptions-item
+          v-if="rule.name && rule.remark"
+          :label="t('common.remark')"
+        >
+          {{ rule.remark }}
         </n-descriptions-item>
       </n-descriptions>
       <template #header-extra>
