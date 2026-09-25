@@ -544,7 +544,9 @@ async function handleDeleteBridge() {
                       v-for="address in runtime_addresses"
                       :key="`${address.address}/${address.prefix_length}`"
                     >
-                      {{ maskValue(address.address) }}/{{ address.prefix_length }}
+                      {{ maskValue(address.address) }}/{{
+                        address.prefix_length
+                      }}
                       ·
                       {{
                         address.is_permanent
@@ -553,7 +555,9 @@ async function handleDeleteBridge() {
                       }}
                     </span>
                   </n-flex>
-                  <span v-else>{{ t("topology.panel.no_runtime_addresses") }}</span>
+                  <span v-else>{{
+                    t("topology.panel.no_runtime_addresses")
+                  }}</span>
                 </n-descriptions-item>
                 <n-descriptions-item :label="t('topology.panel.wifi_type')">
                   {{
