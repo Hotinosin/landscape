@@ -1,7 +1,6 @@
 export default {
-  title: "DNS History",
   auto_search_tip: "Auto-search (500ms debounce)",
-  dashboard: "Dashboard",
+  dashboard: "Overview",
   query_log: "Query Log",
   // Filters
   domain: "Domain",
@@ -16,7 +15,7 @@ export default {
   reset: "Reset",
   // Query Types
   all_types: "All Types",
-  all_flows: "All Flows",
+  all_flows: "All Flow Policies",
   // Status
   all_status: "All Status",
   status_hit: "Hit (Cache)",
@@ -34,7 +33,7 @@ export default {
   col_resp_code: "Resp Code",
   col_status: "Status",
   col_duration: "Duration (ms)",
-  col_flow: "Flow Info",
+  col_flow: "Flow Policy Info",
   col_answers: "Answers",
   // Dashboard
   dash: {
@@ -61,8 +60,8 @@ export default {
     latency_subtitle: "Avg latency (min 3 samples)",
     no_data: "No Data",
     from_samples: "From {count} samples",
-    rules: "Domain Rules",
-    ip_rules: "IP Rules",
+    rules: "DNS Rules",
+    ip_rules: "Target IP Rules",
     refresh: "Refresh Metrics",
     recent_5m: "(5 mins)",
     latency_tip:
@@ -71,7 +70,7 @@ export default {
       "Hit rate is based on effective queries (excluding blocks, filters, and errors).",
   },
   tip: {
-    default_flow: "Default Flow",
+    default_flow: "Default Flow Policy",
     search_domain: "Search this domain",
     check_domain: "Test domain query result",
   },

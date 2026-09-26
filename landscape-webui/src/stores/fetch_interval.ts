@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 
 import { useSysInfo } from "./systeminfo";
 import { useIfaceNodeStore } from "./iface_node";
@@ -18,6 +18,102 @@ import { useRouteLanConfigStore } from "./status_route_lan";
 import { useRouteWanConfigStore } from "./status_route_wan";
 
 import useDockerImgTask from "@/stores/docker_img_task";
+
+export async function runRefreshTasks(
+  tasks: Array<() => Promise<unknown>>,
+): Promise<string | undefined> {
+  const results = await Promise.allSettled(
+    tasks.map((task) => Promise.resolve().then(task)),
+  );
+  const failures = results.filter(
+    (result): result is PromiseRejectedResult => result.status === "rejected",
+  );
+  return failures.length
+    ? [
+        ...new Set(
+          failures.map(({ reason }) => {
+            if (reason instanceof Error) return reason.message;
+            if (typeof reason === "string") return reason;
+            try {
+              return JSON.stringify(reason) || "Request failed";
+            } catch {
+              return "Request failed";
+            }
+          }),
+        ),
+      ].join("; ")
+    : undefined;
+}
+
+import router from "@/router";
+
+export interface PollingStores {
+  sysinfo: { UPDATE_INFO: () => Promise<unknown> };
+  dockerStore: { UPDATE_INFO: () => Promise<unknown> };
+  dnsStore: { UPDATE_INFO: () => Promise<unknown> };
+  ifaceNodeStore: { UPDATE_INFO: () => Promise<unknown> };
+  ipConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  natConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  ipv6PDStore: { UPDATE_INFO: () => Promise<unknown> };
+  lanIpv6Store: { UPDATE_INFO: () => Promise<unknown> };
+  firewallConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  wifiConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  dhcpv4ConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  metricStore: { UPDATE_INFO: (interval: number) => Promise<unknown> };
+  mssclampConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  routeLanConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+  routeWanConfigStore: { UPDATE_INFO: () => Promise<unknown> };
+}
+
+export function getPollingTasksForPath(
+  path: string,
+  stores: PollingStores,
+  intervalMs: number,
+): Array<() => Promise<unknown>> {
+  const isDashboard = path === "/" || path === "";
+  const isNetworkSettings = path.startsWith("/network/settings");
+  const isDns = path.startsWith("/dns") || path.startsWith("/metrics/dns");
+  const isMetrics = path.startsWith("/metrics");
+
+  const tasks: Array<() => Promise<unknown>> = [];
+
+  // 1. Sysinfo is only needed on Dashboard
+  if (isDashboard) {
+    tasks.push(() => stores.sysinfo.UPDATE_INFO());
+  }
+
+  // 2. Network topology & microservice statuses needed on Dashboard and NetworkSettings
+  if (isDashboard || isNetworkSettings) {
+    tasks.push(
+      () => stores.ifaceNodeStore.UPDATE_INFO(),
+      () => stores.ipConfigStore.UPDATE_INFO(),
+      () => stores.natConfigStore.UPDATE_INFO(),
+      () => stores.ipv6PDStore.UPDATE_INFO(),
+      () => stores.lanIpv6Store.UPDATE_INFO(),
+      () => stores.firewallConfigStore.UPDATE_INFO(),
+      () => stores.wifiConfigStore.UPDATE_INFO(),
+      () => stores.dhcpv4ConfigStore.UPDATE_INFO(),
+      () => stores.mssclampConfigStore.UPDATE_INFO(),
+      () => stores.routeLanConfigStore.UPDATE_INFO(),
+      () => stores.routeWanConfigStore.UPDATE_INFO(),
+    );
+  }
+
+  // 3. DNS status needed on Dashboard and DNS pages
+  if (isDashboard || isDns) {
+    tasks.push(() => stores.dnsStore.UPDATE_INFO());
+  }
+
+  // 4. Metrics store (has internal demand checking)
+  if (isDashboard || isMetrics) {
+    tasks.push(() => stores.metricStore.UPDATE_INFO(intervalMs));
+  }
+
+  // 5. Docker store (has internal page_active checking)
+  tasks.push(() => stores.dockerStore.UPDATE_INFO());
+
+  return tasks;
+}
 
 export const useFetchIntervalStore = defineStore("fetch_interval", () => {
   const sysinfo = useSysInfo();
@@ -39,63 +135,77 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
   // SOCK
   const dockerImgTask = useDockerImgTask();
 
+  const current_path = ref<string>("/");
+
+  function SET_PATH(path: string) {
+    current_path.value = path;
+  }
+
+  let refresh_running = false;
   const interval_function = async () => {
+    if (refresh_running) return;
+    refresh_running = true;
     if (start_count_down_callback.value !== undefined) {
       start_count_down_callback.value();
     }
     try {
-      await sysinfo.UPDATE_INFO();
-      await dockerStore.UPDATE_INFO();
-      await dnsStore.UPDATE_INFO();
-      await ifaceNodeStore.UPDATE_INFO();
-      await ipConfigStore.UPDATE_INFO();
-      await natConfigStore.UPDATE_INFO();
-      await ipv6PDStore.UPDATE_INFO();
-      await lanIpv6Store.UPDATE_INFO();
-      await firewallConfigStore.UPDATE_INFO();
-      await wifiConfigStore.UPDATE_INFO();
-      await dhcpv4ConfigStore.UPDATE_INFO();
-      await metricStore.UPDATE_INFO();
-      await mssclampConfigStore.UPDATE_INFO();
-
-      await routeLanConfigStore.UPDATE_INFO();
-      await routeWanConfigStore.UPDATE_INFO();
-
+      const activePath =
+        current_path.value || router.currentRoute?.value?.path || "/";
+      const tasks = getPollingTasksForPath(
+        activePath,
+        {
+          sysinfo,
+          dockerStore,
+          dnsStore,
+          ifaceNodeStore,
+          ipConfigStore,
+          natConfigStore,
+          ipv6PDStore,
+          lanIpv6Store,
+          firewallConfigStore,
+          wifiConfigStore,
+          dhcpv4ConfigStore,
+          metricStore,
+          mssclampConfigStore,
+          routeLanConfigStore,
+          routeWanConfigStore,
+        },
+        interval_time.value,
+      );
+      if (tasks.length > 0) {
+        error_message.value = await runRefreshTasks(tasks);
+      }
       dockerImgTask.CONNECT();
-    } catch (error) {
-      // console.log("1111");
-      enable_interval.value = false;
-      if (interval_timer != undefined) {
-        clean_interval();
-      }
-      if (error instanceof Error) {
-        error_message.value = error.message;
-      } else {
-        error_message.value = `An unknown error occurred: ${error}`;
-      }
+    } finally {
+      refresh_running = false;
     }
   };
 
-  const error_message = ref<string | undefined>(undefined);
+  const error_message = ref<string>();
   const enable_interval = ref<boolean>(true);
   const interval_time = ref<number>(3000);
-  const interval_timer = ref<any>(undefined);
+  let interval_timer: ReturnType<typeof setInterval> | undefined;
+  let visibility_listener_attached = false;
 
-  const start_count_down_callback = ref<any>();
+  const start_count_down_callback = ref<(() => void) | undefined>();
 
   function set_interval() {
+    if (document.hidden) return;
     // 如果已经存在计时器，先清理掉
-    if (interval_timer.value !== undefined) {
+    if (interval_timer !== undefined) {
       clean_interval();
     }
     // 立即执行一次函数，然后设置新的计时器
     interval_function();
-    interval_timer.value = setInterval(interval_function, interval_time.value);
+    interval_timer = setInterval(
+      () => void interval_function(),
+      interval_time.value,
+    );
   }
 
   function clean_interval() {
-    clearInterval(interval_timer.value);
-    interval_timer.value = undefined;
+    if (interval_timer !== undefined) clearInterval(interval_timer);
+    interval_timer = undefined;
   }
 
   watch(enable_interval, (new_value, _) => {
@@ -108,7 +218,7 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
 
   const visibilityChangeHandler = () => {
     if (document.hidden) {
-      if (interval_timer.value != undefined) {
+      if (interval_timer != undefined) {
         clean_interval();
       }
     } else {
@@ -120,23 +230,31 @@ export const useFetchIntervalStore = defineStore("fetch_interval", () => {
 
   function destroy() {
     clean_interval();
-    document.removeEventListener("visibilitychange", visibilityChangeHandler);
+    if (visibility_listener_attached) {
+      document.removeEventListener("visibilitychange", visibilityChangeHandler);
+      visibility_listener_attached = false;
+    }
+    start_count_down_callback.value = undefined;
   }
-
-  document.addEventListener("visibilitychange", visibilityChangeHandler);
 
   function IMMEDIATELY_EXECUTE() {
-    set_interval();
-    enable_interval.value = true;
+    if (!visibility_listener_attached) {
+      document.addEventListener("visibilitychange", visibilityChangeHandler);
+      visibility_listener_attached = true;
+    }
+    if (enable_interval.value) set_interval();
+    else enable_interval.value = true;
   }
 
-  async function SETTING_CALLBACK(call_back: any) {
+  function SETTING_CALLBACK(call_back: () => void) {
     start_count_down_callback.value = call_back;
   }
   return {
     enable_interval,
     interval_time,
     error_message,
+    current_path,
+    SET_PATH,
     IMMEDIATELY_EXECUTE,
     SETTING_CALLBACK,
     destroy,

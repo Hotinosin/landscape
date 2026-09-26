@@ -33,84 +33,113 @@ const inner_zone: Array<RouteRecordRaw> = [
   {
     path: "/",
     name: "routes.dashboard",
-    component: Landscape,
+    component: () => import("@/views/Landscape.vue"),
+  },
+  {
+    path: "/network/allocations",
+    name: "routes.address-allocation",
+    component: () => import("@/views/NetworkAllocations.vue"),
+  },
+  {
+    path: "/network/settings",
+    name: "routes.network-settings",
+    component: () => import("@/views/NetworkSettings.vue"),
+  },
+  ...service_status_route,
+  {
+    path: "/dns/config",
+    name: "routes.dns-config",
+    component: () => import("@/views/dns/DnsUpstream.vue"),
+  },
+  {
+    path: "/dns/upstream",
+    redirect: "/dns/config",
   },
   {
     path: "/dns/redirect",
     name: "routes.dns-redirect",
-    component: DnsRedirect,
+    component: () => import("@/views/dns/DnsRedirect.vue"),
   },
-  ...service_status_route,
   {
-    path: "/dns/upstream",
-    name: "routes.dns-upstream",
-    component: DnsUpstream,
+    path: "/firewall-nat/port-mapping",
+    name: "routes.port-mapping",
+    component: () => import("@/views/PortMappings.vue"),
   },
   {
     path: "/firewall-nat/nat/v4",
-    name: "routes.nat-v4",
-    component: StaticNatMappingV4,
+    redirect: { path: "/firewall-nat/port-mapping", query: { tab: "ipv4" } },
   },
   {
     path: "/firewall-nat/nat/v6",
-    name: "routes.nat-v6",
-    component: StaticNatMappingV6,
+    redirect: { path: "/firewall-nat/port-mapping", query: { tab: "ipv6" } },
   },
   {
     path: "/flow",
     name: "routes.flow",
-    component: Flow,
+    component: () => import("@/views/Flow.vue"),
   },
   {
     path: "/docker",
     name: "routes.docker",
-    component: Docker,
+    component: () => import("@/views/Docker.vue"),
+  },
+  {
+    path: "/plugins",
+    name: "routes.plugins",
+    component: () => import("@/views/Plugins.vue"),
+  },
+  {
+    path: "/webshell",
+    name: "routes.webshell",
+    component: () => import("@/views/WebShell.vue"),
   },
   {
     path: "/firewall-nat/firewall",
     name: "routes.firewall",
-    component: Firewall,
+    component: () => import("@/views/Firewall.vue"),
   },
   ...metric_route,
   {
     path: "/geo/domain",
     name: "routes.geo-domain",
-    component: GeoDomain,
+    component: () => import("@/views/GeoDomain.vue"),
   },
   {
     path: "/geo/ip",
-    name: "routes.geo-ip",
-    component: GeoIp,
+    redirect: "/geo/domain",
   },
   {
     path: "/config",
     name: "routes.config",
-    component: Config,
+    component: () => import("@/views/Config.vue"),
   },
   {
     path: "/mac-binding",
     name: "routes.mac-binding",
-    component: EnrolledDevice,
+    component: () => import("@/views/EnrolledDevice.vue"),
   },
   {
     path: "/domains/dns-providers",
-    name: "routes.dns-provider-profiles",
-    component: DnsProviderProfiles,
+    redirect: "/domains/credentials",
   },
   {
     path: "/domains/ddns",
     name: "routes.ddns",
-    component: DdnsJobs,
+    component: () => import("@/views/domain/DdnsJobs.vue"),
   },
   {
     path: "/domains/cert-accounts",
-    name: "routes.cert-accounts",
-    component: CertAccounts,
+    redirect: "/domains/credentials",
+  },
+  {
+    path: "/domains/credentials",
+    name: "routes.credentials",
+    component: () => import("@/views/domain/Credentials.vue"),
   },
   {
     path: "/domains/certs",
     name: "routes.certs",
-    component: CertOrders,
+    component: () => import("@/views/cert/CertOrders.vue"),
   },
   {
     path: "/gateway",
@@ -121,7 +150,7 @@ const inner_zone: Array<RouteRecordRaw> = [
   {
     path: "/about",
     name: "routes.about",
-    component: About,
+    component: () => import("@/views/About.vue"),
   },
   {
     path: "/unavailable",
@@ -131,7 +160,7 @@ const inner_zone: Array<RouteRecordRaw> = [
   {
     path: "/:pathMatch(.*)*",
     name: "NotFound",
-    component: NotFound,
+    component: () => import("@/views/error/NotFound.vue"),
   },
 ];
 
@@ -139,13 +168,13 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/",
     name: "MainLayout",
-    component: MainLayout,
+    component: () => import("@/views/MainLayout.vue"),
     children: [...inner_zone],
   },
   {
     path: "/login",
     name: "Login",
-    component: Login,
+    component: () => import("@/views/Login.vue"),
   },
 ];
 

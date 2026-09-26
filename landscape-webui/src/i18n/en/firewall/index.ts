@@ -1,11 +1,16 @@
 export default {
   service_edit: {
-    title: "Firewall Service Config",
+    title: "Firewall",
   },
   blacklist_edit: {
     title: "Firewall Blacklist Editor",
+    name: "Name",
+    name_placeholder: "Enter name",
     remark: "Remark",
+    remark_placeholder: "Enter remark",
     source: "Blacklist Source",
+    source_type_ip: "IP address",
+    source_type_geo: "GeoIP database",
     add_source: "Add source",
     block_all_tip: "This will block access from all IP addresses",
     geo_key_required: "Source #{index}: GeoIP key is required",

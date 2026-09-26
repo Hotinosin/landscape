@@ -1,8 +1,11 @@
-use std::net::{IpAddr, Ipv4Addr};
+use std::{
+    collections::HashMap,
+    net::{IpAddr, Ipv4Addr},
+};
 
 use futures::stream::TryStreamExt;
 use netlink_packet_route::address::{AddressAttribute, AddressMessage};
-use netlink_packet_route::AddressFamily;
+use netlink_packet_route::{link::LinkAttribute, AddressFamily};
 use rtnetlink::Handle;
 use serde::Serialize;
 
@@ -42,6 +45,59 @@ impl LandscapeSingleIpInfo {
             None
         }
     }
+}
+
+pub async fn all_addresses_by_iface_name() -> HashMap<String, Vec<LandscapeSingleIpInfo>> {
+    let mut result = HashMap::new();
+    let handle = match create_handle() {
+        Ok(handle) => handle,
+        Err(error) => {
+            tracing::error!(?error, "failed to create netlink handle for runtime addresses");
+            return result;
+        }
+    };
+
+    let mut iface_names = HashMap::new();
+    let mut links = handle.link().get().execute();
+    loop {
+        match links.try_next().await {
+            Ok(Some(link)) => {
+                if let Some(LinkAttribute::IfName(name)) = link
+                    .attributes
+                    .iter()
+                    .find(|attribute| matches!(attribute, LinkAttribute::IfName(_)))
+                {
+                    iface_names.insert(link.header.index, name.clone());
+                }
+            }
+            Ok(None) => break,
+            Err(error) => {
+                tracing::error!(?error, "failed to read interfaces for runtime addresses");
+                return result;
+            }
+        }
+    }
+
+    let mut addresses = handle.address().get().execute();
+    loop {
+        match addresses.try_next().await {
+            Ok(Some(message)) => {
+                let Some(name) = iface_names.get(&message.header.index) else {
+                    continue;
+                };
+                if let Some(address) = LandscapeSingleIpInfo::new(message) {
+                    result.entry(name.clone()).or_default().push(address);
+                }
+            }
+            Ok(None) => break,
+            Err(error) => {
+                tracing::error!(?error, "failed to read runtime addresses");
+                return HashMap::new();
+            }
+        }
+    }
+
+    result
 }
 
 pub async fn addresses_by_iface_name(link: String) -> Vec<LandscapeSingleIpInfo> {

@@ -1,7 +1,18 @@
 <script setup lang="ts">
 import { usePreferenceStore } from "@/stores/preference";
 import { useMessage } from "naive-ui";
+import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
+import {
+  selectThemePreset,
+  themePresets,
+  themeStyleColor,
+  themeStyleFromRgb,
+  type ThemePreset,
+  type ThemeRadius,
+  type ThemeStyle,
+} from "@/themes";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 
 const prefStore = usePreferenceStore();
 const message = useMessage();
@@ -13,10 +24,78 @@ const languageOptions = [
   { label: "English", value: "en" },
 ];
 
-const themeOptions = [
-  { label: t("config.dark_mode"), value: "dark" },
+const themeOptions = computed(() => [
+  { label: t("config.system_mode"), value: "system" },
   { label: t("config.light_mode"), value: "light" },
-];
+  { label: t("config.dark_mode"), value: "dark" },
+]);
+
+const presetOptions = computed(() => [
+  ...Object.keys(themePresets).map((value) => ({
+    label: value.charAt(0).toUpperCase() + value.slice(1),
+    value: value as Exclude<ThemePreset, "custom">,
+    color: themeStyleColor(
+      selectThemePreset(prefStore.themeStyle, value as ThemePreset),
+    ),
+  })),
+  {
+    label: t("config.theme_custom"),
+    value: "custom" as const,
+    color: themeColor.value,
+  },
+]);
+
+const radiusOptions = computed<{ label: string; value: ThemeRadius }[]>(() => [
+  { label: t("config.radius_none"), value: "none" },
+  { label: t("config.radius_small"), value: "small" },
+  { label: t("config.radius_medium"), value: "medium" },
+  { label: t("config.radius_large"), value: "large" },
+]);
+
+const themeColor = computed({
+  get: () => themeStyleColor(prefStore.themeStyle),
+  set: (value: string) => {
+    prefStore.themeStyle = themeStyleFromRgb(prefStore.themeStyle, value);
+  },
+});
+
+function choosePreset(preset: ThemePreset) {
+  prefStore.themeStyle = selectThemePreset(prefStore.themeStyle, preset);
+}
+
+function renderPresetLabel(option: { label?: string; color?: string }) {
+  return h(
+    "span",
+    {
+      class: "preset-label",
+      style: "display:inline-flex;align-items:center;gap:8px",
+    },
+    [
+      h("span", {
+        class: "preset-label-swatch",
+        style: {
+          backgroundColor: option.color,
+          width: "14px",
+          height: "14px",
+          flex: "0 0 14px",
+          borderRadius: "50%",
+        },
+      }),
+      option.label,
+    ],
+  );
+}
+
+function updateThemeValue<K extends keyof ThemeStyle>(
+  key: K,
+  value: ThemeStyle[K] | null,
+) {
+  if (value === null) return;
+  prefStore.themeStyle = {
+    ...prefStore.themeStyle,
+    [key]: value,
+  };
+}
 
 const timezoneOptions = (Intl as any)
   .supportedValuesOf("timeZone")
@@ -47,32 +126,208 @@ async function handleSave() {
       </n-button>
     </template>
 
-    <n-form label-placement="left" label-width="120">
-      <n-form-item :label="t('config.language')">
+    <n-form>
+      <StandardSettingRow :label="t('config.language')">
         <n-select
           v-model:value="prefStore.language"
           :options="languageOptions"
-          style="max-width: 300px"
         />
-      </n-form-item>
-      <n-form-item :label="t('config.theme')">
-        <n-select
+      </StandardSettingRow>
+
+      <StandardSettingRow :label="t('config.theme')">
+        <n-radio-group
           v-model:value="prefStore.theme"
-          :options="themeOptions"
-          disabled
-          :placeholder="t('config.theme_placeholder')"
-          style="max-width: 300px"
-        />
-      </n-form-item>
-      <n-form-item :label="t('config.timezone')">
+          class="theme-mode-radios"
+        >
+          <n-radio-button
+            v-for="opt in themeOptions"
+            :key="opt.value"
+            :value="opt.value"
+          >
+            {{ opt.label }}
+          </n-radio-button>
+        </n-radio-group>
+      </StandardSettingRow>
+
+      <div class="theme-subpanel">
+        <div class="theme-subpanel__header">
+          <span class="theme-subpanel__title">
+            {{ t("config.theme_style_title") }}
+          </span>
+        </div>
+
+        <StandardSettingRow :label="t('config.theme_preset')">
+          <div class="preset-row">
+            <n-select
+              class="preset-select"
+              :value="prefStore.themeStyle.preset"
+              :options="presetOptions"
+              :render-label="renderPresetLabel"
+              @update:value="choosePreset"
+            />
+            <n-color-picker
+              v-if="prefStore.themeStyle.preset === 'custom'"
+              class="custom-color-picker"
+              v-model:value="themeColor"
+              :modes="['rgb']"
+              :show-alpha="false"
+            >
+              <template #trigger="{ value, onClick, ref: triggerRef }">
+                <button
+                  :ref="triggerRef"
+                  class="color-trigger"
+                  type="button"
+                  :style="{ backgroundColor: value || themeColor }"
+                  :aria-label="t('config.theme_color')"
+                  @click="onClick"
+                />
+              </template>
+            </n-color-picker>
+          </div>
+        </StandardSettingRow>
+
+        <StandardSettingRow :label="t('config.radius')">
+          <n-radio-group
+            :value="prefStore.themeStyle.radius"
+            class="radius-radios"
+            @update:value="updateThemeValue('radius', $event)"
+          >
+            <n-radio-button
+              v-for="opt in radiusOptions"
+              :key="opt.value"
+              :value="opt.value"
+            >
+              {{ opt.label }}
+            </n-radio-button>
+          </n-radio-group>
+        </StandardSettingRow>
+
+        <StandardSettingRow
+          :label="t('config.theme_base')"
+          :hint="t('config.theme_base_desc')"
+        >
+          <div class="base-slider-row">
+            <n-slider
+              :value="prefStore.themeStyle.base"
+              :min="0"
+              :max="0.08"
+              :step="0.005"
+              @update:value="updateThemeValue('base', $event)"
+            />
+            <n-input-number
+              :value="prefStore.themeStyle.base"
+              :min="0"
+              :max="0.08"
+              :step="0.005"
+              :show-button="false"
+              class="base-number-input"
+              @update:value="updateThemeValue('base', $event)"
+            />
+          </div>
+        </StandardSettingRow>
+      </div>
+
+      <StandardSettingRow :label="t('config.timezone')">
         <n-select
           v-model:value="prefStore.timezone"
           filterable
           :options="timezoneOptions"
           :placeholder="t('config.timezone_placeholder')"
-          style="max-width: 400px"
         />
-      </n-form-item>
+      </StandardSettingRow>
     </n-form>
   </n-card>
 </template>
+
+<style scoped>
+.preset-row {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-sm);
+  width: 100%;
+}
+
+.preset-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.custom-color-picker {
+  width: 30px;
+  flex: 0 0 30px;
+}
+
+.color-trigger {
+  display: block;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--app-border-default-color);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.color-trigger:hover {
+  border-color: var(--app-brand-color);
+}
+
+.color-trigger:focus-visible {
+  outline: 2px solid var(--app-brand-color);
+  outline-offset: 2px;
+}
+
+.base-slider-row {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-sm);
+  width: 100%;
+}
+
+.base-slider-row :deep(.n-slider) {
+  flex: 1;
+  min-width: 0;
+}
+
+.base-number-input {
+  width: 76px;
+  flex: 0 0 76px;
+}
+
+.theme-mode-radios,
+.radius-radios {
+  display: flex;
+  width: 100%;
+}
+
+.theme-mode-radios :deep(.n-radio-button),
+.radius-radios :deep(.n-radio-button) {
+  flex: 1;
+  text-align: center;
+}
+
+.theme-subpanel {
+  background: var(--app-surface-subtle-color);
+  border: 1px solid var(--app-border-subtle-color);
+  border-radius: var(--app-radius-surface);
+  padding: var(--app-space-md) var(--app-space-lg);
+  margin-bottom: var(--app-space-section);
+}
+
+.theme-subpanel__header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--app-space-md);
+}
+
+.theme-subpanel__title {
+  font-size: var(--app-font-size-sm);
+  font-weight: 600;
+  color: var(--app-text-muted-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.theme-subpanel :deep(.standard-setting-row:last-child) {
+  margin-bottom: 0;
+}
+</style>

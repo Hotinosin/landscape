@@ -16,7 +16,7 @@ interface Props {
 
 const props = defineProps<Props>();
 const chartData = ref<ConnectMetricPoint[]>([]);
-const interval = ref<any>(null);
+const interval = ref<ReturnType<typeof setInterval>>();
 
 async function fetchData() {
   chartData.value = await get_connect_metric_info(props.conn);
@@ -118,7 +118,10 @@ const formatPacketRate = (value: number) => `${Math.round(value)} pps`;
 
 onMounted(() => {
   fetchData();
-  interval.value = setInterval(fetchData, 5000);
+  interval.value = setInterval(
+    () => !document.hidden && void fetchData(),
+    5000,
+  );
 });
 
 onUnmounted(() => {

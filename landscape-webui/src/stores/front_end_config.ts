@@ -6,6 +6,7 @@ export const useFrontEndStore = defineStore(
   "front_end",
   () => {
     const presentation_mode = ref(false);
+    const sidebar_collapsed = ref(true);
     const username = ref<string>("");
 
     async function INSERT_USERNAME(name: string) {
@@ -40,6 +41,7 @@ export const useFrontEndStore = defineStore(
 
     return {
       presentation_mode,
+      sidebar_collapsed,
       username,
       INSERT_USERNAME,
       MASK_INFO,

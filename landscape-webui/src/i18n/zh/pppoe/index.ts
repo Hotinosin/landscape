@@ -12,10 +12,10 @@ export default {
     iface_conflict_existing: "PPPoE 网卡名称不能与现有网卡重名",
     username: "用户名",
     password: "密码",
-    ac_name:
-      "请求连接的 AC 名称 (没有特殊需求的话请留空, 否则可能导致拨号异常)",
-    ac_name_tip: "设置后只会与 AC 名称一致的服务端进行连接",
-    plugin: "PPPoE Plugin",
+    ac_name: "AC 名称",
+    ac_name_tip:
+      "没有特殊需求请留空，否则可能导致拨号异常。设置后只会连接 AC 名称一致的服务端。",
+    plugin: "PPPoE 插件",
   },
   status_not_dialed: "未成功拨号",
   status_disabled: "未启用",

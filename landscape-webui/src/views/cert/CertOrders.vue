@@ -10,18 +10,20 @@ import {
 import type { CertConfig } from "@landscape-router/types/api/schemas";
 import { h, ref, onMounted, onUnmounted, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  NButton,
-  NTag,
-  NFlex,
-  NPopconfirm,
-  type DataTableColumns,
-} from "naive-ui";
+import { NButton, NTag, NFlex, type DataTableColumns } from "naive-ui";
 import CertOrderEditModal from "@/components/cert/order/CertOrderEditModal.vue";
+import ConfirmModal from "@/components/common/ConfirmModal.vue";
 import CertInfoModal from "@/components/cert/order/CertInfoModal.vue";
+import EditButton from "@/components/common/EditButton.vue";
+import DeleteButton from "@/components/common/DeleteButton.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
+import { Renew } from "@vicons/carbon";
+import { usePageRequest } from "@/composables/usePageRequest";
 
-const items = ref<CertConfig[]>([]);
+const certRequest = usePageRequest(get_certs, {
+  initialData: [] as CertConfig[],
+});
+const items = certRequest.data;
 const { t } = useI18n();
 const frontEndStore = useFrontEndStore();
 const show_edit_modal = ref(false);
@@ -37,6 +39,10 @@ const has_processing = computed(() =>
   items.value.some((item) => item.status === "processing"),
 );
 
+function rowKey(row: CertConfig) {
+  return row.id ?? row.name;
+}
+
 async function refresh() {
   if (refresh_promise) {
     refresh_queued = true;
@@ -47,7 +53,7 @@ async function refresh() {
   refresh_promise = (async () => {
     do {
       refresh_queued = false;
-      items.value = await get_certs();
+      await certRequest.refresh();
     } while (refresh_queued);
   })();
 
@@ -60,7 +66,7 @@ async function refresh() {
 
 function start_polling() {
   if (poll_timer) return;
-  poll_timer = setInterval(refresh, 5000);
+  poll_timer = setInterval(() => !document.hidden && void refresh(), 5000);
 }
 
 function stop_polling() {
@@ -201,7 +207,7 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
   {
     title: t("cert.cert_name"),
     key: "name",
-    minWidth: 120,
+    width: 120,
     ellipsis: { tooltip: true },
     render(row) {
       return frontEndStore.MASK_INFO(row.name);
@@ -306,17 +312,7 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
       );
 
       // Edit: always
-      btns.push(
-        h(
-          NButton,
-          {
-            size: "small",
-            secondary: true,
-            onClick: () => open_edit(id),
-          },
-          () => t("common.edit"),
-        ),
-      );
+      btns.push(h(EditButton, { onClick: () => open_edit(id) }));
 
       // Issue: pending | invalid | expired | revoked (ACME only)
       if (
@@ -365,7 +361,7 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
       if (is_acme(row) && row.status === "processing") {
         btns.push(
           h(
-            NPopconfirm,
+            ConfirmModal,
             { onPositiveClick: () => do_cancel(id) },
             {
               trigger: () =>
@@ -389,7 +385,7 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
       if (is_acme(row) && row.status === "valid") {
         btns.push(
           h(
-            NPopconfirm,
+            ConfirmModal,
             { onPositiveClick: () => do_revoke(id) },
             {
               trigger: () =>
@@ -411,19 +407,10 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
 
       // Delete: always (with confirmation)
       btns.push(
-        h(
-          NPopconfirm,
-          { onPositiveClick: () => do_delete(id) },
-          {
-            trigger: () =>
-              h(
-                NButton,
-                { size: "small", type: "error", secondary: true },
-                () => t("common.delete"),
-              ),
-            default: () => t("common.confirm_delete"),
-          },
-        ),
+        h(DeleteButton, {
+          item: frontEndStore.MASK_INFO(row.name),
+          onConfirm: () => do_delete(id),
+        }),
       );
 
       return h(NFlex, { size: "small", wrap: false }, () => btns);
@@ -433,20 +420,28 @@ const columns = computed<DataTableColumns<CertConfig>>(() => [
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1">
-    <n-flex>
-      <n-button @click="open_edit(null)">
+  <n-flex vertical class="standard-content-page">
+    <n-flex justify="space-between" class="standard-list-toolbar">
+      <n-button type="primary" @click="open_edit(null)">
         {{ t("common.create") }}
+      </n-button>
+      <n-button :loading="certRequest.loading.value" secondary @click="refresh">
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
       </n-button>
     </n-flex>
 
-    <n-data-table
+    <StandardDataTable
       :columns="columns"
       :data="items"
-      :bordered="true"
-      :single-line="false"
+      :loading="certRequest.loading.value"
+      :error="certRequest.error.value"
       size="small"
       :scroll-x="960"
+      :row-key="rowKey"
+      @retry="refresh"
     />
 
     <CertOrderEditModal

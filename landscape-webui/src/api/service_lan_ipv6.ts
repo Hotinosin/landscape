@@ -29,7 +29,7 @@ export async function get_all_lan_ipv6_status(): Promise<
 export async function get_lan_ipv6_config(
   iface_name: string,
 ): Promise<LanIPv6ServiceConfigV2> {
-  return await getLanIpv6Config(iface_name);
+  return await getLanIpv6Config(iface_name, { silent: true });
 }
 
 export async function get_all_lan_ipv6_configs(): Promise<

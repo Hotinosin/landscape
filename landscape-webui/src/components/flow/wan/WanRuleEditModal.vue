@@ -2,9 +2,9 @@
 import { computed } from "vue";
 import { ref } from "vue";
 import { useMessage } from "naive-ui";
-import { ChangeCatalog } from "@vicons/carbon";
 
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import FlowMarkEdit from "@/components/flow/FlowMarkEdit.vue";
 import IpEdit from "@/components/IpEdit.vue";
 import type {
@@ -18,10 +18,7 @@ import {
   push_dst_ip_rules_rule,
   update_dst_ip_rules_rule,
 } from "@/api/dst_ip_rule";
-import {
-  copy_context_to_clipboard,
-  read_context_from_clipboard,
-} from "@/lib/common";
+import { copy_context_to_clipboard } from "@/lib/common";
 import { useI18n } from "vue-i18n";
 
 interface Props {
@@ -75,9 +72,20 @@ function onCreate(): WanIPRuleSource {
   return new_wan_rules({ t: "config", ip: "0.0.0.0", prefix: 32 });
 }
 
-function changeCurrentRuleType(value: WanIPRuleSource, index: number) {
+const sourceTypeOptions = [
+  {
+    label: t("flow.wan_rule_edit.source_style_geo"),
+    value: "geo_key",
+  },
+  {
+    label: t("flow.wan_rule_edit.source_style_exact"),
+    value: "config",
+  },
+];
+
+function changeCurrentRuleType(type: "config" | "geo_key", index: number) {
   if (rule.value) {
-    if (value.t == "config") {
+    if (type === "geo_key") {
       rule.value.source[index] = {
         t: "geo_key",
         name: "",
@@ -126,21 +134,25 @@ async function export_config() {
   }
 }
 
-async function import_rules() {
+async function import_rules(rules: any[]) {
   if (rule.value) {
     try {
-      let rules = JSON.parse(await read_context_from_clipboard());
       rule.value.source = rules;
-    } catch (e) {}
+      message.success(t("common.paste_replace_success"));
+    } catch (e) {
+      message.error(t("common.paste_failed"));
+    }
   }
 }
 
-async function append_import_rules() {
+async function append_import_rules(rules: any[]) {
   if (rule.value) {
     try {
-      let rules = JSON.parse(await read_context_from_clipboard());
       rule.value.source.unshift(...rules);
-    } catch (e) {}
+      message.success(t("common.paste_append_success"));
+    } catch (e) {
+      message.error(t("common.paste_failed"));
+    }
   }
 }
 </script>
@@ -149,10 +161,12 @@ async function append_import_rules() {
   <ConfigModal
     v-model:show="show"
     v-model:enabled="rule_enabled"
+    :show-switch="false"
     :title="t('flow.wan_rule_edit.title')"
     :switch-disabled="!rule"
-    width="700px"
-    @after-enter="enter"
+    width="var(--app-secondary-modal-width)"
+    :dirty="isModified"
+    :prepare="enter"
   >
     <!-- {{ isModified }} -->
     <n-form v-if="rule" style="flex: 1" ref="formRef" :model="rule" :cols="5">
@@ -179,68 +193,49 @@ async function append_import_rules() {
       </n-grid>
       <n-form-item>
         <template #label>
-          <n-flex
-            align="center"
-            justify="space-between"
-            :wrap="false"
-            @click.stop
-          >
-            <n-flex> {{ t("flow.wan_rule_edit.matched_ips") }} </n-flex>
-            <n-flex>
-              <!-- 不确定为什么点击 label 会触发第一个按钮, 所以放置一个不可见的按钮 -->
-              <button
-                style="
-                  width: 0;
-                  height: 0;
-                  overflow: hidden;
-                  opacity: 0;
-                  position: absolute;
-                "
-              ></button>
-
-              <n-button :focusable="false" size="tiny" @click="export_config">
-                {{ t("flow.wan_rule_edit.copy") }}
-              </n-button>
-              <n-button :focusable="false" size="tiny" @click="import_rules">
-                {{ t("flow.wan_rule_edit.paste_replace") }}
-              </n-button>
-              <n-button
-                :focusable="false"
-                size="tiny"
-                @click="append_import_rules"
-              >
-                {{ t("flow.wan_rule_edit.paste_append") }}
-              </n-button>
-            </n-flex>
-          </n-flex>
+          {{ t("flow.wan_rule_edit.matched_ips") }}
         </template>
-        <n-dynamic-input v-model:value="rule.source" :on-create="onCreate">
-          <template #create-button-default>
-            {{ t("flow.wan_rule_edit.add_wan_rule") }}
-          </template>
-          <template #default="{ value, index }">
-            <n-flex style="flex: 1" :wrap="false">
-              <n-button @click="changeCurrentRuleType(value, index)">
-                <n-icon>
-                  <ChangeCatalog />
-                </n-icon>
-              </n-button>
-              <GeoIpKeySelect
-                v-model:geo_key="value.key"
-                v-model:geo_name="value.name"
-                v-if="value.t === 'geo_key'"
-              >
-              </GeoIpKeySelect>
-              <!-- <n-input
-                v-model:value="value.key"
-                placeholder="geo key"
-                type="text"
-              /> -->
-              <n-flex v-else style="flex: 1">
-                <IpEdit
-                  v-model:ip="value.ip"
-                  v-model:mask="value.prefix"
-                ></IpEdit>
+        <n-flex vertical style="width: 100%">
+          <n-flex justify="end">
+            <n-button :focusable="false" size="tiny" @click="export_config">
+              {{ t("flow.wan_rule_edit.copy") }}
+            </n-button>
+            <ClipboardImportModal :on-confirm="import_rules">
+              <template #trigger>
+                <n-button :focusable="false" size="tiny">
+                  {{ t("flow.wan_rule_edit.paste_replace") }}
+                </n-button>
+              </template>
+            </ClipboardImportModal>
+            <ClipboardImportModal :on-confirm="append_import_rules">
+              <template #trigger>
+                <n-button :focusable="false" size="tiny">
+                  {{ t("flow.wan_rule_edit.paste_append") }}
+                </n-button>
+              </template>
+            </ClipboardImportModal>
+          </n-flex>
+          <n-dynamic-input v-model:value="rule.source" :on-create="onCreate">
+            <template #create-button-default>
+              {{ t("flow.wan_rule_edit.add_wan_rule") }}
+            </template>
+            <template #default="{ value, index }">
+              <n-flex class="rule-source-row" :wrap="false">
+                <n-select
+                  class="rule-source-type"
+                  :value="value.t"
+                  :options="sourceTypeOptions"
+                  @update:value="changeCurrentRuleType($event, index)"
+                />
+                <GeoIpKeySelect
+                  class="rule-source-value"
+                  v-model:geo_key="value.key"
+                  v-model:geo_name="value.name"
+                  v-if="value.t === 'geo_key'"
+                />
+                <div v-else class="rule-source-value">
+                  <IpEdit v-model:ip="value.ip" v-model:mask="value.prefix" />
+                </div>
               </n-flex>
             </n-flex>
           </template>
@@ -250,9 +245,9 @@ async function append_import_rules() {
         <n-input v-model:value="rule.remark" type="text" />
       </n-form-item>
     </n-form>
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button
           :loading="commit_spin"
           @click="saveRule"
@@ -264,3 +259,16 @@ async function append_import_rules() {
     </template>
   </ConfigModal>
 </template>
+
+<style scoped>
+.rule-source-row,
+.rule-source-value {
+  flex: 1;
+  min-width: 0;
+}
+
+.rule-source-type {
+  width: 150px;
+  flex: 0 0 150px;
+}
+</style>

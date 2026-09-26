@@ -1,25 +1,37 @@
 <script setup lang="ts">
-import { ref, computed, watch, CSSProperties } from "vue";
+import {
+  ref,
+  computed,
+  watch,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  CSSProperties,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import {
   Terminal as TerminalIcon,
-  Expand,
-  Contract,
-  BrowsersOutline,
-  SwapHorizontalOutline,
-  PushOutline,
+  Maximize as Expand,
+  Minimize as Contract,
+  ApplicationWeb as BrowsersOutline,
+  ArrowsHorizontal as SwapHorizontalOutline,
+  OpenPanelBottom as PushOutline,
   Close,
-  SettingsOutline,
-} from "@vicons/ionicons5";
+  Settings as SettingsOutline,
+  Unlink,
+  Renew,
+} from "@vicons/carbon";
 import { usePtyStore } from "@/stores/pty";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { storeToRefs } from "pinia";
 import "@xterm/xterm/css/xterm.css";
 
 // Constants
-const HEADER_COLOR = "rgb(72, 72, 78)";
+const HEADER_COLOR = "var(--app-terminal-header-color)";
 const HANDLE_SIZE = 8;
+const props = defineProps<{ page?: boolean }>();
 
 // Store
 const ptyStore = usePtyStore();
@@ -29,12 +41,46 @@ const { t } = useI18n();
 // Terminal instance
 const drawerContentRef = ref<HTMLDivElement | null>(null);
 const dockContentRef = ref<HTMLDivElement | null>(null);
+const pageContentRef = ref<HTMLDivElement | null>(null);
 let term: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
+let resizeObserver: ResizeObserver | null = null;
+let resizeRaf: number | null = null;
+
+function setupResizeObserver(target: HTMLElement) {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+  if (resizeRaf !== null) {
+    cancelAnimationFrame(resizeRaf);
+    resizeRaf = null;
+  }
+  if (typeof ResizeObserver !== "undefined") {
+    resizeObserver = new ResizeObserver(() => {
+      if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(() => {
+        ptyStore.fit();
+      });
+    });
+    resizeObserver.observe(target);
+  }
+}
+
+function onWindowResize() {
+  if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
+  resizeRaf = requestAnimationFrame(() => {
+    ptyStore.fit();
+  });
+}
 
 // UI State
 const isFullScreen = ref(false);
 const showSettings = ref(false);
+const terminalSettingsEnabled = ref(true);
+const shellOptions = ["/bin/bash", "/bin/zsh", "/bin/sh", "/usr/bin/fish"].map(
+  (value) => ({ label: value, value }),
+);
 
 // Draggable button state
 const position = ref({ x: 0, y: 0 });
@@ -180,6 +226,14 @@ function reconnect() {
 // --- Terminal Management ---
 
 function cleanupTerminal() {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+  if (resizeRaf !== null) {
+    cancelAnimationFrame(resizeRaf);
+    resizeRaf = null;
+  }
   if (term) {
     ptyStore.detachTerminal(term);
     term.dispose();
@@ -196,8 +250,9 @@ function remountTerminal() {
 
 function mountTerminal() {
   ptyStore.markRead();
-  const target =
-    ptyStore.viewMode === "float"
+  const target = props.page
+    ? pageContentRef.value
+    : ptyStore.viewMode === "float"
       ? drawerContentRef.value
       : dockContentRef.value;
 
@@ -209,7 +264,7 @@ function mountTerminal() {
     rows: 24,
     cursorBlink: true,
     fontFamily:
-      '"v-mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
+      'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
     allowProposedApi: true,
   });
 
@@ -217,6 +272,17 @@ function mountTerminal() {
   term.loadAddon(fitAddon);
   term.open(target);
   ptyStore.attachTerminal(term, fitAddon);
+
+  setupResizeObserver(target);
+
+  if (typeof document !== "undefined" && document.fonts?.ready) {
+    document.fonts.ready.then(() => {
+      if (term) ptyStore.fit();
+    });
+  }
+
+  setTimeout(() => ptyStore.fit(), 100);
+  setTimeout(() => ptyStore.fit(), 350);
 
   if (!ptyStore.isConnected) ptyStore.connect();
 }
@@ -227,6 +293,7 @@ watch(
     if (isOpen && mode === "dock") setTimeout(mountTerminal, 50);
     else if (!isOpen && mode === "dock") cleanupTerminal();
   },
+  { immediate: true },
 );
 
 // --- Drag Handlers ---
@@ -298,12 +365,64 @@ function onAfterEnter() {
 function onAfterLeave() {
   if (ptyStore.viewMode === "float") cleanupTerminal();
 }
+
+onMounted(() => {
+  window.addEventListener("resize", onWindowResize);
+  if (props.page) void nextTick(mountTerminal);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", onWindowResize);
+  cleanupTerminal();
+});
 </script>
 
 <template>
+  <div v-if="page" class="terminal-page">
+    <n-flex class="dock-header" justify="space-between" align="center">
+      <n-flex align="center" size="small">
+        <n-icon :component="TerminalIcon" />
+        <strong>WebShell</strong>
+        <n-tag
+          :type="isConnected ? 'success' : 'error'"
+          size="small"
+          :bordered="false"
+        >
+          {{
+            isConnected ? t("terminal.connected") : t("terminal.disconnected")
+          }}
+        </n-tag>
+      </n-flex>
+      <n-flex size="small">
+        <n-button secondary size="small" @click="showSettings = true">
+          <template #icon><n-icon :component="SettingsOutline" /></template>
+          {{ t("terminal.settings") }}
+        </n-button>
+        <n-button
+          secondary
+          type="error"
+          size="small"
+          :disabled="!isConnected"
+          @click="ptyStore.disconnect"
+        >
+          <template #icon><n-icon :component="Unlink" /></template>
+          {{ t("terminal.disconnect") }}
+        </n-button>
+        <n-button secondary type="primary" size="small" @click="reconnect">
+          <template #icon><n-icon :component="Renew" /></template>
+          {{ t("terminal.reconnect") }}
+        </n-button>
+      </n-flex>
+    </n-flex>
+    <div
+      ref="pageContentRef"
+      class="terminal-container terminal-page__content"
+    />
+  </div>
+
   <!-- Floating Button -->
   <div
-    v-if="isVisible"
+    v-if="!page && isVisible"
     class="float-btn-container"
     :style="containerStyle"
     @mousedown="onMouseDown"
@@ -330,7 +449,7 @@ function onAfterLeave() {
 
   <!-- Float Mode: Drawer -->
   <n-drawer
-    v-if="ptyStore.viewMode === 'float'"
+    v-if="!page && ptyStore.viewMode === 'float'"
     v-model:show="ptyStore.isOpen"
     :placement="drawerPlacement"
     :width="drawerPlacement === 'right' ? drawerSize : undefined"
@@ -355,7 +474,10 @@ function onAfterLeave() {
         <n-flex justify="space-between" align="center" style="width: 100%">
           <n-flex align="center" size="small">
             <n-icon :component="TerminalIcon" />
-            <span style="font-weight: 600; font-size: 13px">Web Shell</span>
+            <span
+              style="font-weight: 600; font-size: var(--app-font-size-label)"
+              >Web Shell</span
+            >
             <n-divider vertical style="margin: 0 4px" />
             <n-tag
               :type="isConnected ? 'success' : 'error'"
@@ -372,58 +494,16 @@ function onAfterLeave() {
           </n-flex>
 
           <n-flex size="small" align="center">
-            <n-popover
-              trigger="click"
-              v-model:show="showSettings"
-              placement="bottom-end"
+            <n-button
+              strong
+              secondary
+              type="default"
+              size="tiny"
+              circle
+              @click="showSettings = true"
             >
-              <template #trigger>
-                <n-button strong secondary type="default" size="tiny" circle>
-                  <template #icon
-                    ><n-icon :component="SettingsOutline"
-                  /></template>
-                </n-button>
-              </template>
-              <n-flex
-                vertical
-                size="small"
-                style="padding: 4px; min-width: 200px"
-              >
-                <n-flex justify="space-between" align="center">
-                  <span>{{ t("terminal.shell") }}:</span>
-                  <n-input
-                    v-model:value="config.shell"
-                    placeholder="bash"
-                    size="tiny"
-                    style="width: 100px"
-                  />
-                </n-flex>
-                <n-flex justify="space-between" align="center">
-                  <span>{{ t("terminal.keep_alive") }}:</span>
-                  <n-switch v-model:value="keepAlive" size="small" />
-                </n-flex>
-                <n-divider style="margin: 4px 0" />
-                <n-flex justify="space-between">
-                  <n-popconfirm
-                    @positive-click="ptyStore.disconnect"
-                    :show-icon="false"
-                  >
-                    <template #trigger>
-                      <n-button
-                        type="error"
-                        size="small"
-                        :disabled="!isConnected"
-                        >{{ t("terminal.disconnect") }}</n-button
-                      >
-                    </template>
-                    {{ t("terminal.disconnect_confirm") }}
-                  </n-popconfirm>
-                  <n-button type="primary" size="small" @click="reconnect">{{
-                    t("terminal.reconnect")
-                  }}</n-button>
-                </n-flex>
-              </n-flex>
-            </n-popover>
+              <template #icon><n-icon :component="SettingsOutline" /></template>
+            </n-button>
 
             <n-divider vertical style="margin: 0 4px" />
 
@@ -480,7 +560,7 @@ function onAfterLeave() {
 
   <!-- Dock Mode: Split Panel -->
   <div
-    v-if="ptyStore.viewMode === 'dock' && ptyStore.isOpen"
+    v-if="!page && ptyStore.viewMode === 'dock' && ptyStore.isOpen"
     :style="dockContainerStyle"
   >
     <div
@@ -493,7 +573,9 @@ function onAfterLeave() {
       <n-flex justify="space-between" align="center" style="width: 100%">
         <n-flex align="center" size="small">
           <n-icon :component="TerminalIcon" />
-          <span style="font-weight: 600; font-size: 13px">Web Shell</span>
+          <span style="font-weight: 600; font-size: var(--app-font-size-label)"
+            >Web Shell</span
+          >
           <n-divider vertical style="margin: 0 4px" />
           <n-tag
             :type="isConnected ? 'success' : 'error'"
@@ -508,58 +590,16 @@ function onAfterLeave() {
         </n-flex>
 
         <n-flex size="small" align="center">
-          <n-popover
-            trigger="click"
-            v-model:show="showSettings"
-            placement="bottom-end"
+          <n-button
+            strong
+            secondary
+            type="default"
+            size="tiny"
+            circle
+            @click="showSettings = true"
           >
-            <template #trigger>
-              <n-button strong secondary type="default" size="tiny" circle>
-                <template #icon
-                  ><n-icon :component="SettingsOutline"
-                /></template>
-              </n-button>
-            </template>
-            <n-flex
-              vertical
-              size="small"
-              style="padding: 4px; min-width: 200px"
-            >
-              <n-flex justify="space-between" align="center">
-                <span>{{ t("terminal.shell") }}:</span>
-                <n-input
-                  v-model:value="config.shell"
-                  placeholder="bash"
-                  size="tiny"
-                  style="width: 100px"
-                />
-              </n-flex>
-              <n-flex justify="space-between" align="center">
-                <span>{{ t("terminal.keep_alive") }}:</span>
-                <n-switch v-model:value="keepAlive" size="small" />
-              </n-flex>
-              <n-divider style="margin: 4px 0" />
-              <n-flex justify="space-between">
-                <n-popconfirm
-                  @positive-click="ptyStore.disconnect"
-                  :show-icon="false"
-                >
-                  <template #trigger>
-                    <n-button
-                      type="error"
-                      size="small"
-                      :disabled="!isConnected"
-                      >{{ t("terminal.disconnect") }}</n-button
-                    >
-                  </template>
-                  {{ t("terminal.disconnect_confirm") }}
-                </n-popconfirm>
-                <n-button type="primary" size="small" @click="reconnect">{{
-                  t("terminal.reconnect")
-                }}</n-button>
-              </n-flex>
-            </n-flex>
-          </n-popover>
+            <template #icon><n-icon :component="SettingsOutline" /></template>
+          </n-button>
 
           <n-divider vertical style="margin: 0 4px" />
 
@@ -620,9 +660,63 @@ function onAfterLeave() {
 
     <div ref="dockContentRef" class="terminal-container"></div>
   </div>
+
+  <ConfigModal
+    v-model:show="showSettings"
+    v-model:enabled="terminalSettingsEnabled"
+    :title="t('terminal.settings')"
+    :show-switch="false"
+  >
+    <n-form label-placement="left" label-width="100">
+      <n-form-item :label="t('terminal.shell_path')">
+        <n-select
+          v-model:value="config.shell"
+          :options="shellOptions"
+          filterable
+          tag
+          placeholder="/bin/bash"
+        />
+      </n-form-item>
+      <n-form-item :label="t('terminal.keep_alive')">
+        <n-switch v-model:value="keepAlive" size="medium" />
+      </n-form-item>
+    </n-form>
+    <n-text depth="3">{{ t("terminal.shell_reconnect_tip") }}</n-text>
+    <template #footer>
+      <n-flex justify="end">
+        <n-button @click="showSettings = false">
+          {{ t("common.close") }}
+        </n-button>
+      </n-flex>
+    </template>
+  </ConfigModal>
 </template>
 
 <style scoped>
+.terminal-page {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--app-terminal-border-color);
+  border-radius: var(--app-radius-surface);
+  background-color: var(--app-terminal-background-color);
+}
+
+.terminal-page__content {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+}
+
 .float-btn-container {
   position: fixed;
   z-index: 2000;
@@ -632,13 +726,13 @@ function onAfterLeave() {
 .float-btn {
   width: 64px;
   height: 64px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px var(--app-shadow-color);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .float-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 12px 28px var(--app-shadow-strong-color);
 }
 
 .breathing-btn {
@@ -647,20 +741,35 @@ function onAfterLeave() {
 
 .terminal-container {
   flex: 1;
-  background-color: #000;
+  width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  background-color: var(--app-terminal-background-color);
   overflow: hidden;
+  position: relative;
+}
+
+:deep(.xterm) {
+  padding: 4px 6px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+:deep(.xterm-viewport) {
+  background-color: var(--app-terminal-background-color) !important;
 }
 
 /* Unified header style */
 .dock-header,
 :deep(.terminal-header) {
   height: 36px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   padding: 0 8px;
-  background-color: rgb(72, 72, 78) !important;
-  border-bottom: 1px solid rgb(60, 60, 66) !important;
-  color: #fff;
+  background-color: var(--app-terminal-header-color) !important;
+  border-bottom: 1px solid var(--app-terminal-border-color) !important;
+  color: var(--app-text-primary-color);
   flex-shrink: 0;
 }
 
@@ -669,14 +778,14 @@ function onAfterLeave() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgb(72, 72, 78);
+  background-color: var(--app-terminal-header-color);
   transition: background-color 0.2s;
 }
 
 .resize-handle::after {
   content: "";
-  background-color: rgb(120, 120, 126);
-  border-radius: 2px;
+  background-color: var(--app-terminal-handle-color);
+  border-radius: var(--app-radius-hairline);
 }
 
 .resize-handle[style*="ew-resize"]::after {
@@ -696,11 +805,11 @@ function onAfterLeave() {
   0%,
   100% {
     transform: translateX(-50%) scale(1);
-    box-shadow: 0 0 0 0 rgba(240, 160, 32, 0.7);
+    box-shadow: 0 0 0 0 var(--app-status-warning-color);
   }
   50% {
     transform: translateX(-50%) scale(1.1);
-    box-shadow: 0 0 30px 10px rgba(240, 160, 32, 0);
+    box-shadow: 0 0 30px 10px transparent;
   }
 }
 </style>

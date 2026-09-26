@@ -1,3 +1,31 @@
+import type { ConnectRealtimeStatus } from "@landscape-router/types/api/schemas";
+
+export function summarizeConnections(items: ConnectRealtimeStatus[]) {
+  return items.reduce(
+    (summary, item) => {
+      summary.ingressBps += item.ingress_bps;
+      summary.egressBps += item.egress_bps;
+      summary.ingressPps += item.ingress_pps;
+      summary.egressPps += item.egress_pps;
+      summary.count++;
+      return summary;
+    },
+    { ingressBps: 0, egressBps: 0, ingressPps: 0, egressPps: 0, count: 0 },
+  );
+}
+
+export function queryString(value: unknown) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return typeof raw === "string" && raw.length > 0 ? raw : undefined;
+}
+
+export function queryNumber(value: unknown) {
+  const raw = queryString(value);
+  if (raw === undefined) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export class ConnectFilter {
   src_ip: string | null;
   dst_ip: string | null;

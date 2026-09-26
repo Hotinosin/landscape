@@ -35,7 +35,7 @@ export async function get_all_ipv6pd_configs(): Promise<IPV6PDServiceConfig[]> {
 export async function get_iface_ipv6pd_config(
   iface_name: string,
 ): Promise<IPV6PDServiceConfig> {
-  const data = await getIfacePdConfig(iface_name);
+  const data = await getIfacePdConfig(iface_name, { silent: true });
   return new IPV6PDServiceConfig(data);
 }
 

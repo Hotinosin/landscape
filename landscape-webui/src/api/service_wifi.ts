@@ -21,7 +21,7 @@ export async function get_all_wifi_status(): Promise<
 export async function get_iface_wifi_config(
   iface_name: string,
 ): Promise<WifiServiceConfig> {
-  const data = await getWifiServiceConfig(iface_name);
+  const data = await getWifiServiceConfig(iface_name, { silent: true });
   return new WifiServiceConfig(data);
 }
 

@@ -38,7 +38,7 @@ type ECOption = ComposeOption<
   | TooltipComponentOption
 >;
 
-type MetricPoint = [timestamp: number, value: number];
+type MetricPoint = [timestamp: number, value: number | null];
 
 interface MetricSeries {
   name: string;
@@ -50,6 +50,8 @@ interface Props {
   xAxisTitle: string;
   yAxisTitle: string;
   valueFormatter: (value: number) => string;
+  compact?: boolean;
+  colors?: string[];
 }
 
 const props = defineProps<Props>();
@@ -89,19 +91,23 @@ const timeFormatter = computed(
 
 const option = computed<ECOption>(() => ({
   animation: false,
-  color: [themeVars.value.successColor, themeVars.value.infoColor],
+  color: props.colors ?? [
+    themeVars.value.successColor,
+    themeVars.value.infoColor,
+  ],
   textStyle: {
     color: themeVars.value.textColor2,
   },
   grid: {
-    top: 52,
-    right: 24,
-    bottom: 32,
-    left: 16,
+    top: props.compact ? 8 : 52,
+    right: props.compact ? 8 : 24,
+    bottom: props.compact ? 8 : 32,
+    left: props.compact ? 8 : 16,
     outerBoundsMode: "same",
     outerBoundsContain: "all",
   },
   legend: {
+    show: !props.compact,
     type: "scroll",
     top: 8,
     left: 16,
@@ -111,15 +117,20 @@ const option = computed<ECOption>(() => ({
     },
   },
   tooltip: {
+    show: !props.compact,
     trigger: "axis",
     backgroundColor: themeVars.value.popoverColor,
     borderColor: themeVars.value.borderColor,
     textStyle: {
       color: themeVars.value.textColor1,
     },
-    valueFormatter: (value) => props.valueFormatter(Number(value)),
+    valueFormatter: (value) =>
+      value === null || value === undefined || value === "-"
+        ? t("common.no_data")
+        : props.valueFormatter(Number(value)),
   },
   toolbox: {
+    show: !props.compact,
     top: 4,
     right: 16,
     itemSize: 16,
@@ -145,16 +156,19 @@ const option = computed<ECOption>(() => ({
       },
     },
   },
-  dataZoom: [
-    {
-      type: "inside",
-      xAxisIndex: 0,
-      filterMode: "none",
-    },
-  ],
+  dataZoom: props.compact
+    ? []
+    : [
+        {
+          type: "inside",
+          xAxisIndex: 0,
+          filterMode: "none",
+        },
+      ],
   xAxis: {
     type: "time",
-    name: props.xAxisTitle,
+    show: !props.compact,
+    name: props.compact ? "" : props.xAxisTitle,
     nameLocation: "middle",
     nameGap: 26,
     nameTextStyle: {
@@ -181,17 +195,20 @@ const option = computed<ECOption>(() => ({
   },
   yAxis: {
     type: "value",
-    name: props.yAxisTitle,
+    min: props.compact ? 0 : undefined,
+    name: props.compact ? "" : props.yAxisTitle,
     nameLocation: "middle",
     nameGap: 54,
     nameTextStyle: {
       color: themeVars.value.textColor2,
     },
     axisLabel: {
+      show: !props.compact,
       color: themeVars.value.textColor3,
       formatter: (value: number) => props.valueFormatter(value),
     },
     splitLine: {
+      show: !props.compact,
       lineStyle: {
         color: themeVars.value.dividerColor,
       },
@@ -201,7 +218,11 @@ const option = computed<ECOption>(() => ({
     ...series,
     type: "line",
     smooth: true,
-    showSymbol: false,
+    connectNulls: false,
+    showSymbol:
+      props.compact &&
+      series.data.filter(([, value]) => value !== null).length <= 1,
+    symbolSize: 5,
     lineStyle: {
       width: 2,
     },
@@ -214,7 +235,7 @@ const option = computed<ECOption>(() => ({
 
 <template>
   <VChart
-    class="metric-line-chart"
+    :class="['metric-line-chart', { 'metric-line-chart--compact': compact }]"
     :option="option"
     :update-options="updateOptions"
     autoresize
@@ -225,5 +246,9 @@ const option = computed<ECOption>(() => ({
 .metric-line-chart {
   width: 100%;
   height: 300px;
+}
+
+.metric-line-chart--compact {
+  height: 72px;
 }
 </style>

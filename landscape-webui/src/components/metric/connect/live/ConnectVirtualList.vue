@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, defineAsyncComponent, ref } from "vue";
 import type {
   ConnectKey,
   ConnectRealtimeStatus,
 } from "@landscape-router/types/api/schemas";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import ConnectItemInfo from "./ConnectItemInfo.vue";
-import ConnectChartDrawer from "../ConnectChartDrawer.vue";
+
+const ConnectChartDrawer = defineAsyncComponent(
+  () => import("../ConnectChartDrawer.vue"),
+);
 
 const frontEndStore = useFrontEndStore();
 
@@ -14,6 +17,12 @@ interface Props {
   connect_metrics: ConnectRealtimeStatus[];
 }
 const props = defineProps<Props>();
+const virtualItems = computed(() =>
+  props.connect_metrics.map((item) => ({
+    ...item,
+    virtual_key: `${item.key.create_time}-${item.key.cpu_id}`,
+  })),
+);
 
 const show_chart = ref(false);
 const show_chart_key = ref<ConnectKey | null>(null);
@@ -32,7 +41,13 @@ const emit = defineEmits(["search:tuple", "search:src", "search:dst"]);
 </script>
 
 <template>
-  <n-virtual-list class="list" :item-size="40" :items="props.connect_metrics">
+  <n-virtual-list
+    class="list"
+    :style="{ height: `${virtualItems.length * 44}px` }"
+    :item-size="44"
+    :items="virtualItems"
+    key-field="virtual_key"
+  >
     <template #default="{ item, index }">
       <ConnectItemInfo
         @show:chart="show_chart_drawer"
@@ -46,6 +61,7 @@ const emit = defineEmits(["search:tuple", "search:src", "search:dst"]);
   </n-virtual-list>
 
   <ConnectChartDrawer
+    v-if="show_chart"
     v-model:show="show_chart"
     :conn="show_chart_key"
     :title="show_chart_title"
@@ -56,6 +72,7 @@ const emit = defineEmits(["search:tuple", "search:src", "search:dst"]);
 
 <style scoped>
 .list {
-  height: 100%;
+  flex: 0 1 auto;
+  min-height: 0;
 }
 </style>

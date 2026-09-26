@@ -21,7 +21,7 @@ export async function get_all_route_lan_status(): Promise<
 export async function get_route_lan_config(
   id: string,
 ): Promise<RouteLanServiceConfig> {
-  return await getRouteLanConfig(id);
+  return await getRouteLanConfig(id, { silent: true });
 }
 
 export async function update_route_lans_config(

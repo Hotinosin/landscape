@@ -53,11 +53,15 @@ export const customInstance = <T>(
       "Axios instance not configured. Call setAxiosInstance() before making API calls.",
     );
   }
-  // The axios response interceptor already returns response.data (the API body),
-  // which is { data: T, error_id, message, args }. We extract .data here.
-  return _axiosInstance({ ...config, ...options }).then(
-    (res: any) => res.data as ExtractData<T>,
-  );
+  // The axios response interceptor already returns response.data (the API body).
+  // If the body is wrapped in LandscapeApiResp ({ data: T, ... }), extract .data.
+  // If it's already the unwrapped payload (e.g. raw Array [], string, etc.), return res directly.
+  return _axiosInstance({ ...config, ...options }).then((res: any) => {
+    if (res && typeof res === "object" && !Array.isArray(res) && "data" in res) {
+      return res.data as ExtractData<T>;
+    }
+    return res as ExtractData<T>;
+  });
 };
 
 export default customInstance;

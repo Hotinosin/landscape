@@ -24,4 +24,8 @@ libduckdb/
 
 # Node
 node_modules/
+.pnpm-store/
 landscape-types/.bindings.lock
+
+# macOS
+.DS_Store

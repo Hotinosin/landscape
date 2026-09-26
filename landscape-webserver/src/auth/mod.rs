@@ -160,6 +160,37 @@ pub async fn auth_handler_from_query(
     }
 }
 
+pub async fn auth_handler_from_cookie(
+    State(auth): State<Arc<ArcSwap<AuthRuntimeConfig>>>,
+    req: Request<axum::body::Body>,
+    next: Next,
+) -> Result<Response, LandscapeApiError> {
+    let token = req
+        .headers()
+        .get(axum::http::header::COOKIE)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|cookies| {
+            cookies
+                .split(';')
+                .map(str::trim)
+                .find_map(|cookie| cookie.strip_prefix("LANDSCAPE_PLUGIN_TOKEN="))
+        })
+        .ok_or(AuthError::MissingAuthorizationHeader)?;
+
+    let token_data = decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(SECRET_KEY.as_bytes()),
+        &Validation::default(),
+    )
+    .map_err(|_| AuthError::InvalidToken)?;
+
+    if token_data.claims.sub == auth.load().admin_user {
+        Ok(next.run(req).await)
+    } else {
+        Err(AuthError::UnauthorizedUser.into())
+    }
+}
+
 /// Build the OpenApiRouter for auth (different state type from LandscapeApp).
 /// Used by openapi.rs to extract the spec, and by main.rs to serve.
 pub fn get_auth_openapi_router() -> OpenApiRouter<Arc<ArcSwap<AuthRuntimeConfig>>> {

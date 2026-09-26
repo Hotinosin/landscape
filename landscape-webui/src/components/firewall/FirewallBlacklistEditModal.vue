@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useMessage } from "naive-ui";
-import { ChangeCatalog, WarningAlt } from "@vicons/carbon";
+import { WarningAlt } from "@vicons/carbon";
 
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import IpEdit from "@/components/IpEdit.vue";
 import GeoIpKeySelect from "@/components/geo/ip/GeoIpKeySelect.vue";
 
@@ -47,6 +48,11 @@ const config_enabled = computed({
   },
 });
 
+const sourceTypeOptions = computed(() => [
+  { label: t("firewall.blacklist_edit.source_type_ip"), value: "config" },
+  { label: t("firewall.blacklist_edit.source_type_geo"), value: "geo_key" },
+]);
+
 async function enter() {
   if (props.id !== null) {
     config.value = await get_firewall_blacklist(props.id);
@@ -54,6 +60,7 @@ async function enter() {
     config.value = {
       name: null,
       enable: true,
+      name: null,
       source: [],
       remark: "",
     };
@@ -66,11 +73,11 @@ function onCreate(): FirewallBlacklistSource {
 }
 
 function changeCurrentSourceType(
-  value: FirewallBlacklistSource,
+  type: FirewallBlacklistSource["t"],
   index: number,
 ) {
   if (config.value) {
-    if (value.t === "config") {
+    if (type === "geo_key") {
       config.value.source[index] = {
         t: "geo_key",
         name: "",
@@ -129,10 +136,12 @@ async function saveConfig() {
   <ConfigModal
     v-model:show="show"
     v-model:enabled="config_enabled"
+    :show-switch="false"
     :title="t('firewall.blacklist_edit.title')"
     :switch-disabled="!config"
-    width="700px"
-    @after-enter="enter"
+    width="var(--app-secondary-modal-width)"
+    :dirty="isModified"
+    :prepare="enter"
   >
     <n-form v-if="config" style="flex: 1" :model="config">
       <n-form-item :label="t('common.name')">
@@ -148,11 +157,12 @@ async function saveConfig() {
           </template>
           <template #default="{ value, index }">
             <n-flex style="flex: 1" :wrap="false">
-              <n-button @click="changeCurrentSourceType(value, index)">
-                <n-icon>
-                  <ChangeCatalog />
-                </n-icon>
-              </n-button>
+              <n-select
+                :value="value.t"
+                :options="sourceTypeOptions"
+                style="width: 140px"
+                @update:value="changeCurrentSourceType($event, index)"
+              />
               <GeoIpKeySelect
                 v-model:geo_key="value.key"
                 v-model:geo_name="value.name"
@@ -167,7 +177,7 @@ async function saveConfig() {
                   "
                 >
                   <template #trigger>
-                    <n-icon color="#d03050" :size="20">
+                    <n-icon color="var(--app-status-danger-color)" :size="20">
                       <WarningAlt />
                     </n-icon>
                   </template>
@@ -177,11 +187,11 @@ async function saveConfig() {
             </n-flex>
           </template>
         </n-dynamic-input>
-      </n-form-item>
+      </StandardSettingRow>
     </n-form>
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button
           :loading="commit_spin"
           @click="saveConfig"

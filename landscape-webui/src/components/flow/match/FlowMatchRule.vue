@@ -3,7 +3,6 @@ import { computed, reactive } from "vue";
 import type { FlowEntryRule } from "@landscape-router/types/api/schemas";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
-import { ChangeCatalog } from "@vicons/carbon";
 import { is_ipv4, is_ipv6 } from "@/lib/common";
 import { formatMacAddress } from "@/lib/util";
 import { useI18n } from "vue-i18n";
@@ -17,6 +16,11 @@ const match_rules = defineModel<FlowEntryRule[]>("match_rules", {
 
 type InputMode = "device" | "mac" | "ip";
 const inputModes = reactive(new Map<number, InputMode>());
+const inputModeOptions = computed(() => [
+  { label: t("flow.match_rule.type_device"), value: "device" },
+  { label: t("flow.match_rule.type_mac"), value: "mac" },
+  { label: t("flow.match_rule.type_ip"), value: "ip" },
+]);
 
 function getInputMode(index: number): InputMode {
   return (
@@ -58,10 +62,10 @@ function getDefaultPrefixLen(ip: string): number {
   return 32;
 }
 
-function change_mode(value: FlowEntryRule, index: number) {
-  const current = getInputMode(index);
+function changeMode(current: InputMode, index: number) {
   const temp_rule = match_rules.value[index];
-  if (current === "device") {
+  inputModes.set(index, current);
+  if (current === "mac") {
     inputModes.set(index, "mac");
     match_rules.value[index] = {
       qos: temp_rule.qos,
@@ -70,7 +74,7 @@ function change_mode(value: FlowEntryRule, index: number) {
         mac_addr: "",
       },
     };
-  } else if (current === "mac") {
+  } else if (current === "ip") {
     inputModes.set(index, "ip");
     match_rules.value[index] = {
       qos: temp_rule.qos,
@@ -100,11 +104,12 @@ function change_mode(value: FlowEntryRule, index: number) {
     </template>
     <template #default="{ value, index }">
       <n-flex style="flex: 1" :wrap="false">
-        <n-button @click="change_mode(value, index)">
-          <n-icon>
-            <ChangeCatalog />
-          </n-icon>
-        </n-button>
+        <n-select
+          :value="getInputMode(index)"
+          :options="inputModeOptions"
+          style="width: 140px"
+          @update:value="changeMode($event, index)"
+        />
 
         <n-select
           v-if="getInputMode(index) === 'device'"
