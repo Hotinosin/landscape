@@ -1,5 +1,5 @@
 [workspace.package]
-version = "0.24.3"
+version = "0.24.3-extension.15"
 edition = "2021"
 
 
@@ -72,11 +72,14 @@ futures-util = { version = "0.3.34", default-features = false }
 # ============================================================================
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.151" }
+serde_yaml = "0.9.34"
 # Only used by geo's file cache — keep version pinned, do not upgrade
 bincode = { version = "2.0.1", features = ["std", "serde"] }
 toml = "1.1.5"
 toml_edit = "0.25.13"
 bytes = "1.12.1"
+flate2 = "1.1.5"
+tar = "0.4.44"
 http = "1.5.0"
 h2 = "0.4.15"
 deku = "0.20.3"
@@ -121,6 +124,9 @@ axum-extra = { version = "0.12.6", features = [
     "with-rejection",
 ] }
 axum-server = "0.8.0"
+hyper = { version = "1", features = ["client", "http1", "http2"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+http-body-util = "0.1"
 headers = "0.4.1"
 tower = { version = "0.5.3", features = ["util"] }
 tower-http = { version = "0.7.1", features = [

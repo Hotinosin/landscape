@@ -91,6 +91,8 @@ mod interfaces;
 mod metrics;
 mod nat;
 mod openapi;
+mod plugin_proxy;
+mod plugins;
 mod redirect_https;
 mod services;
 mod system;
@@ -128,6 +130,8 @@ pub enum StartupError {
     Metric(String),
     #[error("config: {0}")]
     Config(String),
+    #[error("plugin initialization failed: {0}")]
+    Plugin(String),
 }
 
 async fn prepare_startup_init(
@@ -507,6 +511,9 @@ async fn run_system(
     .await;
 
     let docker_service = LandscapeDockerService::new(home_path.clone(), route_service.clone());
+    let plugin_manager = plugins::PluginManager::new(&home_path, route_service.clone())
+        .await
+        .map_err(StartupError::Plugin)?;
 
     let pppd_service = PPPDServiceConfigManagerService::new(
         db_store_provider.clone(),
@@ -637,6 +644,7 @@ async fn run_system(
         .nest("/metrics", metrics_router)
         .nest("/gateway", gateway_router)
         .with_state(landscape_app_status.clone())
+        .nest("/plugins", plugins::api_router(plugin_manager.clone()))
         .nest("/system", system_combined)
         .route_layer(axum::middleware::from_fn_with_state(auth_share.clone(), auth::auth_handler));
 
@@ -654,6 +662,13 @@ async fn run_system(
     let api_route = Router::new()
         .nest("/v1", v1_route)
         .nest("/ws", ws_route)
+        .nest(
+            "/plugins",
+            plugins::ui_router(plugin_manager).route_layer(axum::middleware::from_fn_with_state(
+                auth_share.clone(),
+                auth::auth_handler_from_cookie,
+            )),
+        )
         .nest("/auth", auth::get_auth_route(auth_share))
         .merge(Scalar::with_url("/docs", openapi).custom_html(
             r#"<!doctype html>
