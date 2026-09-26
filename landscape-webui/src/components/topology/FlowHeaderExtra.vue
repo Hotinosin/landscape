@@ -12,6 +12,7 @@ import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 
 const emit = defineEmits(["fit-view"]);
+defineProps<{ summary?: boolean }>();
 
 const { t } = useI18n();
 const show_create_dev = ref(false);
@@ -31,7 +32,10 @@ function toggle_down_devices() {
     style="z-index: 6"
   >
     <n-float-button
+      v-if="!summary"
       data-testid="topology-create-bridge"
+      :aria-label="t('topology.create_bridge')"
+      :title="t('topology.create_bridge')"
       @click="show_create_dev = true"
     >
       <n-icon><Add /></n-icon>
@@ -46,6 +50,20 @@ function toggle_down_devices() {
     </n-float-button>
     <n-float-button
       data-testid="topology-toggle-down"
+      :aria-label="
+        t(
+          ifaceNodeStore.hide_down_dev
+            ? 'topology.show_all_interfaces'
+            : 'topology.show_connected_only',
+        )
+      "
+      :title="
+        t(
+          ifaceNodeStore.hide_down_dev
+            ? 'topology.show_all_interfaces'
+            : 'topology.show_connected_only',
+        )
+      "
       @click="toggle_down_devices"
     >
       <n-icon>
@@ -55,6 +73,20 @@ function toggle_down_devices() {
     </n-float-button>
     <n-float-button
       data-testid="topology-toggle-lock"
+      :aria-label="
+        t(
+          ifaceNodeStore.view_locked
+            ? 'topology.unlock_layout'
+            : 'topology.lock_layout',
+        )
+      "
+      :title="
+        t(
+          ifaceNodeStore.view_locked
+            ? 'topology.unlock_layout'
+            : 'topology.lock_layout',
+        )
+      "
       @click="ifaceNodeStore.TOGGLE_VIEW_LOCK"
     >
       <n-icon>

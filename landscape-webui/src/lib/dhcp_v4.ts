@@ -62,5 +62,8 @@ export function get_dhcp_range(cidr: string): [string, string] {
   // 构造 IP 对象
   const nthIp = IPv4.fromNumber(nthIpValue);
 
-  return [nthIp.toString(), range.getLast().toString()];
+  return [
+    nthIp.toString(),
+    IPv4.fromNumber(range.getLast().getValue() - 1n).toString(),
+  ];
 }

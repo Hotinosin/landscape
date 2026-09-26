@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:visual": "vite --mode test --host 127.0.0.1",
     "build": "vue-tsc && vite build",
     "test": "vitest run",
     "preview": "vite preview",
@@ -34,7 +35,7 @@
     "vue-router": "^5.2.0"
   },
   "devDependencies": {
-    "@scalar/api-reference": "^1.63.0",
+    "@scalar/api-reference": "1.63.0",
     "@types/netmask": "^2.0.6",
     "@types/node": "^26.1.2",
     "@vicons/antd": "^0.13.0",
@@ -56,6 +57,8 @@
     "vfonts": "^0.1.0",
     "vite": "^8.1.5",
     "vitest": "^4.1.10",
-    "vue-tsc": "^3.3.8"
+    "vue-tsc": "^3.3.8",
+    "@vue/test-utils": "^2.4.11",
+    "happy-dom": "^20.11.8"
   }
 }

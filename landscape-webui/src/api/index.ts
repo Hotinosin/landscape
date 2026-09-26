@@ -1,7 +1,22 @@
 import type { AxiosInstance } from "axios";
 import router from "@/router";
 import i18n from "@/i18n";
-import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
+import {
+  clearLandscapeSession,
+  LANDSCAPE_TOKEN_KEY,
+  landscapeSessionGeneration,
+  syncPluginSessionCookie,
+} from "@/lib/common";
+import { useHistoryRouteStore } from "@/stores/history_route";
+
+export function isCurrentSessionRequest(
+  requestAuthorization: unknown,
+  currentToken: string | null,
+): boolean {
+  return (
+    Boolean(currentToken) && requestAuthorization === `Bearer ${currentToken}`
+  );
+}
 
 function formatApiErrorTemplate(
   template: string,
@@ -19,8 +34,10 @@ function formatApiErrorTemplate(
  * to any axios instance.
  */
 export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
+  const requestSessions = new WeakMap<object, number>();
   instance.interceptors.request.use(
     (config) => {
+      requestSessions.set(config, landscapeSessionGeneration);
       const token = localStorage.getItem(LANDSCAPE_TOKEN_KEY);
       if (token) {
         config.headers["Authorization"] = `Bearer ${token}`;
@@ -35,8 +52,16 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
   instance.interceptors.response.use(
     (response) => {
       const newToken = response.headers["x-refresh-token"];
-      if (newToken) {
+      if (
+        newToken &&
+        requestSessions.get(response.config) === landscapeSessionGeneration &&
+        isCurrentSessionRequest(
+          response.config.headers.Authorization,
+          localStorage.getItem(LANDSCAPE_TOKEN_KEY),
+        )
+      ) {
         localStorage.setItem(LANDSCAPE_TOKEN_KEY, newToken);
+        syncPluginSessionCookie();
       }
       return response.data;
     },
@@ -44,11 +69,20 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
       if (error.response != undefined && error.response.status != undefined) {
         const code = error.response.status;
         const { error_id, message, args } = error.response.data;
-        if (code === 401) {
-          localStorage.removeItem(LANDSCAPE_TOKEN_KEY);
-
-          const currentPath = router.currentRoute.value.fullPath;
-          router.push({
+        const requestAuthorization = error.config?.headers?.Authorization;
+        const authenticatedRequest = Boolean(requestAuthorization);
+        const currentSessionUnauthorized =
+          code === 401 &&
+          requestSessions.get(error.config) === landscapeSessionGeneration &&
+          isCurrentSessionRequest(
+            requestAuthorization,
+            localStorage.getItem(LANDSCAPE_TOKEN_KEY),
+          );
+        if (currentSessionUnauthorized) {
+          const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+          clearLandscapeSession();
+          useHistoryRouteStore().resetRoutes();
+          void router.replace({
             path: "/login",
             state: currentPath === "/login" ? {} : { redirect: currentPath },
           });
@@ -74,7 +108,12 @@ export function applyInterceptors(instance: AxiosInstance): AxiosInstance {
             ? (i18n.global.t(errorKey, args || {}) as string)
             : message;
 
-        if (displayMsg && window.$message && !error.config?.silent) {
+        if (
+          displayMsg &&
+          window.$message &&
+          !error.config?.silent &&
+          (code !== 401 || !authenticatedRequest || currentSessionUnauthorized)
+        ) {
           window.$message.error(displayMsg);
         }
         return Promise.reject(error.response.data);

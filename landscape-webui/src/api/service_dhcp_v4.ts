@@ -20,8 +20,9 @@ export async function get_all_dhcp_v4_status(): Promise<
 
 export async function get_iface_dhcp_v4_config(
   iface_name: string,
+  silent = false,
 ): Promise<DHCPv4ServiceConfig> {
-  const data = await getDhcpV4ServiceConfig(iface_name);
+  const data = await getDhcpV4ServiceConfig(iface_name, { silent });
   return new DHCPv4ServiceConfig(data as any);
 }
 

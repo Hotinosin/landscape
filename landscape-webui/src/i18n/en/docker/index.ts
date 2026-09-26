@@ -2,8 +2,8 @@ export default {
   docker_run: {
     title: "Run Image: {image}",
     container_name: "Container Name",
-    container_name_placeholder: "Enter container name (optional)",
-    flow_egress: "Use as Flow Egress",
+    container_name_placeholder: "Enter container name",
+    flow_egress: "Use as Flow Policy Egress",
     restart_policy: "Restart Policy",
     entrypoint: "Entrypoint",
     entrypoint_placeholder: "Enter entrypoint (optional)",
@@ -26,10 +26,6 @@ export default {
     edge_label_added: "Edge label added",
     edge_label_not_added: "Edge label not added",
     entrypoint_params_placeholder: "Enter entrypoint params (optional)",
-  },
-  docker_container: {
-    no_other_tags: "No other tags",
-    other_tags: "Other tags",
   },
   docker_image: {
     history_tasks: "History Tasks",

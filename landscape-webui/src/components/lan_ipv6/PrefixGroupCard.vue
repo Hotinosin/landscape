@@ -4,7 +4,7 @@ import type {
   LanPrefixGroupConfig,
 } from "@landscape-router/types/api/schemas";
 import { computed, ref } from "vue";
-import { Edit, TrashCan } from "@vicons/carbon";
+import { Edit } from "@vicons/carbon";
 import { useI18n } from "vue-i18n";
 import PrefixGroupEditorModal from "@/components/lan_ipv6/PrefixGroupEditorModal.vue";
 import {
@@ -262,24 +262,11 @@ function openEditor(kind: ServiceKind) {
             </template>
           </n-button>
 
-          <n-popconfirm @positive-click="deleteGroup">
-            <template #trigger>
-              <n-button
-                quaternary
-                circle
-                size="small"
-                type="error"
-                :title="t('lan_ipv6.delete')"
-                :aria-label="t('lan_ipv6.delete')"
-                @click.stop
-              >
-                <template #icon>
-                  <n-icon><TrashCan /></n-icon>
-                </template>
-              </n-button>
-            </template>
-            {{ t("lan_ipv6.prefix_group_delete_confirm") }}
-          </n-popconfirm>
+          <DeleteButton
+            :content="t('lan_ipv6.prefix_group_delete_confirm')"
+            :on-confirm="deleteGroup"
+            @click.stop
+          />
         </n-flex>
       </div>
     </div>
@@ -305,7 +292,7 @@ function openEditor(kind: ServiceKind) {
   width: 100%;
   box-sizing: border-box;
   padding: 0;
-  border-radius: 12px;
+  border-radius: var(--app-radius-large, 12px);
   background: color-mix(
     in srgb,
     var(--n-color) 82%,
@@ -317,34 +304,34 @@ function openEditor(kind: ServiceKind) {
   margin-top: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--app-space-sm);
 }
 
 .group-summary.compact {
   margin-top: 0;
   display: grid;
   grid-template-columns: minmax(220px, 1.2fr) repeat(3, minmax(0, 1fr)) auto;
-  gap: 8px;
+  gap: var(--app-space-sm);
   align-items: stretch;
 }
 
 .summary-parent {
   border: 1px solid var(--n-border-color);
-  border-radius: 10px;
+  border-radius: var(--app-radius-panel);
   background: color-mix(in srgb, var(--n-color) 88%, var(--n-hover-color) 12%);
-  padding: 10px 12px;
+  padding: 10px var(--app-space-section);
   min-width: 0;
 }
 
 .summary-parent-main {
   display: flex;
-  gap: 8px;
+  gap: var(--app-space-sm);
   align-items: center;
   flex-wrap: wrap;
 }
 
 .summary-parent-hint {
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
   color: var(--n-text-color-3);
   margin-top: 6px;
 }
@@ -353,10 +340,10 @@ function openEditor(kind: ServiceKind) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: var(--app-space-section);
+  padding: 10px var(--app-space-section);
   border: 1px solid var(--n-border-color);
-  border-radius: 10px;
+  border-radius: var(--app-radius-panel);
   background: color-mix(
     in srgb,
     var(--n-color) 90%,
@@ -397,20 +384,20 @@ function openEditor(kind: ServiceKind) {
 .summary-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--app-space-sm);
 }
 
 .summary-kind {
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--app-font-size-label);
 }
 
 .summary-state {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
+  border-radius: var(--app-radius-pill);
   padding: 1px 8px;
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
   line-height: 18px;
 }
 
@@ -430,12 +417,12 @@ function openEditor(kind: ServiceKind) {
 }
 
 .summary-text {
-  font-size: 13px;
+  font-size: var(--app-font-size-label);
   margin-top: 2px;
 }
 
 .summary-detail {
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
   color: var(--n-text-color-3);
   margin-top: 2px;
 }

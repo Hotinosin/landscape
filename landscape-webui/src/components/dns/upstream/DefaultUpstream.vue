@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { DnsUpstreamConfig } from "@landscape-router/types/api/schemas";
-import { DnsUpstreamModeTsEnum } from "@/lib/dns";
+import {
+  DEFAULT_DOH_ENDPOINT,
+  DnsUpstreamModeTsEnum,
+} from "@/lib/dns";
 import { useI18n } from "vue-i18n";
+import { computed } from "vue";
 
 const { t } = useI18n();
 
@@ -41,7 +45,8 @@ const DEFAULT_CONFIGS: Record<
     mode: {
       t: DnsUpstreamModeTsEnum.Https,
       domain: "dns.alidns.com",
-      http_endpoint: null,
+      http_endpoint: DEFAULT_DOH_ENDPOINT,
+      http3: false,
     },
     ips: ["223.5.5.5", "223.6.6.6", "2400:3200::1", "2400:3200:baba::1"],
     port: 443,
@@ -78,7 +83,8 @@ const DEFAULT_CONFIGS: Record<
     mode: {
       t: DnsUpstreamModeTsEnum.Https,
       domain: "dns.pub",
-      http_endpoint: null,
+      http_endpoint: DEFAULT_DOH_ENDPOINT,
+      http3: false,
     },
     ips: ["1.12.12.21", "120.53.53.53"],
     port: 443,
@@ -102,7 +108,8 @@ const DEFAULT_CONFIGS: Record<
     mode: {
       t: DnsUpstreamModeTsEnum.Https,
       domain: "cloudflare-dns.com",
-      http_endpoint: null,
+      http_endpoint: DEFAULT_DOH_ENDPOINT,
+      http3: false,
     },
     ips: ["1.1.1.1", "1.0.0.1", "2606:4700:4700::1111", "2606:4700:4700::1001"],
     port: 443,
@@ -126,7 +133,8 @@ const DEFAULT_CONFIGS: Record<
     mode: {
       t: DnsUpstreamModeTsEnum.Https,
       domain: "dns.google",
-      http_endpoint: null,
+      http_endpoint: DEFAULT_DOH_ENDPOINT,
+      http3: false,
     },
     ips: ["8.8.8.8", "8.8.4.4", "2001:4860:4860::8888", "2001:4860:4860::8844"],
     port: 443,
@@ -140,140 +148,123 @@ const DEFAULT_CONFIGS: Record<
   },
 };
 
+const selectedPreset = computed(() => {
+  const current = rule.value;
+  return (
+    Object.entries(DEFAULT_CONFIGS) as [
+      DefaultDnsConfig,
+      (typeof DEFAULT_CONFIGS)[DefaultDnsConfig],
+    ][]
+  ).find(
+    ([, config]) =>
+      current.port === config.port &&
+      current.enable_ip_validation === config.enable_ip_validation &&
+      JSON.stringify(current.mode) === JSON.stringify(config.mode) &&
+      JSON.stringify(current.ips) === JSON.stringify(config.ips),
+  )?.[0];
+});
+
 function replace_default(config: DefaultDnsConfig) {
   rule.value = {
     id: rule.value.id,
-    name: rule.value.name ?? null,
     remark: rule.value?.remark ?? "",
     ...DEFAULT_CONFIGS[config],
     update_at: rule.value.update_at,
   };
 }
 
-const btn_size = "small";
+const btn_size = "medium";
 </script>
 <template>
-  <n-flex justify="space-between" :size="[12, 8]">
-    <n-flex vertical :size="8">
-      <n-input-group>
-        <n-input-group-label :size="btn_size" class="label-len">
-          {{ t("dns.select_upstream.default_ali") }}
-        </n-input-group-label>
-        <n-button
-          @click="replace_default(DefaultDnsConfig.ALI_UDP)"
-          :size="btn_size"
-          secondary
-          strong
-          >UDP</n-button
-        >
-        <n-button
-          @click="replace_default(DefaultDnsConfig.ALI_DOH)"
-          :size="btn_size"
-          secondary
-          strong
-          >DoH</n-button
-        >
-        <n-button
-          @click="replace_default(DefaultDnsConfig.ALI_DOT)"
-          :size="btn_size"
-          secondary
-          strong
-          >DoT</n-button
-        >
-        <n-button
-          @click="replace_default(DefaultDnsConfig.ALI_DOQ)"
-          :size="btn_size"
-          secondary
-          strong
-          >DoQ</n-button
-        >
-      </n-input-group>
-      <n-input-group>
-        <n-input-group-label :size="btn_size" class="label-len">
-          DNSPod
-        </n-input-group-label>
-        <n-button
-          @click="replace_default(DefaultDnsConfig.DNSPOD_UDP)"
-          :size="btn_size"
-          secondary
-          strong
-          >UDP</n-button
-        >
-        <n-button
-          @click="replace_default(DefaultDnsConfig.DNSPOD_DOH)"
-          :size="btn_size"
-          secondary
-          strong
-          >DoH</n-button
-        >
-        <!-- <n-button
-          @click="replace_default(DefaultDnsConfig.DNSPOD_DOT)"
-          :size="btn_size"
-          secondary
-          strong
-          >DoT</n-button
-        > -->
-      </n-input-group>
-    </n-flex>
-    <n-flex vertical :size="8">
-      <n-input-group>
-        <n-input-group-label :size="btn_size" class="label-len">
-          Cloudflare
-        </n-input-group-label>
-        <n-button
-          @click="replace_default(DefaultDnsConfig.CLOUDFLARE_UDP)"
-          :size="btn_size"
-          secondary
-          strong
-          >UDP</n-button
-        >
-        <n-button
-          @click="replace_default(DefaultDnsConfig.CLOUDFLARE_DOH)"
-          :size="btn_size"
-          secondary
-          strong
-          >DoH</n-button
-        >
-        <n-button
-          @click="replace_default(DefaultDnsConfig.CLOUDFLARE_DOT)"
-          :size="btn_size"
-          secondary
-          strong
-          >DoT</n-button
-        >
-      </n-input-group>
-      <n-input-group>
-        <n-input-group-label :size="btn_size" class="label-len">
-          Google
-        </n-input-group-label>
-        <n-button
-          @click="replace_default(DefaultDnsConfig.GOOGLE_UDP)"
-          :size="btn_size"
-          secondary
-          strong
-          >UDP</n-button
-        >
-        <n-button
-          @click="replace_default(DefaultDnsConfig.GOOGLE_DOH)"
-          :size="btn_size"
-          secondary
-          strong
-          >DoH</n-button
-        >
-        <n-button
-          @click="replace_default(DefaultDnsConfig.GOOGLE_DOT)"
-          :size="btn_size"
-          secondary
-          strong
-          >DoT</n-button
-        >
-      </n-input-group>
-    </n-flex>
-  </n-flex>
+  <div class="default-upstream">
+    <n-input-group>
+      <n-input-group-label :size="btn_size" class="label-len">
+        {{ t("dns.select_upstream.default_ali") }}
+      </n-input-group-label>
+      <n-radio-group
+        :value="selectedPreset"
+        :size="btn_size"
+        @update:value="replace_default"
+      >
+        <n-radio-button :value="DefaultDnsConfig.ALI_UDP">UDP</n-radio-button>
+        <n-radio-button :value="DefaultDnsConfig.ALI_DOH">DoH</n-radio-button>
+        <n-radio-button :value="DefaultDnsConfig.ALI_DOT">DoT</n-radio-button>
+        <n-radio-button :value="DefaultDnsConfig.ALI_DOQ">DoQ</n-radio-button>
+      </n-radio-group>
+    </n-input-group>
+    <n-input-group>
+      <n-input-group-label :size="btn_size" class="label-len">
+        Cloudflare
+      </n-input-group-label>
+      <n-radio-group
+        :value="selectedPreset"
+        :size="btn_size"
+        @update:value="replace_default"
+      >
+        <n-radio-button :value="DefaultDnsConfig.CLOUDFLARE_UDP">UDP</n-radio-button>
+        <n-radio-button :value="DefaultDnsConfig.CLOUDFLARE_DOH">DoH</n-radio-button>
+        <n-radio-button :value="DefaultDnsConfig.CLOUDFLARE_DOT">DoT</n-radio-button>
+      </n-radio-group>
+    </n-input-group>
+    <n-input-group>
+      <n-input-group-label :size="btn_size" class="label-len">
+        DNSPod
+      </n-input-group-label>
+      <n-radio-group
+        :value="selectedPreset"
+        :size="btn_size"
+        @update:value="replace_default"
+      >
+        <n-radio-button :value="DefaultDnsConfig.DNSPOD_UDP">UDP</n-radio-button>
+        <n-radio-button :value="DefaultDnsConfig.DNSPOD_DOH">DoH</n-radio-button>
+      </n-radio-group>
+    </n-input-group>
+    <n-input-group>
+      <n-input-group-label :size="btn_size" class="label-len">
+        Google
+      </n-input-group-label>
+      <n-radio-group
+        :value="selectedPreset"
+        :size="btn_size"
+        @update:value="replace_default"
+      >
+        <n-radio-button :value="DefaultDnsConfig.GOOGLE_UDP">UDP</n-radio-button>
+        <n-radio-button :value="DefaultDnsConfig.GOOGLE_DOH">DoH</n-radio-button>
+        <n-radio-button :value="DefaultDnsConfig.GOOGLE_DOT">DoT</n-radio-button>
+      </n-radio-group>
+    </n-input-group>
+  </div>
 </template>
 <style scoped>
+.default-upstream {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--app-setting-control-width);
+  gap: var(--app-space-sm) var(--app-space-lg);
+  justify-content: start;
+  width: 100%;
+}
+
+.default-upstream :deep(.n-input-group) {
+  width: max-content;
+}
+
+.default-upstream :deep(.n-radio-button) {
+  height: var(--app-control-height);
+  line-height: var(--app-control-height);
+}
+
+.default-upstream :deep(.n-radio-button:first-child) {
+  border-radius: 0;
+}
+
 .label-len {
   width: 90px;
   text-align: center;
+}
+
+@media (max-width: 640px) {
+  .default-upstream {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 </style>

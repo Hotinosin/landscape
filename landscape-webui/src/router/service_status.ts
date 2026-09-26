@@ -1,19 +1,5 @@
-import { RouteRecordRaw } from "vue-router";
-
-import IPv6PD from "@/views/status/IPv6PD.vue";
-import LanDevices from "@/views/status/LanDevices.vue";
-
-const service_status_route: Array<RouteRecordRaw> = [
-  {
-    path: "/network/ipv6-pd",
-    name: "routes.ipv6-pd",
-    component: IPv6PD,
-  },
-  {
-    path: "/network/lan-devices",
-    name: "routes.lan-devices",
-    component: LanDevices,
-  },
-];
-
-export default service_status_route;
+import type { RouteRecordRaw } from "vue-router";
+export default [
+ { path: "/network/ipv6-pd", redirect: "/network/settings" },
+ ...["lan-devices", "dhcp-v4", "ipv6-ra"].map(name => ({ path: `/network/${name}`, redirect: "/network/allocations" })),
+] satisfies RouteRecordRaw[];

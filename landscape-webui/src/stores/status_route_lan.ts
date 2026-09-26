@@ -1,7 +1,7 @@
 import { get_all_route_lan_status } from "@/api/route/lan";
 import { ServiceStatus } from "@/lib/services";
 import { defineStore } from "pinia";
-import { computed, ComputedRef, ref } from "vue";
+import { ref } from "vue";
 
 export const useRouteLanConfigStore = defineStore("status_route_lan", () => {
   const status = ref<Map<string, ServiceStatus>>(
@@ -14,11 +14,12 @@ export const useRouteLanConfigStore = defineStore("status_route_lan", () => {
 
   function GET_STATUS_BY_IFACE_NAME(
     name: string,
-  ): ComputedRef<ServiceStatus | undefined> {
-    return computed(() => status.value.get(name));
+  ): ServiceStatus | undefined {
+    return status.value.get(name);
   }
 
   return {
+    status,
     UPDATE_INFO,
     GET_STATUS_BY_IFACE_NAME,
   };

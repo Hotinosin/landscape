@@ -16,27 +16,43 @@ export const useDockerImgTask = defineStore("docker-img_task", () => {
 
   function CONNECT() {
     if (!page_active.value) return;
-    if (socket.value && socket.value.readyState === WebSocket.OPEN) {
-      socket.value.send(JSON.stringify({ type: "ping" }));
+    if (
+      socket.value &&
+      (socket.value.readyState === WebSocket.OPEN ||
+        socket.value.readyState === WebSocket.CONNECTING)
+    ) {
+      if (socket.value.readyState === WebSocket.OPEN) {
+        socket.value.send(JSON.stringify({ type: "ping" }));
+      }
       return;
     }
 
     const token = localStorage.getItem(LANDSCAPE_TOKEN_KEY);
-    socket.value = new WebSocket(
-      `wss://${window.location.hostname}:${window.location.port}/api/ws/docker/tasks?token=${token}`,
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(
+      `${protocol}//${window.location.host}/api/ws/docker/tasks?token=${token}`,
     );
-    socket.value.addEventListener("open", function (event) {
-      socket.value?.send("Hello Server!");
+    socket.value = ws;
+
+    ws.addEventListener("message", function (event) {
+      try {
+        let data = JSON.parse(event.data) as ImgPullEvent;
+        for (const task of tasks.value) {
+          if (task.id == data.task_id) {
+            task.layer_current_info[data.id] = data;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to parse Docker task message", e);
+      }
     });
 
-    socket.value.addEventListener("message", function (event) {
-      console.log("Message from server ", event.data);
-      let data = JSON.parse(event.data) as ImgPullEvent;
-      for (const task of tasks.value) {
-        if (task.id == data.task_id) {
-          task.layer_current_info[data.id] = data;
-        }
-      }
+    ws.addEventListener("close", function () {
+      if (socket.value === ws) socket.value = undefined;
+    });
+
+    ws.addEventListener("error", function () {
+      if (socket.value === ws) socket.value = undefined;
     });
   }
 
@@ -47,6 +63,7 @@ export const useDockerImgTask = defineStore("docker-img_task", () => {
   function DISCONNECT() {
     if (socket.value) {
       socket.value.close();
+      socket.value = undefined;
     }
   }
 

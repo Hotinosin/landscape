@@ -57,6 +57,8 @@ export default {
     "当前模式已自动启用 M 和 O 标志，引导设备使用 DHCPv6 服务。",
 
   route_priority: "默认路由优先级",
+  route_priority_desc:
+    "控制此接口发布的 IPv6 默认路由优先级。终端同时收到多个默认路由时，会优先选择优先级更高的路由。",
   priority_low: "低",
   priority_medium: "中（默认）",
   priority_high: "高",
@@ -74,8 +76,8 @@ export default {
   service_kind_pd: "DHCPv6 PD",
   source_type_static: "静态前缀",
   source_type_pd: "IPv6 PD",
-  add_static_prefix: "新增静态前缀",
-  add_pd_prefix: "新增上游 PD 前缀",
+  add_static_prefix: "新建静态前缀",
+  add_pd_prefix: "新建上游 PD 前缀",
   delete: "删除",
   prefix_overview: "前缀结果总览",
   prefix_overview_desc:
@@ -263,14 +265,20 @@ export default {
     prefix_len_status: "前缀长度状态",
     prefix_len_matches: "符合预期",
     prefix_len_mismatch: "不符合预期",
+    delegation_active: "有效",
+    delegation_inactive: "无效",
     last_update: "最近更新时间",
     dhcpv6_client_prefix_time: "DHCPv6 Client 得到前缀的时间",
   },
 
   // IPv6PDEditModal
   ipv6_pd_config: "IPv6-PD 客户端配置",
+  pd_runtime_status: "上游 IPv6 委派状态",
   mac_required: "MAC 地址不能为空",
-  mac_hint: "申请使用的 mac 地址 (PPP网卡上是生成虚拟的)",
+  mac_hint: "申请使用的 MAC 地址",
+  mac_hint_desc: "PPP 网卡上使用生成的虚拟 MAC 地址",
   expected_pd_len: "预期上游 PD 前缀长度",
+  expected_pd_len_desc:
+    "填写运营商预计下发的前缀长度（56–64）。数值越小，可划分的 /64 子网越多：/56 可划分 256 个，/60 可划分 16 个，/64 仅 1 个。请按运营商实际下发规格填写；此设置不会要求运营商下发指定长度。",
   expected_pd_len_invalid: "预期上游 PD 前缀长度必须是 56 到 64 的整数",
 };

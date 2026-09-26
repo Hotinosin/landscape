@@ -44,6 +44,19 @@ async function save_config() {
   await firewallConfigStore.UPDATE_INFO();
   show_model.value = false;
 }
+
+const getSummary = () => [
+  {
+    label: t("firewall.service_edit.title"),
+    value: t(
+      service_config.value.enable
+        ? "network.settings.enabled"
+        : "network.settings.disabled",
+    ),
+  },
+];
+
+defineExpose({ save: save_config, getSummary });
 </script>
 
 <template>
@@ -51,12 +64,12 @@ async function save_config() {
     v-model:show="show_model"
     v-model:enabled="service_config.enable"
     :title="t('firewall.service_edit.title')"
-    width="600px"
-    @after-enter="on_modal_enter"
+    width="var(--app-secondary-modal-width)"
+    :prepare="on_modal_enter"
   >
     <template #footer>
       <n-flex justify="end">
-        <n-button round type="primary" @click="save_config">
+        <n-button type="primary" @click="save_config">
           {{ t("common.update") }}
         </n-button>
       </n-flex>
