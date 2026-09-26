@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from "vue";
+import { watch, computed } from "vue";
+import { usePageRequest } from "@/composables/usePageRequest";
 import { useI18n } from "vue-i18n";
 import { useThemeVars, NScrollbar } from "naive-ui";
 import { get_dns_summary, DnsSummaryResponse } from "@/api/metric/dns";
@@ -29,32 +30,39 @@ const props = defineProps<{
   flowId?: number | null;
 }>();
 
-const summary = ref<DnsSummaryResponse | null>(null);
-const loading = ref(true);
 const { t } = useI18n();
 const themeVars = useThemeVars();
 const frontEndStore = useFrontEndStore();
 
-const loadSummary = async () => {
-  loading.value = true;
-  try {
+const {
+  data: summary,
+  loading,
+  error,
+  hasSucceeded,
+  lastSuccessAt,
+  stale,
+  execute: loadSummary,
+  markStale,
+} = usePageRequest(
+  async () => {
     const now = Date.now();
-    const startTime = props.timeRange?.[0] || now - 10 * 60 * 1000;
-    const endTime = props.timeRange?.[1] || now;
-
-    summary.value = await get_dns_summary({
-      start_time: startTime,
-      end_time: endTime,
-      flow_id: props.flowId || undefined,
+    return get_dns_summary({
+      start_time: props.timeRange?.[0] ?? now - 10 * 60 * 1000,
+      end_time: props.timeRange?.[1] ?? now,
+      flow_id: props.flowId ?? undefined,
     });
-  } catch (e) {
-    console.error(e);
-  } finally {
-    loading.value = false;
-  }
-};
+  },
+  { initialData: null as DnsSummaryResponse | null },
+);
 
-watch(() => [props.timeRange, props.flowId], loadSummary, { immediate: true });
+watch(
+  () => [props.timeRange, props.flowId],
+  () => {
+    markStale();
+    loadSummary();
+  },
+  { immediate: true },
+);
 
 const calculatePercentFromValues = (
   hit: number | undefined,
@@ -133,307 +141,340 @@ defineExpose({ refresh: loadSummary });
 </script>
 
 <template>
-  <div class="dns-dashboard">
-    <!-- Top Stats Row -->
-    <n-grid
-      cols="5"
-      :x-gap="12"
-      :y-gap="12"
-      item-responsive
-      style="margin-bottom: 16px"
-    >
-      <!-- Total Queries with breakdown -->
-      <n-grid-item span="0:5 640:1">
-        <n-card size="small" :bordered="false" class="metric-card">
-          <div class="metric-content">
-            <n-statistic :label="t('metric.dns.dash.total_queries')">
-              <n-number-animation :from="0" :to="summary?.total_queries || 0" />
-            </n-statistic>
-            <div class="hit-breakdown">
-              <div class="breakdown-item">
-                <span class="label">{{ t("metric.dns.dash.nxdomain") }}:</span>
-                <span class="val">{{ summary?.nxdomain_count || 0 }}</span>
-              </div>
-              <div class="breakdown-item">
-                <span class="label">{{ t("metric.dns.dash.filter") }}:</span>
-                <span class="val">{{ summary?.filter_count || 0 }}</span>
-              </div>
-              <div class="breakdown-item">
-                <span class="label">{{ t("metric.dns.dash.errors") }}:</span>
-                <span
-                  class="val"
-                  :class="{ error: (summary?.error_count || 0) > 0 }"
-                  >{{ summary?.error_count || 0 }}</span
-                >
-              </div>
-            </div>
-          </div>
-        </n-card>
-      </n-grid-item>
-
-      <!-- Cache Hit Rate (with breakdown) -->
-      <n-grid-item span="0:5 640:1">
-        <n-card size="small" :bordered="false" class="metric-card">
-          <div class="metric-content">
-            <n-statistic :label="t('metric.dns.dash.cache_hit_rate')">
-              <template
-                #suffix
-                v-if="
-                  calculatePercentFromValues(
-                    summary?.cache_hit_count,
-                    summary?.total_effective_queries,
-                  ) !== null
-                "
-                ><span class="suffix">%</span></template
-              >
-              <n-number-animation
-                v-if="
-                  calculatePercentFromValues(
-                    summary?.cache_hit_count,
-                    summary?.total_effective_queries,
-                  ) !== null
-                "
-                :from="0"
-                :to="
-                  calculatePercentFromValues(
-                    summary?.cache_hit_count,
-                    summary?.total_effective_queries,
-                  ) || 0
-                "
-                :precision="1"
-              />
-              <n-text v-else depth="3" style="font-size: 14px">{{
-                t("metric.dns.dash.no_data")
-              }}</n-text>
-            </n-statistic>
-            <div class="hit-breakdown">
-              <div class="breakdown-item">
-                <span class="label">{{ t("metric.dns.dash.v4") }}:</span>
-                <span
-                  class="val"
-                  v-if="
-                    calculatePercentFromValues(
-                      summary?.hit_count_v4,
-                      summary?.total_v4,
-                    ) !== null
-                  "
-                >
-                  {{
-                    calculatePercentFromValues(
-                      summary?.hit_count_v4,
-                      summary?.total_v4,
-                    )
-                  }}%
-                </span>
-                <span class="val none" v-else>-</span>
-              </div>
-              <div class="breakdown-item">
-                <span class="label">{{ t("metric.dns.dash.v6") }}:</span>
-                <span
-                  class="val"
-                  v-if="
-                    calculatePercentFromValues(
-                      summary?.hit_count_v6,
-                      summary?.total_v6,
-                    ) !== null
-                  "
-                >
-                  {{
-                    calculatePercentFromValues(
-                      summary?.hit_count_v6,
-                      summary?.total_v6,
-                    )
-                  }}%
-                </span>
-                <span class="val none" v-else>-</span>
-              </div>
-              <div class="breakdown-item">
-                <span class="label">{{ t("metric.dns.dash.other") }}:</span>
-                <span
-                  class="val"
-                  v-if="
-                    calculatePercentFromValues(
-                      summary?.hit_count_other,
-                      summary?.total_other,
-                    ) !== null
-                  "
-                >
-                  {{
-                    calculatePercentFromValues(
-                      summary?.hit_count_other,
-                      summary?.total_other,
-                    )
-                  }}%
-                </span>
-                <span class="val none" v-else>-</span>
-              </div>
-            </div>
-          </div>
-        </n-card>
-      </n-grid-item>
-
-      <!-- Block Rate -->
-      <n-grid-item span="0:5 640:1">
-        <n-card size="small" :bordered="false" class="metric-card">
-          <div class="metric-content">
-            <n-statistic :label="t('metric.dns.dash.block_rate')">
-              <template #suffix><span class="suffix">%</span></template>
-              <n-number-animation
-                :from="0"
-                :to="calculatePercent(summary?.block_count || 0)"
-                :precision="1"
-              />
-            </n-statistic>
-            <div class="metric-progress-container">
-              <n-progress
-                type="line"
-                :percentage="calculatePercent(summary?.block_count || 0)"
-                :show-indicator="false"
-                size="tiny"
-                status="warning"
-              />
-            </div>
-          </div>
-        </n-card>
-      </n-grid-item>
-
-      <!-- Latency Breakdown Card -->
-      <n-grid-item span="0:5 640:2">
-        <n-card size="small" :bordered="false" class="metric-card latency-card">
-          <div class="latency-header">
-            <span class="latency-title">{{
-              t("metric.dns.dash.query_latency")
-            }}</span>
-            <span class="latency-unit">{{
-              t("metric.dns.dash.milliseconds")
-            }}</span>
-          </div>
-          <div class="latency-grid">
-            <div
-              class="latency-stat"
-              v-for="stat in latencyStats"
-              :key="stat.label"
-            >
-              <div class="latency-label">{{ stat.label }}</div>
-              <div class="latency-value" :style="{ color: stat.color }">
+  <StandardRequestStatus
+    :has-succeeded="hasSucceeded"
+    :loading="loading"
+    :error="error"
+    :last-success-at="lastSuccessAt"
+    :stale="stale"
+    @retry="loadSummary"
+  >
+    <div class="dns-dashboard">
+      <!-- Top Stats Row -->
+      <n-grid
+        cols="5"
+        :x-gap="12"
+        :y-gap="12"
+        item-responsive
+        style="margin-bottom: 16px"
+      >
+        <!-- Total Queries with breakdown -->
+        <n-grid-item span="0:5 640:1">
+          <n-card size="small" :bordered="false" class="metric-card">
+            <div class="metric-content">
+              <n-statistic :label="t('metric.dns.dash.total_queries')">
                 <n-number-animation
                   :from="0"
-                  :to="stat.value || 0"
+                  :to="summary?.total_queries || 0"
+                />
+              </n-statistic>
+              <div class="hit-breakdown">
+                <div class="breakdown-item">
+                  <span class="label"
+                    >{{ t("metric.dns.dash.nxdomain") }}:</span
+                  >
+                  <span class="val">{{ summary?.nxdomain_count || 0 }}</span>
+                </div>
+                <div class="breakdown-item">
+                  <span class="label">{{ t("metric.dns.dash.filter") }}:</span>
+                  <span class="val">{{ summary?.filter_count || 0 }}</span>
+                </div>
+                <div class="breakdown-item">
+                  <span class="label">{{ t("metric.dns.dash.errors") }}:</span>
+                  <span
+                    class="val"
+                    :class="{ error: (summary?.error_count || 0) > 0 }"
+                    >{{ summary?.error_count || 0 }}</span
+                  >
+                </div>
+              </div>
+            </div>
+          </n-card>
+        </n-grid-item>
+
+        <!-- Cache Hit Rate (with breakdown) -->
+        <n-grid-item span="0:5 640:1">
+          <n-card size="small" :bordered="false" class="metric-card">
+            <div class="metric-content">
+              <n-statistic :label="t('metric.dns.dash.cache_hit_rate')">
+                <template
+                  #suffix
+                  v-if="
+                    calculatePercentFromValues(
+                      summary?.cache_hit_count,
+                      summary?.total_effective_queries,
+                    ) !== null
+                  "
+                  ><span class="suffix">%</span></template
+                >
+                <n-number-animation
+                  v-if="
+                    calculatePercentFromValues(
+                      summary?.cache_hit_count,
+                      summary?.total_effective_queries,
+                    ) !== null
+                  "
+                  :from="0"
+                  :to="
+                    calculatePercentFromValues(
+                      summary?.cache_hit_count,
+                      summary?.total_effective_queries,
+                    ) || 0
+                  "
                   :precision="1"
+                />
+                <n-text
+                  v-else
+                  depth="3"
+                  style="font-size: var(--app-font-size-body)"
+                  >{{ t("metric.dns.dash.no_data") }}</n-text
+                >
+              </n-statistic>
+              <div class="hit-breakdown">
+                <div class="breakdown-item">
+                  <span class="label">{{ t("metric.dns.dash.v4") }}:</span>
+                  <span
+                    class="val"
+                    v-if="
+                      calculatePercentFromValues(
+                        summary?.hit_count_v4,
+                        summary?.total_v4,
+                      ) !== null
+                    "
+                  >
+                    {{
+                      calculatePercentFromValues(
+                        summary?.hit_count_v4,
+                        summary?.total_v4,
+                      )
+                    }}%
+                  </span>
+                  <span class="val none" v-else>-</span>
+                </div>
+                <div class="breakdown-item">
+                  <span class="label">{{ t("metric.dns.dash.v6") }}:</span>
+                  <span
+                    class="val"
+                    v-if="
+                      calculatePercentFromValues(
+                        summary?.hit_count_v6,
+                        summary?.total_v6,
+                      ) !== null
+                    "
+                  >
+                    {{
+                      calculatePercentFromValues(
+                        summary?.hit_count_v6,
+                        summary?.total_v6,
+                      )
+                    }}%
+                  </span>
+                  <span class="val none" v-else>-</span>
+                </div>
+                <div class="breakdown-item">
+                  <span class="label">{{ t("metric.dns.dash.other") }}:</span>
+                  <span
+                    class="val"
+                    v-if="
+                      calculatePercentFromValues(
+                        summary?.hit_count_other,
+                        summary?.total_other,
+                      ) !== null
+                    "
+                  >
+                    {{
+                      calculatePercentFromValues(
+                        summary?.hit_count_other,
+                        summary?.total_other,
+                      )
+                    }}%
+                  </span>
+                  <span class="val none" v-else>-</span>
+                </div>
+              </div>
+            </div>
+          </n-card>
+        </n-grid-item>
+
+        <!-- Block Rate -->
+        <n-grid-item span="0:5 640:1">
+          <n-card size="small" :bordered="false" class="metric-card">
+            <div class="metric-content">
+              <n-statistic :label="t('metric.dns.dash.block_rate')">
+                <template #suffix><span class="suffix">%</span></template>
+                <n-number-animation
+                  :from="0"
+                  :to="calculatePercent(summary?.block_count || 0)"
+                  :precision="1"
+                />
+              </n-statistic>
+              <div class="metric-progress-container">
+                <n-progress
+                  type="line"
+                  :percentage="calculatePercent(summary?.block_count || 0)"
+                  :show-indicator="false"
+                  size="tiny"
+                  status="warning"
                 />
               </div>
             </div>
-          </div>
-        </n-card>
-      </n-grid-item>
-    </n-grid>
+          </n-card>
+        </n-grid-item>
 
-    <!-- Main Lists Grid -->
-    <n-grid cols="4" :x-gap="16" :y-gap="16" item-responsive>
-      <n-grid-item
-        v-for="list in dashboardLists"
-        :key="list.title"
-        span="0:4 640:1"
-      >
-        <n-card size="small" class="list-card">
-          <template #header>
-            <n-flex justify="space-between" align="baseline">
-              <span class="card-title">{{ list.title }}</span>
-              <span v-if="list.subtitle" class="card-subtitle">{{
-                list.subtitle
+        <!-- Latency Breakdown Card -->
+        <n-grid-item span="0:5 640:2">
+          <n-card
+            size="small"
+            :bordered="false"
+            class="metric-card latency-card"
+          >
+            <div class="latency-header">
+              <span class="latency-title">{{
+                t("metric.dns.dash.query_latency")
               }}</span>
-            </n-flex>
-          </template>
-          <div class="card-content-wrapper">
-            <n-skeleton v-if="loading" text :repeat="12" />
-            <div class="empty-wrapper" v-else-if="!list.data?.length">
-              <n-empty
-                :description="t('metric.dns.dash.no_data')"
-                size="small"
-              />
+              <span class="latency-unit">{{
+                t("metric.dns.dash.milliseconds")
+              }}</span>
             </div>
-            <n-scrollbar v-else style="max-height: 520px" trigger="hover">
-              <div class="scrollbar-content">
-                <n-list hoverable size="small" :show-divider="false">
-                  <n-list-item v-for="item in list.data" :key="item.name">
-                    <n-flex vertical :wrap="false" style="width: 100%">
-                      <!-- Header row with domain and value -->
-                      <n-flex
-                        justify="space-between"
-                        align="center"
-                        :wrap="false"
-                      >
-                        <n-ellipsis
-                          tooltip
-                          :class="[
-                            'domain-text',
-                            list.type === 'blocked' ? 'danger' : '',
-                          ]"
-                          style="flex: 1; min-width: 0"
+            <div class="latency-grid">
+              <div
+                class="latency-stat"
+                v-for="stat in latencyStats"
+                :key="stat.label"
+              >
+                <div class="latency-label">{{ stat.label }}</div>
+                <div class="latency-value" :style="{ color: stat.color }">
+                  <n-number-animation
+                    :from="0"
+                    :to="stat.value || 0"
+                    :precision="1"
+                  />
+                </div>
+              </div>
+            </div>
+          </n-card>
+        </n-grid-item>
+      </n-grid>
+
+      <!-- Main Lists Grid -->
+      <n-grid
+        class="dashboard-list-grid"
+        cols="4"
+        :x-gap="16"
+        :y-gap="16"
+        item-responsive
+      >
+        <n-grid-item
+          v-for="list in dashboardLists"
+          :key="list.title"
+          span="0:4 640:1"
+        >
+          <n-card size="small" class="list-card">
+            <template #header>
+              <n-flex justify="space-between" align="baseline">
+                <span class="card-title">{{ list.title }}</span>
+                <span v-if="list.subtitle" class="card-subtitle">{{
+                  list.subtitle
+                }}</span>
+              </n-flex>
+            </template>
+            <div class="card-content-wrapper">
+              <n-skeleton v-if="loading" text :repeat="12" />
+              <div class="empty-wrapper" v-else-if="!list.data?.length">
+                <n-empty
+                  :description="t('metric.dns.dash.no_data')"
+                  size="small"
+                />
+              </div>
+              <n-scrollbar v-else style="height: 100%" trigger="hover">
+                <div class="scrollbar-content">
+                  <n-list hoverable size="small" :show-divider="false">
+                    <n-list-item v-for="item in list.data" :key="item.name">
+                      <n-flex vertical :wrap="false" style="width: 100%">
+                        <!-- Header row with domain and value -->
+                        <n-flex
+                          justify="space-between"
+                          align="center"
+                          :wrap="false"
                         >
-                          {{
-                            list.type === "client"
-                              ? enrolledDeviceStore.GET_NAME_WITH_FALLBACK(
-                                  item.name,
-                                )
-                              : item.name
-                          }}
-                        </n-ellipsis>
+                          <n-ellipsis
+                            tooltip
+                            :class="[
+                              'domain-text',
+                              list.type === 'blocked' ? 'danger' : '',
+                            ]"
+                            style="flex: 1; min-width: 0"
+                          >
+                            {{
+                              list.type === "client"
+                                ? enrolledDeviceStore.GET_NAME_WITH_FALLBACK(
+                                    item.name,
+                                  )
+                                : item.name
+                            }}
+                          </n-ellipsis>
+                          <n-text
+                            v-if="list.type === 'latency'"
+                            type="warning"
+                            class="latency-text"
+                          >
+                            {{ formatDuration(item.value) }}
+                          </n-text>
+                          <n-text v-else depth="3" class="count-text">{{
+                            item.count
+                          }}</n-text>
+                        </n-flex>
+
+                        <!-- Progress bars for domain and client -->
+                        <n-progress
+                          v-if="
+                            list.type === 'domain' || list.type === 'client'
+                          "
+                          type="line"
+                          :percentage="calculatePercent(item.count)"
+                          :show-indicator="false"
+                          size="tiny"
+                          :status="list.type === 'client' ? 'info' : 'default'"
+                          class="item-progress"
+                        />
+
+                        <!-- Meta text for latency items -->
                         <n-text
                           v-if="list.type === 'latency'"
-                          type="warning"
-                          class="latency-text"
+                          depth="3"
+                          class="item-meta"
                         >
-                          {{ formatDuration(item.value) }}
+                          {{
+                            t("metric.dns.dash.from_samples", {
+                              count: item.count,
+                            })
+                          }}
                         </n-text>
-                        <n-text v-else depth="3" class="count-text">{{
-                          item.count
-                        }}</n-text>
                       </n-flex>
-
-                      <!-- Progress bars for domain and client -->
-                      <n-progress
-                        v-if="list.type === 'domain' || list.type === 'client'"
-                        type="line"
-                        :percentage="calculatePercent(item.count)"
-                        :show-indicator="false"
-                        size="tiny"
-                        :status="list.type === 'client' ? 'info' : 'default'"
-                        class="item-progress"
-                      />
-
-                      <!-- Meta text for latency items -->
-                      <n-text
-                        v-if="list.type === 'latency'"
-                        depth="3"
-                        class="item-meta"
-                      >
-                        {{
-                          t("metric.dns.dash.from_samples", {
-                            count: item.count,
-                          })
-                        }}
-                      </n-text>
-                    </n-flex>
-                  </n-list-item>
-                </n-list>
-              </div>
-            </n-scrollbar>
-          </div>
-        </n-card>
-      </n-grid-item>
-    </n-grid>
-  </div>
+                    </n-list-item>
+                  </n-list>
+                </div>
+              </n-scrollbar>
+            </div>
+          </n-card>
+        </n-grid-item>
+      </n-grid>
+    </div>
+  </StandardRequestStatus>
 </template>
 
 <style scoped>
 .dns-dashboard {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
   width: 100%;
 }
 
 .metric-card {
-  background: rgba(128, 128, 128, 0.06);
-  border-radius: 8px;
+  background: var(--app-surface-color);
+  border-radius: var(--app-radius-panel, 8px);
   height: 100%;
 }
 
@@ -453,9 +494,13 @@ defineExpose({ refresh: loadSummary });
   display: flex;
   justify-content: space-between;
   margin-top: 8px;
-  background: rgba(128, 128, 128, 0.05);
+  background: color-mix(
+    in srgb,
+    var(--app-surface-subtle-color) 50%,
+    var(--app-surface-color)
+  );
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--app-radius-indicator);
 }
 
 .breakdown-item {
@@ -465,51 +510,60 @@ defineExpose({ refresh: loadSummary });
 }
 
 .breakdown-item .label {
-  font-size: 10px;
-  color: #888;
+  font-size: var(--app-font-size-micro);
+  color: var(--app-text-muted-color);
   line-height: 1;
 }
 
 .breakdown-item .val {
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
   font-weight: 600;
-  color: #2080f0;
+  color: var(--app-brand-color);
 }
 
 .breakdown-item .val.none {
-  color: #666;
+  color: var(--app-text-muted-color);
   font-weight: 400;
 }
 
 .breakdown-item .val.error {
-  color: #e88080;
+  color: var(--app-status-danger-color);
   font-weight: 700;
 }
 
 .suffix {
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
   margin-left: 4px;
-  color: #888;
+  color: var(--app-text-muted-color);
 }
 
 .list-card {
-  height: 600px; /* Unified fixed height to ensure all cards align even if empty */
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-:deep(.list-card.n-card > .n-card__content) {
+:deep(.dashboard-list-grid) {
+  flex: 1;
+  min-height: 0;
+}
+
+:deep(.list-card.n-card > .n-card-content) {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 0 0 12px 0 !important; /* Zero horizontal padding, managed by inner wrapper */
+  padding: 0 0 var(--app-space-section) 0 !important; /* Zero horizontal padding, managed by inner wrapper */
 }
 
 :deep(.list-card.n-card > .n-card-header) {
-  padding: 12px 16px !important;
+  padding: var(--app-space-section) 16px !important;
 }
 
 .card-content-wrapper {
+  display: flex;
+  flex: 1;
+  min-height: 0;
   padding: 10px 0 10px 16px;
   width: 100%;
   min-width: 0;
@@ -532,24 +586,24 @@ defineExpose({ refresh: loadSummary });
 }
 
 .domain-text {
-  font-size: 13px;
+  font-size: var(--app-font-size-label);
   font-weight: 600;
 }
 
 .domain-text.danger {
-  color: #e88080;
+  color: var(--app-status-danger-color);
 }
 
 .count-text {
-  font-size: 12px;
+  font-size: var(--app-font-size-caption);
   font-family: var(--font-mono);
-  background: rgba(128, 128, 128, 0.1);
+  background: var(--app-surface-muted-color);
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: var(--app-radius-indicator);
 }
 
 .item-meta {
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
   margin-top: -2px;
 }
 
@@ -558,8 +612,8 @@ defineExpose({ refresh: loadSummary });
 }
 
 :deep(.n-statistic .n-statistic-label) {
-  font-size: 12px;
-  color: #888;
+  font-size: var(--app-font-size-caption);
+  color: var(--app-text-muted-color);
   margin-bottom: 4px;
 }
 
@@ -579,26 +633,26 @@ defineExpose({ refresh: loadSummary });
 }
 
 :deep(.n-card-header__title) {
-  font-size: 15px !important;
+  font-size: var(--app-font-size-subtitle) !important;
   font-weight: 600 !important;
 }
 
 .card-title {
-  font-size: 15px;
+  font-size: var(--app-font-size-subtitle);
   font-weight: 600;
   line-height: 1.2;
 }
 
 .card-subtitle {
-  font-size: 11px;
-  color: #888;
+  font-size: var(--app-font-size-detail);
+  color: var(--app-text-muted-color);
   font-weight: 400;
   font-style: italic;
 }
 
 /* Latency Card Styles */
 .latency-card {
-  background: rgba(128, 128, 128, 0.06);
+  background: var(--app-surface-color);
 }
 
 .latency-header {
@@ -609,21 +663,21 @@ defineExpose({ refresh: loadSummary });
 }
 
 .latency-title {
-  font-size: 12px;
-  color: #888;
+  font-size: var(--app-font-size-caption);
+  color: var(--app-text-muted-color);
   font-weight: 500;
 }
 
 .latency-unit {
-  font-size: 10px;
-  color: #999;
+  font-size: var(--app-font-size-micro);
+  color: var(--app-text-muted-color);
   font-style: italic;
 }
 
 .latency-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
+  gap: var(--app-space-sm);
 }
 
 .latency-stat {
@@ -631,13 +685,17 @@ defineExpose({ refresh: loadSummary });
   flex-direction: column;
   align-items: center;
   padding: 6px 4px;
-  background: rgba(128, 128, 128, 0.05);
-  border-radius: 6px;
+  background: color-mix(
+    in srgb,
+    var(--app-surface-subtle-color) 50%,
+    var(--app-surface-color)
+  );
+  border-radius: var(--app-radius-control, 6px);
 }
 
 .latency-label {
-  font-size: 10px;
-  color: #888;
+  font-size: var(--app-font-size-micro);
+  color: var(--app-text-muted-color);
   margin-bottom: 4px;
   font-weight: 600;
   text-transform: uppercase;
@@ -645,7 +703,7 @@ defineExpose({ refresh: loadSummary });
 }
 
 .latency-value {
-  font-size: 16px;
+  font-size: var(--app-font-size-title);
   font-weight: 700;
   line-height: 1;
 }

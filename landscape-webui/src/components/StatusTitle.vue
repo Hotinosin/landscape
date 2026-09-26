@@ -1,26 +1,83 @@
 <script setup lang="ts">
-import { useThemeVars } from "naive-ui";
-import { ref } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { DotMark } from "@vicons/carbon";
+import CarrierStatusDot from "@/components/topology/CarrierStatusDot.vue";
 
 const { t } = useI18n();
-const themeVars = ref(useThemeVars());
 
 type Props = {
   enable: boolean;
-  remark: string;
+  name?: string | null;
+  remark?: string | null;
+  prefix?: string | number | null;
+  placeholder?: string | null;
 };
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  name: null,
+  remark: null,
+  prefix: null,
+  placeholder: null,
+});
+
+const hasName = computed(() => Boolean(props.name && props.name.trim() !== ""));
+const hasRemark = computed(
+  () => Boolean(props.remark && props.remark.trim() !== ""),
+);
 </script>
+
 <template>
-  <n-flex align="center" :size="[3, 0]" :wrap="false">
-    <n-icon :color="enable ? themeVars.successColor : ''" size="14">
-      <DotMark />
-    </n-icon>
-    <n-ellipsis>
-      {{ remark !== "" ? remark : t("common.no_remark") }}
-    </n-ellipsis>
-  </n-flex>
+  <div class="status-title">
+    <CarrierStatusDot :active="enable" />
+    <div class="status-title-text">
+      <n-ellipsis v-if="hasName" class="status-title-name">
+        {{ prefix !== null && prefix !== undefined ? `${prefix}: ${name}` : name }}
+      </n-ellipsis>
+      <n-ellipsis
+        v-if="hasRemark"
+        :class="['status-title-remark', { 'is-secondary': hasName }]"
+        :depth="hasName ? 3 : undefined"
+      >
+        {{
+          !hasName && prefix !== null && prefix !== undefined
+            ? `${prefix}: ${remark}`
+            : remark
+        }}
+      </n-ellipsis>
+      <n-text v-if="!hasName && !hasRemark" depth="3">
+        {{
+          placeholder ??
+          (prefix !== null && prefix !== undefined
+            ? `${prefix}: —`
+            : t("common.unnamed"))
+        }}
+      </n-text>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+.status-title {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  gap: var(--app-space-section, 8px);
+}
+
+.status-title-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.status-title-name {
+  font-weight: 500;
+}
+
+.status-title-remark.is-secondary {
+  font-size: var(--app-font-size-caption);
+  color: var(--app-text-muted-color);
+}
+</style>

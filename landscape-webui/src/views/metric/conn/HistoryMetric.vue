@@ -1,23 +1,37 @@
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, watch } from "vue";
+import {
+  ref,
+  computed,
+  defineAsyncComponent,
+  reactive,
+  onMounted,
+  onUnmounted,
+  watch,
+} from "vue";
+import { usePageRequest } from "@/composables/usePageRequest";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
-import { ConnectFilter } from "@/lib/metric.rs";
+import { ConnectFilter, queryNumber, queryString } from "@/lib/metric.rs";
 import { get_connect_history } from "@/api/metric";
 import { formatSize, formatCount } from "@/lib/util";
 import { useThemeVars } from "naive-ui";
 import { useMetricStore } from "@/stores/status_metric";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import HistoryItemInfo from "@/components/metric/connect/history/HistoryItemInfo.vue";
-import ConnectChartDrawer from "@/components/metric/connect/ConnectChartDrawer.vue";
 import FlowSelect from "@/components/flow/FlowSelect.vue";
 import type {
   ConnectKey,
   ConnectGlobalStats,
+  ConnectHistoryStatus,
+  ConnectHistoryResponse,
 } from "@landscape-router/types/api/schemas";
 import { usePreferenceStore } from "@/stores/preference";
-import { Renew } from "@vicons/carbon";
+import { ArrowDown, ArrowUp, ArrowsVertical, TrashCan } from "@vicons/carbon";
 import ConnectViewSwitcher from "@/components/metric/connect/ConnectViewSwitcher.vue";
+
+const ConnectChartDrawer = defineAsyncComponent(
+  () => import("@/components/metric/connect/ConnectChartDrawer.vue"),
+);
 
 const prefStore = usePreferenceStore();
 const metricStore = useMetricStore();
@@ -28,7 +42,7 @@ const themeVars = useThemeVars();
 const frontEndStore = useFrontEndStore();
 
 // 1. Declare all base reactive states.
-const historicalData = ref<any[]>([]);
+const historicalData = ref<ConnectHistoryStatus[]>([]);
 const timeRange = ref<number | string | null>(300); // default 5 minutes (300s)
 const historyFilter = reactive(new ConnectFilter());
 // 与后端 sqlite 查询偏移上限保持一致,防止翻页超过 offset clamp 后重复展示同一页。
@@ -42,11 +56,13 @@ const pagination = reactive({
   pageSizes: [50, 100, 200],
   "onUpdate:page": (page: number) => {
     pagination.page = page;
+    historyRequest.markStale();
     fetchHistory();
   },
   onUpdatePageSize: (pageSize: number) => {
     pagination.pageSize = pageSize;
     pagination.page = 1;
+    historyRequest.markStale();
     fetchHistory();
   },
 });
@@ -75,13 +91,13 @@ const showChartKey = ref<ConnectKey | null>(null);
 const showChartTitle = ref("");
 const showChartCreateTimeMs = ref<number | undefined>();
 const showChartLastReportTime = ref<number | undefined>();
-const loading = ref(false);
+const filteredTotal = ref(0);
 
 // Custom time range.
 const useCustomTimeRange = ref(false);
 const customTimeRange = ref<[number, number] | null>(null);
 
-const showChartDrawer = (history: any) => {
+const showChartDrawer = (history: ConnectHistoryStatus) => {
   showChartKey.value = history.key;
   showChartTitle.value = `${frontEndStore.MASK_INFO(history.src_ip)}:${frontEndStore.MASK_PORT(history.src_port)} => ${frontEndStore.MASK_INFO(history.dst_ip)}:${frontEndStore.MASK_PORT(history.dst_port)}`;
   showChartCreateTimeMs.value = history.create_time_ms;
@@ -117,9 +133,8 @@ const timeRangeOptions = computed(() => [
 ]);
 
 // 3. Data fetching actions
-const fetchHistory = async () => {
-  loading.value = true;
-  try {
+const historyRequest = usePageRequest<ConnectHistoryResponse>(
+  async () => {
     let startTime: number | undefined;
     let endTime: number | undefined;
 
@@ -132,40 +147,53 @@ const fetchHistory = async () => {
       startTime = Date.now() - (timeRange.value as number) * 1000;
     }
 
-    const response = await get_connect_history({
+    return get_connect_history({
       start_time: startTime,
       end_time: endTime,
       limit: pagination.pageSize,
       offset: (pagination.page - 1) * pagination.pageSize,
       src_ip: historyFilter.src_ip || undefined,
       dst_ip: historyFilter.dst_ip || undefined,
-      port_start: historyFilter.port_start || undefined,
-      port_end: historyFilter.port_end || undefined,
-      l3_proto: historyFilter.l3_proto || undefined,
-      l4_proto: historyFilter.l4_proto || undefined,
-      flow_id: historyFilter.flow_id || undefined,
+      port_start: historyFilter.port_start ?? undefined,
+      port_end: historyFilter.port_end ?? undefined,
+      l3_proto: historyFilter.l3_proto ?? undefined,
+      l4_proto: historyFilter.l4_proto ?? undefined,
+      flow_id: historyFilter.flow_id ?? undefined,
       gress: historyFilter.gress ?? undefined,
       ifindex: historyFilter.ifindex ?? undefined,
       sort_key: sortKey.value,
       sort_order: sortOrder.value,
     });
-    historicalData.value = response.items;
-    pagination.itemCount = Math.min(response.total, MAX_PAGE_OFFSET);
-    // 过滤条件收紧导致 total 缩小后,若当前页已越界则回到最后一页并重新请求:
-    // 程序赋值不会触发 onUpdate:page,否则列表停留在越界页(空白/陈旧数据)。
-    const maxPage = Math.max(
-      1,
-      Math.ceil(pagination.itemCount / pagination.pageSize),
-    );
-    if (pagination.page > maxPage) {
-      pagination.page = maxPage;
-      await fetchHistory();
-      return;
-    }
-  } finally {
-    loading.value = false;
-  }
-};
+  },
+  {
+    initialData: { items: [], total: 0 },
+    onSuccess: (response) => {
+      historicalData.value = response.items;
+      filteredTotal.value = response.total;
+      pagination.itemCount = Math.min(response.total, MAX_PAGE_OFFSET);
+      // 过滤条件收紧导致 total 缩小后,若当前页已越界则回到最后一页并重新请求:
+      // 程序赋值不会触发 onUpdate:page,否则列表停留在越界页(空白/陈旧数据)。
+      const maxPage = Math.max(
+        1,
+        Math.ceil(pagination.itemCount / pagination.pageSize),
+      );
+      if (pagination.page > maxPage) {
+        pagination.page = maxPage;
+        void fetchHistory();
+        return;
+      }
+    },
+  },
+);
+const {
+  loading,
+  error,
+  hasSucceeded,
+  lastSuccessAt,
+  stale,
+  execute: fetchHistory,
+  markStale,
+} = historyRequest;
 
 const resetHistoryFilter = () => {
   Object.assign(historyFilter, new ConnectFilter());
@@ -185,25 +213,20 @@ const toggleSort = (
   }
 };
 
-const handleSearchTuple = (history: any) => {
+const sortIcon = (key: "time" | "port" | "ingress" | "egress" | "duration") =>
+  sortKey.value !== key
+    ? ArrowsVertical
+    : sortOrder.value === "asc"
+      ? ArrowUp
+      : ArrowDown;
+
+const handleSearchTuple = (history: ConnectHistoryStatus) => {
   historyFilter.src_ip = history.src_ip;
   historyFilter.dst_ip = history.dst_ip;
   historyFilter.port_start = history.src_port;
   historyFilter.port_end = history.dst_port;
   historyFilter.ifindex = history.ifindex;
 };
-
-function queryString(value: unknown) {
-  const raw = Array.isArray(value) ? value[0] : value;
-  return typeof raw === "string" && raw.length > 0 ? raw : undefined;
-}
-
-function queryNumber(value: unknown) {
-  const raw = queryString(value);
-  if (raw === undefined) return null;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : null;
-}
 
 // 4. Computed values
 const filteredHistory = computed(() => {
@@ -233,6 +256,7 @@ const historyTotalStats = computed(() => {
 // 5. Watchers & lifecycle
 // Watch time range selection and toggle custom mode.
 watch(timeRange, (newVal) => {
+  markStale();
   if (newVal === "custom") {
     useCustomTimeRange.value = true;
   } else {
@@ -245,6 +269,7 @@ watch(timeRange, (newVal) => {
 
 // Watch custom range changes.
 watch(customTimeRange, () => {
+  markStale();
   if (useCustomTimeRange.value && customTimeRange.value) {
     pagination.page = 1;
     fetchHistory();
@@ -253,15 +278,20 @@ watch(customTimeRange, () => {
 
 // Auto-query on sort changes.
 watch([sortKey, sortOrder], () => {
+  markStale();
   pagination.page = 1;
   fetchHistory();
 });
 
 // Debounced query: trigger 800ms after typing stops.
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+onUnmounted(() => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+});
 watch(
   historyFilter,
   () => {
+    markStale();
     if (debounceTimer) {
       clearTimeout(debounceTimer);
     }
@@ -295,74 +325,93 @@ onMounted(() => {
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1; overflow: hidden">
+  <n-flex
+    vertical
+    :wrap="false"
+    :size="0"
+    style="flex: 1; min-height: 0; overflow: hidden"
+  >
     <!-- History global summary -->
-    <n-card
-      size="small"
-      :bordered="false"
-      style="margin-bottom: 12px; background-color: #f9f9f910"
+    <StandardRequestStatus
+      :has-succeeded="metricStore.globalHistoryState.hasSucceeded"
+      :loading="metricStore.globalHistoryState.loading"
+      :error="metricStore.globalHistoryState.error"
+      :last-success-at="metricStore.globalHistoryState.lastSuccessAt"
+      compact
+      @retry="refreshGlobalStats"
     >
-      <n-flex align="center" justify="space-between">
-        <ConnectViewSwitcher />
+      <n-card
+        size="small"
+        :bordered="false"
+        class="metric-navigation-card"
+      >
+        <n-flex align="center" justify="space-between">
+          <ConnectViewSwitcher />
 
-        <n-flex align="center" size="large" v-if="globalStats">
-          <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
-              >{{ t("metric.connect.stats.total_history_conns") }}:</span
-            >
-            <span style="font-weight: bold">{{
-              globalStats.total_connect_count
-            }}</span>
-          </n-flex>
-          <n-divider vertical />
-          <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
-              >{{ t("metric.connect.stats.total_history_egress") }}:</span
-            >
-            <span :style="{ fontWeight: 'bold', color: themeVars.infoColor }">{{
-              formatSize(globalStats.total_egress_bytes)
-            }}</span>
-          </n-flex>
-          <n-divider vertical />
-          <n-flex align="center" size="small">
-            <span style="color: #888; font-size: 13px"
-              >{{ t("metric.connect.stats.total_history_ingress") }}:</span
-            >
-            <span
-              :style="{ fontWeight: 'bold', color: themeVars.successColor }"
-              >{{ formatSize(globalStats.total_ingress_bytes) }}</span
-            >
-          </n-flex>
-
-          <n-tooltip trigger="hover">
-            <template #trigger>
-              <n-button
-                quaternary
-                circle
-                size="tiny"
-                @click="refreshGlobalStats"
-                :loading="refreshingGlobalStats"
+          <n-flex align="center" size="large" v-if="globalStats">
+            <n-flex align="center" size="small">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+                >{{ t("metric.connect.stats.total_history_conns") }}:</span
               >
-                <template #icon>
-                  <n-icon><Renew /></n-icon>
-                </template>
-              </n-button>
-            </template>
-            {{ t("metric.connect.stats.last_summary_time") }}:
-            <n-time
-              v-if="globalStats.last_calculate_time > 0"
-              :time="globalStats.last_calculate_time"
-              format="yyyy-MM-dd HH:mm:ss"
-            />
-            <span v-else>--</span>
-          </n-tooltip>
+              <span style="font-weight: bold">{{
+                globalStats.total_connect_count
+              }}</span>
+            </n-flex>
+            <n-divider vertical />
+            <n-flex align="center" size="small">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+                >{{ t("metric.connect.stats.total_history_egress") }}:</span
+              >
+              <span
+                :style="{ fontWeight: 'bold', color: themeVars.infoColor }"
+                >{{ formatSize(globalStats.total_egress_bytes) }}</span
+              >
+            </n-flex>
+            <n-divider vertical />
+            <n-flex align="center" size="small">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+                >{{ t("metric.connect.stats.total_history_ingress") }}:</span
+              >
+              <span
+                :style="{ fontWeight: 'bold', color: themeVars.successColor }"
+                >{{ formatSize(globalStats.total_ingress_bytes) }}</span
+              >
+            </n-flex>
+
+            <IconActionButton
+              kind="refresh"
+              :loading="refreshingGlobalStats"
+              @click="refreshGlobalStats"
+            >
+              {{ t("metric.connect.stats.last_summary_time") }}:
+              <n-time
+                v-if="globalStats.last_calculate_time > 0"
+                :time="globalStats.last_calculate_time"
+                format="yyyy-MM-dd HH:mm:ss"
+              />
+              <span v-else>--</span>
+            </IconActionButton>
+          </n-flex>
+          <div v-else style="height: 34px"></div>
         </n-flex>
-        <div v-else style="height: 34px"></div>
-      </n-flex>
-    </n-card>
+      </n-card>
+    </StandardRequestStatus>
 
     <!-- Toolbar for history mode -->
     <n-flex
+      class="history-toolbar"
       align="center"
       :wrap="true"
       style="margin-bottom: 12px"
@@ -443,149 +492,194 @@ onMounted(() => {
         :time-picker-props="{ timeZone: prefStore.timezone }"
       />
 
-      <n-button-group>
-        <n-button @click="fetchHistory" type="primary" :loading="loading">{{
-          $t("metric.connect.stats.query")
-        }}</n-button>
-        <n-button @click="resetHistoryFilter" :disabled="loading">{{
-          $t("metric.connect.stats.reset")
-        }}</n-button>
-      </n-button-group>
-
-      <n-divider vertical />
-
-      <n-button-group>
-        <n-button
-          :type="sortKey === 'time' ? 'primary' : 'default'"
-          :disabled="loading"
-          @click="toggleSort('time')"
-        >
-          {{ $t("metric.connect.filter.time") }}
-          {{ sortKey === "time" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-        <n-button
-          :type="sortKey === 'port' ? 'primary' : 'default'"
-          :disabled="loading"
-          @click="toggleSort('port')"
-        >
-          {{ $t("metric.connect.filter.port") }}
-          {{ sortKey === "port" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-        <n-button
-          :type="sortKey === 'egress' ? 'primary' : 'default'"
-          :disabled="loading"
-          @click="toggleSort('egress')"
-        >
-          {{ $t("metric.connect.col.total_egress") }}
-          {{ sortKey === "egress" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-        <n-button
-          :type="sortKey === 'ingress' ? 'primary' : 'default'"
-          :disabled="loading"
-          @click="toggleSort('ingress')"
-        >
-          {{ $t("metric.connect.col.total_ingress") }}
-          {{ sortKey === "ingress" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-        <n-button
-          :type="sortKey === 'duration' ? 'primary' : 'default'"
-          :disabled="loading"
-          @click="toggleSort('duration')"
-        >
-          {{ $t("metric.connect.filter.duration") }}
-          {{ sortKey === "duration" ? (sortOrder === "asc" ? "↑" : "↓") : "" }}
-        </n-button>
-      </n-button-group>
+      <n-button @click="fetchHistory" type="primary" :loading="loading">{{
+        $t("metric.connect.stats.query")
+      }}</n-button>
+      <n-button secondary @click="resetHistoryFilter" :disabled="loading">
+        <template #icon><n-icon><TrashCan /></n-icon></template>
+        {{ $t("metric.connect.stats.reset") }}
+      </n-button>
     </n-flex>
 
-    <n-grid x-gap="12" :cols="5" style="margin-bottom: 12px">
-      <n-gi>
-        <n-card
-          size="small"
-          :bordered="false"
-          style="background-color: #f9f9f910; height: 100%"
-        >
-          <n-statistic
-            :label="$t('metric.connect.stats.filter_total')"
-            :value="historyTotalStats.count"
-          />
-        </n-card>
-      </n-gi>
-      <n-gi>
-        <n-card
-          size="small"
-          :bordered="false"
-          style="background-color: #f9f9f910; height: 100%"
-        >
-          <n-statistic :label="$t('metric.connect.stats.total_egress')">
-            <span :style="{ color: themeVars.infoColor, fontWeight: 'bold' }">
-              {{ formatSize(historyTotalStats.totalEgressBytes) }}
-            </span>
-          </n-statistic>
-        </n-card>
-      </n-gi>
-      <n-gi>
-        <n-card
-          size="small"
-          :bordered="false"
-          style="background-color: #f9f9f910; height: 100%"
-        >
-          <n-statistic :label="$t('metric.connect.stats.total_ingress')">
-            <span
-              :style="{ color: themeVars.successColor, fontWeight: 'bold' }"
-            >
-              {{ formatSize(historyTotalStats.totalIngressBytes) }}
-            </span>
-          </n-statistic>
-        </n-card>
-      </n-gi>
-      <n-gi>
-        <n-card
-          size="small"
-          :bordered="false"
-          style="background-color: #f9f9f910; height: 100%"
-        >
-          <n-statistic :label="$t('metric.connect.stats.filter_ingress_pkts')">
-            <span style="color: #888">
-              {{ formatCount(historyTotalStats.totalIngressPkts) }} pkt
-            </span>
-          </n-statistic>
-        </n-card>
-      </n-gi>
-      <n-gi>
-        <n-card
-          size="small"
-          :bordered="false"
-          style="background-color: #f9f9f910"
-        >
-          <n-statistic :label="$t('metric.connect.stats.filter_egress_pkts')">
-            <span style="color: #888">
-              {{ formatCount(historyTotalStats.totalEgressPkts) }} pkt
-            </span>
-          </n-statistic>
-        </n-card>
-      </n-gi>
-    </n-grid>
+    <StandardRequestStatus
+      :has-succeeded="hasSucceeded"
+      :loading="loading"
+      :error="error"
+      :last-success-at="lastSuccessAt"
+      :stale="stale"
+      @retry="fetchHistory"
+    >
+      <n-grid x-gap="12" :cols="5" style="margin-bottom: 12px">
+        <n-gi>
+          <n-card
+            size="small"
+            :bordered="false"
+            style="background-color: var(--app-surface-color); height: 100%"
+          >
+            <n-statistic
+              :label="$t('metric.connect.stats.filter_total')"
+              :value="filteredTotal"
+            />
+          </n-card>
+        </n-gi>
+        <n-gi>
+          <n-card
+            size="small"
+            :bordered="false"
+            style="background-color: var(--app-surface-color); height: 100%"
+          >
+            <n-statistic :label="$t('metric.connect.stats.page_egress')">
+              <span :style="{ color: themeVars.infoColor, fontWeight: 'bold' }">
+                {{ formatSize(historyTotalStats.totalEgressBytes) }}
+              </span>
+            </n-statistic>
+          </n-card>
+        </n-gi>
+        <n-gi>
+          <n-card
+            size="small"
+            :bordered="false"
+            style="background-color: var(--app-surface-color); height: 100%"
+          >
+            <n-statistic :label="$t('metric.connect.stats.page_ingress')">
+              <span
+                :style="{ color: themeVars.successColor, fontWeight: 'bold' }"
+              >
+                {{ formatSize(historyTotalStats.totalIngressBytes) }}
+              </span>
+            </n-statistic>
+          </n-card>
+        </n-gi>
+        <n-gi>
+          <n-card
+            size="small"
+            :bordered="false"
+            style="background-color: var(--app-surface-color); height: 100%"
+          >
+            <n-statistic :label="$t('metric.connect.stats.page_ingress_pkts')">
+              <span style="color: var(--app-text-muted-color)">
+                {{ formatCount(historyTotalStats.totalIngressPkts) }} pkt
+              </span>
+            </n-statistic>
+          </n-card>
+        </n-gi>
+        <n-gi>
+          <n-card
+            size="small"
+            :bordered="false"
+            style="background-color: var(--app-surface-color)"
+          >
+            <n-statistic :label="$t('metric.connect.stats.page_egress_pkts')">
+              <span style="color: var(--app-text-muted-color)">
+                {{ formatCount(historyTotalStats.totalEgressPkts) }} pkt
+              </span>
+            </n-statistic>
+          </n-card>
+        </n-gi>
+      </n-grid>
 
-    <n-virtual-list style="flex: 1" :item-size="40" :items="filteredHistory">
-      <template #default="{ item, index }">
-        <HistoryItemInfo
-          :history="item"
-          :index="index"
-          @show:chart="showChartDrawer"
-          @search:tuple="handleSearchTuple"
-          @search:src="(ip) => (historyFilter.src_ip = ip)"
-          @search:dst="(ip) => (historyFilter.dst_ip = ip)"
-        />
-      </template>
-    </n-virtual-list>
-    <n-pagination
-      v-if="pagination.itemCount > pagination.pageSize"
-      v-bind="pagination"
-      :disabled="loading"
-      style="align-self: flex-end; margin-top: 12px"
-    />
+      <div class="standard-virtual-table">
+        <div class="history-list-header">
+          <div class="history-time-header">
+            <div
+              class="sortable-column"
+              :class="{ active: sortKey === 'time' }"
+            >
+              <span>{{ $t("metric.connect.filter.time") }}</span>
+              <n-button
+                text
+                class="sort-trigger"
+                :disabled="loading"
+                @click="toggleSort('time')"
+              >
+                <n-icon size="18" :component="sortIcon('time')" />
+              </n-button>
+            </div>
+            <div
+              class="sortable-column secondary-sort"
+              :class="{ active: sortKey === 'duration' }"
+            >
+              <span>{{ $t("metric.connect.filter.duration") }}</span>
+              <n-button
+                text
+                class="sort-trigger"
+                :disabled="loading"
+                @click="toggleSort('duration')"
+              >
+                <n-icon size="18" :component="sortIcon('duration')" />
+              </n-button>
+            </div>
+          </div>
+          <span></span>
+          <div class="sortable-column" :class="{ active: sortKey === 'port' }">
+            <span>{{ $t("metric.connect.filter.port") }}</span>
+            <n-button
+              text
+              class="sort-trigger"
+              :disabled="loading"
+              @click="toggleSort('port')"
+            >
+              <n-icon size="18" :component="sortIcon('port')" />
+            </n-button>
+          </div>
+          <div
+            class="sortable-column"
+            :class="{ active: sortKey === 'egress' }"
+          >
+            <span>{{ $t("metric.connect.stats.egress") }}</span>
+            <n-button
+              text
+              class="sort-trigger"
+              :disabled="loading"
+              @click="toggleSort('egress')"
+            >
+              <n-icon size="18" :component="sortIcon('egress')" />
+            </n-button>
+          </div>
+          <div
+            class="sortable-column"
+            :class="{ active: sortKey === 'ingress' }"
+          >
+            <span>{{ $t("metric.connect.stats.ingress") }}</span>
+            <n-button
+              text
+              class="sort-trigger"
+              :disabled="loading"
+              @click="toggleSort('ingress')"
+            >
+              <n-icon size="18" :component="sortIcon('ingress')" />
+            </n-button>
+          </div>
+          <span></span>
+        </div>
+
+        <n-virtual-list
+          class="history-virtual-list"
+          :style="{ height: `${filteredHistory.length * 55}px` }"
+          :item-size="55"
+          :items="filteredHistory"
+        >
+          <template #default="{ item, index }">
+            <HistoryItemInfo
+              :history="item"
+              :index="index"
+              @show:chart="showChartDrawer"
+              @search:tuple="handleSearchTuple"
+              @search:src="(ip) => (historyFilter.src_ip = ip)"
+              @search:dst="(ip) => (historyFilter.dst_ip = ip)"
+            />
+          </template>
+        </n-virtual-list>
+      </div>
+      <n-pagination
+        v-if="pagination.itemCount > pagination.pageSize"
+        v-bind="pagination"
+        :disabled="loading"
+        style="align-self: flex-end; margin-top: 12px"
+      />
+    </StandardRequestStatus>
     <ConnectChartDrawer
+      v-if="showChart"
       v-model:show="showChart"
       :conn="showChartKey"
       :title="showChartTitle"
@@ -595,3 +689,62 @@ onMounted(() => {
     />
   </n-flex>
 </template>
+
+<style scoped>
+.history-toolbar {
+  row-gap: var(--app-space-sm);
+}
+
+.history-virtual-list {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+.history-list-header {
+  display: grid;
+  grid-template-columns: 220px 250px minmax(320px, 1fr) 90px 98px 28px;
+  column-gap: var(--app-space-sm);
+  align-items: center;
+  min-height: 42px;
+  padding: 0 14px;
+  background: var(--app-surface-interactive-color);
+  border-bottom: 1px solid var(--app-border-subtle-color);
+  box-sizing: border-box;
+}
+
+.history-time-header,
+.sortable-column {
+  display: inline-flex;
+  align-items: center;
+}
+
+.history-time-header {
+  gap: var(--app-space-section);
+}
+
+.sortable-column {
+  gap: var(--app-space-2xs);
+  color: var(--app-text-secondary-color);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.secondary-sort {
+  color: var(--app-text-muted-color);
+  font-size: var(--app-font-size-caption);
+}
+
+.sortable-column.active,
+.sortable-column.active .sort-trigger {
+  color: var(--app-brand-color);
+}
+
+.sort-trigger {
+  color: var(--app-text-muted-color);
+}
+
+.sortable-column:nth-child(5) {
+  padding-left: 8px;
+}
+</style>

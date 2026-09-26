@@ -21,7 +21,7 @@ export async function get_all_mss_clamp_status(): Promise<
 export async function get_iface_mss_clamp_config(
   iface_name: string,
 ): Promise<MSSClampServiceConfig> {
-  return await getMssClampServiceConfig(iface_name);
+  return await getMssClampServiceConfig(iface_name, { silent: true });
 }
 
 export async function update_mss_clamp_config(

@@ -5,15 +5,14 @@ import { useHistoryRouteStore } from "@/stores/history_route";
 
 import { useI18n } from "vue-i18n";
 import { useThemeVars } from "naive-ui";
-import { Logout, Pin, PinFilled, Terminal } from "@vicons/carbon";
-import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
+import { Logout, Pin, PinFilled } from "@vicons/carbon";
+import { clearLandscapeSession } from "@/lib/common";
 import { useFrontEndStore } from "@/stores/front_end_config";
-import { useCapabilityStore } from "@/stores/capability";
-import { usePtyStore } from "@/stores/pty";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
+import { useMetricStore } from "@/stores/status_metric";
+import { useFetchIntervalStore } from "@/stores/fetch_interval";
 import IntervalFetch from "@/components/head/IntervalFetch.vue";
 import LanguageSetting from "@/components/head/LanguageSetting.vue";
-import GlobalTerminal from "@/components/GlobalTerminal.vue";
 import LandscapeSiderBar from "@/views/LandscapeSiderBar.vue";
 
 const router = useRouter();
@@ -49,50 +48,44 @@ function handleTagClose(path: string) {
 }
 
 const frontEndStore = useFrontEndStore();
-const capabilityStore = useCapabilityStore();
-const ptyStore = usePtyStore();
 const enrolledDeviceStore = useEnrolledDeviceStore();
-
-void capabilityStore.LOAD();
+const metricStore = useMetricStore();
+const fetchIntervalStore = useFetchIntervalStore();
+const accountName = computed(() => frontEndStore.username || "admin");
+const accountInitial = computed(() =>
+  accountName.value.charAt(0).toLowerCase(),
+);
 
 watch(
   () => route.path,
-  () => {
+  (path) => {
     void enrolledDeviceStore.UPDATE_INFO();
+    metricStore.SET_PAGE(path, !document.hidden);
+    fetchIntervalStore.SET_PATH(path);
   },
   { immediate: true },
 );
 
 function logout() {
-  localStorage.removeItem(LANDSCAPE_TOKEN_KEY);
+  clearLandscapeSession();
+  historyStore.resetRoutes();
   frontEndStore.INSERT_USERNAME("");
   router.push("/login");
 }
 
 // Dynamic content style for Split Mode
-const DOCK_SAFE_MARGIN = 8; // Safe distance from dock edge
+const MAIN_CONTENT_GUTTER = 15;
 
 const contentStyle = computed(() => {
   const baseStyle: any = {
-    top: "40px",
-    left: "25px",
+    top: `${40 + MAIN_CONTENT_GUTTER}px`,
+    left: `${MAIN_CONTENT_GUTTER}px`,
+    right: "0px",
+    bottom: `${MAIN_CONTENT_GUTTER}px`,
     display: "flex",
-    paddingRight: "15px",
+    paddingRight: `${MAIN_CONTENT_GUTTER}px`,
     transition: "all 0.3s ease",
   };
-
-  if (ptyStore.viewMode === "dock" && ptyStore.isOpen) {
-    if (ptyStore.dockPosition === "bottom") {
-      baseStyle.bottom = `${ptyStore.dockSize + DOCK_SAFE_MARGIN}px`;
-      baseStyle.right = "0px";
-    } else if (ptyStore.dockPosition === "right") {
-      baseStyle.bottom = "0px";
-      baseStyle.right = `${ptyStore.dockSize + DOCK_SAFE_MARGIN}px`;
-    }
-  } else {
-    baseStyle.bottom = "0px";
-    baseStyle.right = "0px";
-  }
 
   return baseStyle;
 });
@@ -104,7 +97,7 @@ const contentStyle = computed(() => {
       <LandscapeSiderBar />
       <n-layout>
         <n-layout-header
-          style="height: 30px; padding: 0 10px; display: flex"
+          style="height: 40px; padding: 0 10px; display: flex"
           bordered
         >
           <n-flex
@@ -129,7 +122,6 @@ const contentStyle = computed(() => {
                   style="
                     cursor: pointer;
                     padding: 0 8px;
-                    height: 23px;
                     display: flex;
                     align-items: center;
                   "
@@ -153,41 +145,39 @@ const contentStyle = computed(() => {
               </n-flex>
             </n-scrollbar>
 
-            <n-flex :size="[5, 0]">
+            <n-flex align="center" :size="[5, 0]">
               <LanguageSetting />
               <PresentationMode></PresentationMode>
-              <n-flex align="center">
+              <n-popover
+                trigger="hover"
+                placement="bottom-end"
+                :show-arrow="false"
+                style="padding: 4px"
+              >
+                <template #trigger>
+                  <n-button quaternary size="small" class="header-account">
+                    <n-flex align="center" :size="6" :wrap="false">
+                      <n-avatar round :size="22">{{ accountInitial }}</n-avatar>
+                      <n-text>{{ accountName }}</n-text>
+                    </n-flex>
+                  </n-button>
+                </template>
                 <n-button
                   quaternary
-                  circle
                   size="small"
-                  @click="ptyStore.toggleOpen"
-                  title="WebShell"
-                >
-                  <template #icon>
-                    <n-icon><Terminal /></n-icon>
-                  </template>
-                </n-button>
-              </n-flex>
-              <n-flex align="center">
-                <n-button
-                  quaternary
-                  circle
-                  size="small"
+                  style="font-size: var(--app-font-size-caption)"
                   @click="logout"
-                  :title="t('common.logout')"
                 >
                   <template #icon>
                     <n-icon><Logout /></n-icon>
                   </template>
+                  {{ t("common.logout") }}
                 </n-button>
-              </n-flex>
+              </n-popover>
               <IntervalFetch />
             </n-flex>
           </n-flex>
         </n-layout-header>
-
-        <GlobalTerminal />
 
         <n-layout
           :native-scrollbar="false"
@@ -202,3 +192,10 @@ const contentStyle = computed(() => {
     </n-layout>
   </div>
 </template>
+
+<style scoped>
+.header-account {
+  white-space: nowrap;
+  font-size: var(--app-font-size-caption);
+}
+</style>

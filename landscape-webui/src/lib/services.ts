@@ -24,13 +24,13 @@ export function get_service_status_color(
 
   switch (status.t) {
     case ServiceStatusType.Running:
-      return themeVars.successColor;
+      return themeVars.primaryColor;
     case ServiceStatusType.Staring:
     case ServiceStatusType.Stopping:
       return themeVars.warningColor;
     case ServiceStatusType.Failed:
-      return themeVars.errorColor;
     case ServiceStatusType.Stop:
+      return themeVars.errorColor;
     default:
       return themeVars.textColor3;
   }
@@ -71,8 +71,8 @@ export function get_service_status_tag_type(status: ServiceStatus | undefined) {
     case ServiceStatusType.Stopping:
       return "warning";
     case ServiceStatusType.Failed:
-      return "error";
     case ServiceStatusType.Stop:
+      return "error";
     default:
       return "default";
   }

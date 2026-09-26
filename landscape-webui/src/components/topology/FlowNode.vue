@@ -7,26 +7,27 @@ import IpConfigModal from "@/components/ipconfig/IpConfigModal.vue";
 import IPv6PDEditModal from "@/components/ipv6pd/IPv6PDEditModal.vue";
 import MSSClampServiceEditModal from "@/components/mss_clamp/MSSClampServiceEditModal.vue";
 import NATEditModal from "@/components/nat/NATEditModal.vue";
-import PPPDCreateConfigModal from "@/components/pppd/CreatePPPDConfigModal.vue";
+import PPPDServiceListDrawer from "@/components/pppd/PPPDServiceListDrawer.vue";
 import RouteLanServiceEditModal from "@/components/route/lan/RouteLanServiceEditModal.vue";
 import RouteWanServiceEditModal from "@/components/route/wan/RouteWanServiceEditModal.vue";
 import WifiModeChange from "@/components/wifi/WifiModeChange.vue";
 import WifiServiceEditModal from "@/components/wifi/WifiServiceEditModal.vue";
-import { Edit, Link, TrashCan } from "@vicons/carbon";
+import CarrierStatusDot from "@/components/topology/CarrierStatusDot.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
+import { Link } from "@vicons/carbon";
 import { useThemeVars } from "naive-ui";
 import { changeColor } from "seemly";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { stop_and_del_iface_pppd } from "@/api/service_pppd";
 import { DevStateType, NetDev } from "@/lib/dev";
 import { IfaceZoneType } from "@landscape-router/types/api/schemas";
 import { formatPackets, formatRate } from "@/lib/util";
 import {
   ServiceExhibitSwitch,
   ServiceStatus,
-  get_service_status_color,
   get_service_status_label,
+  get_service_status_tag_type,
 } from "@/lib/services";
 import { useDHCPv4ConfigStore } from "@/stores/status_dhcp_v4";
 import { useFirewallConfigStore } from "@/stores/status_firewall";
@@ -47,10 +48,14 @@ const props = withDefaults(
     metric?: IfaceRealtimeStat;
     selected?: boolean;
     dimmed?: boolean;
+    summary?: boolean;
+    docker?: boolean;
   }>(),
   {
     selected: false,
     dimmed: false,
+    summary: false,
+    docker: false,
   },
 );
 
@@ -66,8 +71,7 @@ const iface_lan_ipv6_edit_show = ref(false);
 const iface_ipv6pd_edit_show = ref(false);
 const iface_nat_edit_show = ref(false);
 const iface_service_edit_show = ref(false);
-const show_pppd_create_modal = ref(false);
-const show_pppd_edit_modal = ref(false);
+const show_pppd_drawer = ref(false);
 const show_route_lan_drawer = ref(false);
 const show_route_wan_drawer = ref(false);
 
@@ -83,53 +87,37 @@ const routeWanConfigStore = useRouteWanConfigStore();
 const mssClampConfigStore = useMSSClampConfigStore();
 
 const ip_config_status = computed(
-  () => ipConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => ipConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const dhcp_v4_status = computed(
-  () => dhcpv4ConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => dhcpv4ConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const nat_status = computed(
-  () => natConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => natConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const firewall_status = computed(
-  () => firewallConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => firewallConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const ipv6pd_status = computed(
-  () => ipv6PDStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => ipv6PDStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const lan_ipv6_status = computed(
-  () => lanIpv6Store.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => lanIpv6Store.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const wifi_status = computed(
-  () => wifiConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => wifiConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const route_lan_status = computed(
-  () => routeLanConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => routeLanConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const route_wan_status = computed(
-  () => routeWanConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
+  () => routeWanConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 const mss_clamp_status = computed(
-  () => mssClampConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name).value,
-);
-
-const is_virtual_pppd = computed(() => props.node.virtual);
-const is_live_pppd = computed(
-  () =>
-    !props.node.virtual &&
-    props.node.dev_type === "ppp" &&
-    props.node.pppd_config !== undefined,
-);
-const can_delete_pppd = computed(
-  () =>
-    (is_virtual_pppd.value || is_live_pppd.value) &&
-    props.node.pppd_config?.enable !== true,
+  () => mssClampConfigStore.GET_STATUS_BY_IFACE_NAME(props.node.name),
 );
 
 const status_type = computed(() => {
-  if (is_virtual_pppd.value) {
-    return props.node.pppd_config?.enable ? "warning" : "default";
-  }
   if (props.node.dev_status.t === DevStateType.Up) {
     return "success";
   }
@@ -138,23 +126,9 @@ const status_type = computed(() => {
   }
   return "warning";
 });
-
-const status_text = computed(() => {
-  if (is_virtual_pppd.value) {
-    return props.node.pppd_config?.enable
-      ? t("pppoe.status_not_dialed")
-      : t("pppoe.status_disabled");
-  }
-  return props.node.dev_status.t;
-});
-
-async function delete_pppd_config() {
-  if (props.node.pppd_config === undefined) {
-    return;
-  }
-  await stop_and_del_iface_pppd(props.node.pppd_config.iface_name);
-  await refreshGraph();
-}
+const zone_label = computed(() =>
+  props.node.zone_type === IfaceZoneType.wan ? "WAN" : "LAN",
+);
 
 const zone_type = computed(() => {
   if (props.node.zone_type === IfaceZoneType.wan) {
@@ -169,6 +143,10 @@ const zone_type = computed(() => {
 const role_tags = computed(() => {
   const tags: string[] = [];
 
+  if (props.docker) {
+    tags.push("docker");
+  }
+
   if (props.node.dev_kind === "bridge") {
     tags.push("bridge");
   }
@@ -182,11 +160,8 @@ const role_tags = computed(() => {
   return tags.slice(0, 2);
 });
 
-const is_wan_node = computed(() => props.node.zone_type === IfaceZoneType.wan);
-const node_width = computed(() => (is_wan_node.value ? 235 : 235));
-const title_max_width = computed(
-  () => `${Math.max(node_width.value - 126, 140)}px`,
-);
+const node_width = 280;
+const title_max_width = computed(() => `${Math.max(node_width - 126, 140)}px`);
 const has_metric = computed(
   () =>
     props.metric !== undefined &&
@@ -195,22 +170,12 @@ const has_metric = computed(
       (props.metric.stats.active_conns || 0) > 0),
 );
 
+function displayValue(value?: string | number | null) {
+  return value === undefined || value === null || value === "" ? "N/A" : value;
+}
+
 function serviceStatusText(status?: ServiceStatus) {
   return get_service_status_label(status, t);
-}
-
-function serviceStatusColor(status?: ServiceStatus) {
-  return get_service_status_color(status, themeVars.value);
-}
-
-function serviceStatusStyle(status?: ServiceStatus) {
-  const color = serviceStatusColor(status);
-
-  return {
-    borderColor: changeColor(color, { alpha: status ? 0.45 : 0.22 }),
-    backgroundColor: changeColor(color, { alpha: status ? 0.12 : 0.06 }),
-    color,
-  };
 }
 
 async function refreshGraph() {
@@ -218,10 +183,6 @@ async function refreshGraph() {
 }
 
 function openServiceEditor(service_key: string) {
-  if (is_virtual_pppd.value) {
-    return;
-  }
-
   switch (service_key) {
     case "ip_config":
       iface_service_edit_show.value = true;
@@ -254,7 +215,7 @@ function openServiceEditor(service_key: string) {
       show_mss_clamp_edit.value = true;
       break;
     case "pppd":
-      show_pppd_create_modal.value = true;
+      show_pppd_drawer.value = true;
       break;
   }
 }
@@ -352,7 +313,7 @@ const service_items = computed(() => {
 });
 
 const node_style = computed(() => ({
-  "--topology-node-width": `${node_width.value}px`,
+  "--topology-node-width": `${node_width}px`,
   "--topology-node-title-max": title_max_width.value,
   "--topology-node-border": themeVars.value.borderColor,
   "--topology-node-bg": changeColor(themeVars.value.cardColor, { alpha: 0.98 }),
@@ -366,9 +327,6 @@ const node_style = computed(() => ({
   "--topology-node-selected-shadow": `0 18px 36px ${changeColor(themeVars.value.primaryColor, { alpha: 0.18 })}, 0 0 0 1px ${changeColor(themeVars.value.primaryColor, { alpha: 0.18 })}`,
   "--topology-node-text": themeVars.value.textColor1,
   "--topology-node-muted": themeVars.value.textColor3,
-  "--topology-node-carrier-ring": changeColor(themeVars.value.textColor3, {
-    alpha: 0.12,
-  }),
   "--topology-node-service-bg": changeColor(themeVars.value.bodyColor, {
     alpha: 0.68,
   }),
@@ -402,129 +360,134 @@ const node_style = computed(() => ({
           class="topology-node__handle"
         />
 
-        <div class="topology-node__card">
-          <div class="topology-node__title-row">
-            <div class="topology-node__title">
-              <span
-                class="topology-node__carrier"
-                :style="{
-                  backgroundColor: node.carrier
-                    ? themeVars.successColor
-                    : themeVars.borderColor,
-                }"
-              />
-              <n-performant-ellipsis
-                :tooltip="false"
-                style="max-width: var(--topology-node-title-max)"
-              >
-                {{ node.name }}
-              </n-performant-ellipsis>
-            </div>
-            <div class="topology-node__header-actions">
-              <WifiModeChange
-                v-if="show_switch.wifi || show_switch.station"
-                :iface_name="node.name"
-                :wifi_info="node.wifi_mode"
-                :show_switch="show_switch"
-                @refresh="refreshGraph"
-              />
-              <n-popconfirm
-                v-if="can_delete_pppd"
-                @positive-click="delete_pppd_config"
-              >
-                <template #trigger>
+        <n-popover trigger="hover" placement="top" style="width: 210px">
+          <template #trigger>
+            <div class="topology-node__card">
+              <div class="topology-node__title-row">
+                <div class="topology-node__title">
+                  <CarrierStatusDot :active="node.carrier" />
+                  <n-performant-ellipsis
+                    :tooltip="false"
+                    style="max-width: var(--topology-node-title-max)"
+                  >
+                    {{ node.name }}
+                  </n-performant-ellipsis>
+                </div>
+                <div class="topology-node__header-actions">
+                  <WifiModeChange
+                    v-if="!summary && (show_switch.wifi || show_switch.station)"
+                    :iface_name="node.name"
+                    :wifi_info="node.wifi_mode"
+                    :show_switch="show_switch"
+                    @refresh="refreshGraph"
+                  />
                   <n-button
+                    v-if="!summary && show_switch.pppd"
                     quaternary
                     circle
                     size="tiny"
-                    type="error"
                     :focusable="false"
-                    data-testid="topology-node-delete-pppd"
-                    @click.stop
+                    data-testid="topology-node-open-pppd"
+                    @click.stop="show_pppd_drawer = true"
                   >
                     <template #icon>
-                      <n-icon><TrashCan /></n-icon>
+                      <n-icon><Link /></n-icon>
                     </template>
                   </n-button>
-                </template>
-                {{ t("common.confirm_delete") }}
-              </n-popconfirm>
-              <n-button
-                v-if="is_virtual_pppd || is_live_pppd"
-                quaternary
-                circle
-                size="tiny"
-                :focusable="false"
-                data-testid="topology-node-edit-pppd"
-                @click.stop="show_pppd_edit_modal = true"
-              >
-                <template #icon>
-                  <n-icon><Edit /></n-icon>
-                </template>
-              </n-button>
-              <n-button
-                v-if="show_switch.pppd"
-                quaternary
-                circle
-                size="tiny"
-                :focusable="false"
-                data-testid="topology-node-open-pppd"
-                @click.stop="show_pppd_create_modal = true"
-              >
-                <template #icon>
-                  <n-icon><Link /></n-icon>
-                </template>
-              </n-button>
-              <n-tag size="small" :type="status_type" round>
-                {{ status_text }}
-              </n-tag>
-            </div>
-          </div>
+                  <n-tag size="small" :type="status_type" :bordered="false">
+                    {{ node.dev_status.t.toUpperCase() }}
+                  </n-tag>
+                </div>
+              </div>
 
-          <div class="topology-node__tags">
-            <n-tag size="tiny" :type="zone_type" round>
-              {{ node.zone_type }}
-            </n-tag>
-            <n-tag v-for="tag in role_tags" :key="tag" size="tiny" tertiary>
-              {{ tag }}
-            </n-tag>
-            <n-tag
-              v-if="(is_virtual_pppd || is_live_pppd) && node.pppd_config"
-              size="tiny"
-              :type="is_virtual_pppd ? 'warning' : 'default'"
-              round
+              <div class="topology-node__tags">
+                <n-tag
+                  v-if="node.zone_type !== IfaceZoneType.undefined"
+                  size="small"
+                  :type="zone_type"
+                  :bordered="false"
+                >
+                  {{ zone_label }}
+                </n-tag>
+                <n-tag
+                  v-for="tag in role_tags"
+                  :key="tag"
+                  size="small"
+                  :bordered="false"
+                >
+                  {{ tag }}
+                </n-tag>
+              </div>
+
+              <div v-if="has_metric && metric" class="topology-node__metric">
+                <div class="topology-node__metric-row">
+                  <span
+                    class="topology-node__metric-label topology-node__metric-label--egress"
+                    >↑</span
+                  >
+                  <span>{{ formatRate(metric.stats.egress_bps || 0) }}</span>
+                  <span class="topology-node__metric-pps">{{
+                    formatPackets(metric.stats.egress_pps || 0)
+                  }}</span>
+                </div>
+                <div class="topology-node__metric-row">
+                  <span
+                    class="topology-node__metric-label topology-node__metric-label--ingress"
+                    >↓</span
+                  >
+                  <span>{{ formatRate(metric.stats.ingress_bps || 0) }}</span>
+                  <span class="topology-node__metric-pps">{{
+                    formatPackets(metric.stats.ingress_pps || 0)
+                  }}</span>
+                </div>
+              </div>
+            </div>
+          </template>
+          <div class="topology-node__details">
+            <StandardSettingRow
+              :label="t('topology.panel.ifindex')"
+              control-width="auto"
             >
-              {{
-                t("pppoe.attach_to", {
-                  iface_name: node.pppd_config.attach_iface_name,
-                })
-              }}
-            </n-tag>
-          </div>
-
-          <div v-if="has_metric && metric" class="topology-node__metric">
-            <div class="topology-node__metric-row">
-              <span
-                class="topology-node__metric-label topology-node__metric-label--egress"
-                >↑</span
+              <span>
+                {{ node.index }}
+              </span>
+            </StandardSettingRow>
+            <StandardSettingRow
+              :label="t('topology.panel.boot')"
+              control-width="auto"
+            >
+              <n-tag
+                size="small"
+                :type="node.enable_in_boot ? 'success' : 'error'"
+                :bordered="false"
               >
-              <span>{{ formatRate(metric.stats.egress_bps || 0) }}</span>
-              <span class="topology-node__metric-pps">{{
-                formatPackets(metric.stats.egress_pps || 0)
-              }}</span>
-            </div>
-            <div class="topology-node__metric-row">
-              <span
-                class="topology-node__metric-label topology-node__metric-label--ingress"
-                >↓</span
-              >
-              <span>{{ formatRate(metric.stats.ingress_bps || 0) }}</span>
-              <span class="topology-node__metric-pps">{{
-                formatPackets(metric.stats.ingress_pps || 0)
-              }}</span>
-            </div>
+                {{
+                  t(
+                    node.enable_in_boot
+                      ? "topology.panel.boot_enabled"
+                      : "topology.panel.boot_disabled",
+                  )
+                }}
+              </n-tag>
+            </StandardSettingRow>
+            <StandardSettingRow
+              :label="t('topology.node.perm_mac')"
+              control-width="auto"
+            >
+              <span>
+                <MacAddress :value="node.perm_mac" empty-text="N/A" />
+              </span>
+            </StandardSettingRow>
+            <StandardSettingRow
+              :label="t('topology.panel.peer_link')"
+              control-width="auto"
+            >
+              <span>
+                {{ displayValue(node.peer_link_id) }}
+              </span>
+            </StandardSettingRow>
           </div>
-        </div>
+        </n-popover>
 
         <Handle
           v-if="node.has_source_hook()"
@@ -534,50 +497,38 @@ const node_style = computed(() => ({
         />
       </div>
 
-      <div v-if="service_items.length" class="topology-node__services">
+      <div
+        v-if="!summary && service_items.length"
+        class="topology-node__services"
+      >
         <n-tooltip
           v-for="item in service_items"
           :key="item.key"
           trigger="hover"
         >
           <template #trigger>
-            <span
-              class="topology-node__service-pill"
-              :class="{
-                'topology-node__service-pill--disabled': is_virtual_pppd,
-              }"
+            <n-tag
               role="button"
-              :tabindex="is_virtual_pppd ? -1 : 0"
-              :aria-disabled="is_virtual_pppd"
+              tabindex="0"
+              size="small"
+              :type="get_service_status_tag_type(item.status)"
+              :bordered="false"
               :data-testid="`topology-node-${node.index}-service-${item.key}`"
-              :style="serviceStatusStyle(item.status)"
               @click.stop="openServiceEditor(item.key)"
               @keydown.enter.stop.prevent="openServiceEditor(item.key)"
               @keydown.space.stop.prevent="openServiceEditor(item.key)"
             >
-              <span>{{ item.short_label }}</span>
-            </span>
+              {{ item.short_label }}
+            </n-tag>
           </template>
-          {{
-            is_virtual_pppd
-              ? `${item.label} · ${t("pppoe.service_locked_hint")}`
-              : `${item.label} · ${serviceStatusText(item.status)}`
-          }}
+          {{ item.label }} · {{ serviceStatusText(item.status) }}
         </n-tooltip>
       </div>
     </div>
 
-    <PPPDCreateConfigModal
-      v-model:show="show_pppd_create_modal"
+    <PPPDServiceListDrawer
+      v-model:show="show_pppd_drawer"
       :attach_iface_name="node.name"
-      :origin_value="undefined"
-      @refresh="refreshGraph"
-    />
-    <PPPDCreateConfigModal
-      v-if="node.pppd_config !== undefined"
-      v-model:show="show_pppd_edit_modal"
-      :attach_iface_name="node.pppd_config.attach_iface_name"
-      :origin_value="node.pppd_config"
       @refresh="refreshGraph"
     />
     <IpConfigModal
@@ -648,8 +599,8 @@ const node_style = computed(() => ({
   width: var(--topology-node-width);
   box-sizing: border-box;
   transition:
-    opacity 0.18s ease,
-    filter 0.18s ease;
+    opacity var(--app-motion-normal, 180ms) ease,
+    filter var(--app-motion-normal, 180ms) ease;
 }
 
 .topology-node.is-dimmed {
@@ -669,8 +620,12 @@ const node_style = computed(() => ({
   display: flex;
   width: var(--topology-node-width);
   flex-direction: column;
-  gap: 8px;
+  gap: var(--app-space-sm);
   box-sizing: border-box;
+}
+
+.topology-node__details :deep(.standard-setting-row:last-child) {
+  margin-bottom: 0;
 }
 
 .topology-node__card-shell {
@@ -682,8 +637,8 @@ const node_style = computed(() => ({
 .topology-node__card {
   width: var(--topology-node-width);
   min-height: 78px;
-  padding: 10px 12px;
-  border-radius: 16px;
+  padding: 10px var(--app-space-section);
+  border-radius: var(--app-radius-large);
   border: 1px solid var(--topology-node-border);
   background: linear-gradient(
     180deg,
@@ -708,44 +663,36 @@ const node_style = computed(() => ({
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--app-space-md);
 }
 
 .topology-node__header-actions {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--app-space-xs);
 }
 
 .topology-node__title {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: var(--app-space-sm);
+  font-size: var(--app-font-size-body);
   font-weight: 600;
   color: var(--topology-node-text);
-}
-
-.topology-node__carrier {
-  width: 9px;
-  height: 9px;
-  flex: none;
-  border-radius: 999px;
-  box-shadow: 0 0 0 4px var(--topology-node-carrier-ring);
 }
 
 .topology-node__tags {
   display: flex;
   margin-top: 8px;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--app-space-xs);
 }
 
 .topology-node__metric {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: var(--app-space-xs);
   margin-top: 8px;
   color: var(--topology-node-text);
   font-variant-numeric: tabular-nums;
@@ -753,13 +700,13 @@ const node_style = computed(() => ({
 
 .topology-node__metric-row {
   display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  align-items: baseline;
+  gap: var(--app-space-2xs);
   min-width: 0;
   padding: 4px 6px;
-  border-radius: 8px;
+  border-radius: var(--app-radius-panel, 8px);
   background: var(--topology-node-service-bg);
-  font-size: 11px;
+  font-size: var(--app-font-size-detail);
   font-weight: 650;
   line-height: 1.1;
   white-space: nowrap;
@@ -778,56 +725,35 @@ const node_style = computed(() => ({
 }
 
 .topology-node__metric-pps {
+  margin-left: auto;
   overflow: hidden;
   color: var(--topology-node-muted);
-  font-size: 10px;
+  font-size: var(--app-font-size-micro);
+  line-height: inherit;
+  text-align: right;
   text-overflow: ellipsis;
 }
 
 .topology-node__services {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--app-space-xs);
   width: var(--topology-node-width);
   box-sizing: border-box;
 }
 
-.topology-node__service-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 7px;
-  border-radius: 999px;
-  border: 1px solid var(--topology-node-service-border);
-  background: var(--topology-node-service-bg);
-  color: var(--topology-node-service-text);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
+.topology-node__services .n-tag {
   cursor: pointer;
-  transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    transform 0.18s ease;
+  transition: transform var(--app-motion-normal, 180ms) ease;
 }
 
-.topology-node__service-pill:hover {
+.topology-node__services .n-tag:hover {
   transform: translateY(-1px);
 }
 
-.topology-node__service-pill--muted {
-  opacity: 0.78;
-}
-
-.topology-node__service-pill--disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-  pointer-events: none;
-  transform: none;
-}
-
 .topology-node__handle {
-  width: 12px;
-  height: 12px;
+  width: 8px;
+  height: 8px;
   opacity: 1;
   z-index: 2;
   cursor: crosshair;

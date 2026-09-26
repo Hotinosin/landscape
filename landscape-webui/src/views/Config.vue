@@ -22,8 +22,6 @@ const lanHostnameStore = useLanHostnameConfigStore();
 const message = useMessage();
 const loading = ref(false);
 
-const scrollTarget = () => document.querySelector(".main-body");
-
 onMounted(async () => {
   loading.value = true;
   try {
@@ -44,95 +42,75 @@ onMounted(async () => {
 
 <template>
   <div class="config-container">
-    <div class="main-content">
-      <n-space vertical size="large">
-        <UIConfigCard />
-        <DNSConfigCard />
-        <LanHostnameConfigCard />
-        <MetricConfigCard />
-        <PasswordConfigCard />
-        <BackupConfigCard />
-        <div style="height: 400px"></div>
-      </n-space>
-    </div>
-
-    <!-- 侧边目录容器 -->
-    <div class="side-nav hidden-mobile">
-      <n-anchor
-        affix
-        :top="70"
-        :offset-top="70"
-        :bound="24"
-        :ignore-gap="true"
-        listen-to=".main-body"
-        style="width: 200px"
-      >
-        <n-card
-          :title="t('config.directory')"
-          size="small"
-          :segmented="{ content: true }"
-          class="anchor-card"
-        >
-          <n-anchor-link :title="t('config.ui_title')" href="#ui-config" />
-          <n-anchor-link :title="t('config.dns_title')" href="#dns-config" />
-          <n-anchor-link
-            :title="t('config.lan_hostname_title')"
-            href="#lan-hostname-config"
-          />
-          <n-anchor-link
-            :title="t('config.metric_title')"
-            href="#metric-config"
-          />
-          <n-anchor-link
-            :title="t('config.password_title')"
-            href="#password-config"
-          />
-          <n-anchor-link
-            :title="t('config.backup_title')"
-            href="#backup-config"
-          />
-        </n-card>
-      </n-anchor>
+    <div class="config-waterfall">
+      <div class="config-column">
+        <UIConfigCard class="card-item--ui" />
+        <DNSConfigCard class="card-item--dns" />
+        <LanHostnameConfigCard class="card-item--lan-hostname" />
+        <PasswordConfigCard class="card-item--password" />
+        <BackupConfigCard class="card-item--backup" />
+      </div>
+      <div class="config-column">
+        <MetricConfigCard class="card-item--metric" />
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .config-container {
-  padding: 24px;
+  padding: var(--app-data-table-frame-inset);
   width: 100%;
+  box-sizing: border-box;
+}
+
+.config-waterfall {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--app-space-lg, 16px);
+  align-items: start;
+}
+
+.config-column {
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 48px;
+  flex-direction: column;
+  gap: var(--app-space-lg, 16px);
+  min-width: 0;
 }
 
-.main-content {
-  flex: 1;
-  min-width: 0; /* 防止内容撑破 flex 容器 */
-}
-
-.side-nav {
-  width: 200px;
-  flex-shrink: 0;
-}
-
-.anchor-card {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
-}
-
-/* 响应式：在窄屏下隐藏目录，主内容自动占满 */
 @media (max-width: 992px) {
-  .hidden-mobile {
-    display: none;
+  .config-waterfall {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-space-lg, 16px);
   }
-  .config-container {
-    gap: 0;
-  }
-}
 
-:deep(.n-anchor-link) {
-  font-size: 14px;
+  .config-column {
+    display: contents;
+  }
+
+  .card-item--ui {
+    order: 1;
+  }
+
+  .card-item--metric {
+    order: 2;
+  }
+
+  .card-item--dns {
+    order: 3;
+  }
+
+  .card-item--lan-hostname {
+    order: 4;
+  }
+
+  .card-item--password {
+    order: 5;
+  }
+
+  .card-item--backup {
+    order: 6;
+  }
 }
 </style>

@@ -1,7 +1,5 @@
 import { ifaces } from "@/api/network";
-import { get_all_iface_pppd_config } from "@/api/service_pppd";
 import { DevStateType, NetDev } from "@/lib/dev";
-import type { PPPDServiceConfig } from "@/lib/pppd";
 import { IfaceZoneType } from "@landscape-router/types/api/schemas";
 import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
@@ -12,14 +10,14 @@ interface IfaceOption {
   ifindex: number;
 }
 
-const NODE_WIDTH = 360;
+const NODE_WIDTH = 280;
 const NODE_HEIGHT = 136;
 const LANE_PADDING = 48;
 const GROUP_GAP = 18;
 const STACK_GAP = 8;
 const CORE_COLUMN_GAP = 14;
-const IDEAL_COLUMN_GAP = 320;
-const MIN_GRAPH_WIDTH = 940;
+const IDEAL_COLUMN_GAP = NODE_WIDTH + LANE_PADDING;
+const MIN_GRAPH_WIDTH = NODE_WIDTH * 3 + LANE_PADDING * 4;
 const MAX_GRAPH_WIDTH = 1480;
 
 function sort_devices(devs: NetDev[]) {
@@ -61,66 +59,13 @@ export function get_visible_devices(devs: NetDev[], hide_down: boolean) {
         return false;
       }
 
-      if (
-        hide_down &&
-        each.dev_status.t === DevStateType.Down &&
-        !each.virtual
-      ) {
+      if (hide_down && each.dev_status.t !== DevStateType.Up) {
         return false;
       }
 
       return true;
     }),
   );
-}
-
-export function stable_negative_hash(name: string, used: Set<number>): number {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = (hash * 31 + name.charCodeAt(i)) | 0;
-  }
-  let index = -Math.abs(hash) - 1;
-  while (used.has(index)) {
-    index -= 1;
-  }
-  used.add(index);
-  return index;
-}
-
-export function merge_pppd_placeholders(
-  devs: NetDev[],
-  pppd_configs: PPPDServiceConfig[],
-): NetDev[] {
-  const result = [...devs];
-  const used_indices = new Set<number>(devs.map((each) => each.index));
-
-  for (const config of pppd_configs) {
-    const live_dev = devs.find((each) => each.name === config.iface_name);
-    if (live_dev !== undefined) {
-      live_dev.pppd_config = config;
-      continue;
-    }
-
-    result.push(
-      new NetDev({
-        name: config.iface_name,
-        index: stable_negative_hash(config.iface_name, used_indices),
-        mac: undefined,
-        perm_mac: undefined,
-        dev_type: "ppp",
-        dev_kind: "ppp",
-        dev_status: { t: DevStateType.Down },
-        controller_id: undefined,
-        carrier: false,
-        zone_type: IfaceZoneType.wan,
-        enable_in_boot: false,
-        virtual: true,
-        pppd_config: config,
-      }),
-    );
-  }
-
-  return result;
 }
 
 function create_layout_signature(devs: NetDev[], width: number) {
@@ -140,10 +85,6 @@ export const useIfaceNodeStore = defineStore(
   "iface_node",
   () => {
     const net_devs = ref<NetDev[]>([]);
-    const pppd_configs = ref<PPPDServiceConfig[]>([]);
-    const pppd_config_map = computed(
-      () => new Map(pppd_configs.value.map((each) => [each.iface_name, each])),
-    );
 
     const hide_down_dev = ref(false);
     const view_locked = ref(true);
@@ -378,12 +319,7 @@ export const useIfaceNodeStore = defineStore(
     );
 
     async function UPDATE_INFO() {
-      const [devs, pppd_configs_result] = await Promise.all([
-        ifaces(),
-        get_all_iface_pppd_config().catch(() => [] as PPPDServiceConfig[]),
-      ]);
-      pppd_configs.value = pppd_configs_result;
-      net_devs.value = merge_pppd_placeholders(devs, pppd_configs_result);
+      net_devs.value = await ifaces();
     }
 
     async function SETTING_CALL_BACK(call_back: () => void) {
@@ -431,8 +367,6 @@ export const useIfaceNodeStore = defineStore(
 
     return {
       net_devs,
-      pppd_configs,
-      pppd_config_map,
       visible_net_devs,
       nodes,
       edges,

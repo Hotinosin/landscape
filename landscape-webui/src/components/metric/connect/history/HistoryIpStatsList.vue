@@ -2,8 +2,8 @@
 import { h, computed } from "vue";
 import { formatSize, formatCount } from "@/lib/util";
 import { useThemeVars, NTooltip, NIcon, NButton } from "naive-ui";
-import { Search } from "@vicons/carbon";
-import { GlobeSearch24Regular } from "@vicons/fluent";
+import type { DataTableSortState } from "naive-ui";
+import { Search, SearchLocate as GlobeSearch24Regular } from "@vicons/carbon";
 import type {
   IpHistoryStat,
   ConnectSortKey,
@@ -33,6 +33,10 @@ const emit = defineEmits(["update:sort", "search:ip"]);
 
 const themeVars = useThemeVars();
 
+function rowKey(row: IpHistoryStat) {
+  return row.ip;
+}
+
 // 使用 computed 确保当 props.sortKey 或 props.sortOrder 改变时，列定义会更新
 const columns = computed(() => [
   {
@@ -41,7 +45,13 @@ const columns = computed(() => [
     render: (row: IpHistoryStat) => {
       return h(
         "div",
-        { style: { display: "flex", alignItems: "center", gap: "12px" } },
+        {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--app-space-section)",
+          },
+        },
         [
           h("div", { style: { display: "flex", flexDirection: "column" } }, [
             h(
@@ -216,7 +226,7 @@ const columns = computed(() => [
   },
 ]);
 
-const handleSort = (sorter: any) => {
+const handleSort = (sorter: DataTableSortState | null) => {
   if (sorter && sorter.order) {
     const key = sorter.columnKey as ConnectSortKey;
     const order = sorter.order === "ascend" ? "asc" : "desc";
@@ -229,22 +239,45 @@ const handleSort = (sorter: any) => {
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1; overflow: hidden">
-    <n-flex align="center" justify="space-between" style="margin-bottom: 12px">
-      <n-h3 style="margin: 0">{{ title }}</n-h3>
+  <n-flex vertical :wrap="false" class="history-ip-stats-list">
+    <n-flex
+      class="standard-list-title--small"
+      align="center"
+      justify="space-between"
+      style="margin-bottom: 12px"
+    >
+      <n-h3 v-if="title" style="margin: 0">{{ title }}</n-h3>
+      <span v-else />
       <n-text depth="3">
         {{ $t("metric.connect.stats.total_nodes", { count: stats.length }) }}
       </n-text>
     </n-flex>
 
-    <n-data-table
-      remote
-      size="small"
-      :columns="columns"
-      :data="stats"
-      :pagination="false"
-      :max-height="'calc(100vh - 350px)'"
-      @update:sorter="handleSort"
-    />
+    <div class="history-ip-stats-viewport">
+      <StandardDataTable
+        remote
+        max-height="100%"
+        size="small"
+        :columns="columns"
+        :data="stats"
+        :pagination="false"
+        :row-key="rowKey"
+        :scroll-x="900"
+        @update:sorter="handleSort"
+      />
+    </div>
   </n-flex>
 </template>
+
+<style scoped>
+.history-ip-stats-list {
+  flex: 0 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.history-ip-stats-viewport {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+</style>

@@ -235,13 +235,14 @@ function isValidDnrIpv4(ip: string): boolean {
 
 <template>
   <n-dynamic-input
+    class="dhcp-options-editor"
     v-model:value="model"
     :on-create="onCreate"
     :min="0"
     show-sort-button
   >
     <template #default="{ value }">
-      <n-flex :size="8" align="center">
+      <n-flex class="dhcp-option-row" :size="8" align="center" :wrap="false">
         <n-select
           :value="getVariant(value)"
           :options="typeOptions"
@@ -249,7 +250,7 @@ function isValidDnrIpv4(ip: string): boolean {
           style="width: 200px; flex-shrink: 0"
           @update:value="(v: string) => onChangeType(value, v)"
         />
-        <div style="flex: 1">
+        <div class="dhcp-option-value">
           <DHCPOptionTFTPServer
             v-if="getVariant(value) === 'TFTPServerName'"
             v-model="value.TFTPServerName"
@@ -275,3 +276,16 @@ function isValidDnrIpv4(ip: string): boolean {
     </template>
   </n-dynamic-input>
 </template>
+
+<style scoped>
+.dhcp-options-editor,
+.dhcp-option-row,
+.dhcp-option-value {
+  min-width: 0;
+  width: 100%;
+}
+
+.dhcp-option-value {
+  flex: 1;
+}
+</style>

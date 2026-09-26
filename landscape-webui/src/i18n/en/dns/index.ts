@@ -1,13 +1,15 @@
 export default {
   rule_edit: {
-    title: "Rule Editor",
+    title: "DNS Rule Editor",
     priority: "Priority",
-    remark: "Remark",
+    priority_help:
+      "Lower numbers have higher priority. Rules are evaluated from low to high and stop at the first match; 1 is higher than 1000.",
+    name: "Name",
     filter_result: "Filter result",
-    flow_action: "Flow action",
+    flow_action: "Rule Egress",
     upstream_select: "DNS upstream",
-    source_rules_title:
-      "Domain match rules (empty means match all, rule order is ignored)",
+    source_rules_title: "Domain match rules",
+    source_rules_help: "Empty means match all; rule order is ignored",
     copy: "Copy",
     paste_replace: "Paste Replace",
     paste_append: "Paste Append",
@@ -21,6 +23,7 @@ export default {
     duplicate_priority_warning:
       "**Priority** cannot be -1 and must be unique, or it may overwrite existing rules",
     source_style_full: "Exact Match",
+    source_style_geo: "Geo Database",
     source_style_domain: "Domain Match",
     source_style_regex: "Regex Match",
     source_style_plain: "Keyword Match",
@@ -32,8 +35,11 @@ export default {
     resolve_cloudflare: "Cloudflare",
   },
   redirect_edit: {
-    title: "DNS Redirect Config",
+    title: "Redirect & Blocking Configuration",
+    name: "Name",
+    name_placeholder: "Enter name",
     remark: "Remark",
+    remark_placeholder: "Enter remark",
     apply_flows: "Applied flows (empty means all flows)",
     apply_flows_placeholder: "Select flow IDs",
     answer_mode: "Answer mode",
@@ -58,17 +64,19 @@ export default {
     copy: "Copy",
     paste_replace: "Paste Replace",
     paste_append: "Paste Append",
-    default_flow: "Default Flow",
+    default_flow: "Default Flow Policy",
     err_ip_required: "IP address is required",
     err_ip_invalid: "Please enter a valid IPv4 or IPv6 address",
     err_match_rules_required: "At least one domain match rule is required",
   },
   upstream_edit: {
-    title: "DNS Upstream Config",
+    title: "DNS Configuration",
     copy: "Copy",
     paste: "Paste",
+    name: "Name",
+    name_placeholder: "Enter name",
     remark: "Remark",
-    remark_placeholder: "Used to differentiate upstreams in DNS rule selection",
+    remark_placeholder: "Enter remark",
     ip_validation: "Filter invalid results",
     ip_validation_desc_1:
       "When enabled, private/loopback and other invalid addresses from upstream responses will be filtered.",
@@ -76,7 +84,7 @@ export default {
       "If your custom upstream intentionally returns private IPs, keep it disabled.",
     ip_validation_on: "Filter",
     ip_validation_off: "Do not filter",
-    preset_fill: "Click buttons to apply presets",
+    preset_fill: "DNS Presets",
     request_mode: "Upstream request mode",
     type_plaintext: "Plaintext",
     port: "Port",
@@ -96,6 +104,30 @@ export default {
     warn_default_endpoint:
       "Empty value will fallback to `/dns-query` (warning can be ignored)",
     warn_empty_endpoint_fill: "URL is empty, fallback to `/dns-query`",
+    test: "Test",
+    doq_reuse_test: "DoQ Reuse Test",
+    quic_test_title: "{protocol} Connection Test",
+    quic_test_success: "{protocol} connected and returned a DNS response",
+    quic_test_partial:
+      "{protocol} connection is unstable; only some queries succeeded",
+    quic_test_failed: "{protocol} connection failed; see each attempt below",
+    quic_test_timeout:
+      "{protocol} connection timed out; check whether its UDP port is allowed",
+    quic_test_network_unreachable:
+      "Network unreachable; check the default route and egress",
+    quic_test_tls_failed:
+      "{protocol} TLS handshake failed; check the domain, certificate, and system time",
+    quic_test_request_failed:
+      "The test request failed; check the backend service and retry",
+    test_domain: "Test Domain",
+    reuse_average: "Average Reused-request Latency",
+    connection_count: "QUIC Connections Created",
+    connection: "Connection",
+    connection_new: "New",
+    connection_reused: "Reused",
+    connection_reconnected: "Reconnected",
+    latency: "Latency",
+    result: "Result",
   },
   upstream_card: {
     no_config: "No config",
@@ -110,14 +142,14 @@ export default {
     confirm_delete: "Confirm deletion?",
   },
   rule_card: {
-    traffic_action: "Traffic Action",
+    traffic_action: "Rule Egress",
     upstream_config: "DNS Upstream Config",
     match_rules: "Match Rules",
     no_match_rules: "No match rules. All domains will match.",
   },
   rule_drawer: {
     title_default: "Edit Default DNS Rules",
-    title_flow: "Edit DNS Rules for Flow: {flow_id}",
+    title_flow: "Edit DNS Rules for Flow Policy {flow_id}",
     add_rule: "Add Rule",
     export_clipboard: "Export Rules to Clipboard",
     import_clipboard: "Import Rules from Clipboard",
@@ -146,8 +178,8 @@ export default {
   },
   redirect_card: {
     apply_to: "Applied to",
-    default_flow: "Default Flow",
-    all_flows: "All Flows",
+    default_flow: "Default Flow Policy",
+    all_flows: "All Flow Policies",
     answer_mode: "Answer mode",
     answer_mode_static_ips: "Static IP list",
     answer_mode_all_local_ips: "All local IPs",
@@ -161,5 +193,6 @@ export default {
   select_upstream: {
     redirect_flow_id: "Redirect Flow ID",
     default_ali: "Aliyun",
+    create: "New DNS configuration",
   },
 };

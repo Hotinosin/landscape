@@ -21,7 +21,7 @@ export async function get_all_firewall_status(): Promise<
 export async function get_iface_firewall_config(
   iface_name: string,
 ): Promise<FirewallServiceConfig> {
-  const data = await getFirewallServiceConfig(iface_name);
+  const data = await getFirewallServiceConfig(iface_name, { silent: true });
   return new FirewallServiceConfig(data);
 }
 
