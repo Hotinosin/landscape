@@ -6,14 +6,19 @@
 
 ## 1. 托管插件系统（Managed Plugins）
 
-- **标准打包规范**：支持基于 `tar.gz` 的标准插件归档包与声明式 `manifest.json`（详见 [`docs/plugin.md`](file:///Users/ho/Documents/project/landscape/docs/plugin.md)），提供打包工具脚本（`examples/build-mihomo-plugin.sh`）。
-- **完整生命周期管理**：提供插件包导入安装、启动（`start`）、停止（`stop`）、状态查询、包卸载与安全清理。
+- **标准打包规范**：支持基于 `tar.gz` 的标准插件归档包与声明式 `manifest.json`（详见 [`plugin.md`](plugin.md)），提供打包工具脚本（`examples/build-mihomo-plugin.sh`）。
+- **完整生命周期管理**：提供插件包导入安装、启动（`start`）、停止（`stop`）、重启（`restart`）、状态查询、包卸载与安全清理。导入后插件服务默认保持停止，用户启动后通过 `service.enabled` 持久化启用状态。
+- **服务守护与恢复**：已启用的插件服务异常退出后由 watchdog 自动重启；支持通过 `service.auto_restart` 关闭自动恢复，并通过失败次数限制和冷却时间避免持续重启。
+- **多服务启动模板**：内置 `mihomo`、`sing-box`、`xray`、`v2ray` 的启动和配置检查参数，也支持通过 `service.run_args`、`service.check_args` 声明自定义参数模板。
 - **在线运维与配置**：
   - **运行日志实时查看**：`GET /api/v1/plugins/{id}/logs`。
-  - **配置文件在线读取与编辑下发**：`GET/PUT /api/v1/plugins/{id}/config`。
+  - **配置文件在线读取与编辑下发**：`GET/PUT /api/v1/plugins/{id}/config`，支持用户配置（base）、系统覆写（override）及最终生效配置（effective）三层查看，并可在保存时执行启动前配置校验。
 - **安全解包审计**：解包时严格校验相对路径与文件类型，拦截路径穿越（Path Traversal）与非正规文件释放。
-- **隔离网络环境**：自动为插件配置专属 Linux Network Namespace（如 `land-mihomo`）、配对 `veth` 网卡与专用的 nftables masquerade/tproxy 规则。
+- **隔离网络环境**：自动为插件配置专属 Linux Network Namespace（如 `land-mihomo`）、配对 `veth` 网卡与基于 RFC 6598 CGNAT 地址的独立网络；启动和停止服务时同步创建或清理 nftables masquerade/forward 与兼容的 iptables `FORWARD` 规则。
+- **旧网络配置迁移**：加载插件时自动将旧的 `169.254.127.0/30` 链路本地地址迁移到默认的 `100.64.127.0/30` CGNAT 地址，并同步修正系统覆写配置。
+- **独立 TProxy 转发器**：`redirect_pkg_handler` 支持 `--standalone` 模式，由宿主机为插件启动 eBPF TC 流量转发，无需依赖 Docker 容器身份。
 - **Unix Domain Socket 代理**：插件控制接口（如控制器 Socket）直接挂载于 `/run/landscape/plugins/{id}/`，无需占用系统 TCP 端口，由 Web 后端（`plugin_proxy.rs`）在经过会话鉴权后反向代理至前端。
+- **控制面板自动发现**：自动识别 `zashboard`、`dist`、`metacubexd`、`yacd` 等 UI 子目录，区分 Mihomo API 与静态资源路径，并根据当前页面协议生成控制面板连接信息以兼容 HTTPS。
 - **分流联动**：插件网络接口（如 `land-mihomo`）在网络拓扑中可见，并可直接作为分流规则（Flow Target Rule）的出站目标接口。
 - **主要入口**：
   - 后端：`landscape-webserver/src/plugins/`、`landscape-webserver/src/plugin_proxy.rs`
@@ -92,7 +97,27 @@
 
 ---
 
-## 8. 已合并入上游的功能
+## 8. 主题配置持久化
+
+- **服务端持久化**：主题模式以及主题样式的预设、圆角、明度、色度、色相等 OKLCH 参数写入 `landscape.toml`，登录后可跨浏览器和设备恢复。
+- **配置模型与接口**：`LandscapeUIConfig` 增加 `theme_style`，并纳入 UI 配置接口和 OpenAPI Schema。
+- **主要入口**：
+  - 后端模型：`landscape-common/src/config/settings.rs`
+  - 前端状态：`landscape-webui/src/stores/preference.ts`
+
+---
+
+## 9. Extension 发布流程
+
+- **触发范围**：仅在 `feature/extensions` 分支推送时构建并发布 Extension 版本。
+- **版本规则**：发布版本必须符合 `X.Y.Z-extension.N`，并生成对应的 GitHub Release。
+- **当前构建目标**：仅构建 `x86_64-unknown-linux-gnu`，不发布其他架构或 musl 静态版本。
+- **发布产物**：包含 `landscape-webserver-x86_64`、`redirect_pkg_handler-x86_64`、前端静态资源、OpenAPI 文件及 SHA-256 校验文件。
+- **主要入口**：`.github/workflows/build-and-release.yml`
+
+---
+
+## 10. 已合并入上游的功能
 
 以下功能最初由 Extension 分支引入，现已被官方合并至上游 `v0.24.3` 主干：
 

@@ -10,12 +10,14 @@ type Props = {
   name?: string | null;
   remark?: string | null;
   prefix?: string | number | null;
+  placeholder?: string | null;
 };
 
 const props = withDefaults(defineProps<Props>(), {
   name: null,
   remark: null,
   prefix: null,
+  placeholder: null,
 });
 
 const hasName = computed(() => Boolean(props.name && props.name.trim() !== ""));
@@ -44,9 +46,10 @@ const hasRemark = computed(
       </n-ellipsis>
       <n-text v-if="!hasName && !hasRemark" depth="3">
         {{
-          prefix !== null && prefix !== undefined
+          placeholder ??
+          (prefix !== null && prefix !== undefined
             ? `${prefix}: —`
-            : t("common.no_remark")
+            : t("common.unnamed"))
         }}
       </n-text>
     </div>

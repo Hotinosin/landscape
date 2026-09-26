@@ -88,6 +88,17 @@ describe("StatusTitle", () => {
 
     expect(wrapper.find(".status-title-name").exists()).toBe(false);
     expect(wrapper.find(".status-title-remark").exists()).toBe(false);
-    expect(wrapper.text()).toContain("common.no_remark");
+    expect(wrapper.text()).toContain("common.unnamed");
+  });
+
+  it("supports custom placeholder when neither name nor remark is provided", () => {
+    const wrapper = mount(StatusTitle, {
+      props: {
+        enable: true,
+        placeholder: "自定义占位",
+      },
+    });
+
+    expect(wrapper.text()).toContain("自定义占位");
   });
 });

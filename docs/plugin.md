@@ -1,6 +1,6 @@
 # Landscape network plugins
 
-Network plugins use a standard `.tar.gz` package with a declarative manifest. Phase 1 supports the `mihomo` service kind only; packages cannot declare scripts or arbitrary command arguments.
+Network plugins use a standard `.tar.gz` package with a declarative manifest. Built-in launch and validation templates are available for `mihomo`, `sing-box`, `xray`, and `v2ray`. Other service kinds can provide declarative `run_args` and `check_args`; packages cannot execute shell scripts during installation.
 
 ## Manifest v1
 
@@ -24,15 +24,18 @@ Network plugins use a standard `.tar.gz` package with a declarative manifest. Ph
   "service": {
     "kind": "mihomo",
     "executable": "bin/mihomo",
-    "default_config": "config.yaml"
+    "default_config": "config.yaml",
+    "auto_restart": true
   }
 }
 ```
 
 Build an installable package with `sh examples/build-mihomo-plugin.sh /path/to/mihomo VERSION mihomo.tar.gz`. The archive contains `manifest.json`, `config.yaml`, and `bin/mihomo`.
 
-Importing the package safely extracts regular files only, validates the Linux platform, copies the default config only when no instance config exists, creates the managed network namespace and its isolated nftables masquerade table, checks the config, and starts Mihomo plus the bundled `redirect_pkg_handler`. IPv4 forwarding must already be enabled on the router. Packages are unsigned in phase 1 and are shown as `UNVERIFIED_SOURCE`.
+Importing the package safely extracts regular files only, validates the target platform, copies the default config only when no instance config exists, and creates the managed network namespace plus the bundled `redirect_pkg_handler`. The managed service remains stopped until the user starts it. Starting and stopping the service also creates and removes its nftables/iptables forwarding and masquerade rules. IPv4 forwarding must already be enabled on the router. Packages are unsigned in phase 1 and are shown as `UNVERIFIED_SOURCE`.
 
-Deleting a plugin stops Mihomo and the TProxy handler, removes the package and Landscape-owned network/runtime state, and preserves `config`, `data`, and `logs`.
+Configuration is split into user (`base`), Landscape-managed (`override`), and merged (`effective`) layers. Saving a writable layer validates the resulting configuration by default; callers may explicitly disable that check. Enabled state is persisted, and enabled services are restarted after an unexpected exit unless `auto_restart` is `false`.
+
+Deleting a plugin stops its managed service and TProxy handler, removes the package and Landscape-owned network/runtime state, and preserves `config`, `data`, and `logs`.
 
 The controller socket should be below `/run/landscape/plugins/<id>/`. Landscape serves it only through its authenticated WebUI; no controller TCP port is required.

@@ -89,9 +89,11 @@ my-plugin.tar.gz
 | `network.tproxy_port` | integer | 否 | `12345` | 透明代理重定向的目标监听端口。 |
 | `network.host_ipv4` | string | 否 | `"100.64.127.1"` | 宿主机虚拟接口 IPv4（CGNAT 网段网关）。 |
 | `network.peer_ipv4` | string | 否 | `"100.64.127.2"` | 插件端接口 IPv4 地址。 |
-| `service.kind` | string | 是 | `"mihomo"` | 服务类型，目前官方支持 `mihomo`。 |
+| `service.kind` | string | 是 | `"mihomo"` | 服务类型；内置 `mihomo`、`sing-box`、`xray`、`v2ray` 参数模板，其他类型需声明运行参数。 |
 | `service.executable` | string | 是 | - | 相对于解压目录的可执行二进制相对路径（如 `bin/mihomo`）。 |
 | `service.default_config`| string | 是 | - | 相对于解压目录的默认基础配置（如 `config.yaml`）。 |
+| `service.run_args` | string[] | 否 | 按 `kind` 生成 | 自定义启动参数模板，支持 `{executable}`、`{data}`、`{config}`、`{namespace}` 占位符。 |
+| `service.check_args` | string[] | 否 | 按 `kind` 生成 | 自定义配置检查参数模板；未知服务类型省略时不执行启动前检查。 |
 | `service.auto_restart` | boolean | 否 | `true` | 服务异常崩溃时是否自动尝试拉起。 |
 
 ---
