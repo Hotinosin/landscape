@@ -7,18 +7,26 @@ import {
   update_gateway_config,
   type GatewayStatus,
 } from "@/api/gateway";
-import {
-  ServiceStatusType,
-  get_service_status_label,
-  get_service_status_tag_type,
-} from "@/lib/services";
+import { ServiceStatusType } from "@/lib/services";
 import type { HttpUpstreamRuleConfig } from "@landscape-router/types/api/schemas";
-import { Settings } from "@vicons/carbon";
+import { Renew, Settings } from "@vicons/carbon";
 import { useMessage } from "naive-ui";
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import type { DataTableColumns } from "naive-ui";
+import { computed, h, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { usePageRequest } from "@/composables/usePageRequest";
+import GatewayRuleListRow from "@/components/gateway/GatewayRuleListRow.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
+import ConfigModal from "@/components/common/ConfigModal.vue";
 
-const rules = ref<HttpUpstreamRuleConfig[]>([]);
+const {
+  data: rules,
+  error: rulesError,
+  loading: rulesLoading,
+  refresh: refresh_rules,
+} = usePageRequest(get_gateway_rules, {
+  initialData: [] as HttpUpstreamRuleConfig[],
+});
 const status = ref<GatewayStatus>();
 const gatewayEnabled = ref(false);
 const httpPort = ref<number | null>(80);
@@ -32,8 +40,37 @@ let status_poll_timer: ReturnType<typeof setInterval> | null = null;
 const { t } = useI18n();
 const message = useMessage();
 
-async function refresh_rules() {
-  rules.value = await get_gateway_rules();
+const columns = computed<DataTableColumns<HttpUpstreamRuleConfig>>(() =>
+  [
+    ["common.name", "name"],
+    ["gateway.match_type", "type"],
+    ["gateway.domains", "domains"],
+    ["gateway.upstream", "upstream"],
+    ["gateway.path_groups", "paths"],
+    ["common.enable", "enable"],
+    ["common.actions", "actions"],
+  ].map(([title, cell]) => ({
+    title: t(title),
+    key: cell,
+    width: cell === "name" ? 110 : cell === "enable" ? 80 : undefined,
+    render: (rule) =>
+      h(GatewayRuleListRow, {
+        rule,
+        cell: cell as
+          | "name"
+          | "enable"
+          | "type"
+          | "domains"
+          | "upstream"
+          | "paths"
+          | "actions",
+        ...(cell === "actions" ? { onRefresh: refreshAll } : {}),
+      }),
+  })),
+);
+
+function rowKey(rule: HttpUpstreamRuleConfig) {
+  return rule.id ?? rule.name;
 }
 
 async function refresh_config() {
@@ -62,7 +99,7 @@ function isTransitionStatus(statusValue: GatewayStatus | undefined) {
 function start_status_polling() {
   if (status_poll_timer) return;
   status_poll_timer = setInterval(() => {
-    void refresh_status();
+    if (!document.hidden) void refresh_status();
   }, 2000);
 }
 
@@ -79,14 +116,6 @@ function sync_status_polling(statusValue: GatewayStatus | undefined) {
   } else {
     stop_status_polling();
   }
-}
-
-function gateway_status_label(statusValue: GatewayStatus | undefined) {
-  return get_service_status_label(statusValue?.status, t);
-}
-
-function gateway_status_tag_type(statusValue: GatewayStatus | undefined) {
-  return get_service_status_tag_type(statusValue?.status);
 }
 
 async function saveGatewayConfig(showSuccess = true) {
@@ -160,114 +189,107 @@ watch(
 );
 </script>
 <template>
-  <n-flex vertical style="flex: 1">
-    <n-flex align="center" justify="space-between">
-      <n-flex>
+  <n-flex vertical class="standard-content-page">
+    <n-flex
+      align="center"
+      justify="space-between"
+      class="standard-list-toolbar"
+    >
+      <n-flex align="center" :size="16">
         <n-button
+          type="primary"
           :disabled="status?.supported === false"
           @click="show_edit_modal = true"
           >{{ t("common.create") }}</n-button
         >
-      </n-flex>
-      <n-flex v-if="status" align="center" :size="16">
-        <n-tag :type="gateway_status_tag_type(status)" size="small">
-          {{ gateway_status_label(status) }}
-        </n-tag>
-        <n-text depth="3" style="font-size: 13px">
+        <StandardServiceStatusTag v-if="status" :status="status.status" />
+        <n-text
+          v-if="status"
+          depth="3"
+          style="font-size: var(--app-font-size-label)"
+        >
           HTTP: {{ status.http_port }} | HTTPS: {{ status.https_port }} |
           {{ t("gateway.rule_count") }}: {{ status.rule_count }}
         </n-text>
-        <n-popover
-          v-model:show="show_settings"
-          trigger="click"
-          placement="bottom-end"
-        >
-          <template #trigger>
-            <n-button quaternary circle size="small">
-              <template #icon>
-                <n-icon :component="Settings" />
-              </template>
-            </n-button>
+      </n-flex>
+      <n-flex align="center" :size="8">
+        <n-button v-if="status" secondary @click="show_settings = true">
+          <template #icon>
+            <n-icon :component="Settings" />
           </template>
-
-          <n-flex
-            vertical
-            size="small"
-            style="padding: 4px; min-width: 320px; max-width: 360px"
-          >
-            <n-text strong>{{ t("gateway.runtime_title") }}</n-text>
-            <n-form label-placement="top">
-              <n-form-item :label="t('gateway.enabled')">
-                <n-switch v-model:value="gatewayEnabled" />
-                <template #feedback>
-                  {{ t("gateway.enabled_desc") }}
-                </template>
-              </n-form-item>
-              <n-grid x-gap="12" cols="2">
-                <n-grid-item>
-                  <n-form-item :label="t('gateway.http_port')">
-                    <n-input-number
-                      v-model:value="httpPort"
-                      :min="1"
-                      :max="65535"
-                      style="width: 100%"
-                    />
-                    <template #feedback>
-                      {{ t("gateway.http_port_desc") }}
-                    </template>
-                  </n-form-item>
-                </n-grid-item>
-                <n-grid-item>
-                  <n-form-item :label="t('gateway.https_port')">
-                    <n-input-number
-                      v-model:value="httpsPort"
-                      :min="1"
-                      :max="65535"
-                      style="width: 100%"
-                    />
-                    <template #feedback>
-                      {{ t("gateway.https_port_desc") }}
-                    </template>
-                  </n-form-item>
-                </n-grid-item>
-              </n-grid>
-            </n-form>
-
-            <n-alert type="info" :show-icon="false">
-              {{ t("gateway.restart_hint") }}
-            </n-alert>
-
-            <n-flex justify="end" :size="8">
-              <n-button
-                :loading="savingConfig"
-                @click="handleSaveGatewayConfig"
-              >
-                {{ t("gateway.save_runtime") }}
-              </n-button>
-              <n-button
-                type="primary"
-                :disabled="status?.supported === false"
-                :loading="restartingGateway"
-                @click="handleSaveAndRestartGateway"
-              >
-                {{ t("gateway.save_and_restart") }}
-              </n-button>
-            </n-flex>
-          </n-flex>
-        </n-popover>
+          {{ t("gateway.settings") }}
+        </n-button>
+        <n-button :loading="rulesLoading" secondary @click="refreshAll">
+          <template #icon
+            ><n-icon><Renew /></n-icon
+          ></template>
+          {{ t("common.refresh") }}
+        </n-button>
       </n-flex>
     </n-flex>
-    <n-flex>
-      <n-grid x-gap="12" y-gap="10" cols="1 600:2 1200:3 1600:3">
-        <n-grid-item v-for="rule in rules" :key="rule.id">
-          <GatewayRuleCard @refresh="refreshAll" :rule="rule" />
-        </n-grid-item>
-      </n-grid>
-    </n-flex>
-
+    <StandardDataTable
+      :columns="columns"
+      :data="rules"
+      :loading="rulesLoading"
+      :error="rulesError"
+      :empty-text="t('gateway.no_rules')"
+      :row-key="rowKey"
+      :scroll-x="1100"
+      @retry="refreshAll"
+    />
     <GatewayRuleEditModal
       @refresh="refreshAll"
       v-model:show="show_edit_modal"
     />
+    <ConfigModal
+      v-model:show="show_settings"
+      :show-switch="false"
+      width="var(--app-compact-modal-width)"
+      :title="t('gateway.runtime_title')"
+      :title-tip="t('gateway.restart_hint')"
+      :prepare="refresh_config"
+    >
+      <n-form>
+        <StandardSettingRow
+          :label="t('gateway.enabled')"
+          control-width="auto"
+        >
+          <n-switch v-model:value="gatewayEnabled" size="medium" />
+        </StandardSettingRow>
+        <StandardSettingRow :label="t('gateway.http_port')">
+          <n-input-number
+            v-model:value="httpPort"
+            :min="1"
+            :max="65535"
+          />
+        </StandardSettingRow>
+        <StandardSettingRow :label="t('gateway.https_port')">
+          <n-input-number
+            v-model:value="httpsPort"
+            :min="1"
+            :max="65535"
+          />
+        </StandardSettingRow>
+      </n-form>
+
+      <template #footer>
+        <n-flex justify="end" :size="8">
+          <n-button
+            :loading="savingConfig"
+            @click="handleSaveGatewayConfig"
+          >
+            {{ t("gateway.save_runtime") }}
+          </n-button>
+          <n-button
+            type="primary"
+            :disabled="status?.supported === false"
+            :loading="restartingGateway"
+            @click="handleSaveAndRestartGateway"
+          >
+            {{ t("gateway.save_and_restart") }}
+          </n-button>
+        </n-flex>
+      </template>
+    </ConfigModal>
   </n-flex>
 </template>

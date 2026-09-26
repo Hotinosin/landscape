@@ -14,27 +14,29 @@ const viewMode = computed({
     router.push({ path: `/metrics/conn/${val}`, query: { ...route.query } });
   },
 });
+const isHistory = computed(() => viewMode.value.startsWith("history"));
 </script>
 
 <template>
-  <n-flex align="center" :wrap="false">
+  <n-flex align="center" :wrap="false" class="connect-view-switcher">
     <n-tabs
       v-model:value="viewMode"
       type="segment"
       size="small"
-      style="min-width: 700px"
+      class="connect-view-tabs"
+      :style="{ width: isHistory ? '480px' : '640px' }"
     >
-      <n-tab name="live">{{ $t("metric.connect.switcher.live") }}</n-tab>
-      <n-tab name="iface">{{ $t("metric.connect.switcher.iface") }}</n-tab>
-      <n-tab name="src">{{ $t("metric.connect.switcher.src") }}</n-tab>
-      <n-tab name="dst">{{ $t("metric.connect.switcher.dst") }}</n-tab>
-      <n-tab name="history">{{ $t("metric.connect.switcher.history") }}</n-tab>
-      <n-tab name="history-src">{{
-        $t("metric.connect.switcher.history_src")
-      }}</n-tab>
-      <n-tab name="history-dst">{{
-        $t("metric.connect.switcher.history_dst")
-      }}</n-tab>
+      <template v-if="isHistory">
+        <n-tab name="history">{{ $t("metric.connect.view.connection") }}</n-tab>
+        <n-tab name="history-src">{{ $t("metric.connect.view.src_ip") }}</n-tab>
+        <n-tab name="history-dst">{{ $t("metric.connect.view.dst_ip") }}</n-tab>
+      </template>
+      <template v-else>
+        <n-tab name="live">{{ $t("metric.connect.view.connection") }}</n-tab>
+        <n-tab name="iface">{{ $t("metric.connect.view.iface") }}</n-tab>
+        <n-tab name="src">{{ $t("metric.connect.view.src_ip") }}</n-tab>
+        <n-tab name="dst">{{ $t("metric.connect.view.dst_ip") }}</n-tab>
+      </template>
     </n-tabs>
 
     <n-tag
@@ -42,7 +44,6 @@ const viewMode = computed({
       :bordered="false"
       type="info"
       size="small"
-      round
     >
       <template #icon>
         <div class="pulse-dot"></div>
@@ -53,12 +54,21 @@ const viewMode = computed({
 </template>
 
 <style scoped>
+.connect-view-switcher {
+  flex: 0 0 auto;
+}
+
+.connect-view-tabs {
+  flex: 0 0 auto;
+  max-width: 640px;
+}
+
 .pulse-dot {
   width: 8px;
   height: 8px;
-  background-color: #00d2ff;
+  background-color: var(--app-sampling-color);
   border-radius: 50%;
-  box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7);
+  box-shadow: 0 0 0 0 var(--app-sampling-glow-color);
   animation: pulse 1.5s infinite;
   margin-right: 4px;
 }
@@ -66,15 +76,15 @@ const viewMode = computed({
 @keyframes pulse {
   0% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7);
+    box-shadow: 0 0 0 0 var(--app-sampling-glow-color);
   }
   70% {
     transform: scale(1);
-    box-shadow: 0 0 0 6px rgba(0, 210, 255, 0);
+    box-shadow: 0 0 0 6px transparent;
   }
   100% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 210, 255, 0);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 </style>

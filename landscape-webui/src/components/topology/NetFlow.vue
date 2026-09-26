@@ -4,13 +4,12 @@ import { MiniMap } from "@vue-flow/minimap";
 import { useElementSize } from "@vueuse/core";
 import { useMessage, useThemeVars } from "naive-ui";
 import { changeColor } from "seemly";
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { add_controller } from "@/api/network";
 import FlowHeaderExtra from "@/components/topology/FlowHeaderExtra.vue";
 import FlowNode from "@/components/topology/FlowNode.vue";
-import TopologyDetailPanel from "@/components/topology/TopologyDetailPanel.vue";
 import { NetDev, WLANTypeTag } from "@/lib/dev";
 import { getBridgeAttachIssue } from "@/lib/topology";
 import { IfaceZoneType } from "@landscape-router/types/api/schemas";
@@ -19,25 +18,24 @@ import { useMetricStore } from "@/stores/status_metric";
 
 interface Props {
   fit_padding?: number;
+  summary?: boolean;
+  dockerIfaces?: Set<string>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   fit_padding: 0.3,
+  summary: false,
+  dockerIfaces: () => new Set<string>(),
 });
-
 const { t } = useI18n();
-const {
-  fitView,
-  getViewport,
-  onNodeClick,
-  onPaneClick,
-  setCenter,
-  setViewport,
-} = useVueFlow();
+const { fitView, getViewport, setCenter, setViewport } = useVueFlow();
 const message = useMessage();
 const ifaceNodeStore = useIfaceNodeStore();
 const metricStore = useMetricStore();
 const themeVars = useThemeVars();
+const topologyRadius = computed(() =>
+  Number.parseFloat(themeVars.value.borderRadius),
+);
 const containerRef = ref<HTMLElement | null>(null);
 const { width } = useElementSize(containerRef);
 const selectedIfaceId = ref<number | null>(null);
@@ -81,6 +79,9 @@ const flowNodes = computed(() => {
 
   return ifaceNodeStore.nodes.map((node) => ({
     ...node,
+    position: props.summary
+      ? { ...node.position, y: node.position.y * 0.62 }
+      : node.position,
     class: highlighted && !highlighted.has(Number(node.id)) ? "is-dimmed" : "",
   }));
 });
@@ -100,7 +101,6 @@ const flowEdges = computed(() => {
         : "normal-edge",
   }));
 });
-const detailOpen = computed(() => selectedIface.value !== undefined);
 const miniMapMaskColor = computed(() =>
   changeColor(themeVars.value.primaryColor, { alpha: 0.08 }),
 );
@@ -134,10 +134,6 @@ const flowStyle = computed(() => ({
     },
   )}`,
 }));
-
-function closePanel() {
-  selectedIfaceId.value = null;
-}
 
 async function fitTopology(mode: "overview" | "readable" = "readable") {
   const fit_params: {
@@ -215,7 +211,7 @@ function miniMapNodeColor(node: any) {
     return changeColor(themeVars.value.infoColor, { alpha: 0.88 });
   }
 
-  return changeColor(themeVars.value.successColor, { alpha: 0.84 });
+  return changeColor(themeVars.value.primaryColor, { alpha: 0.84 });
 }
 
 function miniMapNodeStrokeColor() {
@@ -309,35 +305,23 @@ watch(selectedIface, (value) => {
 
 onMounted(() => {
   ifaceNodeStore.UPDATE_INFO();
-  metricStore.SET_ENABLE("iface", true);
-  metricStore.UPDATE_INFO();
-});
-
-onUnmounted(() => {
-  metricStore.SET_ENABLE("iface", false);
-});
-
-onNodeClick(({ node }) => {
-  if (node.data?.virtual) {
-    return;
-  }
-  selectedIfaceId.value = Number(node.id);
-});
-
-onPaneClick(() => {
-  closePanel();
 });
 </script>
 
 <template>
-  <div ref="containerRef" class="topology-shell" data-testid="topology-page">
+  <div
+    ref="containerRef"
+    class="topology-shell"
+    :class="{ 'is-summary': summary }"
+    data-testid="topology-page"
+  >
     <VueFlow
       class="topology-flow"
       :style="flowStyle"
       :nodes="flowNodes"
       :edges="flowEdges"
       :nodes-draggable="false"
-      :nodes-connectable="true"
+      :nodes-connectable="!summary"
       :elements-selectable="false"
       :connect-on-click="false"
       :zoom-on-scroll="false"
@@ -355,60 +339,32 @@ onPaneClick(() => {
               highlightedIfaces && !highlightedIfaces.has(Number(nodeProps.id)),
             )
           "
+          :summary="summary"
+          :docker="dockerIfaces.has(nodeProps.data.name)"
         />
       </template>
 
-      <FlowHeaderExtra @fit-view="handleFitOverview" />
+      <FlowHeaderExtra :summary="summary" @fit-view="handleFitOverview" />
 
       <MiniMap
         v-if="!isDrawerMode"
         class="topology-minimap"
         position="bottom-left"
         :aria-label="t('topology.minimap')"
-        :height="MINIMAP_HEIGHT"
-        :mask-border-radius="10"
+        :height="summary ? 72 : MINIMAP_HEIGHT"
+        :mask-border-radius="topologyRadius"
         :mask-color="miniMapMaskColor"
         :mask-stroke-color="miniMapMaskStrokeColor"
         :mask-stroke-width="1.25"
-        :node-border-radius="6"
+        :node-border-radius="topologyRadius"
         :node-color="miniMapNodeColor"
         :node-stroke-color="miniMapNodeStrokeColor"
         :node-stroke-width="1"
         :pannable="true"
-        :width="MINIMAP_WIDTH"
+        :width="summary ? 116 : MINIMAP_WIDTH"
         :zoomable="false"
         @click="handleMiniMapClick"
       />
-
-      <transition name="topology-panel">
-        <aside
-          v-if="selectedIface && !isDrawerMode"
-          class="topology-side-panel nopan nowheel"
-          data-testid="topology-side-panel"
-        >
-          <TopologyDetailPanel :node="selectedIface" @close="closePanel" />
-        </aside>
-      </transition>
-
-      <n-drawer
-        v-if="isDrawerMode"
-        :show="detailOpen"
-        placement="bottom"
-        height="78%"
-        :trap-focus="false"
-        :block-scroll="false"
-        @update:show="(show: boolean) => !show && closePanel()"
-      >
-        <n-drawer-content :closable="false" body-content-style="padding: 0;">
-          <div class="topology-drawer-panel nopan nowheel">
-            <TopologyDetailPanel
-              v-if="selectedIface"
-              :node="selectedIface"
-              @close="closePanel"
-            />
-          </div>
-        </n-drawer-content>
-      </n-drawer>
     </VueFlow>
   </div>
 </template>
@@ -417,6 +373,10 @@ onPaneClick(() => {
 @import "@vue-flow/core/dist/style.css";
 @import "@vue-flow/core/dist/theme-default.css";
 @import "@vue-flow/minimap/dist/style.css";
+
+.vue-flow__node-netflow {
+  pointer-events: auto !important;
+}
 </style>
 
 <style scoped>
@@ -431,7 +391,7 @@ onPaneClick(() => {
   width: 100%;
   height: 100%;
   min-height: 550px;
-  border-radius: 20px;
+  border-radius: var(--app-radius-large);
   background:
     radial-gradient(
       circle at top left,
@@ -450,18 +410,24 @@ onPaneClick(() => {
     );
 }
 
+.topology-shell.is-summary,
+.topology-shell.is-summary .topology-flow {
+  min-height: 320px;
+  height: 320px;
+}
+
 .topology-flow :deep(.vue-flow__node-netflow) {
   background: transparent;
   border: none;
   box-shadow: none;
   padding: 0;
-  transition: opacity 0.18s ease;
+  transition: opacity var(--app-motion-normal, 180ms) ease;
 }
 
 .topology-flow :deep(.vue-flow__edge-path) {
   stroke-width: 2;
   stroke: var(--topology-flow-edge);
-  transition: opacity 0.18s ease;
+  transition: opacity var(--app-motion-normal, 180ms) ease;
 }
 
 .topology-flow :deep(.vue-flow__edge.is-dimmed .vue-flow__edge-path) {
@@ -475,39 +441,17 @@ onPaneClick(() => {
 .topology-flow :deep(.topology-minimap) {
   background: var(--topology-flow-minimap-bg);
   border: 1px solid var(--topology-flow-minimap-border);
-  border-radius: 16px;
+  border-radius: var(--app-radius-large);
   box-shadow: var(--topology-flow-minimap-shadow);
   overflow: hidden;
+  line-height: 0;
+}
+
+.topology-flow :deep(.topology-minimap > svg) {
+  display: block;
 }
 
 .topology-flow :deep(.vue-flow__panel.bottom.left) {
   margin: 16px;
-}
-
-.topology-side-panel {
-  position: absolute;
-  z-index: 6;
-  top: 16px;
-  right: 16px;
-  bottom: 16px;
-  width: 468px;
-  overflow: visible;
-}
-
-.topology-drawer-panel {
-  height: 100%;
-}
-
-.topology-panel-enter-active,
-.topology-panel-leave-active {
-  transition:
-    transform 0.22s ease,
-    opacity 0.22s ease;
-}
-
-.topology-panel-enter-from,
-.topology-panel-leave-to {
-  opacity: 0;
-  transform: translateX(14px);
 }
 </style>

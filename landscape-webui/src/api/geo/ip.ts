@@ -8,7 +8,6 @@ import {
   refreshGeoIpCache,
   refreshGeoIpConfigByName,
   searchGeoIpCache,
-  lookupGeoIpAddress,
   getGeoIpCacheDetail,
   updateGeoIpByUpload as _updateGeoIpByUpload,
 } from "@landscape-router/types/api/geo-ips/geo-ips";
@@ -17,15 +16,13 @@ import type {
   QueryGeoKey,
   GeoIpConfig,
   GeoIpSourceConfig,
-  GeoIpLookupResult,
+  IpConfig,
 } from "@landscape-router/types/api/schemas";
+import customInstance from "@landscape-router/types/mutator";
 
-export type { GeoIpLookupResult };
-
-export async function lookup_geo_ip_address(
-  ip: string,
-): Promise<GeoIpLookupResult[]> {
-  return lookupGeoIpAddress({ ip });
+export interface GeoIpLookupResult {
+  key: GeoFileCacheKey;
+  values: IpConfig[];
 }
 
 export async function get_geo_ip_configs(
@@ -83,6 +80,16 @@ export async function get_geo_ip_cache_detail(
   key: GeoFileCacheKey,
 ): Promise<GeoIpConfig> {
   return getGeoIpCacheDetail(key);
+}
+
+export function lookup_geo_ip_address(
+  ip: string,
+): Promise<GeoIpLookupResult[]> {
+  return customInstance<{ data?: GeoIpLookupResult[] }>({
+    url: "/api/v1/geo/ips/cache/lookup",
+    method: "GET",
+    params: { ip },
+  });
 }
 
 export async function update_geo_ip_by_upload(

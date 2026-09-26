@@ -9,7 +9,7 @@ import type {
   GeoFileCacheKey,
   GeoSiteSourceConfig,
 } from "@landscape-router/types/api/schemas";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
 const key = defineModel<string | null>("geo_key", {
@@ -64,6 +64,9 @@ const geo_name_options = computed(() => {
 });
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
+onUnmounted(() => {
+  if (searchTimer) clearTimeout(searchTimer);
+});
 function handleSearch(query: string) {
   if (searchTimer) clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
@@ -165,16 +168,16 @@ const attribute_options = computed(() => {
 });
 </script>
 <template>
-  <n-flex :size="[10, 0]" :wrap="false" align="center">
+  <n-flex class="dns-geo-select" :size="[10, 0]" :wrap="false" align="center">
     <n-popover trigger="hover">
       <template #trigger>
         <n-checkbox v-model:checked="inverse"> </n-checkbox>
       </template>
       <span>{{ t("common.inverse") }} </span>
     </n-popover>
-    <n-input-group>
+    <n-input-group style="flex: 1; min-width: 0">
       <n-select
-        :style="{ width: '33%' }"
+        :style="{ width: '42%' }"
         v-model:value="name"
         filterable
         :placeholder="t('common.select_geo_name')"
@@ -200,7 +203,7 @@ const attribute_options = computed(() => {
       />
 
       <n-select
-        :style="{ width: '120px' }"
+        class="dns-geo-select__attribute"
         v-model:value="attribute_key"
         filterable
         :placeholder="t('common.filter_attr')"
@@ -211,3 +214,14 @@ const attribute_options = computed(() => {
     </n-input-group>
   </n-flex>
 </template>
+
+<style scoped>
+.dns-geo-select {
+  flex: 1;
+  min-width: 0;
+}
+.dns-geo-select__attribute {
+  width: 100px;
+  flex: 0 0 100px;
+}
+</style>

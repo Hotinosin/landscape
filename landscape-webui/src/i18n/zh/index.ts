@@ -35,8 +35,8 @@ import natUi from "./nat/index";
 import natErr from "./nat/error";
 import networkUi from "./network/index";
 import notFoundUi from "./not_found/index";
-import unavailableUi from "./unavailable/index";
 import pppoeUi from "./pppoe/index";
+import pluginUi from "./plugin/index";
 import sysinfoUi from "./sysinfo/index";
 import terminalUi from "./terminal/index";
 import topologyUi from "./topology/index";
@@ -69,8 +69,8 @@ export default {
   nat: natUi,
   network: networkUi,
   not_found: notFoundUi,
-  unavailable: unavailableUi,
   pppoe: pppoeUi,
+  plugin: pluginUi,
   sysinfo: sysinfoUi,
   terminal: terminalUi,
   topology: topologyUi,

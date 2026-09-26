@@ -9,7 +9,6 @@ import {
   sync_ddns_job,
 } from "@/api/domain/ddns";
 import { get_dns_provider_profiles } from "@/api/domain/provider_profile";
-import { useWindowSize } from "@vueuse/core";
 import type {
   DdnsFamilyRuntime,
   DdnsJob,
@@ -23,20 +22,24 @@ import { computed, h, onMounted, ref } from "vue";
 import {
   NButton,
   NFlex,
-  NPopconfirm,
   NTag,
   useMessage,
   type DataTableColumns,
 } from "naive-ui";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import EditButton from "@/components/common/EditButton.vue";
+import DeleteButton from "@/components/common/DeleteButton.vue";
+import StandardEnableSwitch from "@/components/common/StandardEnableSwitch.vue";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useEnrolledDeviceStore } from "@/stores/enrolled_device";
 import { useI18n } from "vue-i18n";
+import { Renew } from "@vicons/carbon";
+import DnsProviderQuickCreateModal from "@/components/domain/DnsProviderQuickCreateModal.vue";
+import { usePageRequest } from "@/composables/usePageRequest";
 
 const { t } = useI18n();
 const message = useMessage();
 const frontEndStore = useFrontEndStore();
-const items = ref<DdnsJob[]>([]);
 const runtimeMap = ref<Map<string, DdnsJobRuntime>>(new Map());
 const providerProfiles = ref<DnsProviderProfile[]>([]);
 const ifaceOptions = ref<{ label: string; value: string }[]>([]);
@@ -51,17 +54,17 @@ type SourceInputItem =
       wan_pd_id: string;
       family: "ipv6";
     };
-const loading = ref(false);
 const showModal = ref(false);
+const showProviderCreateModal = ref(false);
 const showDetailDrawer = ref(false);
 const saving = ref(false);
 const syncingIds = ref<Set<string>>(new Set());
+const enablingIds = ref<Set<string>>(new Set());
 const editingId = ref<string | null>(null);
 const detailJobId = ref<string | null>(null);
 const formRef = ref();
 const recordInputs = ref<string[]>([]);
 const sourceInputs = ref<SourceInputItem[]>([]);
-const { width: windowWidth } = useWindowSize();
 const form = ref<DdnsJob>({
   name: "",
   enable: true,
@@ -79,6 +82,16 @@ const formEnabled = computed({
     form.value.enable = value;
   },
 });
+
+const originFormJson = ref("");
+function getSnapshot() {
+  return JSON.stringify({
+    form: form.value,
+    sources: sourceInputs.value,
+    records: recordInputs.value,
+  });
+}
+const isModified = computed(() => getSnapshot() !== originFormJson.value);
 
 const enrolledDeviceStore = useEnrolledDeviceStore();
 const familyOptions = [
@@ -114,9 +127,17 @@ const rules = {
   },
 };
 
-const providerOptions = computed(() =>
-  providerProfiles.value.map((item) => ({ label: item.name, value: item.id! })),
-);
+const CREATE_PROVIDER_OPTION = "__create_dns_provider__";
+const providerOptions = computed(() => [
+  ...providerProfiles.value.map((item) => ({
+    label: item.name,
+    value: item.id!,
+  })),
+  {
+    label: `${t("common.create")} ${t("dns_provider.provider_profile")}`,
+    value: CREATE_PROVIDER_OPTION,
+  },
+]);
 const selectedProviderProfile = computed(
   () =>
     providerProfiles.value.find(
@@ -140,11 +161,6 @@ const useProfileDefaultTtl = computed({
 const selectedDetailJob = computed(
   () => items.value.find((item) => item.id === detailJobId.value) ?? null,
 );
-
-const detailDrawerWidth = computed(() => {
-  const width = windowWidth.value || 920;
-  return width < 768 ? width : 920;
-});
 
 const detailDrawerTitle = computed(() => {
   if (!selectedDetailJob.value) return t("ddns.ddns_job_details");
@@ -184,11 +200,11 @@ function resetForm(item?: DdnsJob) {
     },
   ];
   recordInputs.value = item?.records?.map((record) => record.name) ?? ["@"];
+  originFormJson.value = getSnapshot();
 }
 
-async function refresh() {
-  loading.value = true;
-  try {
+const listRequest = usePageRequest(
+  async () => {
     const [jobs, runtimeStatuses, profiles, wanCandidates, prefixInfos] =
       await Promise.all([
         get_ddns_jobs(),
@@ -197,25 +213,41 @@ async function refresh() {
         get_wan_candidates(),
         get_current_ip_prefix_info(),
       ]);
-    items.value = jobs;
-    runtimeMap.value = new Map(
-      runtimeStatuses.map((item) => [item.job_id, item]),
-    );
-    providerProfiles.value = profiles;
-    ifaceOptions.value = wanCandidates.map((name: string) => ({
-      label: name,
-      value: name,
-    }));
-    wanPdOptions.value = Array.from(prefixInfos.entries()).map(
-      ([key, value]) => ({
-        label: key,
-        value: key,
-        disabled: value === null,
-      }),
-    );
-  } finally {
-    loading.value = false;
-  }
+    return { jobs, runtimeStatuses, profiles, wanCandidates, prefixInfos };
+  },
+  {
+    initialData: {
+      jobs: [] as DdnsJob[],
+      runtimeStatuses: [] as DdnsJobRuntime[],
+      profiles: [] as DnsProviderProfile[],
+      wanCandidates: [] as string[],
+      prefixInfos: new Map(),
+    },
+    onSuccess: ({ runtimeStatuses, profiles, wanCandidates, prefixInfos }) => {
+      runtimeMap.value = new Map(
+        runtimeStatuses.map((item) => [item.job_id, item]),
+      );
+      providerProfiles.value = profiles;
+      ifaceOptions.value = wanCandidates.map((name: string) => ({
+        label: name,
+        value: name,
+      }));
+      wanPdOptions.value = Array.from(prefixInfos.entries()).map(
+        ([key, value]) => ({
+          label: key,
+          value: key,
+          disabled: value === null,
+        }),
+      );
+    },
+  },
+);
+const items = computed(() => listRequest.data.value.jobs);
+const loading = listRequest.loading;
+const refresh = listRequest.refresh;
+
+function rowKey(row: DdnsJob) {
+  return row.id ?? row.name;
 }
 
 function providerName(id: string) {
@@ -360,6 +392,80 @@ function detailRecords(job: DdnsJob | null) {
   );
 }
 
+type DdnsDetailRecord = ReturnType<typeof detailRecords>[number];
+const detailColumns = computed<DataTableColumns<DdnsDetailRecord>>(() => [
+  {
+    title: t("ddns.record_name"),
+    key: "name",
+    width: 120,
+    render: (row) => frontEndStore.MASK_INFO(row.name),
+  },
+  {
+    title: "IPv4",
+    key: "ipv4_status",
+    width: 100,
+    render: (row) => renderFamilyStatus(row.ipv4.status),
+  },
+  {
+    title: "IPv4 IP",
+    key: "ipv4_ip",
+    width: 180,
+    render: (row) => formatIp(row.ipv4.last_published_ips),
+  },
+  {
+    title: t("cert.cert_status_message"),
+    key: "ipv4_message",
+    width: 220,
+    render: (row) => formatRuntimeSummary(row.ipv4),
+  },
+  {
+    title: t("ddns.next_retry_at"),
+    key: "ipv4_retry",
+    width: 170,
+    render: (row) => formatRetry(row.ipv4),
+  },
+  {
+    title: "IPv4 Error",
+    key: "ipv4_error",
+    width: 180,
+    render: (row) => formatError(row.ipv4.last_error),
+  },
+  {
+    title: "IPv6",
+    key: "ipv6_status",
+    width: 100,
+    render: (row) => renderFamilyStatus(row.ipv6.status),
+  },
+  {
+    title: "IPv6 IP",
+    key: "ipv6_ip",
+    width: 220,
+    render: (row) => formatIp(row.ipv6.last_published_ips),
+  },
+  {
+    title: t("cert.cert_status_message"),
+    key: "ipv6_message",
+    width: 220,
+    render: (row) => formatRuntimeSummary(row.ipv6),
+  },
+  {
+    title: t("ddns.next_retry_at"),
+    key: "ipv6_retry",
+    width: 170,
+    render: (row) => formatRetry(row.ipv6),
+  },
+  {
+    title: "IPv6 Error",
+    key: "ipv6_error",
+    width: 180,
+    render: (row) => formatError(row.ipv6.last_error),
+  },
+]);
+
+function detailRowKey(row: DdnsDetailRecord) {
+  return row.name;
+}
+
 function mergeRecordItems(records: string[], existing: DdnsRecordConfig[]) {
   const byKey = new Map(
     existing.map((record) => [record.name.toLowerCase(), record]),
@@ -440,9 +546,25 @@ function updateSourceFamily(index: number, value: IpFamily) {
 }
 
 function updateProviderProfile(value: string) {
+  if (value === CREATE_PROVIDER_OPTION) {
+    showProviderCreateModal.value = true;
+    return;
+  }
   form.value.provider_profile_id = value;
   if (!useProfileDefaultTtl.value && form.value.ttl == null) {
     form.value.ttl = selectedProviderDefaultTtl.value;
+  }
+}
+
+async function handleProviderCreated(created?: DnsProviderProfile) {
+  const profiles = await get_dns_provider_profiles();
+  providerProfiles.value = profiles;
+  const createdProfile =
+    (created?.id && profiles.find((item) => item.id === created.id)) ||
+    profiles.find((item) => item.name === created?.name) ||
+    profiles[profiles.length - 1];
+  if (createdProfile?.id) {
+    updateProviderProfile(createdProfile.id);
   }
 }
 
@@ -515,6 +637,19 @@ async function syncNow(id: string) {
   }
 }
 
+async function updateEnabled(job: DdnsJob, enable: boolean) {
+  if (!job.id) return;
+  enablingIds.value.add(job.id);
+  try {
+    await push_ddns_job({ ...job, enable });
+    await refresh();
+  } catch (e: any) {
+    message.error(e?.response?.data || e?.message || "Operation failed");
+  } finally {
+    enablingIds.value.delete(job.id);
+  }
+}
+
 function openDetailDrawer(job: DdnsJob) {
   detailJobId.value = job.id ?? null;
   showDetailDrawer.value = true;
@@ -524,44 +659,33 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
   {
     title: t("ddns.job_name"),
     key: "name",
-    minWidth: 120,
+    width: 120,
     render: (row) => frontEndStore.MASK_INFO(row.name),
   },
   {
     title: t("ddns.zone_name"),
     key: "zone_name",
-    minWidth: 160,
+    width: 140,
     render: (row) => frontEndStore.MASK_INFO(row.zone_name),
   },
   {
     title: t("ddns.records"),
     key: "records",
-    minWidth: 220,
+    width: 170,
     render: (row) => recordsSummary(row) || "-",
   },
   {
     title: t("ddns.source"),
     key: "source",
-    minWidth: 140,
+    width: 120,
     render: (row) => sourceTags(row),
   },
   {
     title: t("dns_provider.provider_profile"),
     key: "provider_profile_id",
-    minWidth: 140,
+    width: 130,
     render: (row) =>
       frontEndStore.MASK_INFO(providerName(row.provider_profile_id)),
-  },
-  {
-    title: t("common.enable"),
-    key: "enable",
-    width: 90,
-    render: (row) =>
-      h(
-        NTag,
-        { size: "small", type: row.enable ? "success" : "default" },
-        () => (row.enable ? t("common.enable") : t("common.disable")),
-      ),
   },
   {
     title: t("common.status"),
@@ -575,13 +699,24 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
   {
     title: t("cert.cert_status_message"),
     key: "status_message",
-    minWidth: 220,
+    width: 170,
     render: (row) => formatRuntimeSummary(getJobRuntime(row)),
+  },
+  {
+    title: t("common.enable"),
+    key: "enable",
+    width: 90,
+    render: (row) =>
+      h(StandardEnableSwitch, {
+        value: row.enable ?? true,
+        loading: row.id ? enablingIds.value.has(row.id) : false,
+        "onUpdate:value": (enable: boolean) => updateEnabled(row, enable),
+      }),
   },
   {
     title: t("common.actions"),
     key: "actions",
-    width: 360,
+    width: 300,
     render: (row) => [
       h(
         NButton,
@@ -597,7 +732,6 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
         {
           size: "small",
           type: "primary",
-          secondary: true,
           style: "margin-left: 8px",
           loading: row.id ? syncingIds.value.has(row.id) : false,
           disabled: !row.enable,
@@ -605,37 +739,18 @@ const columns = computed<DataTableColumns<DdnsJob>>(() => [
         },
         () => t("ddns.sync_now"),
       ),
-      h(
-        NButton,
-        {
-          size: "small",
-          secondary: true,
-          style: "margin-left: 8px",
-          onClick: () => {
-            resetForm(row);
-            showModal.value = true;
-          },
+      h(EditButton, {
+        style: "margin-left: 8px",
+        onClick: () => {
+          resetForm(row);
+          showModal.value = true;
         },
-        () => t("common.edit"),
-      ),
-      h(
-        NPopconfirm,
-        { onPositiveClick: () => remove(row.id!) },
-        {
-          trigger: () =>
-            h(
-              NButton,
-              {
-                size: "small",
-                type: "error",
-                secondary: true,
-                style: "margin-left: 8px",
-              },
-              () => t("common.delete"),
-            ),
-          default: () => t("common.confirm_delete"),
-        },
-      ),
+      }),
+      h(DeleteButton, {
+        style: "margin-left: 8px",
+        item: frontEndStore.MASK_INFO(row.name),
+        onConfirm: () => remove(row.id!),
+      }),
     ],
   },
 ]);
@@ -658,113 +773,79 @@ onMounted(async () => {
 </script>
 
 <template>
-  <n-flex vertical style="flex: 1">
-    <n-flex justify="space-between">
+  <n-flex vertical class="standard-content-page">
+    <n-flex justify="space-between" class="standard-list-toolbar">
       <n-button
+        type="primary"
         @click="
           resetForm();
           showModal = true;
         "
         >{{ t("common.create") }}</n-button
       >
-      <n-button :loading="loading" @click="refresh">{{
-        t("common.refresh")
-      }}</n-button>
+      <n-button :loading="loading" secondary @click="refresh">
+        <template #icon
+          ><n-icon><Renew /></n-icon
+        ></template>
+        {{ t("common.refresh") }}
+      </n-button>
     </n-flex>
 
-    <n-data-table
+    <StandardDataTable
       :columns="columns"
       :data="items"
-      :bordered="false"
-      :single-line="false"
+      :loading="loading"
+      :error="listRequest.error.value"
+      :row-key="rowKey"
+      :scroll-x="1200"
+      @retry="listRequest.retry"
     />
 
-    <n-drawer
+    <ConfigModal
       v-model:show="showDetailDrawer"
-      placement="right"
-      :width="detailDrawerWidth"
+      :show-switch="false"
+      width="min(900px, calc(100vw - 32px))"
+      max-height="calc(100vh - 120px)"
+      :title="detailDrawerTitle"
     >
-      <n-drawer-content :title="detailDrawerTitle" closable>
-        <template v-if="selectedDetailJob">
-          <n-flex vertical :size="12">
-            <n-flex :size="8" wrap>
-              <n-tag size="small">{{
-                frontEndStore.MASK_INFO(selectedDetailJob.zone_name)
-              }}</n-tag>
-              <component :is="() => sourceTags(selectedDetailJob)" />
-              <n-tag
-                size="small"
-                :type="statusType(aggregateStatus(selectedDetailJob))"
-              >
-                {{ aggregateStatus(selectedDetailJob) }}
-              </n-tag>
-            </n-flex>
-
-            <div>
-              {{ formatRuntimeSummary(getJobRuntime(selectedDetailJob)) }}
-            </div>
-
-            <div class="ddns-detail-table-wrapper">
-              <table class="ddns-detail-table">
-                <thead>
-                  <tr>
-                    <th>{{ t("ddns.record_name") }}</th>
-                    <th>IPv4</th>
-                    <th>IPv4 IP</th>
-                    <th>{{ t("cert.cert_status_message") }}</th>
-                    <th>{{ t("ddns.next_retry_at") }}</th>
-                    <th>IPv4 Error</th>
-                    <th>IPv6</th>
-                    <th>IPv6 IP</th>
-                    <th>{{ t("cert.cert_status_message") }}</th>
-                    <th>{{ t("ddns.next_retry_at") }}</th>
-                    <th>IPv6 Error</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="record in detailRecords(selectedDetailJob)"
-                    :key="record.name"
-                  >
-                    <td>{{ frontEndStore.MASK_INFO(record.name) }}</td>
-                    <td>
-                      <n-tag
-                        size="small"
-                        :type="statusType(record.ipv4.status)"
-                      >
-                        {{ record.ipv4.status ?? "idle" }}
-                      </n-tag>
-                    </td>
-                    <td>{{ formatIp(record.ipv4.last_published_ips) }}</td>
-                    <td>{{ formatRuntimeSummary(record.ipv4) }}</td>
-                    <td>{{ formatRetry(record.ipv4) }}</td>
-                    <td>{{ formatError(record.ipv4.last_error) }}</td>
-                    <td>
-                      <n-tag
-                        size="small"
-                        :type="statusType(record.ipv6.status)"
-                      >
-                        {{ record.ipv6.status ?? "idle" }}
-                      </n-tag>
-                    </td>
-                    <td>{{ formatIp(record.ipv6.last_published_ips) }}</td>
-                    <td>{{ formatRuntimeSummary(record.ipv6) }}</td>
-                    <td>{{ formatRetry(record.ipv6) }}</td>
-                    <td>{{ formatError(record.ipv6.last_error) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+      <template v-if="selectedDetailJob">
+        <n-flex vertical :size="12">
+          <n-flex :size="8" wrap>
+            <n-tag size="small">{{
+              frontEndStore.MASK_INFO(selectedDetailJob.zone_name)
+            }}</n-tag>
+            <component :is="() => sourceTags(selectedDetailJob)" />
+            <n-tag
+              size="small"
+              :type="statusType(aggregateStatus(selectedDetailJob))"
+            >
+              {{ aggregateStatus(selectedDetailJob) }}
+            </n-tag>
           </n-flex>
-        </template>
-      </n-drawer-content>
-    </n-drawer>
+
+          <div>
+            {{ formatRuntimeSummary(getJobRuntime(selectedDetailJob)) }}
+          </div>
+
+          <StandardDataTable
+            :columns="detailColumns"
+            :data="detailRecords(selectedDetailJob)"
+            :row-key="detailRowKey"
+            :scroll-x="1880"
+            :max-height="480"
+            size="small"
+          />
+        </n-flex>
+      </template>
+    </ConfigModal>
 
     <ConfigModal
       v-model:show="showModal"
       v-model:enabled="formEnabled"
+      :show-switch="false"
+      :dirty="isModified"
       :title="t('ddns.ddns_jobs')"
-      width="680px"
+      width="var(--app-secondary-modal-width)"
     >
       <n-form
         ref="formRef"
@@ -773,9 +854,12 @@ onMounted(async () => {
         label-placement="left"
         label-width="auto"
       >
-        <n-form-item :label="t('ddns.job_name')" path="name"
-          ><n-input v-model:value="form.name"
-        /></n-form-item>
+        <n-form-item :label="t('ddns.job_name')" path="name">
+          <n-input
+            v-model:value="form.name"
+            :placeholder="t('ddns.job_name_placeholder')"
+          />
+        </n-form-item>
         <n-form-item :label="t('ddns.zone_name')" path="zone_name">
           <n-input v-model:value="form.zone_name" placeholder="example.com" />
         </n-form-item>
@@ -851,31 +935,29 @@ onMounted(async () => {
             @update:value="updateProviderProfile"
           />
         </n-form-item>
-        <n-form-item :label="t('ddns.ttl')">
-          <n-flex vertical style="width: 100%" :size="8">
-            <n-flex :wrap="false" align="center" style="width: 100%" :size="8">
-              <n-switch v-model:value="useProfileDefaultTtl">
-                <template #checked>{{ t("ddns.follow_profile_ttl") }}</template>
-                <template #unchecked>{{ t("ddns.custom_ttl") }}</template>
-              </n-switch>
+        <n-form-item>
+          <template #label>
+            <span class="ddns-ttl-label">
+              <span>{{ t("ddns.follow_profile_ttl") }}</span>
+              <small v-if="useProfileDefaultTtl">
+                {{ t("ddns.current_ttl", { ttl: selectedProviderDefaultTtl }) }}
+              </small>
+            </span>
+          </template>
+          <n-flex align="center" :wrap="false" :size="8" style="width: 100%">
+            <n-switch v-model:value="useProfileDefaultTtl" size="medium" />
+            <template v-if="!useProfileDefaultTtl">
+              <n-text style="white-space: nowrap">
+                {{ t("ddns.custom_ttl") }}
+              </n-text>
               <n-input-number
-                :value="
-                  useProfileDefaultTtl ? selectedProviderDefaultTtl : form.ttl
-                "
-                :disabled="useProfileDefaultTtl"
+                :value="form.ttl"
                 :min="1"
                 :precision="0"
                 style="flex: 1"
                 @update:value="form.ttl = $event ?? undefined"
               />
-            </n-flex>
-            <div class="ddns-form-hint">
-              {{
-                useProfileDefaultTtl
-                  ? `${t("ddns.follow_profile_ttl_hint")} ${selectedProviderDefaultTtl}`
-                  : t("ddns.custom_ttl_hint")
-              }}
-            </div>
+            </template>
           </n-flex>
         </n-form-item>
       </n-form>
@@ -884,44 +966,39 @@ onMounted(async () => {
         {{ t("ddns.zone_records_hint") }}
       </n-alert>
 
-      <template #footer>
+      <template #footer="{ close }">
         <n-flex justify="space-between">
-          <n-button @click="showModal = false">{{
+          <n-button @click="close">{{
             t("common.cancel")
           }}</n-button>
-          <n-button type="primary" :loading="saving" @click="save">{{
-            t("common.save")
-          }}</n-button>
+          <n-button
+            type="primary"
+            :loading="saving"
+            :disabled="!isModified"
+            @click="save"
+          >
+            {{ t("common.save") }}
+          </n-button>
         </n-flex>
       </template>
     </ConfigModal>
+    <DnsProviderQuickCreateModal
+      v-model:show="showProviderCreateModal"
+      @created="handleProviderCreated"
+    />
   </n-flex>
 </template>
 
 <style scoped>
-.ddns-detail-table-wrapper {
-  overflow-x: auto;
+.ddns-ttl-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-xs);
 }
 
-.ddns-form-hint {
-  color: rgba(128, 128, 128, 0.9);
-  font-size: 12px;
-}
-
-.ddns-detail-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.ddns-detail-table th,
-.ddns-detail-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.18);
-  text-align: left;
-  vertical-align: top;
-}
-
-.ddns-detail-table th {
-  font-weight: 600;
+.ddns-ttl-label small {
+  color: var(--app-text-muted-color);
+  font-size: var(--app-font-size-caption);
+  font-weight: 400;
 }
 </style>

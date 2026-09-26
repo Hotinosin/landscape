@@ -10,19 +10,6 @@ interface Prop {
 const enrolledDeviceStore = useEnrolledDeviceStore();
 const props = defineProps<Prop>();
 
-const tagType = computed(() => {
-  switch (props.rule.mode.t) {
-    case "ip":
-      return "info";
-    case "device":
-      return "success";
-    case "mac":
-      return "warning";
-    default:
-      return "default";
-  }
-});
-
 const label = computed(() => {
   switch (props.rule.mode.t) {
     case "ip":
@@ -45,7 +32,7 @@ const label = computed(() => {
 </script>
 
 <template>
-  <n-tag :bordered="false" :type="tagType">
+  <n-tag class="semantic-tag--entry" :bordered="false">
     {{ label }}
   </n-tag>
 </template>

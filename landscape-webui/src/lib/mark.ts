@@ -19,7 +19,7 @@ export class WanIpRuleConfigClass implements WanIpRuleConfig {
 
   constructor(obj: Partial<WanIpRuleConfig> = {}) {
     this.id = obj?.id;
-    this.name = obj?.name;
+    this.name = obj?.name ?? null;
     this.index = obj?.index ?? -1;
     this.enable = obj?.enable ?? true;
     this.mark = convert_flow_mark(obj.mark);

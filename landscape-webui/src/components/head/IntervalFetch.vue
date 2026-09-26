@@ -1,90 +1,60 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
-
-import { CountdownInst, CountdownProps } from "naive-ui";
-import { SpinnerIos20Regular } from "@vicons/fluent";
-import { PauseFilled, Renew } from "@vicons/carbon";
+import { Renew, WarningAlt } from "@vicons/carbon";
 import { useI18n } from "vue-i18n";
 
 import { useFetchIntervalStore } from "@/stores/fetch_interval";
 
-// import { Spinner } from "@vicons/fa";
-
 const fetchIntervalStore = useFetchIntervalStore();
 const { t } = useI18n();
+const edit_interval = ref(fetchIntervalStore.interval_time);
 
-const countdownRef = ref<CountdownInst | null>();
 onMounted(() => {
-  fetchIntervalStore.SETTING_CALLBACK(() => {
-    countdownRef.value?.reset();
-  });
+  fetchIntervalStore.SETTING_CALLBACK(() => {});
   fetchIntervalStore.IMMEDIATELY_EXECUTE();
 });
 
-onUnmounted(() => {
-  fetchIntervalStore.destroy();
-});
-
-const renderCountdown: CountdownProps["render"] = ({
-  hours,
-  minutes,
-  seconds,
-}) => {
-  if (hours !== 0) {
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-      2,
-      "0",
-    )}:${String(seconds).padStart(2, "0")}`;
-  } else if (minutes !== 0) {
-    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  } else if (minutes !== 0) {
-    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  } else if (seconds != 0) {
-    return `${String(seconds).padStart(2, "0")}`;
-  } else {
-    return `00`;
-  }
-};
-
-const edit_interval = ref(fetchIntervalStore.interval_time);
+onUnmounted(() => fetchIntervalStore.destroy());
 
 function handleUpdateShow() {
   edit_interval.value = fetchIntervalStore.interval_time;
 }
 
-function confirmChangeImterval() {
+function confirmChangeInterval() {
   fetchIntervalStore.interval_time = edit_interval.value;
   fetchIntervalStore.IMMEDIATELY_EXECUTE();
 }
 </script>
 
 <template>
-  <n-flex style="max-height: 24px; overflow: hidden" align="center">
-    <n-popover @update:show="handleUpdateShow" trigger="hover">
+  <n-flex align="center">
+    <n-popover
+      v-if="fetchIntervalStore.error_message"
+      :show="true"
+      trigger="manual"
+      placement="bottom-end"
+      style="max-width: 360px; white-space: normal; overflow-wrap: anywhere"
+    >
       <template #trigger>
-        <n-switch
-          :round="fetchIntervalStore.enable_interval"
-          v-model:value="fetchIntervalStore.enable_interval"
-        >
-          <template #checked-icon>
-            <n-icon class="element" size="20">
-              <SpinnerIos20Regular />
+        <n-button quaternary circle size="small">
+          <template #icon>
+            <n-icon size="18" color="var(--app-status-warning-color)">
+              <WarningAlt />
             </n-icon>
           </template>
-          <template #unchecked-icon>
-            <n-icon size="20">
-              <PauseFilled />
-            </n-icon>
-          </template>
-          <template #checked>
-            <n-countdown
-              :render="renderCountdown"
-              ref="countdownRef"
-              :duration="fetchIntervalStore.interval_time"
-              :active="fetchIntervalStore.enable_interval"
-            />
-          </template>
-        </n-switch>
+        </n-button>
+      </template>
+      {{ fetchIntervalStore.error_message }}
+    </n-popover>
+    <n-popover trigger="hover" @update:show="handleUpdateShow">
+      <template #trigger>
+        <n-flex align="center" :size="6" :wrap="false">
+          <n-icon size="17"><Renew /></n-icon>
+          <n-switch
+            v-model:value="fetchIntervalStore.enable_interval"
+            size="medium"
+          />
+        </n-flex>
       </template>
 
       <n-input-group>
@@ -92,45 +62,17 @@ function confirmChangeImterval() {
           t("common.refresh_interval_ms")
         }}</n-input-group-label>
         <n-input-number
+          v-model:value="edit_interval"
           style="width: 130px"
           :min="500"
           :max="50000"
-          v-model:value="edit_interval"
           :step="500"
           button-placement="both"
         />
-        <n-button @click="confirmChangeImterval" type="primary" ghost>
+        <n-button type="primary" ghost @click="confirmChangeInterval">
           {{ t("common.confirm") }}
         </n-button>
       </n-input-group>
     </n-popover>
-
-    <!-- <n-icon
-      @click="fetchIntervalStore.enable_interval = false"
-      v-if="fetchIntervalStore.enable_interval"
-      class="element"
-      size="20"
-    >
-      <SpinnerIos20Regular />
-    </n-icon>
-    <n-icon @click="fetchIntervalStore.enable_interval = true" v-else size="20">
-      <PauseFilled />
-    </n-icon> -->
   </n-flex>
 </template>
-
-<style scoped>
-.element {
-  animation: rotateAnimation 5s linear infinite;
-  /* animation: rotateAnimation 5s cubic-bezier(0.25, 0.1, 0.25, 1) infinite; */
-}
-
-@keyframes rotateAnimation {
-  from {
-    transform: rotate(0deg); /* 初始角度为 0 度 */
-  }
-  to {
-    transform: rotate(360deg); /* 最终角度为 360 度 */
-  }
-}
-</style>

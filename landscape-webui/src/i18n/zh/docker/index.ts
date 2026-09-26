@@ -2,8 +2,8 @@ export default {
   docker_run: {
     title: "运行镜像: {image}",
     container_name: "容器名称",
-    container_name_placeholder: "请输入容器名称 (可选)",
-    flow_egress: "用作 Flow 出口",
+    container_name_placeholder: "请输入容器名称",
+    flow_egress: "用作 Flow 策略出口",
     restart_policy: "重启策略",
     entrypoint: "entrypoint",
     entrypoint_placeholder: "请输入 entrypoint (可选)",
@@ -26,10 +26,6 @@ export default {
     edge_label_added: "已添加 edge 标签",
     edge_label_not_added: "未添加 edge 标签",
     entrypoint_params_placeholder: "请输入entrypoint params (可选)",
-  },
-  docker_container: {
-    no_other_tags: "无其他标签",
-    other_tags: "其他标签",
   },
   docker_image: {
     history_tasks: "历史任务",

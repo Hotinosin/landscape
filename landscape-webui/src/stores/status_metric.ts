@@ -1,9 +1,8 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { computed, reactive, ref } from "vue";
 import {
   get_connects_info,
   get_metric_status,
-  get_connect_metric_info,
   get_src_ip_stats,
   get_dst_ip_stats,
   get_iface_stats,
@@ -11,93 +10,228 @@ import {
 } from "@/api/metric";
 import { ServiceStatus, ServiceStatusType } from "@/lib/services";
 import type {
-  ConnectKey,
   ConnectRealtimeStatus,
   IfaceRealtimeStat,
   IpRealtimeStat,
   ConnectGlobalStats,
 } from "@landscape-router/types/api/schemas";
+import type { NetworkTrendState } from "@/components/sysinfo/networkTrend";
+import {
+  addNetworkTrendSample,
+  resetNetworkTrend,
+} from "@/components/sysinfo/networkTrend";
+import { useIfaceNodeStore } from "@/stores/iface_node";
+import { IfaceZoneType } from "@landscape-router/types/api/schemas";
+
+export type FlowIpRealtimeStat = IpRealtimeStat & { flow_id?: number };
+export type MetricResource = "connections" | "src" | "dst" | "iface";
+export type MetricDemand = MetricResource[];
+export interface MetricResourceState {
+  loading: boolean;
+  error?: unknown;
+  hasSucceeded: boolean;
+  lastSuccessAt: number | null;
+}
+
+export function metricDemandForPath(path: string): MetricDemand {
+  if (path === "/") return ["iface", "connections"];
+  if (path === "/metrics/conn/live") return ["connections"];
+  if (path === "/metrics/conn/src") return ["src", "connections"];
+  if (path === "/metrics/conn/dst") return ["dst", "connections"];
+  if (path === "/metrics/conn/iface") return ["iface"];
+  return [];
+}
+
+const newState = (): MetricResourceState => ({
+  loading: false,
+  error: undefined,
+  hasSucceeded: false,
+  lastSuccessAt: null,
+});
 
 export const useMetricStore = defineStore("dns_metric", () => {
-  const activeModes = ref(new Set<"live" | "src" | "dst" | "iface">());
+  const ifaceStore = useIfaceNodeStore();
   const metric_status = ref<ServiceStatus>({ t: ServiceStatusType.Stop });
-  const firewall_info = ref<ConnectRealtimeStatus[]>();
+  const firewall_info = ref<ConnectRealtimeStatus[]>([]);
   const src_ip_stats = ref<IpRealtimeStat[]>([]);
   const dst_ip_stats = ref<IpRealtimeStat[]>([]);
   const iface_stats = ref<IfaceRealtimeStat[]>([]);
   const global_history_stats = ref<ConnectGlobalStats | null>(null);
+  const networkTrend = reactive<NetworkTrendState>({
+    upload: [],
+    download: [],
+  });
+  const demand = ref<MetricDemand>([]);
+  const resourceStates = reactive<Record<MetricResource, MetricResourceState>>({
+    connections: newState(),
+    src: newState(),
+    dst: newState(),
+    iface: newState(),
+  });
+  const statusState = reactive(newState());
+  const globalHistoryState = reactive(newState());
+  const inFlight = new Map<string, Promise<void>>();
+  let networkTrendIntervalMs = 3000;
 
-  const is_down = computed(() => {
-    return (
-      metric_status.value.t == ServiceStatusType.Stop ||
-      metric_status.value.t == ServiceStatusType.Failed
-    );
+  const is_down = computed(
+    () =>
+      metric_status.value.t === ServiceStatusType.Stop ||
+      metric_status.value.t === ServiceStatusType.Failed,
+  );
+
+  const currentState = computed<MetricResourceState>(() => {
+    const states = demand.value.map((name) => resourceStates[name]);
+    return {
+      loading: states.some((state) => state.loading),
+      error: states.find((state) => state.error)?.error,
+      hasSucceeded:
+        states.length > 0 && states.every((state) => state.hasSucceeded),
+      lastSuccessAt:
+        states.length > 0 &&
+        states.every((state) => state.lastSuccessAt !== null)
+          ? Math.min(...states.map((state) => state.lastSuccessAt!))
+          : null,
+    };
   });
 
-  const is_enabled = computed(() => activeModes.value.size > 0);
+  function run(
+    key: string,
+    state: MetricResourceState,
+    load: () => Promise<void>,
+  ) {
+    const existing = inFlight.get(key);
+    if (existing) return existing;
+    state.loading = true;
+    state.error = undefined;
+    const request = load()
+      .then(() => {
+        state.hasSucceeded = true;
+        state.lastSuccessAt = Date.now();
+      })
+      .catch((error) => {
+        state.error = error;
+        throw error;
+      })
+      .finally(() => {
+        state.loading = false;
+        inFlight.delete(key);
+      });
+    inFlight.set(key, request);
+    return request;
+  }
 
-  async function UPDATE_INFO() {
-    if (is_enabled.value) {
-      metric_status.value = await get_metric_status();
+  const loaders: Record<MetricResource, () => Promise<void>> = {
+    connections: () =>
+      get_connects_info().then((result) => {
+        firewall_info.value = result;
+      }),
+    src: () =>
+      get_src_ip_stats().then((result) => {
+        src_ip_stats.value = result;
+      }),
+    dst: () =>
+      get_dst_ip_stats().then((result) => {
+        dst_ip_stats.value = result;
+      }),
+    iface: () =>
+      get_iface_stats().then((result) => {
+        iface_stats.value = result;
+        recordNetworkTrend(result);
+      }),
+  };
 
-      const promises: Promise<any>[] = [];
-      const modes = Array.from(activeModes.value);
+  function recordNetworkTrend(result: IfaceRealtimeStat[]) {
+    const wanIndexes = ifaceStore.net_devs
+      .filter((iface) => iface.zone_type === IfaceZoneType.wan)
+      .map((iface) => iface.index)
+      .sort((left, right) => left - right);
+    const wanSignature = wanIndexes.join(",");
+    if (networkTrend.wanSignature !== wanSignature) {
+      resetNetworkTrend(networkTrend);
+      networkTrend.wanSignature = wanSignature;
+    }
 
-      // Always fetch connects if 'live' is active, OR if src/dst is active (for filtration/aggregation)
-      // But SrcIpMetric/DstIpMetric only need firewall_info if they have filters.
-      // For simplicity, if ANY mode is active, we might need basic info.
-      // However, we can be more precise:
-      if (
-        activeModes.value.has("live") ||
-        activeModes.value.has("src") ||
-        activeModes.value.has("dst")
-      ) {
-        promises.push(
-          get_connects_info().then((res) => (firewall_info.value = res)),
-        );
-      }
+    const wanIndexSet = new Set(wanIndexes);
+    const reports = result
+      .filter((item) => wanIndexSet.has(item.ifindex))
+      .sort((left, right) => left.ifindex - right.ifindex);
+    if (!wanIndexes.length || reports.some((item) => !item.last_report_time))
+      return;
 
-      if (activeModes.value.has("src")) {
-        promises.push(
-          get_src_ip_stats().then((res) => (src_ip_stats.value = res)),
-        );
-      }
+    addNetworkTrendSample(
+      networkTrend,
+      {
+        timestamp: Date.now(),
+        reportKey: reports
+          .map((item) => `${item.ifindex}:${item.last_report_time}`)
+          .join("|"),
+        reportTime: reports.length
+          ? Math.max(...reports.map((item) => item.last_report_time))
+          : (networkTrend.lastReportTime ?? 0),
+        wanSignature,
+        upload: reports.reduce((sum, item) => sum + item.stats.egress_bps, 0),
+        download: reports.reduce(
+          (sum, item) => sum + item.stats.ingress_bps,
+          0,
+        ),
+      },
+      networkTrendIntervalMs,
+    );
+  }
 
-      if (activeModes.value.has("dst")) {
-        promises.push(
-          get_dst_ip_stats().then((res) => (dst_ip_stats.value = res)),
-        );
-      }
+  const loadResource = (name: MetricResource) =>
+    run(name, resourceStates[name], loaders[name]);
 
-      if (activeModes.value.has("iface")) {
-        promises.push(
-          get_iface_stats().then((res) => (iface_stats.value = res)),
-        );
-      }
+  async function UPDATE_DEMAND() {
+    const results = await Promise.allSettled(demand.value.map(loadResource));
+    const failure = results.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (failure) throw failure.reason;
+  }
 
-      await Promise.all(promises);
+  async function UPDATE_INFO(refreshIntervalMs = 3000) {
+    networkTrendIntervalMs = refreshIntervalMs;
+    const results = await Promise.allSettled([
+      run("status", statusState, () =>
+        get_metric_status().then((result) => {
+          metric_status.value = result;
+        }),
+      ),
+      loadResource("iface"),
+      UPDATE_DEMAND(),
+    ]);
+    const failure = results.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (failure) throw failure.reason;
+  }
+
+  function SET_PAGE(path: string, load = true) {
+    demand.value = metricDemandForPath(path);
+    if (load && demand.value.length)
+      void UPDATE_DEMAND().catch(() => undefined);
+  }
+
+  async function REFRESH_CURRENT() {
+    try {
+      await UPDATE_DEMAND();
+    } catch {
+      // Resource state carries the inline error.
     }
   }
 
   async function UPDATE_GLOBAL_HISTORY_STATS(force_refresh = false) {
-    global_history_stats.value = await get_connect_global_stats(
-      force_refresh ? { force_refresh: true } : undefined,
+    return run("global-history", globalHistoryState, () =>
+      get_connect_global_stats(
+        force_refresh ? { force_refresh: true } : undefined,
+      ).then((result) => {
+        global_history_stats.value = result;
+      }),
     );
   }
 
-  async function SET_ENABLE(
-    mode: "live" | "src" | "dst" | "iface",
-    value: boolean,
-  ) {
-    if (value) {
-      activeModes.value.add(mode);
-    } else {
-      activeModes.value.delete(mode);
-    }
-  }
-
   return {
-    SET_ENABLE,
     is_down,
     metric_status,
     firewall_info,
@@ -105,7 +239,16 @@ export const useMetricStore = defineStore("dns_metric", () => {
     dst_ip_stats,
     iface_stats,
     global_history_stats,
+    networkTrend,
+    demand,
+    resourceStates,
+    statusState,
+    globalHistoryState,
+    currentState,
+    SET_PAGE,
     UPDATE_INFO,
+    UPDATE_DEMAND,
+    REFRESH_CURRENT,
     UPDATE_GLOBAL_HISTORY_STATS,
   };
 });

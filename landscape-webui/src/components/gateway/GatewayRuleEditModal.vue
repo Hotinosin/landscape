@@ -13,6 +13,8 @@ import type {
 } from "@landscape-router/types/api/schemas";
 import { computed, ref } from "vue";
 import ConfigModal from "@/components/common/ConfigModal.vue";
+import StandardEnableSwitch from "@/components/common/StandardEnableSwitch.vue";
+import StandardSettingRow from "@/components/common/StandardSettingRow.vue";
 import { get_gateway_rule, push_gateway_rule } from "@/api/gateway";
 import { useFrontEndStore } from "@/stores/front_end_config";
 import { useI18n } from "vue-i18n";
@@ -421,10 +423,12 @@ async function saveRule() {
   <ConfigModal
     v-model:show="show"
     v-model:enabled="rule_enabled"
+    :show-switch="false"
     :title="t('gateway.edit_title')"
     :switch-disabled="!rule || isLegacyRule"
-    width="1100px"
-    @after-enter="enter"
+    width="min(900px, calc(100vw - 32px))"
+    :dirty="isModified"
+    :prepare="enter"
   >
     <div v-if="rule" class="editor-shell">
       <n-scrollbar class="editor-scrollbar" :x-scrollable="false">
@@ -439,73 +443,74 @@ async function saveRule() {
           >
             <div class="editor-sidebar">
               <n-card class="editor-panel" embedded :bordered="false">
-                <n-form label-placement="top">
-                  <n-grid :cols="1" :x-gap="12">
-                    <n-form-item-gi :label="t('gateway.name')">
-                      <n-input v-model:value="rule.name" />
-                    </n-form-item-gi>
+                <n-form>
+                  <StandardSettingRow :label="t('gateway.name')">
+                    <n-input v-model:value="rule.name" />
+                  </StandardSettingRow>
 
-                    <n-form-item-gi
-                      v-if="!isLegacyRule"
-                      :label="t('gateway.match_type')"
+                  <StandardSettingRow
+                    v-if="!isLegacyRule"
+                    :label="t('gateway.match_type')"
+                  >
+                    <n-radio-group
+                      :value="rule.match_rule.t"
+                      @update:value="onMatchTypeChange"
                     >
-                      <n-radio-group
-                        :value="rule.match_rule.t"
-                        @update:value="onMatchTypeChange"
-                      >
-                        <n-radio-button
-                          v-for="opt in matchTypeOptions"
-                          :key="opt.value"
-                          :value="opt.value"
-                          :label="opt.label()"
-                        />
-                      </n-radio-group>
-                    </n-form-item-gi>
+                      <n-radio-button
+                        v-for="opt in matchTypeOptions"
+                        :key="opt.value"
+                        :value="opt.value"
+                        :label="opt.label()"
+                      />
+                    </n-radio-group>
+                  </StandardSettingRow>
 
-                    <n-form-item-gi :label="t('gateway.domains')">
-                      <n-flex vertical style="width: 100%; gap: 8px">
-                        <n-flex
-                          v-for="(domain, index) in domainItems"
-                          :key="index"
-                          align="center"
-                          style="gap: 8px"
-                        >
-                          <n-input
-                            :value="domain"
-                            @update:value="
-                              (value: string) => updateDomain(index, value)
-                            "
-                            :placeholder="t('gateway.domain_placeholder')"
-                            style="flex: 1"
-                            :disabled="isLegacyRule"
-                          />
-                          <n-button
-                            v-if="domainItems.length > 1 && !isLegacyRule"
-                            size="small"
-                            @click="removeDomain(index)"
-                            secondary
-                            type="error"
-                          >
-                            {{ t("common.delete") }}
-                          </n-button>
-                        </n-flex>
+                  <StandardSettingRow :label="t('gateway.domains')">
+                    <n-flex
+                      vertical
+                      style="width: 100%; gap: var(--app-space-sm)"
+                    >
+                      <n-flex
+                        v-for="(domain, index) in domainItems"
+                        :key="index"
+                        align="center"
+                        style="gap: var(--app-space-sm)"
+                      >
+                        <n-input
+                          :value="domain"
+                          @update:value="
+                            (value: string) => updateDomain(index, value)
+                          "
+                          :placeholder="t('gateway.domain_placeholder')"
+                          style="flex: 1"
+                          :disabled="isLegacyRule"
+                        />
                         <n-button
-                          v-if="!isLegacyRule"
-                          @click="addDomain"
-                          dashed
-                          block
+                          v-if="domainItems.length > 1 && !isLegacyRule"
                           size="small"
+                          @click="removeDomain(index)"
+                          secondary
+                          type="error"
                         >
-                          {{ t("gateway.add_domain") }}
+                          {{ t("common.delete") }}
                         </n-button>
                       </n-flex>
-                    </n-form-item-gi>
-                  </n-grid>
+                      <n-button
+                        v-if="!isLegacyRule"
+                        @click="addDomain"
+                        dashed
+                        block
+                        size="small"
+                      >
+                        {{ t("gateway.add_domain") }}
+                      </n-button>
+                    </n-flex>
+                  </StandardSettingRow>
                 </n-form>
               </n-card>
 
               <n-card class="editor-panel" embedded :bordered="false">
-                <n-flex vertical style="gap: 12px">
+                <n-flex vertical style="gap: var(--app-space-section)">
                   <div class="section-title">
                     {{
                       rule.match_rule.t === "host"
@@ -516,12 +521,15 @@ async function saveRule() {
 
                   <n-grid :cols="3" :x-gap="12">
                     <n-form-item-gi :label="t('gateway.targets')" :span="3">
-                      <n-flex vertical style="width: 100%; gap: 8px">
+                      <n-flex
+                        vertical
+                        style="width: 100%; gap: var(--app-space-sm)"
+                      >
                         <n-flex
                           v-for="(target, index) in rule.upstream.targets"
                           :key="index"
                           align="center"
-                          style="gap: 8px"
+                          style="gap: var(--app-space-sm)"
                         >
                           <n-input
                             v-model:value="target.address"
@@ -600,9 +608,9 @@ async function saveRule() {
                       </n-flex>
                     </n-form-item-gi>
 
-                    <n-form-item-gi
+                    <StandardSettingRow
                       :label="t('gateway.load_balance')"
-                      :span="1"
+                      style="grid-column: span 3"
                     >
                       <n-radio-group
                         v-model:value="rule.upstream.load_balance"
@@ -615,39 +623,35 @@ async function saveRule() {
                           :label="opt.label()"
                         />
                       </n-radio-group>
-                    </n-form-item-gi>
+                    </StandardSettingRow>
 
                     <template v-if="rule.match_rule.t === 'host'">
-                      <n-form-item-gi
+                      <StandardSettingRow
                         :label="t('gateway.client_ip_headers')"
-                        :span="1"
-                        :offset="1"
+                        control-width="auto"
+                        style="grid-column: span 3"
                       >
-                        <n-switch
+                        <StandardEnableSwitch
                           :value="rule.upstream.client_ip_headers !== 'none'"
                           @update:value="updateRuleClientIp"
                           :disabled="isLegacyRule"
-                        >
-                          <template #checked>
-                            {{ t("gateway.client_ip_standard") }}
-                          </template>
-                          <template #unchecked>
-                            {{ t("gateway.client_ip_disabled") }}
-                          </template>
-                        </n-switch>
-                      </n-form-item-gi>
+                        />
+                      </StandardSettingRow>
 
-                      <n-form-item-gi
+                      <StandardSettingRow
                         :label="t('gateway.request_headers')"
-                        :span="3"
+                        style="grid-column: span 3"
                       >
-                        <n-flex vertical style="width: 100%; gap: 8px">
+                        <n-flex
+                          vertical
+                          style="width: 100%; gap: var(--app-space-sm)"
+                        >
                           <n-flex
                             v-for="(header, index) in rule.upstream
                               .request_headers ?? []"
                             :key="index"
                             align="center"
-                            style="gap: 8px"
+                            style="gap: var(--app-space-sm)"
                           >
                             <n-input
                               v-model:value="header.name"
@@ -681,12 +685,12 @@ async function saveRule() {
                             {{ t("gateway.add_header") }}
                           </n-button>
                         </n-flex>
-                      </n-form-item-gi>
+                      </StandardSettingRow>
 
-                      <n-form-item-gi
+                      <StandardSettingRow
                         v-if="(rule.upstream.request_headers ?? []).length > 0"
                         :label="t('gateway.header_mode')"
-                        :span="2"
+                        style="grid-column: span 3"
                       >
                         <n-radio-group
                           v-model:value="rule.upstream.header_conflict_mode"
@@ -699,24 +703,20 @@ async function saveRule() {
                             :label="opt.label()"
                           />
                         </n-radio-group>
-                      </n-form-item-gi>
+                      </StandardSettingRow>
                     </template>
 
-                    <n-form-item-gi
+                    <StandardSettingRow
                       :label="t('gateway.health_check')"
-                      :span="2"
+                      control-width="auto"
+                      style="grid-column: span 3"
                     >
-                      <n-switch
+                      <StandardEnableSwitch
                         :value="!!rule.upstream.health_check"
                         @update:value="updateRuleHealthCheck"
                         :disabled="isLegacyRule"
-                      >
-                        <template #checked> {{ t("common.enable") }} </template>
-                        <template #unchecked>
-                          {{ t("common.disable") }}
-                        </template>
-                      </n-switch>
-                    </n-form-item-gi>
+                      />
+                    </StandardSettingRow>
 
                     <template v-if="rule.upstream.health_check">
                       <n-form-item-gi :label="t('gateway.hc_interval')">
@@ -767,7 +767,7 @@ async function saveRule() {
 
             <div v-if="rule.match_rule.t === 'host'" class="editor-main">
               <n-card class="editor-panel" embedded :bordered="false">
-                <n-flex vertical style="gap: 12px">
+                <n-flex vertical style="gap: var(--app-space-section)">
                   <n-flex justify="space-between" align="center">
                     <div class="section-title">
                       {{ t("gateway.path_groups") }}
@@ -812,19 +812,16 @@ async function saveRule() {
                                 }}
                               </n-tag>
                             </n-flex>
-                            <n-text depth="3" style="font-size: 12px">
+                            <n-text
+                              depth="3"
+                              style="font-size: var(--app-font-size-caption)"
+                            >
                               {{ upstreamSummary(group.upstream) }}
                             </n-text>
                           </n-flex>
 
                           <n-flex size="small">
-                            <n-button
-                              size="small"
-                              secondary
-                              @click="openPathGroupModal(index)"
-                            >
-                              {{ t("common.edit") }}
-                            </n-button>
+                            <EditButton @click="openPathGroupModal(index)" />
                             <n-button
                               size="small"
                               secondary
@@ -846,9 +843,9 @@ async function saveRule() {
       </n-scrollbar>
     </div>
 
-    <template #footer>
+    <template #footer="{ close }">
       <n-flex justify="space-between">
-        <n-button @click="show = false">{{ t("common.cancel") }}</n-button>
+        <n-button @click="close">{{ t("common.cancel") }}</n-button>
         <n-button
           :loading="commit_spin"
           @click="saveRule"
@@ -860,232 +857,225 @@ async function saveRule() {
     </template>
   </ConfigModal>
 
-  <n-modal
+  <ConfigModal
     v-model:show="showPathGroupModal"
-    style="width: 760px"
-    class="custom-card"
-    preset="card"
+    :show-switch="false"
+    width="var(--app-tertiary-modal-width)"
+    max-height="var(--app-secondary-modal-max-height)"
     :title="t('gateway.path_group_editor')"
-    :bordered="false"
   >
     <n-scrollbar class="path-group-scrollbar" :x-scrollable="false">
-      <n-form v-if="pathGroupDraft" label-placement="top">
-        <n-grid :cols="2" :x-gap="12">
-          <n-form-item-gi :label="t('gateway.path_prefix')" :span="2">
-            <n-input
-              v-model:value="pathGroupDraft.prefix"
-              :placeholder="t('gateway.path_prefix_placeholder')"
+      <n-form v-if="pathGroupDraft">
+        <StandardSettingRow :label="t('gateway.path_prefix')" layout="stacked">
+          <n-input
+            v-model:value="pathGroupDraft.prefix"
+            :placeholder="t('gateway.path_prefix_placeholder')"
+          />
+        </StandardSettingRow>
+
+        <StandardSettingRow :label="t('gateway.rewrite_mode')" layout="stacked">
+          <n-radio-group v-model:value="pathGroupDraft.rewrite_mode">
+            <n-radio-button
+              v-for="opt in rewriteModeOptions"
+              :key="opt.value"
+              :value="opt.value"
+              :label="opt.label()"
+            />
+          </n-radio-group>
+        </StandardSettingRow>
+
+        <n-divider style="margin: 4px 0 var(--app-space-section)" />
+
+        <StandardSettingRow :label="t('gateway.targets')" layout="stacked">
+          <n-flex vertical style="width: 100%; gap: var(--app-space-sm)">
+            <n-flex
+              v-for="(target, index) in pathGroupDraft.upstream.targets"
+              :key="index"
+              align="center"
+              style="gap: var(--app-space-sm)"
+            >
+              <n-input
+                v-model:value="target.address"
+                :placeholder="t('gateway.target_address')"
+                style="flex: 2"
+              />
+              <n-input-number
+                v-model:value="target.port"
+                :min="1"
+                :max="65535"
+                :placeholder="t('gateway.target_port')"
+                style="flex: 1"
+              />
+              <n-input-number
+                v-model:value="target.weight"
+                :min="1"
+                :max="100"
+                :placeholder="t('gateway.target_weight')"
+                style="width: 80px"
+              />
+              <n-tooltip trigger="hover" :style="{ maxWidth: '240px' }">
+                <template #trigger>
+                  <n-checkbox
+                    :checked="target.tls"
+                    @update:checked="(v: boolean) => setTargetTls(target, v)"
+                  >
+                    TLS
+                  </n-checkbox>
+                </template>
+                {{ t("gateway.target_tls_tip") }}
+              </n-tooltip>
+              <n-tooltip trigger="hover" :style="{ maxWidth: '240px' }">
+                <template #trigger>
+                  <n-checkbox
+                    v-model:checked="target.skip_cert_verify"
+                    :disabled="!target.tls"
+                  >
+                    {{ t("gateway.target_skip_cert_verify") }}
+                  </n-checkbox>
+                </template>
+                {{ t("gateway.target_skip_cert_verify_tip") }}
+              </n-tooltip>
+              <n-button
+                v-if="pathGroupDraft.upstream.targets.length > 1"
+                size="small"
+                @click="removeTarget(pathGroupDraft.upstream, index)"
+                secondary
+                type="error"
+              >
+                {{ t("common.delete") }}
+              </n-button>
+            </n-flex>
+            <n-button
+              @click="addTarget(pathGroupDraft.upstream)"
+              dashed
+              block
+              size="small"
+            >
+              {{ t("gateway.add_target") }}
+            </n-button>
+          </n-flex>
+        </StandardSettingRow>
+
+        <StandardSettingRow :label="t('gateway.load_balance')" layout="stacked">
+          <n-radio-group v-model:value="pathGroupDraft.upstream.load_balance">
+            <n-radio-button
+              v-for="opt in lbOptions"
+              :key="opt.value"
+              :value="opt.value"
+              :label="opt.label()"
+            />
+          </n-radio-group>
+        </StandardSettingRow>
+
+        <StandardSettingRow
+          :label="t('gateway.client_ip_headers')"
+          layout="stacked"
+        >
+          <StandardEnableSwitch
+            :value="pathGroupDraft.upstream.client_ip_headers !== 'none'"
+            @update:value="updateDraftClientIp"
+          />
+        </StandardSettingRow>
+
+        <StandardSettingRow
+          :label="t('gateway.request_headers')"
+          layout="stacked"
+        >
+          <n-flex vertical style="width: 100%; gap: var(--app-space-sm)">
+            <n-flex
+              v-for="(header, index) in pathGroupDraft.upstream
+                .request_headers ?? []"
+              :key="index"
+              align="center"
+              style="gap: var(--app-space-sm)"
+            >
+              <n-input
+                v-model:value="header.name"
+                :placeholder="t('gateway.header_name')"
+                style="flex: 1"
+              />
+              <n-input
+                v-model:value="header.value"
+                :placeholder="t('gateway.header_value')"
+                style="flex: 1.2"
+              />
+              <n-button
+                size="small"
+                @click="removeHeader(pathGroupDraft.upstream, index)"
+                secondary
+                type="error"
+              >
+                {{ t("common.delete") }}
+              </n-button>
+            </n-flex>
+            <n-button
+              @click="addHeader(pathGroupDraft.upstream)"
+              dashed
+              block
+              size="small"
+            >
+              {{ t("gateway.add_header") }}
+            </n-button>
+          </n-flex>
+        </StandardSettingRow>
+
+        <StandardSettingRow
+          v-if="(pathGroupDraft.upstream.request_headers ?? []).length > 0"
+          :label="t('gateway.header_mode')"
+          layout="stacked"
+        >
+          <n-radio-group
+            v-model:value="pathGroupDraft.upstream.header_conflict_mode"
+          >
+            <n-radio-button
+              v-for="opt in headerModeOptions"
+              :key="opt.value"
+              :value="opt.value"
+              :label="opt.label()"
+            />
+          </n-radio-group>
+        </StandardSettingRow>
+
+        <StandardSettingRow :label="t('gateway.health_check')" layout="stacked">
+          <StandardEnableSwitch
+            :value="!!pathGroupDraft.upstream.health_check"
+            @update:value="updateDraftHealthCheck"
+          />
+        </StandardSettingRow>
+
+        <n-grid
+          v-if="pathGroupDraft.upstream.health_check"
+          :cols="2"
+          :x-gap="12"
+        >
+          <n-form-item-gi :label="t('gateway.hc_interval')">
+            <n-input-number
+              v-model:value="pathGroupDraft.upstream.health_check.interval_secs"
+              :min="1"
             />
           </n-form-item-gi>
-
-          <n-form-item-gi :label="t('gateway.rewrite_mode')" :span="2">
-            <n-radio-group v-model:value="pathGroupDraft.rewrite_mode">
-              <n-radio-button
-                v-for="opt in rewriteModeOptions"
-                :key="opt.value"
-                :value="opt.value"
-                :label="opt.label()"
-              />
-            </n-radio-group>
+          <n-form-item-gi :label="t('gateway.hc_timeout')">
+            <n-input-number
+              v-model:value="pathGroupDraft.upstream.health_check.timeout_secs"
+              :min="1"
+            />
           </n-form-item-gi>
-
-          <n-divider style="margin: 4px 0; grid-column: span 2" />
-
-          <n-form-item-gi :label="t('gateway.targets')" :span="2">
-            <n-flex vertical style="width: 100%; gap: 8px">
-              <n-flex
-                v-for="(target, index) in pathGroupDraft.upstream.targets"
-                :key="index"
-                align="center"
-                style="gap: 8px"
-              >
-                <n-input
-                  v-model:value="target.address"
-                  :placeholder="t('gateway.target_address')"
-                  style="flex: 2"
-                />
-                <n-input-number
-                  v-model:value="target.port"
-                  :min="1"
-                  :max="65535"
-                  :placeholder="t('gateway.target_port')"
-                  style="flex: 1"
-                />
-                <n-input-number
-                  v-model:value="target.weight"
-                  :min="1"
-                  :max="100"
-                  :placeholder="t('gateway.target_weight')"
-                  style="width: 80px"
-                />
-                <n-tooltip trigger="hover" :style="{ maxWidth: '240px' }">
-                  <template #trigger>
-                    <n-checkbox
-                      :checked="target.tls"
-                      @update:checked="(v: boolean) => setTargetTls(target, v)"
-                    >
-                      TLS
-                    </n-checkbox>
-                  </template>
-                  {{ t("gateway.target_tls_tip") }}
-                </n-tooltip>
-                <n-tooltip trigger="hover" :style="{ maxWidth: '240px' }">
-                  <template #trigger>
-                    <n-checkbox
-                      v-model:checked="target.skip_cert_verify"
-                      :disabled="!target.tls"
-                    >
-                      {{ t("gateway.target_skip_cert_verify") }}
-                    </n-checkbox>
-                  </template>
-                  {{ t("gateway.target_skip_cert_verify_tip") }}
-                </n-tooltip>
-                <n-button
-                  v-if="pathGroupDraft.upstream.targets.length > 1"
-                  size="small"
-                  @click="removeTarget(pathGroupDraft.upstream, index)"
-                  secondary
-                  type="error"
-                >
-                  {{ t("common.delete") }}
-                </n-button>
-              </n-flex>
-              <n-button
-                @click="addTarget(pathGroupDraft.upstream)"
-                dashed
-                block
-                size="small"
-              >
-                {{ t("gateway.add_target") }}
-              </n-button>
-            </n-flex>
+          <n-form-item-gi :label="t('gateway.hc_healthy_threshold')">
+            <n-input-number
+              v-model:value="
+                pathGroupDraft.upstream.health_check.healthy_threshold
+              "
+              :min="1"
+            />
           </n-form-item-gi>
-
-          <n-form-item-gi :label="t('gateway.load_balance')" :span="2">
-            <n-radio-group v-model:value="pathGroupDraft.upstream.load_balance">
-              <n-radio-button
-                v-for="opt in lbOptions"
-                :key="opt.value"
-                :value="opt.value"
-                :label="opt.label()"
-              />
-            </n-radio-group>
+          <n-form-item-gi :label="t('gateway.hc_unhealthy_threshold')">
+            <n-input-number
+              v-model:value="
+                pathGroupDraft.upstream.health_check.unhealthy_threshold
+              "
+              :min="1"
+            />
           </n-form-item-gi>
-
-          <n-form-item-gi :label="t('gateway.client_ip_headers')" :span="2">
-            <n-switch
-              :value="pathGroupDraft.upstream.client_ip_headers !== 'none'"
-              @update:value="updateDraftClientIp"
-            >
-              <template #checked>
-                {{ t("gateway.client_ip_standard") }}
-              </template>
-              <template #unchecked>
-                {{ t("gateway.client_ip_disabled") }}
-              </template>
-            </n-switch>
-          </n-form-item-gi>
-
-          <n-form-item-gi :label="t('gateway.request_headers')" :span="2">
-            <n-flex vertical style="width: 100%; gap: 8px">
-              <n-flex
-                v-for="(header, index) in pathGroupDraft.upstream
-                  .request_headers ?? []"
-                :key="index"
-                align="center"
-                style="gap: 8px"
-              >
-                <n-input
-                  v-model:value="header.name"
-                  :placeholder="t('gateway.header_name')"
-                  style="flex: 1"
-                />
-                <n-input
-                  v-model:value="header.value"
-                  :placeholder="t('gateway.header_value')"
-                  style="flex: 1.2"
-                />
-                <n-button
-                  size="small"
-                  @click="removeHeader(pathGroupDraft.upstream, index)"
-                  secondary
-                  type="error"
-                >
-                  {{ t("common.delete") }}
-                </n-button>
-              </n-flex>
-              <n-button
-                @click="addHeader(pathGroupDraft.upstream)"
-                dashed
-                block
-                size="small"
-              >
-                {{ t("gateway.add_header") }}
-              </n-button>
-            </n-flex>
-          </n-form-item-gi>
-
-          <n-form-item-gi
-            v-if="(pathGroupDraft.upstream.request_headers ?? []).length > 0"
-            :label="t('gateway.header_mode')"
-            :span="2"
-          >
-            <n-radio-group
-              v-model:value="pathGroupDraft.upstream.header_conflict_mode"
-            >
-              <n-radio-button
-                v-for="opt in headerModeOptions"
-                :key="opt.value"
-                :value="opt.value"
-                :label="opt.label()"
-              />
-            </n-radio-group>
-          </n-form-item-gi>
-
-          <n-form-item-gi :label="t('gateway.health_check')" :span="2">
-            <n-switch
-              :value="!!pathGroupDraft.upstream.health_check"
-              @update:value="updateDraftHealthCheck"
-            >
-              <template #checked> {{ t("common.enable") }} </template>
-              <template #unchecked> {{ t("common.disable") }} </template>
-            </n-switch>
-          </n-form-item-gi>
-
-          <template v-if="pathGroupDraft.upstream.health_check">
-            <n-form-item-gi :label="t('gateway.hc_interval')">
-              <n-input-number
-                v-model:value="
-                  pathGroupDraft.upstream.health_check.interval_secs
-                "
-                :min="1"
-              />
-            </n-form-item-gi>
-            <n-form-item-gi :label="t('gateway.hc_timeout')">
-              <n-input-number
-                v-model:value="
-                  pathGroupDraft.upstream.health_check.timeout_secs
-                "
-                :min="1"
-              />
-            </n-form-item-gi>
-            <n-form-item-gi :label="t('gateway.hc_healthy_threshold')">
-              <n-input-number
-                v-model:value="
-                  pathGroupDraft.upstream.health_check.healthy_threshold
-                "
-                :min="1"
-              />
-            </n-form-item-gi>
-            <n-form-item-gi :label="t('gateway.hc_unhealthy_threshold')">
-              <n-input-number
-                v-model:value="
-                  pathGroupDraft.upstream.health_check.unhealthy_threshold
-                "
-                :min="1"
-              />
-            </n-form-item-gi>
-          </template>
         </n-grid>
       </n-form>
     </n-scrollbar>
@@ -1100,7 +1090,7 @@ async function saveRule() {
         </n-button>
       </n-flex>
     </template>
-  </n-modal>
+  </ConfigModal>
 </template>
 
 <style scoped>
@@ -1116,14 +1106,14 @@ async function saveRule() {
 .editor-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--app-space-lg);
   padding-right: 6px;
 }
 
 .editor-columns {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: 16px;
+  gap: var(--app-space-lg);
   align-items: start;
 }
 
@@ -1136,15 +1126,15 @@ async function saveRule() {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--app-space-lg);
 }
 
 .editor-panel {
-  border-radius: 14px;
+  border-radius: var(--app-radius-large);
 }
 
 .path-group-card {
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--app-backdrop-surface-color);
 }
 
 .path-group-scrollbar {
@@ -1152,7 +1142,7 @@ async function saveRule() {
 }
 
 .section-title {
-  font-size: 14px;
+  font-size: var(--app-font-size-body);
   font-weight: 600;
 }
 

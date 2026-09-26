@@ -8,7 +8,6 @@ import {
   refreshGeoSiteCache,
   refreshGeoSiteConfigByName,
   searchGeoSiteCache,
-  lookupGeoSiteDomain,
   getGeoSiteCacheDetail,
   updateGeoSiteByUpload as _updateGeoSiteByUpload,
 } from "@landscape-router/types/api/geo-sites/geo-sites";
@@ -16,16 +15,14 @@ import type {
   GeoFileCacheKey,
   QueryGeoKey,
   GeoDomainConfig,
+  GeoSiteFileConfig,
   GeoSiteSourceConfig,
-  GeoSiteLookupResult,
 } from "@landscape-router/types/api/schemas";
+import customInstance from "@landscape-router/types/mutator";
 
-export type { GeoSiteLookupResult };
-
-export async function lookup_geo_site_domain(
-  domain: string,
-): Promise<GeoSiteLookupResult[]> {
-  return lookupGeoSiteDomain({ domain });
+export interface GeoSiteLookupResult {
+  key: GeoFileCacheKey;
+  values: GeoSiteFileConfig[];
 }
 
 export async function get_geo_site_configs(
@@ -91,4 +88,14 @@ export async function update_geo_site_by_upload(
 
 export async function refresh_geo_site_by_name(name: string): Promise<void> {
   await refreshGeoSiteConfigByName(name);
+}
+
+export function lookup_geo_site_domain(
+  domain: string,
+): Promise<GeoSiteLookupResult[]> {
+  return customInstance<{ data?: GeoSiteLookupResult[] }>({
+    url: "/api/v1/geo/sites/cache/lookup",
+    method: "GET",
+    params: { domain },
+  });
 }
