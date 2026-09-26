@@ -29,6 +29,10 @@ pub enum HandleMode {
 
 #[derive(Debug, Parser)]
 pub struct CmdParams {
+    /// Run in a managed network namespace instead of a Docker container.
+    #[arg(long, default_value_t = false)]
+    standalone: bool,
+
     #[arg(short = 's', long = "saddr", default_value = "0.0.0.0", env = "LAND_PROXY_SERVER_ADDR")]
     tproxy_server_address: Ipv4Addr,
 
@@ -77,9 +81,10 @@ async fn main() {
 
     // bump_memlock_rlimit();
 
-    let container_id = match get_container_id() {
-        Some(id) => id,
-        None => panic!("Not running in a container or ID not found."),
+    let container_id = if params.standalone {
+        None
+    } else {
+        Some(get_container_id().expect("Not running in a container or ID not found."))
     };
 
     let (ifname, ifindex, peer_ifindex) = match get_first_non_loopback_with_peer() {
@@ -135,14 +140,19 @@ async fn main() {
         .sock_path
         .unwrap_or(PathBuf::from(format!("/{}", NAMESPACE_REGISTER_SOCK_PATH_IN_DOCKER)))
         .join(NAMESPACE_REGISTER_SOCK);
-    let enroll_info = DockerTargetEnroll { id: container_id, ifindex: peer_ifindex as u32 };
-    tokio::select! {
-        _ = run_connection_loop(socket_path, enroll_info) => {
-            tracing::info!("report exit");
+    if let Some(container_id) = container_id {
+        let enroll_info = DockerTargetEnroll { id: container_id, ifindex: peer_ifindex as u32 };
+        tokio::select! {
+            _ = run_connection_loop(socket_path, enroll_info) => {
+                tracing::info!("report exit");
+            }
+            _ = tokio::signal::ctrl_c() => {
+                tracing::info!("Received Ctrl+C, shutting down...");
+            }
         }
-        _ = tokio::signal::ctrl_c() => {
-            tracing::info!("Received Ctrl+C, shutting down...");
-        }
+    } else {
+        tracing::info!("standalone TProxy handler is ready");
+        let _ = tokio::signal::ctrl_c().await;
     }
 
     drop(tproxy_ingress_hook);

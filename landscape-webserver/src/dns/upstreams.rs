@@ -6,7 +6,7 @@ use landscape_common::service::controller::ConfigStoreController;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use landscape_common::dns::upstream::DnsUpstreamError;
+use landscape_common::dns::upstream::{DnsUpstreamError, DnsUpstreamQuicTestResult};
 
 use crate::LandscapeApp;
 use crate::api::JsonBody;
@@ -16,7 +16,25 @@ pub fn get_dns_upstream_config_paths() -> OpenApiRouter<LandscapeApp> {
     OpenApiRouter::new()
         .routes(routes!(get_dns_upstreams, add_dns_upstream))
         .routes(routes!(add_many_dns_upstreams))
+        .routes(routes!(test_dns_upstream_quic))
         .routes(routes!(get_dns_upstream, del_dns_upstream))
+}
+
+#[utoipa::path(
+    post,
+    path = "/upstreams/test-quic",
+    tag = "DNS Upstreams",
+    request_body = DnsUpstreamConfig,
+    responses(
+        (status = 200, body = CommonApiResp<DnsUpstreamQuicTestResult>),
+        (status = 400, description = "Invalid H3 or DoQ upstream configuration"),
+        (status = 500, description = "QUIC resolver could not be created")
+    )
+)]
+async fn test_dns_upstream_quic(
+    JsonBody(config): JsonBody<DnsUpstreamConfig>,
+) -> LandscapeApiResult<DnsUpstreamQuicTestResult> {
+    LandscapeApiResp::success(landscape_dns::test_quic_upstream(config).await?)
 }
 
 #[utoipa::path(

@@ -39,9 +39,13 @@ clap = { workspace = true }
 axum = { workspace = true }
 axum-extra = { workspace = true, features = ["typed-header"] }
 axum-server = { workspace = true, features = ["tls-rustls"] }
+hyper = { workspace = true }
+hyper-util = { workspace = true }
+http-body-util = { workspace = true }
 headers = { workspace = true }
 
 homedir = { workspace = true }
+nix = { workspace = true, features = ["signal", "user", "process"] }
 
 futures = { workspace = true }
 
@@ -57,8 +61,11 @@ tower-http = { workspace = true }
 
 serde = { workspace = true }
 serde_json = { workspace = true }
+serde_yaml = { workspace = true }
 uuid = { workspace = true }
 tempfile = { workspace = true }
+flate2 = { workspace = true }
+tar = { workspace = true }
 
 bollard = { workspace = true }
 

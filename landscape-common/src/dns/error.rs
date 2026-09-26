@@ -110,6 +110,17 @@ pub enum DnsRuleError {
 #[derive(thiserror::Error, Debug, LdApiError)]
 #[api_error(crate_path = "crate")]
 pub enum DnsUpstreamError {
+    #[error("QUIC test requires a DNS-over-HTTPS or DNS-over-QUIC upstream")]
+    #[api_error(id = "dns_upstream.quic_test_requires_quic", status = 400)]
+    QuicTestRequiresQuic,
+
+    #[error("Invalid QUIC test config: {0}")]
+    #[api_error(id = "dns_upstream.quic_test_invalid_config", status = 400)]
+    QuicTestInvalidConfig(String),
+
+    #[error("Failed to create QUIC test resolver")]
+    #[api_error(id = "dns_upstream.quic_test_resolver_failed", status = 500)]
+    QuicTestResolverFailed,
     #[error("DNS upstream config '{0}' not found")]
     #[api_error(id = "dns_upstream.not_found", status = 404)]
     NotFound(ConfigId),

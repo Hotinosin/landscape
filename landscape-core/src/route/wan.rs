@@ -193,10 +193,10 @@ impl IpRouteService {
         {
             let mut lock = self.ipv4_wan_ifaces.write().await;
             lock.retain(|key, value| {
-                if value.is_docker {
+                if value.is_docker && !key.starts_with("plugin:") {
                     removed_ipv4_owners.push(key.clone());
                 }
-                !value.is_docker
+                !value.is_docker || key.starts_with("plugin:")
             });
         }
 
@@ -204,10 +204,10 @@ impl IpRouteService {
         {
             let mut lock = self.ipv6_wan_ifaces.write().await;
             lock.retain(|key, value| {
-                if value.is_docker {
+                if value.is_docker && !key.starts_with("plugin:") {
                     removed_ipv6_owners.push(key.clone());
                 }
-                !value.is_docker
+                !value.is_docker || key.starts_with("plugin:")
             });
         }
 
