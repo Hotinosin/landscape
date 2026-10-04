@@ -59,3 +59,13 @@ Run `bash ./build.sh -t x86_64` or `-t aarch64` inside Ubuntu. Release scripts r
 ## Plugin log rotation
 
 Log API reads are bounded to 64 KiB. Install [the logrotate template](scripts/landscape-plugins.logrotate) on the router and substitute the actual `--home` path (default `/root/.landscape-router`). Run logrotate hourly with a systemd timer or cron. It retains four compressed 10 MiB generations using `copytruncate`, so running processes keep their open log handles. Copytruncate can lose a few lines during rotation; it avoids adding a custom logging daemon.
+
+Cross-build Zig Python package setup (inside Ubuntu):
+
+```sh
+uv venv --python 3.12 .zig-venv
+uv pip install --python .zig-venv/bin/python ziglang==0.16.0
+source .zig-venv/bin/activate
+```
+
+Edge images are published only by a manual workflow run after the quality gate.

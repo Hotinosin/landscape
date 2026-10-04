@@ -15,7 +15,7 @@ echo "Building the project for $TARGET_ARCH..."
 
 # 在脚本所在目录下执行 cargo build（假设你的Cargo.toml也在脚本同目录或上层）
 # 如果 cargo 项目在别的子目录，需要适当修改 --manifest-path 或 cd
-cargo build --release \
+cargo build --locked --release \
     --package landscape-ebpf \
     --bin redirect_demo_server \
     --bin redirect_pkg_handler \

@@ -26,3 +26,7 @@ landscape-types/.bindings.lock
 
 # Local environment
 .env
+
+# uv environments
+.venv/
+.zig-venv/

@@ -1,9 +1,6 @@
 name: Build and Package Flow Edge Images
 
 on:
-  push:
-    branches:
-      - edge
   workflow_dispatch:
 
 permissions:
@@ -15,7 +12,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  quality:
+    uses: ./.github/workflows/check.yml
+
   build_rust:
+    needs: quality
     runs-on: ${{ matrix.host }}
     strategy:
       fail-fast: false
@@ -59,10 +60,16 @@ jobs:
           toolchain: 1.98.0
           targets: ${{ matrix.target }}
 
+      - name: Setup uv
+        if: matrix.cross
+        uses: astral-sh/setup-uv@v7
+
       - name: Setup zig and cargo-zigbuild
         if: matrix.cross
         run: |
-          sudo pip3 install --break-system-packages ziglang==0.16.0
+          uv venv --python 3.12 "$RUNNER_TEMP/zig-python"
+          uv pip install --python "$RUNNER_TEMP/zig-python/bin/python" ziglang==0.16.0
+          echo "$RUNNER_TEMP/zig-python/bin" >> "$GITHUB_PATH"
           cargo install --locked cargo-zigbuild --version 0.23.4
 
       - name: Rust Release Build
@@ -71,7 +78,7 @@ jobs:
           if [ "${{ matrix.cross }}" = "true" ]; then
             ./scripts/build_edge_bins.sh "$TARGET_ARCH"
           else
-            cargo build --release \
+            cargo build --locked --release \
               --package landscape-ebpf \
               --bin redirect_demo_server \
               --bin redirect_pkg_handler \
@@ -210,18 +217,13 @@ jobs:
           IMAGE_NAME="ghcr.io/${OWNER_LOWER}/landscape-edge"
 
           digest() {
-            python3 -c "import json;print(json.load(open('digests/digest-$1.json'))['containerimage.digest'])"
+            jq -r '.["containerimage.digest"]' "digests/digest-$1.json"
           }
           AMD64_DIGEST=$(digest amd64)
           ARM64_DIGEST=$(digest arm64)
           RISCV64_DIGEST=$(digest riscv64)
 
-          # push -> 仅日期标签；workflow_dispatch -> 日期 + 滚动 latest
-          # push -> date tag only; workflow_dispatch -> date + rolling latest
-          TAGS=(-t "$IMAGE_NAME:$(date -u +%Y%m%d)")
-          if [ "${{ github.event_name }}" != "push" ]; then
-            TAGS+=(-t "$IMAGE_NAME:latest")
-          fi
+          TAGS=(-t "$IMAGE_NAME:$(date -u +%Y%m%d)" -t "$IMAGE_NAME:latest")
 
           docker buildx imagetools create "${TAGS[@]}" \
             "$IMAGE_NAME@${AMD64_DIGEST}" \

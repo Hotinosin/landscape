@@ -1,8 +1,8 @@
 # Branch archive manifest · 2026-10-04
 
-The following local/fork tips are preserved as local annotated tags. They must be pushed and their peeled remote commit IDs verified before any old branch is removed. This manifest records the migration baseline; tag push and cleanup are pending explicit remote authorization after automatic approval review rejected the upload. No origin branch is deleted or pushed.
+The following local/fork tips are preserved as annotated tags both locally and in Hotinosin/landscape. All 13 remote peeled commit IDs were verified against this manifest before branch deletion. The user explicitly authorized this fork upload and cleanup after the initial automatic approval rejection. No origin branch was deleted or pushed.
 
-| Original ref | Commit | Prepared local archive tag |
+| Original ref | Commit | Verified local and remote archive tag |
 | --- | --- | --- |
 | `refs/heads/codex/extensions-on-dev` | `38f5c8ead79409cc86bdd0ecb9ff1b89c5fbaac8` | `archive/local-codex-extensions-on-dev-2026-10-04` |
 | `refs/heads/codex/webui-heroui-phase1` | `ccf31734be48c335eac2fa78e6eb8dbed1640d2d` | `archive/local-codex-webui-heroui-phase1-2026-10-04` |
@@ -20,6 +20,8 @@ The following local/fork tips are preserved as local annotated tags. They must b
 
 Different local and remote histories have separate tags. The lkit tag preserves its complete release repository tree and history. The five previously created `archive/feat-*-2026-10-04` tags remain available.
 
-After remote verification, detach the clean backend/WebUI worktrees rather than removing their ignored build artifacts. Prune only the two records for missing temporary worktrees. Restore an archive with `git switch -c <name> <archive-tag>`.
+The clean backend/WebUI worktrees were detached, retaining all files and ignored build artifacts. Only the two missing temporary worktree records were pruned. Restore an archive with `git switch -c <name> <archive-tag>`.
 
-Local `main` was fast-forwarded to `origin/main@5dbc4c3096ccd4a5f664734c23c976ffc52fef2b`; its previous tip is preserved by `archive/local-main-2026-10-04`. Other old branch refs are retained until remote tag verification. Local push defaults now point to fork, and custom tracks fork/custom (pending its first remote push).
+Local `main` was fast-forwarded to `origin/main@5dbc4c3096ccd4a5f664734c23c976ffc52fef2b`; its previous tip is preserved by `archive/local-main-2026-10-04`. The seven other local branches and four old fork branches were deleted only after remote tag verification, with expected-tip leases on remote deletion. Local and fork branches now contain only main/custom. Local push defaults point to fork, and custom tracks fork/custom.
+
+The fork default branch is custom. Its source quality run [37182199274](https://github.com/Hotinosin/landscape/actions/runs/37182199274) passed all five checks; the upstream main mirror run [37182199214](https://github.com/Hotinosin/landscape/actions/runs/37182199214) also passed. The obsolete sync-upstream-WebUI workflow was disabled.

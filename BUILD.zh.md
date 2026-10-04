@@ -47,3 +47,13 @@ Mac 包装脚本把 Rust 产物放在 Ubuntu 的 `$HOME/.cache/landscape-custom-
 ## 插件日志轮转
 
 日志 API 最多读取末尾 64 KiB。将 [logrotate 模板](scripts/landscape-plugins.logrotate) 安装到路由器，并按实际 `--home` 路径修改（默认 `/root/.landscape-router`）；以 systemd timer 或 cron 每小时执行。模板保留四份压缩归档，超过 10 MiB 后轮转，`copytruncate` 保持进程的日志句柄；轮转瞬间可能损失少量日志行。
+
+交叉编译的 Zig Python 包通过 uv 安装（在 Ubuntu 内）：
+
+```sh
+uv venv --python 3.12 .zig-venv
+uv pip install --python .zig-venv/bin/python ziglang==0.16.0
+source .zig-venv/bin/activate
+```
+
+Edge 镜像仅由手动 workflow 在质量门禁通过后发布。

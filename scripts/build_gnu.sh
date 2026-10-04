@@ -52,12 +52,12 @@ fi
 # named libelf1t64.
 #
 # 依赖：cargo-zigbuild（cargo install --locked cargo-zigbuild）、
-#       zig（pip3 install ziglang==0.16.0 或官方包）、clang（eBPF C 编译）、
+#       zig（uv pip install --python .zig-venv/bin/python ziglang==0.16.0 或官方包）、clang（eBPF C 编译）、
 #       rustup target add <target>（脚本会自动安装）、
 #       dpkg-deb（解包 .deb）、
 #       pkg-config 与 libelf-dev/zlib1g-dev（宿主侧，libbpf-cargo 会在宿主编译 libbpf-sys）。
 # Dependencies: cargo-zigbuild (cargo install --locked cargo-zigbuild),
-#       zig (pip3 install ziglang==0.16.0 or the official package), clang
+#       zig (uv pip install --python .zig-venv/bin/python ziglang==0.16.0 or the official package), clang
 #       (for eBPF C compilation), rustup target add <target> (installed
 #       automatically by this script), dpkg-deb (to unpack .deb), and
 #       pkg-config and libelf-dev/zlib1g-dev (host side; libbpf-cargo builds
@@ -128,7 +128,7 @@ if ! pkg-config --exists libelf; then
 fi
 
 if ! python3 -m ziglang version >/dev/null 2>&1 && ! command -v zig >/dev/null 2>&1; then
-    echo "Missing dependency: zig (pip3 install ziglang or install from ziglang.org)" >&2
+    echo "Missing dependency: zig (activate a uv environment containing ziglang, or install from ziglang.org)" >&2
     exit 1
 fi
 
