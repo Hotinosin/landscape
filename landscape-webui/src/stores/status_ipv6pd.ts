@@ -12,9 +12,7 @@ export const useIPv6PDStore = defineStore("status_ipv6pd", () => {
     status.value = await get_all_ipv6pd_status();
   }
 
-  function GET_STATUS_BY_IFACE_NAME(
-    name: string,
-  ): ServiceStatus | undefined {
+  function GET_STATUS_BY_IFACE_NAME(name: string): ServiceStatus | undefined {
     return status.value.get(name);
   }
 

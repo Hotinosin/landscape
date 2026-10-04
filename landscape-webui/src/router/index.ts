@@ -1,3 +1,4 @@
+import { useCapabilityStore } from "@/stores/capability";
 import {
   createRouter,
   createWebHistory,
@@ -10,6 +11,10 @@ import metric_route from "./metric";
 import self_monitor_route from "./self_monitor";
 
 const inner_zone: Array<RouteRecordRaw> = [
+  {
+    path: "/unavailable",
+    component: () => import("@/views/error/Unavailable.vue"),
+  },
   {
     path: "/",
     name: "routes.dashboard",
@@ -65,6 +70,7 @@ const inner_zone: Array<RouteRecordRaw> = [
   },
   {
     path: "/plugins",
+    meta: { capability: "plugins" },
     name: "routes.plugins",
     component: () => import("@/views/Plugins.vue"),
   },
@@ -124,6 +130,7 @@ const inner_zone: Array<RouteRecordRaw> = [
   },
   {
     path: "/gateway",
+    meta: { capability: "gateway" },
     name: "routes.gateway",
     component: () => import("@/views/Gateway.vue"),
   },
@@ -168,11 +175,16 @@ export function isExpiredToken(token: string, now = Date.now()): boolean {
   }
 }
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const token = localStorage.getItem(LANDSCAPE_TOKEN_KEY);
   if (to.path !== "/login" && (!token || isExpiredToken(token))) {
     if (token) clearLandscapeSession();
     return { path: "/login", state: { redirect: to.fullPath } };
+  }
+  if (to.meta.capability) {
+    const capabilities = useCapabilityStore();
+    await capabilities.LOAD();
+    if (!capabilities.HAS(String(to.meta.capability))) return "/unavailable";
   }
 });
 

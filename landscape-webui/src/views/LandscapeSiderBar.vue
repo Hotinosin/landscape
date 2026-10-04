@@ -1,4 +1,27 @@
 <script setup lang="ts">
+import { useCapabilityStore } from "@/stores/capability";
+const capabilities = useCapabilityStore();
+const menuCapabilities: Record<string, string> = {
+  plugins: "plugins",
+  gateway: "gateway",
+  "metrics/conn/history": "metric_persistent",
+  "metrics/dns": "metric_persistent",
+  "self-monitor/memory": "mem_track",
+};
+function availableMenu(items: MenuOption[]): MenuOption[] {
+  return items
+    .filter(
+      (item) =>
+        !menuCapabilities[String(item.key)] ||
+        capabilities.HAS(menuCapabilities[String(item.key)]),
+    )
+    .map((item) => ({
+      ...item,
+      children: item.children
+        ? availableMenu(item.children as MenuOption[])
+        : undefined,
+    }));
+}
 import type { MenuOption } from "naive-ui";
 import type { Component } from "vue";
 import { computed, h, ref, watch } from "vue";
@@ -116,163 +139,170 @@ function renderIcon(icon: Component) {
   return () => h(NIcon, null, { default: () => h(icon) });
 }
 
-const menuOptions = computed<MenuOption[]>(() => [
-  {
-    label: t("routes.dashboard"),
-    key: "",
-    icon: renderIcon(Dashboard),
-  },
-  {
-    label: t("routes.network"),
-    key: "network",
-    icon: renderIcon(Network3),
-    children: [
-      {
-        label: t("routes.interface-config"),
-        key: "network/settings",
-        icon: renderIcon(NetworkAdminControl),
-      },
-      {
-        label: t("routes.address-allocation"),
-        key: "network/allocations",
-        icon: renderIcon(IbmCloudSubnets),
-      },
-      {
-        label: t("routes.mac-binding"),
-        key: "mac-binding",
-        icon: renderIcon(Devices),
-      },
-    ],
-  },
-  {
-    label: t("routes.traffic-policy"),
-    key: "traffic-policy",
-    icon: renderIcon(Flow),
-    children: [
-      {
-        label: t("routes.flow"),
-        key: "flow",
-        icon: renderIcon(FlowStream),
-      },
-      {
-        label: t("routes.dns-config"),
-        key: "dns/config",
-        icon: renderIcon(DnsServices),
-      },
-      {
-        label: t("routes.dns-redirect"),
-        key: "dns/redirect",
-        icon: renderIcon(Rule),
-      },
-      {
-        label: t("routes.geo"),
-        key: "geo/domain",
-        icon: renderIcon(Earth),
-      },
-    ],
-  },
-  {
-    label: t("routes.security-forwarding"),
-    key: "security-forwarding",
-    icon: renderIcon(Wall),
-    children: [
-      {
-        label: t("routes.firewall"),
-        key: "firewall-nat/firewall",
-        icon: renderIcon(SecurityServices),
-      },
-      {
-        label: t("routes.port-mapping"),
-        key: "firewall-nat/port-mapping",
-        icon: renderIcon(ConnectionTwoWay),
-      },
-    ],
-  },
-  {
-    label: t("routes.domains"),
-    key: "domains",
-    icon: renderIcon(Certificate),
-    children: [
-      {
-        label: t("routes.ddns"),
-        key: "domains/ddns",
-        icon: renderIcon(DataConnected),
-      },
-      {
-        label: t("routes.certs"),
-        key: "domains/certs",
-        icon: renderIcon(CertificateCheck),
-      },
-      {
-        label: t("routes.credentials"),
-        key: "domains/credentials",
-        icon: renderIcon(Credentials),
-      },
-    ],
-  },
-  {
-    label: t("routes.metric-group"),
-    key: "metric-group",
-    icon: renderIcon(ChartCombo),
-    children: [
-      {
-        label: t("routes.connect-live"),
-        key: "metrics/conn/live",
-        icon: renderIcon(Activity),
-      },
-      {
-        label: t("routes.connect-history"),
-        key: "metrics/conn/history",
-        icon: renderIcon(TimePlot),
-      },
-      {
-        label: t("routes.dns-metric"),
-        key: "metrics/dns",
-        icon: renderIcon(ChartLineData),
-      },
-    ],
-  },
-  {
-    label: t("routes.apps-tools"),
-    key: "apps-tools",
-    icon: renderIcon(Application),
-    children: [
-      {
-        label: t("routes.gateway"),
-        key: "gateway",
-        icon: renderIcon(Gateway),
-      },
-      {
-        label: t("routes.docker"),
-        key: "docker",
-        icon: renderIcon(ContainerServices),
-      },
-      {
-        label: () =>
-          h("span", { style: "display:flex;align-items:center;gap:6px" }, [
-            t("routes.plugins"),
-            h(
-              NTag,
-              { size: "tiny", bordered: false, class: "plugins-dev-tag" },
-              () => "dev",
-            ),
-          ]),
-        key: "plugins",
-        icon: renderIcon(Plug),
-      },
-      {
-        label: t("routes.webshell"),
-        key: "webshell",
-        icon: renderIcon(Terminal),
-      },
-    ],
-  },
-  {
-    label: t("routes.config"),
-    key: "config",
-    icon: renderIcon(Settings),
-  },
-]);
+const menuOptions = computed<MenuOption[]>(() =>
+  availableMenu([
+    {
+      label: t("routes.dashboard"),
+      key: "",
+      icon: renderIcon(Dashboard),
+    },
+    {
+      label: t("routes.network"),
+      key: "network",
+      icon: renderIcon(Network3),
+      children: [
+        {
+          label: t("routes.interface-config"),
+          key: "network/settings",
+          icon: renderIcon(NetworkAdminControl),
+        },
+        {
+          label: t("routes.address-allocation"),
+          key: "network/allocations",
+          icon: renderIcon(IbmCloudSubnets),
+        },
+        {
+          label: t("routes.mac-binding"),
+          key: "mac-binding",
+          icon: renderIcon(Devices),
+        },
+      ],
+    },
+    {
+      label: t("routes.traffic-policy"),
+      key: "traffic-policy",
+      icon: renderIcon(Flow),
+      children: [
+        {
+          label: t("routes.flow"),
+          key: "flow",
+          icon: renderIcon(FlowStream),
+        },
+        {
+          label: t("routes.dns-config"),
+          key: "dns/config",
+          icon: renderIcon(DnsServices),
+        },
+        {
+          label: t("routes.dns-redirect"),
+          key: "dns/redirect",
+          icon: renderIcon(Rule),
+        },
+        {
+          label: t("routes.geo"),
+          key: "geo/domain",
+          icon: renderIcon(Earth),
+        },
+      ],
+    },
+    {
+      label: t("routes.security-forwarding"),
+      key: "security-forwarding",
+      icon: renderIcon(Wall),
+      children: [
+        {
+          label: t("routes.firewall"),
+          key: "firewall-nat/firewall",
+          icon: renderIcon(SecurityServices),
+        },
+        {
+          label: t("routes.port-mapping"),
+          key: "firewall-nat/port-mapping",
+          icon: renderIcon(ConnectionTwoWay),
+        },
+      ],
+    },
+    {
+      label: t("routes.domains"),
+      key: "domains",
+      icon: renderIcon(Certificate),
+      children: [
+        {
+          label: t("routes.ddns"),
+          key: "domains/ddns",
+          icon: renderIcon(DataConnected),
+        },
+        {
+          label: t("routes.certs"),
+          key: "domains/certs",
+          icon: renderIcon(CertificateCheck),
+        },
+        {
+          label: t("routes.credentials"),
+          key: "domains/credentials",
+          icon: renderIcon(Credentials),
+        },
+      ],
+    },
+    {
+      label: t("routes.metric-group"),
+      key: "metric-group",
+      icon: renderIcon(ChartCombo),
+      children: [
+        {
+          label: t("routes.self-monitor-memory"),
+          key: "self-monitor/memory",
+          icon: renderIcon(Activity),
+        },
+        {
+          label: t("routes.connect-live"),
+          key: "metrics/conn/live",
+          icon: renderIcon(Activity),
+        },
+        {
+          label: t("routes.connect-history"),
+          key: "metrics/conn/history",
+          icon: renderIcon(TimePlot),
+        },
+        {
+          label: t("routes.dns-metric"),
+          key: "metrics/dns",
+          icon: renderIcon(ChartLineData),
+        },
+      ],
+    },
+    {
+      label: t("routes.apps-tools"),
+      key: "apps-tools",
+      icon: renderIcon(Application),
+      children: [
+        {
+          label: t("routes.gateway"),
+          key: "gateway",
+          icon: renderIcon(Gateway),
+        },
+        {
+          label: t("routes.docker"),
+          key: "docker",
+          icon: renderIcon(ContainerServices),
+        },
+        {
+          label: () =>
+            h("span", { style: "display:flex;align-items:center;gap:6px" }, [
+              t("routes.plugins"),
+              h(
+                NTag,
+                { size: "tiny", bordered: false, class: "plugins-dev-tag" },
+                () => "dev",
+              ),
+            ]),
+          key: "plugins",
+          icon: renderIcon(Plug),
+        },
+        {
+          label: t("routes.webshell"),
+          key: "webshell",
+          icon: renderIcon(Terminal),
+        },
+      ],
+    },
+    {
+      label: t("routes.config"),
+      key: "config",
+      icon: renderIcon(Settings),
+    },
+  ]),
+);
 </script>
 <template>
   <n-layout-sider

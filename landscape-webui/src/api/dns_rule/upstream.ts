@@ -1,3 +1,4 @@
+import { useCapabilityStore } from "@/stores/capability";
 import {
   getDnsUpstreams,
   getDnsUpstream,
@@ -46,9 +47,10 @@ export async function push_many_dns_upstream(
   await addManyDnsUpstreams(rule);
 }
 
-export function test_dns_upstream_quic(
+export async function test_dns_upstream_quic(
   rule: DnsUpstreamConfig,
 ): Promise<DnsUpstreamQuicTestResult> {
+  await useCapabilityStore().REQUIRE("dns_quic_diagnostics");
   return customInstance<{ data?: DnsUpstreamQuicTestResult }>({
     url: "/api/v1/dns/upstreams/test-quic",
     method: "POST",

@@ -37,7 +37,9 @@ const { t } = useI18n();
                 <Book />
               </n-icon>
             </template>
-            <span class="sidebar-footer-link__text">{{ t("about.documentation") }}</span>
+            <span class="sidebar-footer-link__text">{{
+              t("about.documentation")
+            }}</span>
           </n-button>
         </template>
         {{ t("about.documentation") }}
@@ -74,7 +76,9 @@ const { t } = useI18n();
                 <Information />
               </n-icon>
             </template>
-            <span class="sidebar-footer-link__text">{{ t("routes.about") }}</span>
+            <span class="sidebar-footer-link__text">{{
+              t("routes.about")
+            }}</span>
           </n-button>
         </template>
         {{ t("about.title") }}

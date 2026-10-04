@@ -63,7 +63,6 @@ async function updateEnabled(value: boolean) {
     enableLoading.value = false;
   }
 }
-
 </script>
 
 <template>

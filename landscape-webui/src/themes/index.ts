@@ -830,3 +830,19 @@ export function applyThemeToDocument(
     );
   }
 }
+
+// Stable categorical colors keep a subsystem identifiable across chart refreshes.
+export const metricPalette = [
+  "#5470c6",
+  "#91cc75",
+  "#fac858",
+  "#ee6666",
+  "#73c0de",
+  "#3ba272",
+  "#fc8452",
+  "#9a60b4",
+  "#ea7ccc",
+  "#48b8d0",
+  "#e97f7f",
+  "#b6a2de",
+];

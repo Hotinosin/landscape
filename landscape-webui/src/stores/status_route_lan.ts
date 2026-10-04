@@ -12,9 +12,7 @@ export const useRouteLanConfigStore = defineStore("status_route_lan", () => {
     status.value = await get_all_route_lan_status();
   }
 
-  function GET_STATUS_BY_IFACE_NAME(
-    name: string,
-  ): ServiceStatus | undefined {
+  function GET_STATUS_BY_IFACE_NAME(name: string): ServiceStatus | undefined {
     return status.value.get(name);
   }
 

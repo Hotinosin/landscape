@@ -1,4 +1,5 @@
 import { shallowMount } from "@vue/test-utils";
+import { useCapabilityStore } from "@/stores/capability";
 import { createPinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { describe, expect, it } from "vitest";
@@ -45,8 +46,12 @@ describe("monitor navigation", () => {
   it("keeps three sidebar entries and maps detail routes to their section", async () => {
     const r = router();
     await r.push("/metrics/conn/live");
+    const pinia = createPinia();
+    const capabilities = useCapabilityStore(pinia);
+    capabilities.capabilities = new Set(["metric_persistent"]);
+    capabilities.loaded = true;
     const wrapper = shallowMount(Sidebar, {
-      global: { plugins: [r, createPinia(), i18n] },
+      global: { plugins: [r, pinia, i18n] },
     });
     const vm = wrapper.vm as any;
     const group = vm.menuOptions.find((o: any) => o.key === "metric-group");

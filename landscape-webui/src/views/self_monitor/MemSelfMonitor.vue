@@ -348,7 +348,11 @@ onUnmounted(() => {
       v-else
       size="small"
       :bordered="false"
-      style="margin-bottom: 12px; background-color: #f9f9f910; flex-shrink: 0"
+      style="
+        margin-bottom: 12px;
+        background-color: var(--app-surface-alternate-color);
+        flex-shrink: 0;
+      "
     >
       <n-flex align="center" justify="space-between">
         <n-flex align="center" size="small">
@@ -367,7 +371,12 @@ onUnmounted(() => {
       </n-flex>
       <n-flex align="center" :wrap="true" size="large" style="margin-top: 8px">
         <n-flex align="center" size="small">
-          <span style="color: #888; font-size: 13px">
+          <span
+            style="
+              color: var(--app-text-muted-color);
+              font-size: var(--app-font-size-label);
+            "
+          >
             {{ t("self_monitor.mem.process_rss") }}:
           </span>
           <span style="font-weight: bold">
@@ -380,7 +389,12 @@ onUnmounted(() => {
         </n-flex>
         <n-divider vertical />
         <n-flex align="center" size="small">
-          <span style="color: #888; font-size: 13px">
+          <span
+            style="
+              color: var(--app-text-muted-color);
+              font-size: var(--app-font-size-label);
+            "
+          >
             {{ t("self_monitor.mem.process_vsz") }}:
           </span>
           <span style="font-weight: bold">
@@ -393,7 +407,12 @@ onUnmounted(() => {
         </n-flex>
         <n-divider vertical />
         <n-flex align="center" size="small">
-          <span style="color: #888; font-size: 13px">
+          <span
+            style="
+              color: var(--app-text-muted-color);
+              font-size: var(--app-font-size-label);
+            "
+          >
             {{ t("self_monitor.mem.total_live") }}:
           </span>
           <span :style="{ fontWeight: 'bold', color: themeVars.successColor }">
@@ -404,7 +423,12 @@ onUnmounted(() => {
         <n-tooltip trigger="hover">
           <template #trigger>
             <n-flex align="center" size="small" style="cursor: help">
-              <span style="color: #888; font-size: 13px">
+              <span
+                style="
+                  color: var(--app-text-muted-color);
+                  font-size: var(--app-font-size-label);
+                "
+              >
                 {{ t("self_monitor.mem.untracked") }}:
               </span>
               <span
@@ -418,7 +442,7 @@ onUnmounted(() => {
               >
                 {{ untracked }}
               </span>
-              <n-icon size="14" style="color: #888">
+              <n-icon size="14" style="color: var(--app-text-muted-color)">
                 <HelpCircleOutline />
               </n-icon>
             </n-flex>
@@ -479,7 +503,10 @@ onUnmounted(() => {
             </n-button>
             <n-tooltip trigger="hover">
               <template #trigger>
-                <n-icon size="15" style="color: #888; cursor: help">
+                <n-icon
+                  size="15"
+                  style="color: var(--app-text-muted-color); cursor: help"
+                >
                   <HelpCircleOutline />
                 </n-icon>
               </template>
@@ -490,7 +517,7 @@ onUnmounted(() => {
           <n-card
             size="small"
             :bordered="false"
-            style="background-color: #f9f9f910"
+            style="background-color: var(--app-surface-alternate-color)"
             content-style="padding: 8px"
           >
             <MemLineChart
@@ -517,7 +544,7 @@ onUnmounted(() => {
               min-height: 0;
               display: flex;
               flex-direction: column;
-              background-color: #f9f9f910;
+              background-color: var(--app-surface-alternate-color);
             "
             content-style="
               flex: 1;
@@ -584,7 +611,10 @@ onUnmounted(() => {
             </n-button>
             <n-tooltip trigger="hover">
               <template #trigger>
-                <n-icon size="15" style="color: #888; cursor: help">
+                <n-icon
+                  size="15"
+                  style="color: var(--app-text-muted-color); cursor: help"
+                >
                   <HelpCircleOutline />
                 </n-icon>
               </template>
@@ -601,7 +631,7 @@ onUnmounted(() => {
               min-height: 0;
               display: flex;
               flex-direction: column;
-              background-color: #f9f9f910;
+              background-color: var(--app-surface-alternate-color);
             "
             content-style="
               flex: 1;

@@ -5,7 +5,7 @@ import type {
   LanDeviceIpv6View,
 } from "@landscape-router/types/api/schemas";
 import { AddAlt, Edit } from "@vicons/carbon";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { CountdownInst, SelectOption } from "naive-ui";
 
@@ -23,14 +23,19 @@ const enrolledDeviceStore = useEnrolledDeviceStore();
 const lanDeviceStore = useLanDeviceStore();
 
 const loading = ref(false);
+const error = ref<unknown>();
 
 async function refresh() {
+  if (loading.value) return;
   loading.value = true;
+  error.value = undefined;
   try {
     await Promise.all([
       lanDeviceStore.UPDATE_INFO(),
       enrolledDeviceStore.UPDATE_INFO(),
     ]);
+  } catch (reason) {
+    error.value = reason;
   } finally {
     loading.value = false;
   }
@@ -193,6 +198,17 @@ function quickBind(device: LanDeviceView) {
   };
   showQuickBind.value = true;
 }
+let pollTimer: ReturnType<typeof setInterval> | undefined;
+onMounted(() => {
+  void refresh();
+  pollTimer = setInterval(() => {
+    if (!document.hidden) void refresh();
+  }, 5000);
+});
+onUnmounted(() => {
+  clearInterval(pollTimer);
+  if (refreshTimer) clearTimeout(refreshTimer);
+});
 </script>
 
 <template>
@@ -219,8 +235,9 @@ function quickBind(device: LanDeviceView) {
       }}</n-button>
     </n-flex>
 
-    <n-scrollbar v-if="show_devices.length > 0" class="table-scroll">
-      <n-table :bordered="true" striped size="small">
+    <StandardPageState v-if="error" state="error" compact @retry="refresh" />
+    <n-scrollbar v-else-if="show_devices.length > 0" class="table-scroll">
+      <table class="device-table">
         <thead>
           <tr>
             <th class="assign-head">{{ t("lan_device.name") }}</th>
@@ -422,7 +439,7 @@ function quickBind(device: LanDeviceView) {
             </td>
           </tr>
         </tbody>
-      </n-table>
+      </table>
     </n-scrollbar>
     <n-empty v-else style="flex: 1" :description="t('lan_device.empty')" />
   </n-flex>
@@ -439,6 +456,24 @@ function quickBind(device: LanDeviceView) {
 .table-scroll {
   flex: 1;
   min-height: 0;
+}
+.device-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--app-text-primary-color);
+  background: var(--app-surface-color);
+}
+.device-table th,
+.device-table td {
+  padding: var(--app-data-table-padding-small);
+  border-bottom: 1px solid var(--app-border-default-color);
+}
+.device-table th {
+  background: var(--app-surface-alternate-color);
+}
+.device-table tbody tr:hover {
+  background: var(--app-interactive-hover-color);
 }
 .assign-head {
   text-align: center;

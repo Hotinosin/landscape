@@ -12,9 +12,7 @@ export const useLanIPv6Store = defineStore("status_lan_ipv6", () => {
     status.value = await get_all_lan_ipv6_status();
   }
 
-  function GET_STATUS_BY_IFACE_NAME(
-    name: string,
-  ): ServiceStatus | undefined {
+  function GET_STATUS_BY_IFACE_NAME(name: string): ServiceStatus | undefined {
     return status.value.get(name);
   }
 

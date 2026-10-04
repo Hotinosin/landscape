@@ -12,9 +12,7 @@ export const useDHCPv4ConfigStore = defineStore("status_dhcp_v4", () => {
     status.value = await get_all_dhcp_v4_status();
   }
 
-  function GET_STATUS_BY_IFACE_NAME(
-    name: string,
-  ): ServiceStatus | undefined {
+  function GET_STATUS_BY_IFACE_NAME(name: string): ServiceStatus | undefined {
     return status.value.get(name);
   }
 

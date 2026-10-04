@@ -2,6 +2,7 @@
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  useThemeVars,
   NIcon,
   NProgress,
   NTag,
@@ -17,6 +18,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const themeVars = useThemeVars();
 
 const sortedModules = computed(() =>
   [...props.modules].sort((a, b) => b.live_bytes - a.live_bytes),
@@ -66,7 +68,13 @@ const columns = computed<DataTableColumns<ModuleMemStat>>(() => [
               trigger: () =>
                 h(
                   NIcon,
-                  { size: 14, style: { color: "#888", cursor: "help" } },
+                  {
+                    size: 14,
+                    style: {
+                      color: themeVars.value.textColor3,
+                      cursor: "help",
+                    },
+                  },
                   {
                     default: () => h(HelpCircleOutline),
                   },
@@ -95,7 +103,12 @@ const columns = computed<DataTableColumns<ModuleMemStat>>(() => [
           }),
           h(
             "span",
-            { style: { fontSize: "12px", color: "#888" } },
+            {
+              style: {
+                fontSize: "var(--app-font-size-caption)",
+                color: themeVars.value.textColor3,
+              },
+            },
             {
               default: () => `${percent.toFixed(1)}%`,
             },

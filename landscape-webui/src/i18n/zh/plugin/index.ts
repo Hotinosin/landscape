@@ -32,7 +32,8 @@ export default {
   tab_override: "覆写配置",
   tab_user_config: "用户配置",
   tab_effective_config: "最终生效配置",
-  override_desc: "覆写配置（Mixin）会在服务启动时与用户配置深度合并。底层网络与 DNS 参数受系统保护。",
+  override_desc:
+    "覆写配置（Mixin）会在服务启动时与用户配置深度合并。底层网络与 DNS 参数受系统保护。",
   tproxy_port: "TProxy 端口",
   controller_port: "外部控制端口",
   allow_lan: "允许局域网连接",
@@ -41,10 +42,13 @@ export default {
   mode_global: "全局模式 (Global)",
   mode_direct: "直连模式 (Direct)",
   dns_nameserver: "NetNS 系统 DNS",
-  dns_protected_hint: "系统自动注入 Landscape 本机 DNS ({dns})，保障网络命名空间内解析可靠。",
+  dns_protected_hint:
+    "系统自动注入 Landscape 本机 DNS ({dns})，保障网络命名空间内解析可靠。",
   advanced_mixin_yaml: "高级 Mixin (YAML)",
-  user_config_desc: "在此填写或导入您的核心基础配置（节点 proxies、策略组 proxy-groups、分流规则 rules 等）。",
-  effective_config_desc: "这是用户配置与覆写配置深度合并后的最终生效内容，不可直接编辑。",
+  user_config_desc:
+    "在此填写或导入您的核心基础配置（节点 proxies、策略组 proxy-groups、分流规则 rules 等）。",
+  effective_config_desc:
+    "这是用户配置与覆写配置深度合并后的最终生效内容，不可直接编辑。",
   refresh_effective: "刷新预览",
   controller_not_ready: "控制台 未就绪",
   check_config_on_save: "检查配置",

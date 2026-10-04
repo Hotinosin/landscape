@@ -1,3 +1,4 @@
+import unavailable from "./unavailable";
 import common from "./common";
 import routes from "./routes";
 
@@ -49,6 +50,7 @@ import serviceErr from "./error/service";
 import commonErr from "./error/common";
 
 export default {
+  unavailable,
   common,
   routes,
   about: aboutUi,

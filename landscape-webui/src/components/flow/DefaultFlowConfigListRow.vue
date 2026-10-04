@@ -92,5 +92,4 @@ const showEdit = ref(false);
   margin-top: 4px;
   border-top: 1px dashed var(--app-border-subtle-color);
 }
-
 </style>

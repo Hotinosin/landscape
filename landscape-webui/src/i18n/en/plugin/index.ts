@@ -28,11 +28,13 @@ export default {
   action: "Action",
   select_action: "Select action",
   confirm_action_title: "Confirm Action",
-  confirm_action_content: "Are you sure you want to execute \"{action}\" on plugin \"{name}\"?",
+  confirm_action_content:
+    'Are you sure you want to execute "{action}" on plugin "{name}"?',
   tab_override: "Override Config",
   tab_user_config: "User Config",
   tab_effective_config: "Effective Config",
-  override_desc: "Override (Mixin) configuration is deep-merged with user config on start. Critical network and DNS parameters are system-protected.",
+  override_desc:
+    "Override (Mixin) configuration is deep-merged with user config on start. Critical network and DNS parameters are system-protected.",
   tproxy_port: "TProxy Port",
   controller_port: "External Controller Port",
   allow_lan: "Allow LAN Connection",
@@ -41,10 +43,13 @@ export default {
   mode_global: "Global Mode",
   mode_direct: "Direct Mode",
   dns_nameserver: "NetNS System DNS",
-  dns_protected_hint: "Landscape host DNS ({dns}) is automatically injected into the NetNS.",
+  dns_protected_hint:
+    "Landscape host DNS ({dns}) is automatically injected into the NetNS.",
   advanced_mixin_yaml: "Advanced Mixin (YAML)",
-  user_config_desc: "Paste or import your base configuration here (proxies, proxy groups, rules, etc.).",
-  effective_config_desc: "This is the final merged configuration applied at runtime. Read-only preview.",
+  user_config_desc:
+    "Paste or import your base configuration here (proxies, proxy groups, rules, etc.).",
+  effective_config_desc:
+    "This is the final merged configuration applied at runtime. Read-only preview.",
   refresh_effective: "Refresh Preview",
   controller_not_ready: "Console Offline",
   check_config_on_save: "Validate config on save",

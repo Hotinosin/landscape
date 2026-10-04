@@ -60,8 +60,7 @@ export class DockerContainerSummary {
 
   getIpAddresses(): string[] {
     const networks =
-      this.NetworkSettings?.Networks ??
-      (this.NetworkSettings as any)?.networks;
+      this.NetworkSettings?.Networks ?? (this.NetworkSettings as any)?.networks;
     if (!networks) return [];
     const seen = new Set<string>();
     const ips: string[] = [];
@@ -90,10 +89,8 @@ export class DockerContainerSummary {
     for (const raw of this.Ports as any[]) {
       const typ = raw?.Type ?? raw?.type ?? "tcp";
       const proto = typ ? `/${typ}` : "";
-      const priv =
-        raw?.PrivatePort ?? raw?.private_port ?? raw?.privatePort;
-      const pub =
-        raw?.PublicPort ?? raw?.public_port ?? raw?.publicPort;
+      const priv = raw?.PrivatePort ?? raw?.private_port ?? raw?.privatePort;
+      const pub = raw?.PublicPort ?? raw?.public_port ?? raw?.publicPort;
       const ip = raw?.IP ?? raw?.ip;
       let formatted: string;
       if (pub != null) {

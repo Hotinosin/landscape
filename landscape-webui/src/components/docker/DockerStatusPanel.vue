@@ -36,9 +36,7 @@ async function stop() {
       <n-button @click="show_image_drawer = true">{{
         t("common.image")
       }}</n-button>
-      <n-button v-if="is_down" @click="start">{{
-        t("common.open")
-      }}</n-button>
+      <n-button v-if="is_down" @click="start">{{ t("common.open") }}</n-button>
       <ConfirmModal v-else @positive-click="stop"
         ><template #trigger
           ><n-button>{{ t("common.close_listener") }}</n-button></template

@@ -35,7 +35,8 @@ export default {
     lookup_results: "查询结果（{count} 个分组）",
     lookup_empty: "没有匹配的 GeoSite 分组",
     lookup_confirm_title: "域名格式提示",
-    lookup_confirm_content: "GeoSite 反查基于完整域名匹配（例如：{example}），是否查询 {suggested}？",
+    lookup_confirm_content:
+      "GeoSite 反查基于完整域名匹配（例如：{example}），是否查询 {suggested}？",
     lookup_confirm_positive: "查询 {domain}",
     domain_list: "域名列表",
     domain_placeholder: "域名",

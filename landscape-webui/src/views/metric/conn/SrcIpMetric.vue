@@ -89,11 +89,7 @@ onMounted(() => {
       style="flex: 1; min-height: 0; overflow: hidden"
     >
       <!-- 系统全局活跃连接统计 -->
-      <n-card
-        size="small"
-        :bordered="false"
-        class="metric-navigation-card"
-      >
+      <n-card size="small" :bordered="false" class="metric-navigation-card">
         <n-flex align="center" justify="space-between">
           <ConnectViewSwitcher />
 

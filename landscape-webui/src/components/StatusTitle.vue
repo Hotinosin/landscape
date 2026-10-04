@@ -21,8 +21,8 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const hasName = computed(() => Boolean(props.name && props.name.trim() !== ""));
-const hasRemark = computed(
-  () => Boolean(props.remark && props.remark.trim() !== ""),
+const hasRemark = computed(() =>
+  Boolean(props.remark && props.remark.trim() !== ""),
 );
 </script>
 
@@ -31,7 +31,9 @@ const hasRemark = computed(
     <CarrierStatusDot :active="enable" />
     <div class="status-title-text">
       <n-ellipsis v-if="hasName" class="status-title-name">
-        {{ prefix !== null && prefix !== undefined ? `${prefix}: ${name}` : name }}
+        {{
+          prefix !== null && prefix !== undefined ? `${prefix}: ${name}` : name
+        }}
       </n-ellipsis>
       <n-ellipsis
         v-if="hasRemark"

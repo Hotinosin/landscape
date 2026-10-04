@@ -58,7 +58,11 @@ describe("getPollingTasksForPath", () => {
   });
 
   it("includes only network tasks on network settings route", () => {
-    const tasks = getPollingTasksForPath("/network/settings", dummyStores, 3000);
+    const tasks = getPollingTasksForPath(
+      "/network/settings",
+      dummyStores,
+      3000,
+    );
     expect(tasks.length).toBe(12);
   });
 

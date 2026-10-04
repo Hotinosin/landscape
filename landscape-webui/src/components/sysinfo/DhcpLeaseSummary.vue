@@ -3,11 +3,10 @@ import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { Renew } from "@vicons/carbon";
 import { IPv4 } from "ip-num";
+import { get_lan_devices, type LanDeviceView } from "@/api/lan_device";
 import {
-  get_all_iface_arp_scan_info,
-  get_dhcp_v4_assigned_ips,
+  get_all_dhcp_v4_status,
   get_iface_dhcp_v4_config,
-  type DHCPv4OfferInfo,
 } from "@/api/service_dhcp_v4";
 import type { DHCPv4ServiceConfig } from "@/lib/dhcp_v4";
 import { overviewCardStyles } from "@/components/overviewCardStyle";
@@ -15,7 +14,7 @@ import { overviewCardStyles } from "@/components/overviewCardStyle";
 const { t } = useI18n();
 const loading = ref(false);
 const error = ref(false);
-const leases = ref(new Map<string, DHCPv4OfferInfo | null>());
+const devices = ref<LanDeviceView[]>([]);
 const onlineIps = ref(new Set<string>());
 const configs = ref<DHCPv4ServiceConfig[]>([]);
 
@@ -23,16 +22,9 @@ const ipValue = (ip: string) => IPv4.fromString(ip).getValue();
 
 const activeLeaseIps = computed(() => {
   const result = new Set<string>();
-  for (const info of leases.value.values()) {
-    if (!info) continue;
-    for (const lease of info.offered_ips) {
-      if (
-        lease.is_static ||
-        lease.relative_active_time + lease.expire_time > info.relative_boot_time
-      ) {
-        result.add(lease.ip);
-      }
-    }
+  for (const device of devices.value) {
+    const lease = device.dhcp_lease;
+    if (lease && lease.expires > Date.now()) result.add(lease.ip);
   }
   return result;
 });
@@ -57,18 +49,18 @@ async function refresh() {
   loading.value = true;
   error.value = false;
   try {
-    const [leaseMap, arpMap] = await Promise.all([
-      get_dhcp_v4_assigned_ips(),
-      get_all_iface_arp_scan_info(),
+    const [entries, statuses] = await Promise.all([
+      get_lan_devices(),
+      get_all_dhcp_v4_status(),
     ]);
-    leases.value = leaseMap;
+    devices.value = entries;
     configs.value = await Promise.all(
-      [...leaseMap.keys()].map((name) => get_iface_dhcp_v4_config(name)),
+      [...statuses.keys()].map((name) => get_iface_dhcp_v4_config(name)),
     );
     onlineIps.value = new Set(
-      [...arpMap.values()].flatMap((snapshots) =>
-        (snapshots[snapshots.length - 1]?.infos ?? []).map((item) => item.ip),
-      ),
+      entries
+        .filter((device) => device.online)
+        .map((device) => device.entry_id),
     );
   } catch {
     error.value = true;

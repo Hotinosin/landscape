@@ -601,8 +601,7 @@ onMounted(() => {
       <n-card
         class="plugin-config-modal"
         :title="
-          t('plugin.config') +
-          (configPlugin ? ` - ${configPlugin.name}` : '')
+          t('plugin.config') + (configPlugin ? ` - ${configPlugin.name}` : '')
         "
         style="width: min(900px, calc(100vw - 32px))"
         content-style="min-height: 0; display: flex; flex-direction: column; flex: 1; overflow: hidden"
@@ -796,8 +795,16 @@ onMounted(() => {
               name="effective"
               :tab="t('plugin.tab_effective_config')"
             >
-              <n-flex vertical :size="12" class="config-tab-pane config-tab-pane--effective">
-                <n-flex justify="space-between" align="center" class="config-effective-header">
+              <n-flex
+                vertical
+                :size="12"
+                class="config-tab-pane config-tab-pane--effective"
+              >
+                <n-flex
+                  justify="space-between"
+                  align="center"
+                  class="config-effective-header"
+                >
                   <n-text depth="3">
                     {{ t("plugin.effective_config_desc") }}
                   </n-text>
@@ -813,10 +820,7 @@ onMounted(() => {
                     {{ t("plugin.refresh_effective") }}
                   </n-button>
                 </n-flex>
-                <CodeViewer
-                  :content="effectiveConfigText"
-                  show-copy
-                />
+                <CodeViewer :content="effectiveConfigText" show-copy />
               </n-flex>
             </n-tab-pane>
           </n-tabs>

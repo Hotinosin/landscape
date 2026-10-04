@@ -12,9 +12,7 @@ export const useFirewallConfigStore = defineStore("status_firewall", () => {
     status.value = await get_all_firewall_status();
   }
 
-  function GET_STATUS_BY_IFACE_NAME(
-    name: string,
-  ): ServiceStatus | undefined {
+  function GET_STATUS_BY_IFACE_NAME(name: string): ServiceStatus | undefined {
     return status.value.get(name);
   }
 

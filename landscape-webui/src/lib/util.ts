@@ -1,4 +1,3 @@
-
 export function generateValidMAC() {
   let mac = [...Array(6)].map(() =>
     ("0" + Math.floor(Math.random() * 256).toString(16)).slice(-2),

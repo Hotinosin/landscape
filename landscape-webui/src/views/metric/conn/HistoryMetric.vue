@@ -340,11 +340,7 @@ onMounted(() => {
       compact
       @retry="refreshGlobalStats"
     >
-      <n-card
-        size="small"
-        :bordered="false"
-        class="metric-navigation-card"
-      >
+      <n-card size="small" :bordered="false" class="metric-navigation-card">
         <n-flex align="center" justify="space-between">
           <ConnectViewSwitcher />
 
@@ -496,7 +492,9 @@ onMounted(() => {
         $t("metric.connect.stats.query")
       }}</n-button>
       <n-button secondary @click="resetHistoryFilter" :disabled="loading">
-        <template #icon><n-icon><TrashCan /></n-icon></template>
+        <template #icon
+          ><n-icon><TrashCan /></n-icon
+        ></template>
         {{ $t("metric.connect.stats.reset") }}
       </n-button>
     </n-flex>

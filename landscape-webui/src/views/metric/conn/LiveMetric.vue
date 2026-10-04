@@ -164,11 +164,7 @@ onMounted(() => {
   >
     <n-flex vertical :wrap="false" :size="0" class="live-metric">
       <!-- System-wide active connection stats -->
-      <n-card
-        size="small"
-        :bordered="false"
-        class="metric-navigation-card"
-      >
+      <n-card size="small" :bordered="false" class="metric-navigation-card">
         <n-flex align="center" justify="space-between">
           <ConnectViewSwitcher />
 
@@ -274,7 +270,9 @@ onMounted(() => {
         <FlowSelect v-model="liveFilter.flow_id" width="120px" />
 
         <n-button secondary @click="resetLiveFilter">
-          <template #icon><n-icon><TrashCan /></n-icon></template>
+          <template #icon
+            ><n-icon><TrashCan /></n-icon
+          ></template>
           {{ $t("metric.connect.reset") }}
         </n-button>
       </n-flex>

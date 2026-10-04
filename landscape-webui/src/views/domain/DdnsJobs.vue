@@ -968,9 +968,7 @@ onMounted(async () => {
 
       <template #footer="{ close }">
         <n-flex justify="space-between">
-          <n-button @click="close">{{
-            t("common.cancel")
-          }}</n-button>
+          <n-button @click="close">{{ t("common.cancel") }}</n-button>
           <n-button
             type="primary"
             :loading="saving"

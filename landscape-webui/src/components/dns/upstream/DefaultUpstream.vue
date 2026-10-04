@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import type { DnsUpstreamConfig } from "@landscape-router/types/api/schemas";
-import {
-  DEFAULT_DOH_ENDPOINT,
-  DnsUpstreamModeTsEnum,
-} from "@/lib/dns";
+import { DEFAULT_DOH_ENDPOINT, DnsUpstreamModeTsEnum } from "@/lib/dns";
 import { useI18n } from "vue-i18n";
 import { computed } from "vue";
 
@@ -201,9 +198,15 @@ const btn_size = "medium";
         :size="btn_size"
         @update:value="replace_default"
       >
-        <n-radio-button :value="DefaultDnsConfig.CLOUDFLARE_UDP">UDP</n-radio-button>
-        <n-radio-button :value="DefaultDnsConfig.CLOUDFLARE_DOH">DoH</n-radio-button>
-        <n-radio-button :value="DefaultDnsConfig.CLOUDFLARE_DOT">DoT</n-radio-button>
+        <n-radio-button :value="DefaultDnsConfig.CLOUDFLARE_UDP"
+          >UDP</n-radio-button
+        >
+        <n-radio-button :value="DefaultDnsConfig.CLOUDFLARE_DOH"
+          >DoH</n-radio-button
+        >
+        <n-radio-button :value="DefaultDnsConfig.CLOUDFLARE_DOT"
+          >DoT</n-radio-button
+        >
       </n-radio-group>
     </n-input-group>
     <n-input-group>
@@ -215,8 +218,12 @@ const btn_size = "medium";
         :size="btn_size"
         @update:value="replace_default"
       >
-        <n-radio-button :value="DefaultDnsConfig.DNSPOD_UDP">UDP</n-radio-button>
-        <n-radio-button :value="DefaultDnsConfig.DNSPOD_DOH">DoH</n-radio-button>
+        <n-radio-button :value="DefaultDnsConfig.DNSPOD_UDP"
+          >UDP</n-radio-button
+        >
+        <n-radio-button :value="DefaultDnsConfig.DNSPOD_DOH"
+          >DoH</n-radio-button
+        >
       </n-radio-group>
     </n-input-group>
     <n-input-group>
@@ -228,9 +235,15 @@ const btn_size = "medium";
         :size="btn_size"
         @update:value="replace_default"
       >
-        <n-radio-button :value="DefaultDnsConfig.GOOGLE_UDP">UDP</n-radio-button>
-        <n-radio-button :value="DefaultDnsConfig.GOOGLE_DOH">DoH</n-radio-button>
-        <n-radio-button :value="DefaultDnsConfig.GOOGLE_DOT">DoT</n-radio-button>
+        <n-radio-button :value="DefaultDnsConfig.GOOGLE_UDP"
+          >UDP</n-radio-button
+        >
+        <n-radio-button :value="DefaultDnsConfig.GOOGLE_DOH"
+          >DoH</n-radio-button
+        >
+        <n-radio-button :value="DefaultDnsConfig.GOOGLE_DOT"
+          >DoT</n-radio-button
+        >
       </n-radio-group>
     </n-input-group>
   </div>

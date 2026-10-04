@@ -12,9 +12,7 @@ export const useNATConfigStore = defineStore("status_nat", () => {
     status.value = await get_all_nat_status();
   }
 
-  function GET_STATUS_BY_IFACE_NAME(
-    name: string,
-  ): ServiceStatus | undefined {
+  function GET_STATUS_BY_IFACE_NAME(name: string): ServiceStatus | undefined {
     return status.value.get(name);
   }
 

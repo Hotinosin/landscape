@@ -116,7 +116,9 @@ describe("PTY session lifecycle", () => {
     const store = usePtyStore();
     const mockFit = vi.fn();
     const terminal = new Terminal() as any;
-    terminal.element = { parentElement: { clientWidth: 800, clientHeight: 600 } };
+    terminal.element = {
+      parentElement: { clientWidth: 800, clientHeight: 600 },
+    };
     terminal.buffer = { active: { viewportY: 10, baseY: 10 } };
 
     store.attachTerminal(terminal, { fit: mockFit } as any);

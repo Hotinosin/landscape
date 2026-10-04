@@ -250,34 +250,20 @@ watch(
       :prepare="refresh_config"
     >
       <n-form>
-        <StandardSettingRow
-          :label="t('gateway.enabled')"
-          control-width="auto"
-        >
+        <StandardSettingRow :label="t('gateway.enabled')" control-width="auto">
           <n-switch v-model:value="gatewayEnabled" size="medium" />
         </StandardSettingRow>
         <StandardSettingRow :label="t('gateway.http_port')">
-          <n-input-number
-            v-model:value="httpPort"
-            :min="1"
-            :max="65535"
-          />
+          <n-input-number v-model:value="httpPort" :min="1" :max="65535" />
         </StandardSettingRow>
         <StandardSettingRow :label="t('gateway.https_port')">
-          <n-input-number
-            v-model:value="httpsPort"
-            :min="1"
-            :max="65535"
-          />
+          <n-input-number v-model:value="httpsPort" :min="1" :max="65535" />
         </StandardSettingRow>
       </n-form>
 
       <template #footer>
         <n-flex justify="end" :size="8">
-          <n-button
-            :loading="savingConfig"
-            @click="handleSaveGatewayConfig"
-          >
+          <n-button :loading="savingConfig" @click="handleSaveGatewayConfig">
             {{ t("gateway.save_runtime") }}
           </n-button>
           <n-button

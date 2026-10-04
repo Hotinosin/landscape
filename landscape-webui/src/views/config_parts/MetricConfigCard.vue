@@ -59,20 +59,13 @@ async function handleSaveMetric() {
         {{ t("config.save_metric") }}
       </n-button>
     </template>
-    <n-form
-      ref="formRef"
-      :model="metricStore"
-      :rules="rules"
-    >
+    <n-form ref="formRef" :model="metricStore" :rules="rules">
       <StandardSettingRow
         :label="t('config.metric_mode')"
         path="mode"
         :hint="t('config.metric_mode_desc')"
       >
-        <n-select
-          v-model:value="metricStore.mode"
-          :options="modeOptions"
-        />
+        <n-select v-model:value="metricStore.mode" :options="modeOptions" />
       </StandardSettingRow>
 
       <n-divider title-placement="left">

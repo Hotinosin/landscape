@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useCapabilityStore } from "@/stores/capability";
+const capabilities = useCapabilityStore();
 import { useMessage, type DataTableColumns } from "naive-ui";
 import { isIP } from "is-ip";
 import { computed, h, ref, watch } from "vue";
@@ -156,7 +158,7 @@ const quicAttemptColumns = computed<DataTableColumns<QuicAttempt>>(() => [
 ]);
 
 async function testQuic() {
-  if (!rule.value) return;
+  if (!rule.value || !capabilities.HAS("dns_quic_diagnostics")) return;
   showQuicTestResult.value = true;
   quicTestLoading.value = true;
   quicTestResult.value = undefined;
@@ -383,7 +385,7 @@ async function import_rules(rules: DnsUpstreamConfig) {
         <n-flex align="center" :wrap="false" :size="8">
           <n-switch v-model:value="http3Enabled" size="medium" />
           <n-button
-            v-if="http3Enabled"
+            v-if="http3Enabled && capabilities.HAS('dns_quic_diagnostics')"
             size="small"
             :loading="quicTestLoading"
             @click="testQuic"
@@ -394,11 +396,19 @@ async function import_rules(rules: DnsUpstreamConfig) {
       </StandardSettingRow>
 
       <StandardSettingRow
-        v-else-if="rule.mode.t === DnsUpstreamModeTsEnum.Quic"
+        v-else-if="
+          rule.mode.t === DnsUpstreamModeTsEnum.Quic &&
+          capabilities.HAS('dns_quic_diagnostics')
+        "
         :label="t('dns.upstream_edit.doq_reuse_test')"
         control-width="auto"
       >
-        <n-button size="small" :loading="quicTestLoading" @click="testQuic">
+        <n-button
+          size="small"
+          v-if="capabilities.HAS('dns_quic_diagnostics')"
+          :loading="quicTestLoading"
+          @click="testQuic"
+        >
           {{ t("dns.upstream_edit.test") }}
         </n-button>
       </StandardSettingRow>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useCapabilityStore } from "@/stores/capability";
+void useCapabilityStore().LOAD();
 import { computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useHistoryRouteStore } from "@/stores/history_route";

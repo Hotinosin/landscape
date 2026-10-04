@@ -23,10 +23,18 @@ describe("Domain & DDNS i18n and Dirty Protection Contracts", () => {
     expect(zhDnsProvider.remark_placeholder).not.toContain("可选");
 
     // Docker placeholder cleanup
-    expect(zhDocker.docker_run.container_name_placeholder).toBe("请输入容器名称");
-    expect(enDocker.docker_run.container_name_placeholder).toBe("Enter container name");
-    expect(zhDocker.docker_run.container_name_placeholder).not.toContain("可选");
-    expect(enDocker.docker_run.container_name_placeholder).not.toContain("optional");
+    expect(zhDocker.docker_run.container_name_placeholder).toBe(
+      "请输入容器名称",
+    );
+    expect(enDocker.docker_run.container_name_placeholder).toBe(
+      "Enter container name",
+    );
+    expect(zhDocker.docker_run.container_name_placeholder).not.toContain(
+      "可选",
+    );
+    expect(enDocker.docker_run.container_name_placeholder).not.toContain(
+      "optional",
+    );
   });
 
   it("ensures DDNS snapshot detects form, sources, and records mutations", () => {
@@ -57,7 +65,9 @@ describe("Domain & DDNS i18n and Dirty Protection Contracts", () => {
     expect(getSnapshot(form, sources, modifiedRecords) !== origin).toBe(true);
 
     // Source change triggers dirty
-    const modifiedSources = [{ kind: "wan", target_id: "eth1", family: "ipv6" }];
+    const modifiedSources = [
+      { kind: "wan", target_id: "eth1", family: "ipv6" },
+    ];
     expect(getSnapshot(form, modifiedSources, records) !== origin).toBe(true);
   });
 
@@ -73,10 +83,14 @@ describe("Domain & DDNS i18n and Dirty Protection Contracts", () => {
     expect(JSON.stringify(form) === origin).toBe(true);
 
     // Name mutation
-    expect(JSON.stringify({ ...form, name: "Cloudflare Backup" }) !== origin).toBe(true);
+    expect(
+      JSON.stringify({ ...form, name: "Cloudflare Backup" }) !== origin,
+    ).toBe(true);
 
     // Remark mutation
-    expect(JSON.stringify({ ...form, remark: "Updated remark" }) !== origin).toBe(true);
+    expect(
+      JSON.stringify({ ...form, remark: "Updated remark" }) !== origin,
+    ).toBe(true);
 
     // Config mutation
     expect(

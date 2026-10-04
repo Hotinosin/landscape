@@ -62,11 +62,7 @@ onMounted(async () => {
       :wrap="false"
       style="flex: 1; min-height: 0; overflow: hidden"
     >
-      <n-card
-        size="small"
-        :bordered="false"
-        class="metric-navigation-card"
-      >
+      <n-card size="small" :bordered="false" class="metric-navigation-card">
         <n-flex align="center" justify="space-between">
           <ConnectViewSwitcher />
 

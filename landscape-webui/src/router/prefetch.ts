@@ -17,7 +17,8 @@ const routeLoaders: Record<string, () => Promise<unknown>> = {
   "/webshell": () => import("@/views/WebShell.vue"),
   "/config": () => import("@/views/Config.vue"),
   "/metrics/conn/live": () => import("@/views/metric/conn/LiveMetric.vue"),
-  "/metrics/conn/history": () => import("@/views/metric/conn/HistoryMetric.vue"),
+  "/metrics/conn/history": () =>
+    import("@/views/metric/conn/HistoryMetric.vue"),
   "/metrics/dns": () => import("@/views/metric/DNSMetric.vue"),
   "/domains/ddns": () => import("@/views/domain/DdnsJobs.vue"),
   "/domains/credentials": () => import("@/views/domain/Credentials.vue"),

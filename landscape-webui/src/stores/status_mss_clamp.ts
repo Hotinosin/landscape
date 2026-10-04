@@ -12,9 +12,7 @@ export const useMSSClampConfigStore = defineStore("status_mss_clamp", () => {
     status.value = await get_all_mss_clamp_status();
   }
 
-  function GET_STATUS_BY_IFACE_NAME(
-    name: string,
-  ): ServiceStatus | undefined {
+  function GET_STATUS_BY_IFACE_NAME(name: string): ServiceStatus | undefined {
     return status.value.get(name);
   }
 

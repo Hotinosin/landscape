@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { metricPalette } from "@/themes";
 import { computed, ref } from "vue";
 import { useThemeVars } from "naive-ui";
 import { useI18n } from "vue-i18n";
@@ -61,21 +62,6 @@ const props = withDefaults(defineProps<Props>(), {
   height: "320px",
 });
 
-const PALETTE = [
-  "#5470c6",
-  "#91cc75",
-  "#fac858",
-  "#ee6666",
-  "#73c0de",
-  "#3ba272",
-  "#fc8452",
-  "#9a60b4",
-  "#ea7ccc",
-  "#48b8d0",
-  "#e97f7f",
-  "#b6a2de",
-];
-
 const themeVars = useThemeVars();
 const { t, locale } = useI18n();
 
@@ -133,7 +119,7 @@ const timeFormatter = computed(
 
 const option = computed<ECOption>(() => ({
   animation: false,
-  color: PALETTE,
+  color: metricPalette,
   textStyle: {
     color: themeVars.value.textColor2,
   },

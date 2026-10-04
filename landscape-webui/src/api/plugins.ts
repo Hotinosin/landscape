@@ -1,3 +1,4 @@
+import { useCapabilityStore } from "@/stores/capability";
 import {
   listPlugins as listPluginsApi,
   importPlugin as importPluginApi,
@@ -17,27 +18,14 @@ import type {
 export type { PluginInfo, PluginNetwork };
 
 export async function listPlugins(): Promise<PluginInfo[]> {
-  try {
-    const res = await listPluginsApi({
-      url: "/api/v1/plugins",
-      silent: true,
-    } as any);
-    if (Array.isArray(res)) return res;
-    if (
-      res &&
-      typeof res === "object" &&
-      "data" in res &&
-      Array.isArray((res as any).data)
-    ) {
-      return (res as any).data;
-    }
-    return [];
-  } catch {
-    return [];
-  }
+  const capabilities = useCapabilityStore();
+  await capabilities.LOAD();
+  if (!capabilities.HAS("plugins")) return [];
+  return listPluginsApi({ silent: true });
 }
 
 export async function importPlugin(file: File): Promise<PluginInfo> {
+  await useCapabilityStore().REQUIRE("plugins");
   const formData = new FormData();
   formData.append("file", file);
   return importPluginApi({
@@ -47,22 +35,27 @@ export async function importPlugin(file: File): Promise<PluginInfo> {
 }
 
 export async function removePlugin(id: string): Promise<void> {
+  await useCapabilityStore().REQUIRE("plugins");
   await removePluginApi(id);
 }
 
 export async function startPlugin(id: string): Promise<void> {
+  await useCapabilityStore().REQUIRE("plugins");
   await startPluginApi(id);
 }
 
 export async function stopPlugin(id: string, force = false): Promise<void> {
+  await useCapabilityStore().REQUIRE("plugins");
   await stopPluginApi(id, force ? { force } : undefined);
 }
 
 export async function restartPlugin(id: string): Promise<void> {
+  await useCapabilityStore().REQUIRE("plugins");
   await restartPluginApi(id);
 }
 
 export async function pluginLogs(id: string): Promise<string> {
+  await useCapabilityStore().REQUIRE("plugins");
   return pluginLogsApi(id);
 }
 
@@ -72,6 +65,7 @@ export async function pluginConfig(
   id: string,
   layer?: PluginConfigLayer,
 ): Promise<string> {
+  await useCapabilityStore().REQUIRE("plugins");
   return pluginConfigApi(id, layer ? { layer } : undefined);
 }
 
@@ -81,6 +75,7 @@ export async function savePluginConfig(
   layer?: PluginConfigLayer,
   check = true,
 ): Promise<void> {
+  await useCapabilityStore().REQUIRE("plugins");
   await savePluginConfigApi(id, config, {
     layer,
     check,

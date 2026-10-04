@@ -1,7 +1,12 @@
 {
   "name": "landscape-webui",
   "private": true,
-  "version": "0.25.2",
+  "version": "0.25.2-custom.1",
+  "backendCompatibility": {
+    "minimum": "0.25.2",
+    "apiBaseline": "0.25.2",
+    "features": "capabilities"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

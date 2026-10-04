@@ -33,7 +33,6 @@ Map components to an existing semantic surface instead. CSS consumers use the ge
 - Use the typography tokens from `fontSizeMicro` through `fontSizeTitle`; feature pages must not
   introduce local body or caption font sizes.
 
-
 ## Monitoring navigation
 
 - Sidebar order: Realtime (`/metrics/conn/live`), History

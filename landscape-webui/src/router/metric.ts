@@ -8,6 +8,7 @@ const metric_route: Array<RouteRecordRaw> = [
   },
   {
     path: "/metrics/conn/history",
+    meta: { capability: "metric_persistent" },
     name: "routes.connect-history",
     component: () => import("@/views/metric/conn/HistoryMetric.vue"),
   },
@@ -28,16 +29,19 @@ const metric_route: Array<RouteRecordRaw> = [
   },
   {
     path: "/metrics/conn/history-src",
+    meta: { capability: "metric_persistent" },
     name: "routes.connect-history-src",
     component: () => import("@/views/metric/conn/HistorySrcIpMetric.vue"),
   },
   {
     path: "/metrics/conn/history-dst",
+    meta: { capability: "metric_persistent" },
     name: "routes.connect-history-dst",
     component: () => import("@/views/metric/conn/HistoryDstIpMetric.vue"),
   },
   {
     path: "/metrics/dns",
+    meta: { capability: "metric_persistent" },
     name: "routes.dns-metric",
     component: () => import("@/views/metric/DNSMetric.vue"),
   },

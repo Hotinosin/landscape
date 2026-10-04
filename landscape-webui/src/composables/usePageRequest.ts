@@ -22,7 +22,8 @@ export function usePageRequest<T>(
   options: PageRequestOptions<T>,
 ) {
   const cached = options.cacheKey ? pageCache.get(options.cacheKey) : undefined;
-  const initialVal = cached !== undefined ? (cached.data as T) : options.initialData;
+  const initialVal =
+    cached !== undefined ? (cached.data as T) : options.initialData;
   const data = shallowRef(initialVal) as ShallowRef<T>;
   const error = shallowRef<unknown>();
   const initialized = ref(cached !== undefined);

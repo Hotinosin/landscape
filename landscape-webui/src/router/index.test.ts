@@ -1,3 +1,5 @@
+import { createPinia, setActivePinia } from "pinia";
+import { useCapabilityStore } from "@/stores/capability";
 import { beforeEach, expect, test } from "vitest";
 import { LANDSCAPE_TOKEN_KEY } from "@/lib/common";
 import router, { isExpiredToken } from "./index";
@@ -7,6 +9,7 @@ function tokenWithExpiry(exp: number) {
 }
 
 beforeEach(async () => {
+  setActivePinia(createPinia());
   localStorage.clear();
   await router.push("/login");
 });
@@ -31,4 +34,13 @@ test("redirects an expired deep link before mounting it", async () => {
 
 test("recognizes an unexpired token", () => {
   expect(isExpiredToken(tokenWithExpiry(2), 1000)).toBe(false);
+});
+
+test("rejects a direct extension route on an upstream backend", async () => {
+  localStorage.setItem(LANDSCAPE_TOKEN_KEY, tokenWithExpiry(4_102_444_800));
+  const capabilities = useCapabilityStore();
+  capabilities.loaded = true;
+  capabilities.capabilities = new Set(["gateway"]);
+  await router.push("/plugins");
+  expect(router.currentRoute.value.path).toBe("/unavailable");
 });

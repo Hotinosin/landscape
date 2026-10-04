@@ -12,9 +12,7 @@ export const useRouteWanConfigStore = defineStore("status_route_wan", () => {
     status.value = await get_all_route_wan_status();
   }
 
-  function GET_STATUS_BY_IFACE_NAME(
-    name: string,
-  ): ServiceStatus | undefined {
+  function GET_STATUS_BY_IFACE_NAME(name: string): ServiceStatus | undefined {
     return status.value.get(name);
   }
 

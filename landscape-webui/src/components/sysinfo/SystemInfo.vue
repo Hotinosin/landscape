@@ -40,7 +40,9 @@ const isVersionMismatch = computed(() => {
   if (!sysinfo.value.landscape_version || !ui_version) {
     return false;
   }
-  return sysinfo.value.landscape_version !== ui_version;
+  return (
+    sysinfo.value.landscape_version.split("-")[0] !== ui_version.split("-")[0]
+  );
 });
 
 // Calculate uptime in a readable format
