@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+if [[ "$(uname -s)" == Darwin ]]; then
+  echo "Run this release build inside OrbStack Ubuntu; use scripts/cargo.sh for Rust development." >&2
+  exit 1
+fi
 #
 # 在 x86_64 主机上交叉编译 Flow Edge 镜像所需的用户态二进制
 # （cargo-zigbuild 方案）。

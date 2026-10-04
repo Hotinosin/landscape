@@ -33,14 +33,16 @@
 
 ## 开发环境搭建
 
+在 `custom` 开发，`main` 镜像上游。Mac 上所有 Rust 命令通过 `scripts/cargo.sh` 进入 OrbStack Ubuntu；前端使用 Bun，Python 工具使用 uv。参见 [分支与兼容约定](docs/extension-branching.md)。
+
 完整开发指南见 [BUILD.zh.md](./BUILD.zh.md)。快速开始：
 
 ```bash
 # 安装系统依赖
 sudo apt-get install -y cmake clang curl gcc llvm make pkg-config libelf-dev libclang-dev zlib1g-dev zstd
 
-# 安装 pnpm 及前端依赖
-pnpm install --frozen-lockfile
+# 安装 Bun 1.4.2 及前端依赖
+bun install --frozen-lockfile
 
 # 生成 TypeScript API 绑定（前端开发前必须执行）
 ./gen_ts_bindings.sh
@@ -65,10 +67,10 @@ pnpm install --frozen-lockfile
 然后执行完整的 PR 检查清单：
 
 ```bash
-cargo test --workspace
-cargo test -p landscape-ebpf --features bpf-test   # eBPF 集成测试（需要 root）
-pnpm --filter landscape-webui run format:check
-pnpm --filter landscape-webui build
+./scripts/cargo.sh test --workspace
+./scripts/cargo.sh test -p landscape-ebpf --features bpf-test   # eBPF 集成测试（需要 root）
+bun run --cwd landscape-webui format:check
+bun run --cwd landscape-webui build
 ```
 
 ### 重新生成 API 绑定
@@ -86,9 +88,9 @@ pnpm --filter landscape-webui build
 ### 后端（Rust + eBPF）
 
 ```bash
-cargo build --workspace
-cargo test --workspace                                          # 单元测试，速度快
-cargo test -p landscape-ebpf --features bpf-test                # eBPF 集成测试（需要 root）
+./scripts/cargo.sh build --workspace
+./scripts/cargo.sh test --workspace                                          # 单元测试，速度快
+./scripts/cargo.sh test -p landscape-ebpf --features bpf-test                # eBPF 集成测试（需要 root）
 ```
 
 `cargo tt` 和 `cargo ttb` 是上述两条测试命令的别名。
@@ -127,8 +129,8 @@ BPF skeleton 会并行编译并按内容哈希缓存；内存受限的机器可�
 
 ### Rust
 
-- 使用 `./fmt.sh --rust` 或 `cargo fmt` 格式化。项目配置了 [`.rustfmt.toml`](./.rustfmt.toml)。
-- 为新逻辑编写测试。运行 `cargo test --workspace` 验证。
+- 使用 `./fmt.sh --rust` 或 `./scripts/cargo.sh fmt` 格式化。项目配置了 [`.rustfmt.toml`](./.rustfmt.toml)。
+- 为新逻辑编写测试。运行 `./scripts/cargo.sh test --workspace` 验证。
 - 新增 API 类型时，遵循 `landscape-common` 的序列化约定。
 - 如果修改了 OpenAPI 路由或 schema，运行 `./gen_ts_bindings.sh` 更新本地绑定。
 - `landscape-common` 中按域组织类型，同一域内按数据生命周期分文件：

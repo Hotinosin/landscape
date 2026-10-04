@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+if [[ "$(uname -s)" == Darwin ]]; then
+  echo "Run this release build inside OrbStack Ubuntu; use scripts/cargo.sh for Rust development." >&2
+  exit 1
+fi
 #
 # 在任意 x86_64 主机上交叉编译 gnu（glibc 动态链接）产物（cargo-zigbuild 方案）。
 # Cross-compile dynamically linked glibc (gnu) artifacts on any x86_64 host

@@ -1,140 +1,61 @@
-# Build and Development
+# Build and development
 
-This is the canonical local development guide for the repository.
+[简体中文](BUILD.zh.md)
 
-## What to use
+`main` mirrors upstream. All custom backend and WebUI development belongs on `custom`; see [branching and compatibility](docs/extension-branching.md).
 
-- Use `cargo build --workspace` and `cargo test --workspace` for normal Rust development.
-- Use `cargo test -p landscape-ebpf --features bpf-test` for the eBPF integration tests (requires root).
-- Use `./web.sh` for the frontend dev server.
-- Use `pnpm` for direct frontend commands. If you do not have a global `pnpm`, use `corepack pnpm`.
-- Use `bash ./build.sh -t <arch>` only for full integration or release-style builds.
+## Toolchains
 
-Do not use `build.sh` for every edit. It rebuilds the frontend, ensures API bindings exist when needed, stages release static assets, and produces release artifacts.
+- Rust 1.98.0 with rustfmt and Clippy. On macOS, never invoke Cargo or Rust tools locally: `scripts/cargo.sh` runs them in OrbStack Ubuntu. Linux runs Cargo natively.
+- Bun 1.4.2 for frontend installation, development, tests and builds. `bun.lock` is the only frontend lockfile.
+- Python tools use `uv`; no Conda or `python -m venv`.
 
-## Requirements
+Install Linux dependencies inside Ubuntu:
 
-- Linux kernel `6.9+`
-- BTF/BPF enabled
-- Node.js `22+`
-- Rust toolchain (pinned to `1.98.0` via [`rust-toolchain.toml`](./rust-toolchain.toml))
-
-Install the system packages used by CI:
-
-```bash
+```sh
 sudo apt-get update
-sudo apt-get install -y cmake clang curl gcc llvm make pkg-config libelf-dev libclang-dev zlib1g-dev zstd
+sudo apt-get install -y cmake clang curl gcc llvm make pkg-config libelf-dev libclang-dev zlib1g-dev zstd clang-format-18
 ```
-
-## pnpm and Corepack
-
-This repository pins `pnpm` in [`package.json`](./package.json).
-
-If you already have `pnpm` installed globally, use it directly:
-
-```bash
-pnpm --version
-```
-
-If you do not want a global `pnpm`, use Corepack instead:
-
-```bash
-corepack enable
-corepack pnpm --version
-```
-
-If you want the `pnpm` command itself to be available through Corepack, run:
-
-```bash
-corepack enable pnpm
-```
-
-Repository wrapper scripts such as `./web.sh`, `./gen_ts_bindings.sh`, and `bash ./build.sh` already resolve `pnpm` through `scripts/pnpm_cmd.sh`. When Corepack is available and usable, they prefer `corepack pnpm`; otherwise they fall back to a global `pnpm`.
-
-Reference: <https://pnpm.io/installation#using-corepack>
-
-## Initial setup
-
-Install workspace dependencies:
-
-```bash
-pnpm install --frozen-lockfile
-```
-
-If you are using Corepack instead of a global `pnpm`, replace `pnpm` with `corepack pnpm`.
-
-The frontend imports generated code from `landscape-types`, so generate it before frontend work:
-
-```bash
-./gen_ts_bindings.sh
-```
-
-`./gen_ts_bindings.sh` exports `openapi.json` and regenerates the TypeScript client. Run it again whenever you change backend OpenAPI routes or schemas.
-
-Directly running `./gen_ts_bindings.sh` always forces a fresh export and regeneration.
-
-`bash ./build.sh -t <arch>` is different: it calls `./gen_ts_bindings.sh --if-stale` internally so repeated full builds do not regenerate bindings once the generated files and lock file already exist.
-
-`./web.sh` also calls `./gen_ts_bindings.sh --if-stale` before starting the frontend dev server, so frontend development avoids paying the regeneration cost on every run.
-
-If you explicitly want the same lock-based skip behavior outside the full build flow, use:
-
-```bash
-./gen_ts_bindings.sh --if-stale
-```
-
-This skips regeneration only when `landscape-types/openapi.json`, `landscape-types/src/api/schemas/index.ts`, and `landscape-types/.bindings.lock` all exist.
 
 ## Daily development
 
-### Backend
+From the repository root (also supported on macOS with OrbStack Ubuntu available):
 
-```bash
-cargo build --workspace
-cargo test --workspace                              # unit tests
-cargo test -p landscape-ebpf --features bpf-test    # eBPF integration tests (root required)
+```sh
+bun install --frozen-lockfile
+./gen_ts_bindings.sh
+bun run --cwd landscape-webui dev
+./scripts/cargo.sh test --locked -p landscape-webserver --bin landscape-webserver
+./scripts/cargo.sh test --locked -p landscape-common --lib
 ```
 
-### Frontend
+`gen_ts_bindings.sh` always exports OpenAPI from the current backend commit, then generates clients with Bun. Generated `landscape-types/openapi.json` and `landscape-types/src/api` are not committed. There is no existence-only freshness shortcut.
 
-```bash
-./web.sh
+The macOS wrapper stores Cargo artifacts in Ubuntu at `$HOME/.cache/landscape-custom-target`; it does not fill the VM's tmpfs. Override `CARGO_TARGET_DIR` inside Ubuntu if needed.
+
+## Quality checks
+
+```sh
+./scripts/cargo.sh fmt --all -- --check
+./scripts/cargo.sh clippy --locked --workspace --features metric-persistent,mem-track -- -D warnings
+./scripts/cargo.sh test --locked -p landscape-common -p landscape-core -p landscape-dns --lib
+bun run --cwd landscape-webui test
+bun run --cwd landscape-webui build
+bun run --cwd landscape-webui format:check
 ```
 
-`./web.sh` performs the same lock-based API bindings check before starting `landscape-webui` in dev mode.
+CI additionally runs feature-matrix Clippy, C formatting and configuration CLI end-to-end tests. eBPF/network integration tests require root in Linux and are separate from ordinary unit tests:
 
-Equivalent direct command:
-
-```bash
-pnpm --filter landscape-webui dev
+```sh
+./scripts/cargo.sh test --locked -p landscape-ebpf --features bpf-test
 ```
 
-If the UI build fails with missing `@landscape-router/types/...` modules, regenerate `openapi.json` and `landscape-types`.
+## Packaging and releases
 
-`pnpm --filter landscape-webui build` builds the app bundle itself. Release-style static packaging, including the Scalar assets served by the backend, is handled by `bash ./build.sh -t <arch>`.
+Run `bash ./build.sh -t x86_64` or `-t aarch64` inside Ubuntu. Release scripts reject macOS before invoking Rust. `scripts/build_musl_static.sh`, `scripts/build_gnu.sh` and `scripts/build_edge_bins.sh` provide Linux cross builds; their headers describe required sysroots and Zig tools.
 
-## Full build
+`build.sh` builds the WebUI and copies Scalar browser assets to `output/static`, then packages the backend. The supported custom release trigger is a reviewed `v<upstream-version>-custom.<N>` tag. Quality checks must succeed before release build jobs; custom releases are prereleases and do not replace upstream Latest. A normal branch push runs quality checks only.
 
-Use this when you want the same general flow as CI:
+## Plugin log rotation
 
-```bash
-bash ./build.sh -t x86_64
-```
-
-`build.sh` installs frontend dependencies, regenerates API bindings only when the generated files or lock file are missing, builds the web UI, stages the Scalar static assets under `output/static`, and then builds the release backend binary.
-
-## `sudo`
-
-Do not use `sudo` for dependency installation, formatting, type generation, or normal frontend and Rust builds.
-
-Use `sudo` only when running `landscape-webserver` on a real host, attaching eBPF programs, touching live interfaces, or validating real routing and packet-path behavior.
-
-## Before opening a PR
-
-```bash
-cargo fmt --all
-cargo test --workspace
-cargo test -p landscape-ebpf --features bpf-test
-pnpm --filter landscape-webui exec prettier --check "src/**/*.{vue,ts,js,json,css,scss}"
-pnpm --filter landscape-webui build
-```
+Log API reads are bounded to 64 KiB. Install [the logrotate template](scripts/landscape-plugins.logrotate) on the router and substitute the actual `--home` path (default `/root/.landscape-router`). Run logrotate hourly with a systemd timer or cron. It retains four compressed 10 MiB generations using `copytruncate`, so running processes keep their open log handles. Copytruncate can lose a few lines during rotation; it avoids adding a custom logging daemon.

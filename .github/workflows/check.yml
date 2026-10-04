@@ -4,11 +4,20 @@ on:
   push:
     branches:
       - main
-      - dev
+      - custom
+  workflow_call:
+  workflow_dispatch:
   pull_request:
     branches:
       - main
-      - dev
+      - custom
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   rust-check:
@@ -43,17 +52,17 @@ jobs:
           restore-keys: ${{ runner.os }}-check-
 
       - name: Check Rust code
-        run: cargo check --workspace --features metric-persistent
+        run: cargo check --locked --workspace --features metric-persistent,mem-track
 
       - name: Run clippy
-        run: cargo clippy --workspace --features metric-persistent -- -D warnings
+        run: cargo clippy --locked --workspace --all-targets --features metric-persistent,mem-track -- -D warnings
 
       - name: Run clippy (feature matrix)
         run: |
-          cargo clippy -p landscape-metric --no-default-features -- -D warnings
-          cargo clippy -p landscape-webserver --no-default-features -- -D warnings
-          cargo clippy -p landscape-common --features mem-track -- -D warnings
-          cargo clippy -p landscape-common --features openapi -- -D warnings
+          cargo clippy --locked -p landscape-metric --no-default-features -- -D warnings
+          cargo clippy --locked -p landscape-webserver --no-default-features -- -D warnings
+          cargo clippy --locked -p landscape-common --features mem-track -- -D warnings
+          cargo clippy --locked -p landscape-common --features openapi -- -D warnings
 
   config-cli-e2e:
     runs-on: ubuntu-latest
@@ -88,11 +97,19 @@ jobs:
             ${{ runner.os }}-e2e-
             ${{ runner.os }}-check-
 
-      - name: Run landscape-common unit tests
-        run: cargo test -p landscape-common --lib
+      - name: Run core unit tests
+        run: cargo test --locked -p landscape-common -p landscape-core -p landscape-dns --lib
 
       - name: Build landscape-webserver
-        run: cargo build -p landscape-webserver
+        run: cargo build --locked -p landscape-webserver
+
+      - name: Webserver regression tests and OpenAPI export
+        run: cargo test --locked -p landscape-webserver --bin landscape-webserver
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: checked-openapi
+          path: landscape-types/openapi.json
 
       - name: Run config CLI end-to-end tests
         run: ./scripts/config_cli_test.sh target/debug/landscape-webserver
@@ -114,7 +131,7 @@ jobs:
         run: rustc --version
 
       - name: Check Rust code formatting
-        run: cargo fmt -- --check
+        run: cargo fmt --all -- --check
 
   c-format-check:
     runs-on: ubuntu-latest
@@ -133,24 +150,39 @@ jobs:
             ! -name 'vmlinux.h' \
             -print0 | xargs -0 clang-format-18 --dry-run --Werror
 
-  frontend-format-check:
+  frontend-check:
+    needs: config-cli-e2e
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: checked-openapi
+          path: landscape-types
+
+      - name: Generate API bindings
+        run: bun run --cwd landscape-types generate
+
+      - name: Frontend tests and build
+        run: |
+          bun run --cwd landscape-webui test
+          bun run --cwd landscape-webui build
 
       - name: Check frontend code formatting
-        run: pnpm --filter landscape-webui run format:check
+        run: bun run --cwd landscape-webui format:check

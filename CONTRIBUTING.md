@@ -33,14 +33,16 @@ Look for issues labeled `good first issue` or `help wanted`.
 
 ## Development Setup
 
+Work on `custom`; `main` mirrors upstream. On macOS, all Rust commands run in OrbStack Ubuntu through `scripts/cargo.sh`. Frontend commands run with Bun. Use `uv` for Python tools. See [branching and compatibility](docs/extension-branching.md).
+
 See [BUILD.md](./BUILD.md) for the full local development guide. Quick start:
 
 ```bash
 # Install system dependencies
 sudo apt-get install -y cmake clang curl gcc llvm make pkg-config libelf-dev libclang-dev zlib1g-dev zstd
 
-# Install pnpm and frontend dependencies
-pnpm install --frozen-lockfile
+# Install Bun 1.4.2 and frontend dependencies
+bun install --frozen-lockfile
 
 # Generate TypeScript API bindings (required before frontend work)
 ./gen_ts_bindings.sh
@@ -65,10 +67,10 @@ This runs all three formatters (Rust, C/eBPF, Frontend). You can also format onl
 Then run the full PR checklist:
 
 ```bash
-cargo test --workspace
-cargo test -p landscape-ebpf --features bpf-test   # eBPF integration tests (requires root)
-pnpm --filter landscape-webui run format:check
-pnpm --filter landscape-webui build
+./scripts/cargo.sh test --workspace
+./scripts/cargo.sh test -p landscape-ebpf --features bpf-test   # eBPF integration tests (requires root)
+bun run --cwd landscape-webui format:check
+bun run --cwd landscape-webui build
 ```
 
 ### Regenerating API Bindings
@@ -86,9 +88,9 @@ This exports `openapi.json` locally.
 ### Backend (Rust + eBPF)
 
 ```bash
-cargo build --workspace
-cargo test --workspace                                          # unit tests, fast
-cargo test -p landscape-ebpf --features bpf-test                # eBPF integration tests (requires root)
+./scripts/cargo.sh build --workspace
+./scripts/cargo.sh test --workspace                                          # unit tests, fast
+./scripts/cargo.sh test -p landscape-ebpf --features bpf-test                # eBPF integration tests (requires root)
 ```
 
 `cargo tt` and `cargo ttb` are aliases for the two test commands above.
@@ -127,8 +129,8 @@ Or format a single language:
 
 ### Rust
 
-- Format with `./fmt.sh --rust` or `cargo fmt`. The project uses a [`.rustfmt.toml`](./.rustfmt.toml).
-- Write tests for new logic. Run `cargo test --workspace`.
+- Format with `./fmt.sh --rust` or `./scripts/cargo.sh fmt`. The project uses a [`.rustfmt.toml`](./.rustfmt.toml).
+- Write tests for new logic. Run `./scripts/cargo.sh test --workspace`.
 - Derive `Serialize`/`Deserialize` via `landscape-common` conventions when adding API types.
 - If you change OpenAPI routes or schemas, run `./gen_ts_bindings.sh` to update local bindings.
 

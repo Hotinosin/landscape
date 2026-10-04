@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [[ "$(uname -s)" == Darwin ]]; then
+  echo "Run this release build inside OrbStack Ubuntu; use scripts/cargo.sh for Rust development." >&2
+  exit 1
+fi
+
 set -euo pipefail
 
 echo "构建 Rust 项目..."

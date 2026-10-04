@@ -1,7 +1,0 @@
-packages:
-  - 'landscape-webui'
-  - 'landscape-types'
-allowBuilds:
-  esbuild: true
-  ip-num: true
-  vue-demi: true

@@ -1,140 +1,49 @@
-# 构建与本地开发
+# 构建与开发
 
-本文件用于说明仓库的本地开发流程。如与 [BUILD.md](./BUILD.md) 不一致，以英文版为准。
+[English](BUILD.md)
 
-## 该用什么命令
+`main` 镜像上游；后端扩展和定制 WebUI 都在唯一主线 `custom` 开发，参见 [分支与兼容约定](docs/extension-branching.md)。
 
-- 日常 Rust 开发使用 `cargo build --workspace` 和 `cargo test --workspace`
-- eBPF 集成测试使用 `cargo test -p landscape-ebpf --features bpf-test`（需要 root）
-- 前端开发优先使用 `./web.sh`
-- 前端命令使用 `pnpm`。如果你没有全局安装 `pnpm`，再使用 `corepack pnpm`
-- 只有在整仓联调或发布式构建时才使用 `bash ./build.sh -t <arch>`
+## 工具链
 
-不要把 `build.sh` 当作日常开发入口。它会重建前端、按需确保 API 类型产物存在、整理 release 用静态资源，并产出 release 级别的构建结果。
+- Rust 固定 1.98.0。Mac 禁止直接执行 Cargo、Rust 格式化或 Clippy；统一用 `scripts/cargo.sh` 进入 OrbStack Ubuntu。Linux 可原生执行。
+- 前端统一 Bun 1.4.2；仅保留 `bun.lock`。
+- Python 使用 uv 管理依赖与环境。
 
-## 环境要求
+在 Ubuntu 安装系统依赖：
 
-- Linux 内核 `6.9+`
-- 启用 BTF/BPF
-- Node.js `22+`
-- Rust 工具链（通过 [`rust-toolchain.toml`](./rust-toolchain.toml) 固定为 `1.98.0`）
-
-系统依赖按 CI 安装：
-
-```bash
+```sh
 sudo apt-get update
-sudo apt-get install -y cmake clang curl gcc llvm make pkg-config libelf-dev libclang-dev zlib1g-dev zstd
+sudo apt-get install -y cmake clang curl gcc llvm make pkg-config libelf-dev libclang-dev zlib1g-dev zstd clang-format-18
 ```
 
-## pnpm 与 Corepack
+## 日常开发与验证
 
-仓库在 [`package.json`](./package.json) 里锁定了 `pnpm` 版本。
+以下命令在仓库根目录执行，Mac 需先准备 OrbStack Ubuntu：
 
-如果你已经全局安装了 `pnpm`，直接使用：
-
-```bash
-pnpm --version
-```
-
-如果你不想全局安装 `pnpm`，可以改用 Corepack：
-
-```bash
-corepack enable
-corepack pnpm --version
-```
-
-如果你希望本机可以直接输入 `pnpm`，还可以执行：
-
-```bash
-corepack enable pnpm
-```
-
-仓库里的包装脚本，例如 `./web.sh`、`./gen_ts_bindings.sh` 和 `bash ./build.sh`，都会通过 `scripts/pnpm_cmd.sh` 自动解析 `pnpm`。如果环境里有可用的 Corepack，会优先使用 `corepack pnpm`；否则再回退到全局 `pnpm`。
-
-参考：<https://pnpm.io/installation#using-corepack>
-
-## 初始化
-
-先安装工作区依赖：
-
-```bash
-pnpm install --frozen-lockfile
-```
-
-如果你选择的是 Corepack 方式，请把文档里的 `pnpm` 替换成 `corepack pnpm`。
-
-前端会直接引用 `landscape-types` 中的生成代码，因此在开始前端开发前，需要先生成一次：
-
-```bash
+```sh
+bun install --frozen-lockfile
 ./gen_ts_bindings.sh
+bun run --cwd landscape-webui dev
+./scripts/cargo.sh fmt --all -- --check
+./scripts/cargo.sh clippy --locked --workspace --features metric-persistent,mem-track -- -D warnings
+./scripts/cargo.sh test --locked -p landscape-webserver --bin landscape-webserver
+./scripts/cargo.sh test --locked -p landscape-common -p landscape-core -p landscape-dns --lib
+bun run --cwd landscape-webui test
+bun run --cwd landscape-webui build
+bun run --cwd landscape-webui format:check
 ```
 
-`./gen_ts_bindings.sh` 会导出 `openapi.json` 并重新生成 TypeScript client。修改了后端 OpenAPI 路由或 schema 之后，需要重新执行一次。
+API 生成脚本每次都从当前后端提交导出 OpenAPI，再由 Bun 生成客户端，不再根据文件是否存在跳过。`landscape-types/openapi.json` 与 `landscape-types/src/api` 不提交。
 
-直接执行 `./gen_ts_bindings.sh` 时，默认总是强制重新导出并重新生成。
+Mac 包装脚本把 Rust 产物放在 Ubuntu 的 `$HOME/.cache/landscape-custom-target`，避免占满 `/tmp` tmpfs。CI 还执行功能矩阵 Clippy、C 格式检查和配置 CLI E2E。eBPF 与网络集成测试需要 Linux root，普通单元测试不代表已验证生产数据面。
 
-`bash ./build.sh -t <arch>` 不同：它内部会调用 `./gen_ts_bindings.sh --if-stale`，这样重复执行整仓构建时，只要生成产物和 lock 文件已经存在，就不会重复生成。
+## 打包与发布
 
-`./web.sh` 也会在启动前端 dev server 前调用 `./gen_ts_bindings.sh --if-stale`，这样前端开发时也能避免每次启动都重复生成。
+在 Ubuntu 执行 `bash ./build.sh -t x86_64` 或 `-t aarch64`。发布脚本在 Mac 会提前退出。Linux 交叉构建脚本为 `scripts/build_musl_static.sh`、`scripts/build_gnu.sh` 与 `scripts/build_edge_bins.sh`，系统依赖与 sysroot 详见脚本头部。
 
-如果你希望在完整构建流程之外也显式使用这种基于 lock 的跳过行为，可以用：
+普通 push 只触发质量检查。正式定制发布以 `v<上游版本>-custom.<序号>` tag 触发，必须先通过同提交质量门禁；产物标记为 prerelease，不替代上游 Latest。前端打包同时复制 Scalar 静态资源到 `output/static`。
 
-```bash
-./gen_ts_bindings.sh --if-stale
-```
+## 插件日志轮转
 
-只有当 `landscape-types/openapi.json`、`landscape-types/src/api/schemas/index.ts` 和 `landscape-types/.bindings.lock` 都存在时，它才会跳过；任意一个缺失都会重新生成。
-
-## 日常开发
-
-### 后端
-
-```bash
-cargo build --workspace
-cargo test --workspace                              # 单元测试
-cargo test -p landscape-ebpf --features bpf-test    # eBPF 集成测试（需要 root）
-```
-
-### 前端
-
-```bash
-./web.sh
-```
-
-`./web.sh` 会在启动 `landscape-webui` 开发模式前执行同样的基于 lock 的 API 类型检查。
-
-等价原生命令：
-
-```bash
-pnpm --filter landscape-webui dev
-```
-
-如果前端报 `@landscape-router/types/...` 缺失，先重新生成 `openapi.json` 和 `landscape-types`。
-
-`pnpm --filter landscape-webui build` 只负责构建前端应用本身。后端实际服务的 Scalar 静态资源整理属于 release-style 打包流程，由 `bash ./build.sh -t <arch>` 负责。
-
-## 整仓构建
-
-需要跑完整链路时执行：
-
-```bash
-bash ./build.sh -t x86_64
-```
-
-`build.sh` 会安装前端依赖，只在生成产物或 lock 文件缺失时重新生成 API 类型，构建 Web UI、把 Scalar 静态资源整理到 `output/static`，然后再构建 release 后端二进制。
-
-## `sudo`
-
-依赖安装、格式化、类型生成、普通前端构建和普通 Rust 编译都不需要 `sudo`。
-
-只有在真实主机上运行 `landscape-webserver`、挂载 eBPF、操作真实网卡，或验证真实路由与 packet path 行为时才使用 `sudo`。
-
-## 提交前检查
-
-```bash
-cargo fmt --all
-cargo test --workspace
-cargo test -p landscape-ebpf --features bpf-test
-pnpm --filter landscape-webui exec prettier --check "src/**/*.{vue,ts,js,json,css,scss}"
-pnpm --filter landscape-webui build
-```
+日志 API 最多读取末尾 64 KiB。将 [logrotate 模板](scripts/landscape-plugins.logrotate) 安装到路由器，并按实际 `--home` 路径修改（默认 `/root/.landscape-router`）；以 systemd timer 或 cron 每小时执行。模板保留四份压缩归档，超过 10 MiB 后轮转，`copytruncate` 保持进程的日志句柄；轮转瞬间可能损失少量日志行。

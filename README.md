@@ -1,5 +1,8 @@
 <div align="center">
 
+Fork development: `main` mirrors upstream; `custom` contains the backend extensions and the single capability-aware custom WebUI. See [branching and compatibility](docs/extension-branching.md) and [build instructions](BUILD.md).
+
+
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-green.svg)](https://www.gnu.org/licenses/gpl-3.0)  
 
 **Landscape routes traffic by domain—not just IP. Each flow gets its own DNS server.**

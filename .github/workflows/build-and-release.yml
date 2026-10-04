@@ -3,15 +3,20 @@ name: build and release
 on:
   push:
     tags:
-      - '*'
-    branches:
-      - 'build'
+      - 'v*-custom.*'
 
 env:
   sccache_version: 'v0.12.0'
 
+permissions:
+  contents: write
+
 jobs:
+  quality:
+    uses: ./.github/workflows/check.yml
+
   linux-build:
+    needs: quality
     runs-on: ${{ matrix.settings.host }}
     strategy:
       fail-fast: false
@@ -67,18 +72,18 @@ jobs:
               cargo install --force --locked bindgen-cli
             fi
             if [ "${{ matrix.settings.gateway }}" = "true" ]; then
-              cargo build --release --target ${{ matrix.settings.target }} --features metric-persistent
+              cargo build --locked --release --target ${{ matrix.settings.target }} --features metric-persistent
             else
-              cargo build --release --target ${{ matrix.settings.target }} --no-default-features --features metric-persistent
+              cargo build --locked --release --target ${{ matrix.settings.target }} --no-default-features --features metric-persistent
             fi
-            cargo build --release --package landscape-ebpf --bin redirect_pkg_handler --target ${{ matrix.settings.target }}
+            cargo build --locked --release --package landscape-ebpf --bin redirect_pkg_handler --target ${{ matrix.settings.target }}
             mkdir -p output
             cp target/${{ matrix.settings.target }}/release/landscape-webserver output/landscape-webserver-${{ matrix.settings.architecture }}
             cp target/${{ matrix.settings.target }}/release/redirect_pkg_handler output/redirect_pkg_handler-${{ matrix.settings.architecture }}
 
       - name: Export OpenAPI spec
         if: matrix.settings.architecture == 'aarch64'
-        run: cargo test -p landscape-webserver export_openapi_json -- --nocapture
+        run: cargo test --locked -p landscape-webserver export_openapi_json -- --nocapture
 
       - name: Upload OpenAPI spec
         if: matrix.settings.architecture == 'aarch64'
@@ -112,6 +117,7 @@ jobs:
   #     (riscv64/s390x) and Debian sid (loong64), replacing the previous gcc
   #     cross toolchains and from-source zlib/elfutils builds
   linux-cross-build:
+    needs: quality
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/build'
     runs-on: ubuntu-24.04
     strategy:
@@ -218,27 +224,28 @@ jobs:
           name: openapi-spec
           path: landscape-types
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'pnpm'
 
       - name: Build frontend
         run: |
           mkdir -p output
-          pnpm install --frozen-lockfile
-          pnpm --filter @landscape-router/types generate
+          bun install --frozen-lockfile
+          bun run --cwd landscape-types generate
 
           # Copy Scalar API Reference resources
           mkdir -p landscape-webui/public/scalar
           cp landscape-webui/node_modules/@scalar/api-reference/dist/browser/standalone.js landscape-webui/public/scalar/
           cp landscape-webui/node_modules/@scalar/api-reference/dist/style.css landscape-webui/public/scalar/
 
-          pnpm --filter landscape-webui build
+          bun run --cwd landscape-webui build
           cd landscape-webui
           mkdir static
           # Merge dist and public/scalar into static

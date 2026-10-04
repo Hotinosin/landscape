@@ -1,0 +1,11 @@
+# Substitute the actual Landscape --home path. Run logrotate hourly.
+/root/.landscape-router/plugins/*/logs/*.log {
+    size 10M
+    rotate 4
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    su root root
+}

@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+if [[ "$(uname -s)" == Darwin ]]; then
+  echo "Run this release build inside OrbStack Ubuntu; use scripts/cargo.sh for Rust development." >&2
+  exit 1
+fi
 #
 # 在任意主机上交叉编译各架构的 musl 产物（cargo-zigbuild 方案）。
 # Cross-compile per-architecture musl artifacts on any host (cargo-zigbuild approach).

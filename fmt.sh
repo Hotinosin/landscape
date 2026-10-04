@@ -2,7 +2,6 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/scripts/pnpm_cmd.sh"
 
 usage() {
     echo "Usage: $0 [--all] [--rust] [--clippy] [--c] [--frontend]"
@@ -46,12 +45,12 @@ fi
 
 if $FORMAT_ALL || $FORMAT_RUST; then
     echo "Formatting Rust code..."
-    cargo fmt
+    "$SCRIPT_DIR/scripts/cargo.sh" fmt
 fi
 
 if $FORMAT_ALL || $FORMAT_CLIPPY; then
     echo "Running clippy check (same as CI)..."
-    cargo clippy --workspace --features metric-persistent -- -D warnings
+    "$SCRIPT_DIR/scripts/cargo.sh" clippy --locked --workspace --features metric-persistent,mem-track -- -D warnings
 fi
 
 if $FORMAT_ALL || $FORMAT_C; then
@@ -83,7 +82,7 @@ fi
 if $FORMAT_ALL || $FORMAT_FRONTEND; then
     echo "Formatting webui code (landscape-webui/)..."
     if [ -d "$SCRIPT_DIR/landscape-webui" ]; then
-        pnpm_cmd --filter landscape-webui run format
+        bun run --filter landscape-webui format
     fi
 fi
 

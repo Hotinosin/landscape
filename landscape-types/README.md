@@ -9,7 +9,7 @@ TypeScript API client and type definitions for [Landscape Router REST API](https
 ```bash
 npm install @landscape-router/types
 # or
-pnpm add @landscape-router/types
+bun add @landscape-router/types
 ```
 
 Requires `axios` as a peer dependency:
