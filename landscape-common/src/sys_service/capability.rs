@@ -9,6 +9,10 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub enum Capability {
+    /// Managed native plugins and their controller proxy.
+    Plugins,
+    /// DNS QUIC connection reuse diagnostics.
+    DnsQuicDiagnostics,
     /// HTTP/HTTPS reverse proxy gateway (cargo feature `gateway`).
     Gateway,
     /// Persistent metric storage and history queries (cargo feature `metric-persistent`).

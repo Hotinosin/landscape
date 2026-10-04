@@ -26,7 +26,7 @@ pub fn get_dns_upstream_config_paths() -> OpenApiRouter<LandscapeApp> {
     tag = "DNS Upstreams",
     request_body = DnsUpstreamConfig,
     responses(
-        (status = 200, body = CommonApiResp<DnsUpstreamQuicTestResult>),
+        (status = 200, description = "QUIC diagnostic results", body = CommonApiResp<DnsUpstreamQuicTestResult>),
         (status = 400, description = "Invalid H3 or DoQ upstream configuration"),
         (status = 500, description = "QUIC resolver could not be created")
     )

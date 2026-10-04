@@ -6,15 +6,16 @@ use std::{
     process::Stdio,
     sync::Arc,
 };
+use tokio::io::{AsyncReadExt, AsyncSeekExt};
 
 use axum::extract::DefaultBodyLimit;
 use axum::{
+    Json, Router,
     body::Body,
     extract::{Multipart, Path as AxumPath, Query, State},
     http::{Request, StatusCode},
     response::{IntoResponse, Response},
     routing::{any, delete, get, post},
-    Json, Router,
 };
 use flate2::read::GzDecoder;
 use landscape::sys_service::route::IpRouteService;
@@ -28,6 +29,15 @@ use tokio::{
     sync::{Mutex, RwLock},
 };
 use utoipa::{OpenApi, ToSchema};
+
+async fn checked_command_output(
+    command: &mut Command,
+    timeout: std::time::Duration,
+) -> std::io::Result<std::process::Output> {
+    tokio::time::timeout(timeout, command.kill_on_drop(true).output()).await.map_err(|_| {
+        std::io::Error::new(std::io::ErrorKind::TimedOut, "service config check timed out")
+    })?
+}
 
 const MAX_MANIFEST_SIZE: usize = 64 * 1024;
 const MAX_PACKAGE_SIZE: usize = 128 * 1024 * 1024;
@@ -227,6 +237,8 @@ pub struct PluginInfo {
 
 #[derive(Clone)]
 pub struct PluginManager {
+    // ponytail: serialize rare management operations; use per-plugin locks if contention matters.
+    operations: Arc<Mutex<()>>,
     dir: PathBuf,
     route_service: IpRouteService,
     manifests: Arc<RwLock<HashMap<String, PluginManifest>>>,
@@ -243,6 +255,7 @@ impl PluginManager {
 
     pub async fn new(home: &Path, route_service: IpRouteService) -> Result<Self, String> {
         let manager = Self {
+            operations: Arc::new(Mutex::new(())),
             dir: home.join("plugins"),
             route_service,
             manifests: Arc::new(RwLock::new(HashMap::new())),
@@ -275,6 +288,7 @@ impl PluginManager {
     }
 
     async fn watchdog_tick(&self) {
+        let _operation = self.operations.lock().await;
         let manifests = self.manifests.read().await.clone();
         for (id, manifest) in manifests {
             let Some(service) = &manifest.service else { continue };
@@ -289,10 +303,10 @@ impl PluginManager {
             let running = self.service_running(&id).await;
             if running {
                 let mut failures = self.restart_failures.lock().await;
-                if let Some((count, _)) = failures.get_mut(&id) {
-                    if *count > 0 {
-                        *count = 0;
-                    }
+                if let Some((count, _)) = failures.get_mut(&id)
+                    && *count > 0
+                {
+                    *count = 0;
                 }
                 continue;
             }
@@ -430,16 +444,16 @@ impl PluginManager {
         if !manifest.ui_path.starts_with('/') {
             return Err("ui_path must start with '/'".into());
         }
-        if let Some(platform) = &manifest.platform {
-            if platform.os != std::env::consts::OS || platform.arch != std::env::consts::ARCH {
-                return Err(format!(
-                    "package targets {}/{}, host is {}/{}",
-                    platform.os,
-                    platform.arch,
-                    std::env::consts::OS,
-                    std::env::consts::ARCH
-                ));
-            }
+        if let Some(platform) = &manifest.platform
+            && (platform.os != std::env::consts::OS || platform.arch != std::env::consts::ARCH)
+        {
+            return Err(format!(
+                "package targets {}/{}, host is {}/{}",
+                platform.os,
+                platform.arch,
+                std::env::consts::OS,
+                std::env::consts::ARCH
+            ));
         }
         if let Some(service) = &manifest.service {
             if service.kind.trim().is_empty() {
@@ -476,12 +490,12 @@ impl PluginManager {
             }
             if let Ok(entries) = stdfs::read_dir(dir) {
                 for entry in entries.flatten() {
-                    if let Ok(file_type) = entry.file_type() {
-                        if file_type.is_dir() && entry.path().join("index.html").is_file() {
-                            if let Ok(name) = entry.file_name().into_string() {
-                                return Some(name);
-                            }
-                        }
+                    if let Ok(file_type) = entry.file_type()
+                        && file_type.is_dir()
+                        && entry.path().join("index.html").is_file()
+                        && let Ok(name) = entry.file_name().into_string()
+                    {
+                        return Some(name);
                     }
                 }
             }
@@ -591,19 +605,19 @@ impl PluginManager {
                     let ns_entry = dns_map
                         .entry(nameserver_key)
                         .or_insert_with(|| serde_yaml::Value::Sequence(Vec::new()));
-                    if let serde_yaml::Value::Sequence(ns_seq) = ns_entry {
-                        if !ns_seq.contains(&host_dns) {
-                            ns_seq.insert(0, host_dns);
-                        }
+                    if let serde_yaml::Value::Sequence(ns_seq) = ns_entry
+                        && !ns_seq.contains(&host_dns)
+                    {
+                        ns_seq.insert(0, host_dns);
                     }
                 }
             }
 
             let ext_ui_key = serde_yaml::Value::String("external-ui".into());
-            if let Some(serde_yaml::Value::String(s)) = map.get(&ext_ui_key) {
-                if s.trim().is_empty() {
-                    map.remove(&ext_ui_key);
-                }
+            if let Some(serde_yaml::Value::String(s)) = map.get(&ext_ui_key)
+                && s.trim().is_empty()
+            {
+                map.remove(&ext_ui_key);
             }
         }
 
@@ -645,12 +659,11 @@ impl PluginManager {
                 manifest.network.host_ipv4,
             );
             let _ = fs::write(&override_config, default_override).await;
-        } else if let Ok(content) = fs::read_to_string(&override_config).await {
-            if content.contains("169.254.127.1") {
-                let updated =
-                    content.replace("169.254.127.1", &manifest.network.host_ipv4.to_string());
-                let _ = fs::write(&override_config, updated).await;
-            }
+        } else if let Ok(content) = fs::read_to_string(&override_config).await
+            && content.contains("169.254.127.1")
+        {
+            let updated = content.replace("169.254.127.1", &manifest.network.host_ipv4.to_string());
+            let _ = fs::write(&override_config, updated).await;
         }
 
         let effective_content =
@@ -673,10 +686,10 @@ impl PluginManager {
         let Some(service) = &manifest.service else { return Ok(()) };
         {
             let mut services = self.services.lock().await;
-            if let Some(child) = services.get_mut(&manifest.id) {
-                if child.try_wait().map_err(|e| e.to_string())?.is_none() {
-                    return Ok(());
-                }
+            if let Some(child) = services.get_mut(&manifest.id)
+                && child.try_wait().map_err(|e| e.to_string())?.is_none()
+            {
+                return Ok(());
             }
             services.remove(&manifest.id);
         }
@@ -740,17 +753,23 @@ impl PluginManager {
         // Prefer running check directly on host so host DNS and outbound network
         // are available for downloading required geo resources (like Country.mmdb)
         // even if the plugin service has not been started yet or netns is offline.
-        let output = match Command::new(executable).args(&check_args).output().await {
-            Ok(out) => out,
-            Err(_) if netns_exists(&namespace).await.unwrap_or(false) => {
-                let mut cmd = Command::new("ip");
-                cmd.args(["netns", "exec", &namespace]);
-                cmd.arg(executable);
-                cmd.args(&check_args);
-                cmd.output().await.map_err(|e| e.to_string())?
-            }
-            Err(e) => return Err(e.to_string()),
-        };
+        let timeout = std::time::Duration::from_secs(60);
+        let output =
+            match checked_command_output(Command::new(executable).args(&check_args), timeout).await
+            {
+                Ok(out) => out,
+                Err(e)
+                    if e.kind() != std::io::ErrorKind::TimedOut
+                        && netns_exists(&namespace).await.unwrap_or(false) =>
+                {
+                    let mut cmd = Command::new("ip");
+                    cmd.args(["netns", "exec", &namespace]);
+                    cmd.arg(executable);
+                    cmd.args(&check_args);
+                    checked_command_output(&mut cmd, timeout).await.map_err(|e| e.to_string())?
+                }
+                Err(e) => return Err(e.to_string()),
+            };
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
@@ -817,11 +836,11 @@ impl PluginManager {
         let owned_marker = self.plugin_dir(&manifest.id).join("network.owned");
         let owned_namespace = fs::read_to_string(&owned_marker).await.ok();
 
-        if let Some(old_namespace) = owned_namespace.as_deref() {
-            if old_namespace != namespace {
-                remove_network(old_namespace, &manifest.host_interface).await?;
-                let _ = fs::remove_file(&owned_marker).await;
-            }
+        if let Some(old_namespace) = owned_namespace.as_deref()
+            && old_namespace != namespace
+        {
+            remove_network(old_namespace, &manifest.host_interface).await?;
+            let _ = fs::remove_file(&owned_marker).await;
         }
 
         let host_exists = get_interface_index_by_name(&manifest.host_interface).is_some();
@@ -911,10 +930,10 @@ impl PluginManager {
     async fn start_tproxy(&self, manifest: &PluginManifest) -> Result<(), String> {
         {
             let mut handlers = self.handlers.lock().await;
-            if let Some(child) = handlers.get_mut(&manifest.id) {
-                if child.try_wait().map_err(|e| e.to_string())?.is_none() {
-                    return Ok(());
-                }
+            if let Some(child) = handlers.get_mut(&manifest.id)
+                && child.try_wait().map_err(|e| e.to_string())?.is_none()
+            {
+                return Ok(());
             }
             handlers.remove(&manifest.id);
         }
@@ -973,13 +992,14 @@ impl PluginManager {
     }
 
     async fn list(&self) -> Vec<PluginInfo> {
+        let _operation = self.operations.lock().await;
         let manifests: Vec<_> = self.manifests.read().await.values().cloned().collect();
         for manifest in &manifests {
             if get_interface_index_by_name(&manifest.host_interface).is_some() {
-                if !self.tproxy_ready(&manifest.id).await {
-                    if let Err(error) = self.start_tproxy(manifest).await {
-                        tracing::warn!(plugin = %manifest.id, %error, "failed to restart TProxy handler");
-                    }
+                if !self.tproxy_ready(&manifest.id).await
+                    && let Err(error) = self.start_tproxy(manifest).await
+                {
+                    tracing::warn!(plugin = %manifest.id, %error, "failed to restart TProxy handler");
                 }
                 self.register(manifest).await;
             } else {
@@ -1004,6 +1024,7 @@ impl PluginManager {
     }
 
     async fn import(&self, bytes: &[u8]) -> Result<PluginInfo, String> {
+        let _operation = self.operations.lock().await;
         let staging = tempfile::Builder::new()
             .prefix(".import-")
             .tempdir_in(&self.dir)
@@ -1027,13 +1048,19 @@ impl PluginManager {
         if package_dir.exists() {
             return Err("plugin package is already installed; remove it before reinstalling".into());
         }
-        fs::create_dir_all(self.plugin_dir(&manifest.id)).await.map_err(|e| e.to_string())?;
-        let staged_path = staging.keep();
-        fs::rename(&staged_path, &package_dir).await.map_err(|e| e.to_string())?;
         if let Some(service) = &manifest.service {
-            set_executable(&package_dir.join(&service.executable))?;
+            validate_package_files(staging.path(), service)?;
         }
-        if let Err(error) = self.install(&manifest).await {
+        fs::create_dir_all(self.plugin_dir(&manifest.id)).await.map_err(|e| e.to_string())?;
+        let encoded = serde_json::to_vec_pretty(&manifest).map_err(|e| e.to_string())?;
+        let manifest_path = self.plugin_dir(&manifest.id).join("manifest.json");
+        fs::rename(staging.path(), &package_dir).await.map_err(|e| e.to_string())?;
+        let installed = async {
+            self.install(&manifest).await?;
+            fs::write(&manifest_path, encoded).await.map_err(|e| e.to_string())
+        }
+        .await;
+        if let Err(error) = installed {
             self.stop_service(&manifest.id, true).await;
             self.stop_tproxy(&manifest.id).await;
             let route_key = Self::route_key(&manifest.id);
@@ -1045,13 +1072,11 @@ impl PluginManager {
                 let _ = remove_network(&self.namespace(&manifest), &manifest.host_interface).await;
                 let _ = fs::remove_file(owned_marker).await;
             }
+            let _ = fs::remove_file(&manifest_path).await;
             let _ = fs::remove_dir_all(&package_dir).await;
             let _ = fs::remove_dir_all(Path::new(RUNTIME_ROOT).join(&manifest.id)).await;
             return Err(error);
         }
-        let path = self.plugin_dir(&manifest.id).join("manifest.json");
-        let encoded = serde_json::to_vec_pretty(&manifest).map_err(|e| e.to_string())?;
-        fs::write(path, encoded).await.map_err(|e| e.to_string())?;
         let _ = fs::remove_file(self.dir.join(format!("{}.json", manifest.id))).await;
         self.user_stopped.lock().await.insert(manifest.id.clone());
         self.register(&manifest).await;
@@ -1068,7 +1093,8 @@ impl PluginManager {
     }
 
     async fn remove(&self, id: &str) -> Result<(), String> {
-        let manifest = self.manifests.write().await.remove(id).ok_or("plugin not found")?;
+        let _operation = self.operations.lock().await;
+        let manifest = self.get(id).await.ok_or("plugin not found")?;
         let _ = fs::remove_file(self.plugin_dir(id).join("service.enabled")).await;
         self.user_stopped.lock().await.remove(id);
         self.restart_failures.lock().await.remove(id);
@@ -1087,6 +1113,7 @@ impl PluginManager {
         let _ = fs::remove_file(plugin_dir.join("manifest.json")).await;
         let _ = fs::remove_dir_all(plugin_dir.join("package")).await;
         let _ = fs::remove_file(self.dir.join(format!("{id}.json"))).await;
+        self.manifests.write().await.remove(id);
         Ok(())
     }
 
@@ -1096,6 +1123,7 @@ impl PluginManager {
     }
 
     async fn start(&self, id: &str) -> Result<(), String> {
+        let _operation = self.operations.lock().await;
         let manifest = self.get(id).await.ok_or("plugin not found")?;
         let _ = fs::write(self.plugin_dir(id).join("service.enabled"), "").await;
         self.user_stopped.lock().await.remove(id);
@@ -1104,6 +1132,7 @@ impl PluginManager {
     }
 
     async fn stop(&self, id: &str, force: bool) -> Result<(), String> {
+        let _operation = self.operations.lock().await;
         if self.get(id).await.is_none() {
             return Err("plugin not found".into());
         }
@@ -1115,6 +1144,7 @@ impl PluginManager {
     }
 
     async fn restart(&self, id: &str) -> Result<(), String> {
+        let _operation = self.operations.lock().await;
         let manifest = self.get(id).await.ok_or("plugin not found")?;
         let _ = fs::write(self.plugin_dir(id).join("service.enabled"), "").await;
         self.user_stopped.lock().await.remove(id);
@@ -1127,13 +1157,11 @@ impl PluginManager {
         if self.get(id).await.is_none() {
             return Err("plugin not found".into());
         }
-        let bytes =
-            fs::read(self.plugin_dir(id).join("logs/service.log")).await.unwrap_or_default();
-        let start = bytes.len().saturating_sub(64 * 1024);
-        Ok(String::from_utf8_lossy(&bytes[start..]).into_owned())
+        read_log_tail(&self.plugin_dir(id).join("logs/service.log")).await
     }
 
     async fn config(&self, id: &str, layer: Option<&str>) -> Result<String, String> {
+        let _operation = self.operations.lock().await;
         let manifest = self.get(id).await.ok_or("plugin not found")?;
         let service = manifest.service.as_ref().ok_or("plugin has no managed service")?;
         match layer.unwrap_or("base") {
@@ -1171,6 +1199,7 @@ impl PluginManager {
         check: bool,
         body: &str,
     ) -> Result<(), String> {
+        let _operation = self.operations.lock().await;
         if body.len() > 1024 * 1024 {
             return Err("config is too large".into());
         }
@@ -1208,32 +1237,78 @@ impl PluginManager {
         let effective_pending = plugin_dir.join("config").join("effective.new");
         fs::write(&effective_pending, effective_content).await.map_err(|e| e.to_string())?;
 
-        if check {
-            if let Err(error) =
+        if check
+            && let Err(error) =
                 self.check_service_config(&manifest, &executable, &data, &effective_pending).await
-            {
-                let _ = fs::remove_file(&pending).await;
-                let _ = fs::remove_file(&effective_pending).await;
-                return Err(error);
-            }
+        {
+            let _ = fs::remove_file(&pending).await;
+            let _ = fs::remove_file(&effective_pending).await;
+            return Err(error);
         }
 
+        let effective_path = self.effective_config_path(id, service);
+        commit_config_files(&pending, &target_path, &effective_pending, &effective_path).await?;
         let was_running = self.service_running(id).await;
         if was_running {
             self.stop_service(id, false).await;
         }
 
-        fs::rename(&pending, &target_path).await.map_err(|e| e.to_string())?;
-        let effective_path = self.effective_config_path(id, service);
-        fs::rename(&effective_pending, &effective_path).await.map_err(|e| e.to_string())?;
-
-        if was_running {
-            if let Err(err) = self.start_service(&manifest).await {
-                tracing::warn!(plugin = %id, %err, "failed to restart service after saving config");
-            }
+        if was_running && let Err(err) = self.start_service(&manifest).await {
+            return Err(format!("configuration saved, but service restart failed: {err}"));
         }
         Ok(())
     }
+}
+
+// Called with the management lock held. Restore the edited layer if the second rename fails.
+async fn commit_config_files(
+    pending: &Path,
+    target: &Path,
+    effective_pending: &Path,
+    effective: &Path,
+) -> Result<(), String> {
+    let previous = match fs::read(target).await {
+        Ok(bytes) => Some(bytes),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => return Err(error.to_string()),
+    };
+    fs::rename(pending, target).await.map_err(|e| e.to_string())?;
+    if let Err(error) = fs::rename(effective_pending, effective).await {
+        let restore = match previous {
+            Some(bytes) => fs::write(target, bytes).await,
+            None => fs::remove_file(target).await,
+        };
+        restore.map_err(|restore| format!("{error}; restore failed: {restore}"))?;
+        return Err(error.to_string());
+    }
+    Ok(())
+}
+
+fn validate_package_files(root: &Path, service: &PluginService) -> Result<(), String> {
+    if !root.join(&service.default_config).is_file() {
+        return Err("service default config is missing".into());
+    }
+    set_executable(&root.join(&service.executable))
+}
+
+async fn read_log_tail(path: &Path) -> Result<String, String> {
+    let mut file = fs::File::open(path).await.map_err(|e| e.to_string())?;
+    let length = file.metadata().await.map_err(|e| e.to_string())?.len();
+    file.seek(std::io::SeekFrom::Start(length.saturating_sub(64 * 1024)))
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut bytes = Vec::new();
+    file.take(64 * 1024).read_to_end(&mut bytes).await.map_err(|e| e.to_string())?;
+    Ok(String::from_utf8_lossy(&bytes).into_owned())
+}
+
+#[tokio::test]
+async fn log_tail_is_bounded_and_reports_io_failures() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("service.log");
+    assert!(read_log_tail(&path).await.is_err());
+    fs::write(&path, vec![b'x'; 256 * 1024]).await.unwrap();
+    assert_eq!(read_log_tail(&path).await.unwrap().len(), 64 * 1024);
 }
 
 fn validate_package_path(path: &Path) -> Result<(), String> {
@@ -1823,11 +1898,7 @@ pub(crate) fn resolve_ui_target_path(manifest: &PluginManifest, path: &str) -> S
 
     if clean.is_empty() || clean == "ui" {
         let p = manifest.ui_path.trim_matches('/');
-        if p.is_empty() {
-            "/ui/".to_string()
-        } else {
-            format!("/{p}/")
-        }
+        if p.is_empty() { "/ui/".to_string() } else { format!("/{p}/") }
     } else if is_clash_api_path(clean) {
         format!("/{clean}")
     } else if let Some(stripped) = clean.strip_prefix("ui/") {
@@ -1838,11 +1909,7 @@ pub(crate) fn resolve_ui_target_path(manifest: &PluginManifest, path: &str) -> S
             format!("/{inner}")
         } else if inner.is_empty() {
             let p = manifest.ui_path.trim_matches('/');
-            if p.is_empty() {
-                "/ui/".to_string()
-            } else {
-                format!("/{p}/")
-            }
+            if p.is_empty() { "/ui/".to_string() } else { format!("/{p}/") }
         } else if inner == "zashboard"
             || inner == "dist"
             || inner == "metacubexd"
@@ -1931,12 +1998,130 @@ pub fn ui_router(manager: PluginManager) -> Router {
 mod tests {
     use std::{io::Read, path::Path};
 
-    use flate2::{write::GzEncoder, Compression};
+    use flate2::{Compression, write::GzEncoder};
 
     use super::{
-        extract_package, valid_network_name, validate_package_path, ConfigQuery, PluginManifest,
-        PluginService, StopQuery,
+        ConfigQuery, PluginManifest, PluginService, StopQuery, extract_package, valid_network_name,
+        validate_package_path,
     };
+
+    #[tokio::test]
+    async fn config_checker_timeout_releases_process_wait() {
+        let error = super::checked_command_output(
+            tokio::process::Command::new("sleep").arg("30"),
+            std::time::Duration::from_millis(20),
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::TimedOut);
+    }
+
+    async fn test_manager() -> (tempfile::TempDir, super::PluginManager, PluginManifest) {
+        let dir = tempfile::tempdir().unwrap();
+        let manager =
+            super::PluginManager::new(dir.path(), landscape_core::route::test_used_ip_route())
+                .await
+                .unwrap();
+        let manifest: PluginManifest = serde_json::from_value(serde_json::json!({
+            "protocol_version": 1, "id": "test", "name": "Test", "host_interface": "land-test",
+            "controller_socket": "/run/landscape/plugins/test/controller.sock",
+            "version": "1", "platform": { "os": std::env::consts::OS, "arch": std::env::consts::ARCH },
+            "service": { "kind": "test", "executable": "bin/test", "default_config": "default.yaml", "auto_restart": false }
+        })).unwrap();
+        let config = manager.plugin_dir("test").join("config");
+        tokio::fs::create_dir_all(&config).await.unwrap();
+        tokio::fs::write(config.join("default.yaml"), "value: initial\n").await.unwrap();
+        manager.manifests.write().await.insert("test".into(), manifest.clone());
+        (dir, manager, manifest)
+    }
+
+    #[tokio::test]
+    async fn concurrent_config_saves_and_watchdog_keep_layers_consistent() {
+        let (_dir, manager, manifest) = test_manager().await;
+        let (a, b, ()) = tokio::join!(
+            manager.save_config("test", None, false, "value: first\n"),
+            manager.save_config("test", None, false, "value: second\n"),
+            manager.watchdog_tick()
+        );
+        a.unwrap();
+        b.unwrap();
+        let base = tokio::fs::read_to_string(
+            manager.base_config_path("test", manifest.service.as_ref().unwrap()),
+        )
+        .await
+        .unwrap();
+        let effective = tokio::fs::read_to_string(
+            manager.effective_config_path("test", manifest.service.as_ref().unwrap()),
+        )
+        .await
+        .unwrap();
+        let base: serde_yaml::Value = serde_yaml::from_str(&base).unwrap();
+        let effective: serde_yaml::Value = serde_yaml::from_str(&effective).unwrap();
+        assert_eq!(base["value"], effective["value"]);
+        assert!(!manager.plugin_dir("test").join("config/default.yaml.new").exists());
+    }
+
+    #[tokio::test]
+    async fn config_restart_failure_is_reported_after_save() {
+        let (_dir, manager, manifest) = test_manager().await;
+        let child =
+            tokio::process::Command::new("sleep").arg("30").kill_on_drop(true).spawn().unwrap();
+        manager.services.lock().await.insert("test".into(), child);
+        let error = manager.save_config("test", None, false, "value: saved\n").await.unwrap_err();
+        assert!(error.contains("configuration saved, but service restart failed"), "{error}");
+        let base = tokio::fs::read_to_string(
+            manager.base_config_path("test", manifest.service.as_ref().unwrap()),
+        )
+        .await
+        .unwrap();
+        assert!(base.contains("saved"));
+    }
+
+    #[tokio::test]
+    async fn second_config_rename_failure_restores_existing_or_missing_layer() {
+        let dir = tempfile::tempdir().unwrap();
+        let pending = dir.path().join("pending");
+        let target = dir.path().join("target");
+        let missing = dir.path().join("missing");
+        let effective = dir.path().join("effective");
+        for old in [None, Some("old")] {
+            if let Some(old) = old {
+                tokio::fs::write(&target, old).await.unwrap();
+            }
+            tokio::fs::write(&pending, "new").await.unwrap();
+            assert!(
+                super::commit_config_files(&pending, &target, &missing, &effective).await.is_err()
+            );
+            match old {
+                Some(old) => assert_eq!(tokio::fs::read_to_string(&target).await.unwrap(), old),
+                None => assert!(!target.exists()),
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn incomplete_package_is_rejected_in_staging_and_can_be_retried() {
+        let (_dir, manager, manifest) = test_manager().await;
+        manager.manifests.write().await.clear();
+        let encoder = GzEncoder::new(Vec::new(), Compression::default());
+        let mut archive = tar::Builder::new(encoder);
+        for (path, bytes) in [
+            ("manifest.json", serde_json::to_vec(&manifest).unwrap()),
+            ("default.yaml", b"value: default\n".to_vec()),
+        ] {
+            let mut header = tar::Header::new_gnu();
+            header.set_size(bytes.len() as u64);
+            header.set_mode(0o600);
+            header.set_cksum();
+            archive.append_data(&mut header, path, bytes.as_slice()).unwrap();
+        }
+        let bytes = archive.into_inner().unwrap().finish().unwrap();
+        for _ in 0..2 {
+            let error = manager.import(&bytes).await.unwrap_err();
+            assert!(error.contains("executable is missing"), "{error}");
+            assert!(!manager.plugin_dir("test").join("package").exists());
+        }
+    }
 
     #[test]
     fn manifest_shape_is_stable() {

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs::Permissions;
 use std::net::{IpAddr, SocketAddr};
 use std::os::unix::fs::PermissionsExt;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use arc_swap::ArcSwap;
@@ -27,7 +28,6 @@ use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode}
 use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use subtle::ConstantTimeEq;
-use tokio::fs::OpenOptions;
 use tokio::io::AsyncWriteExt;
 
 use crate::api::JsonBody;
@@ -37,6 +37,12 @@ use crate::error::LandscapeApiError;
 use crate::error::LandscapeApiResult;
 
 pub mod error;
+
+static SESSION_GENERATION: AtomicU64 = AtomicU64::new(0);
+
+pub fn revoke_sessions() {
+    SESSION_GENERATION.fetch_add(1, Ordering::SeqCst);
+}
 
 const SECRET_KEY_LENGTH: usize = 20;
 const DEFAULT_EXPIRE_TIME: usize = 60 * 60;
@@ -122,26 +128,44 @@ pub static SECRET_KEY: Lazy<String> = Lazy::new(|| {
         .collect()
 });
 
-pub async fn output_sys_token(auth: &AuthRuntimeConfig) {
-    let token_path = LAND_HOME_PATH.join(LANDSCAPE_SYS_TOKEN_FILE_ANME);
-    // 生成长期有效的系统 token
-    let sys_token =
-        create_jwt(&auth.admin_user, SYS_TOKEN_EXPIRE_TIME).expect("Failed to create system token");
+pub async fn output_sys_token(auth: &AuthRuntimeConfig) -> Result<(), AuthError> {
+    let sys_token = create_jwt(
+        &auth.admin_user,
+        SYS_TOKEN_EXPIRE_TIME,
+        SESSION_GENERATION.load(Ordering::SeqCst),
+    )?;
+    write_sys_token(&LAND_HOME_PATH.join(LANDSCAPE_SYS_TOKEN_FILE_ANME), &sys_token).await?;
+    Ok(())
+}
 
-    let mut file = OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .create(true)
-        .open(token_path)
-        .await
-        .expect("Failed to open landscape_api_token");
+async fn write_sys_token(path: &std::path::Path, token: &str) -> std::io::Result<()> {
+    let temporary = tempfile::NamedTempFile::new_in(
+        path.parent().unwrap_or_else(|| std::path::Path::new(".")),
+    )?;
+    let mut file = tokio::fs::File::from_std(temporary.reopen()?);
+    file.set_permissions(Permissions::from_mode(0o600)).await?;
+    file.write_all(token.as_bytes()).await?;
+    file.flush().await?;
+    file.set_permissions(Permissions::from_mode(0o400)).await?;
+    temporary.persist(path).map_err(|error| error.error)?;
+    Ok(())
+}
 
-    // 写入系统 token
-    file.write_all(sys_token.as_bytes()).await.expect("Failed to write system token");
-    file.flush().await.expect("Failed to flush system token");
-    // 设置文件权限为 0o400（仅文件所有者可读）
-    let perms = Permissions::from_mode(0o400);
-    file.set_permissions(perms).await.expect("Failed to set file permissions");
+#[tokio::test]
+async fn system_token_write_failure_returns_error() {
+    let dir = tempfile::tempdir().unwrap();
+    let error = write_sys_token(&dir.path().join("missing/token"), "test").await.unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+}
+
+#[tokio::test]
+async fn system_token_replaces_read_only_file_with_secure_permissions() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("token");
+    write_sys_token(&path, "old").await.unwrap();
+    write_sys_token(&path, "new").await.unwrap();
+    assert_eq!(tokio::fs::read_to_string(&path).await.unwrap(), "new");
+    assert_eq!(tokio::fs::metadata(&path).await.unwrap().permissions().mode() & 0o777, 0o400);
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -150,13 +174,45 @@ struct Claims {
     sub: String,
     // 过期时间（Unix timestamp）
     exp: usize,
+    generation: u64,
 }
 
-fn create_jwt(user_id: &str, expiration: usize) -> Result<String, AuthError> {
+fn claims_are_current(claims: &Claims, user: &str, generation: u64) -> bool {
+    claims.sub == user && claims.generation == generation
+}
+
+#[test]
+fn revoked_claims_cannot_be_refreshed_into_current_sessions() {
+    let token = create_jwt("admin", DEFAULT_EXPIRE_TIME, 7).unwrap();
+    let claims = decode::<Claims>(
+        &token,
+        &DecodingKey::from_secret(SECRET_KEY.as_bytes()),
+        &Validation::default(),
+    )
+    .unwrap()
+    .claims;
+    assert!(claims_are_current(&claims, "admin", 7));
+    assert!(!claims_are_current(&claims, "admin", 8));
+    let refreshed = create_jwt(&claims.sub, DEFAULT_EXPIRE_TIME, claims.generation).unwrap();
+    let refreshed = decode::<Claims>(
+        &refreshed,
+        &DecodingKey::from_secret(SECRET_KEY.as_bytes()),
+        &Validation::default(),
+    )
+    .unwrap()
+    .claims;
+    assert!(!claims_are_current(&refreshed, "admin", 8));
+}
+
+fn create_jwt(user_id: &str, expiration: usize, generation: u64) -> Result<String, AuthError> {
     // 设置过期时间
     let expiration =
         SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as usize + expiration;
-    let claims = Claims { sub: user_id.to_owned(), exp: expiration };
+    let claims = Claims {
+        sub: user_id.to_owned(),
+        exp: expiration,
+        generation,
+    };
     // 使用一个足够复杂的密钥来签名
     Ok(encode(&Header::default(), &claims, &EncodingKey::from_secret(SECRET_KEY.as_bytes()))?)
 }
@@ -184,12 +240,20 @@ pub async fn auth_handler(
         return Err(AuthError::InvalidToken)?;
     };
 
-    if token_data.claims.sub == auth.load().admin_user {
+    if claims_are_current(
+        &token_data.claims,
+        &auth.load().admin_user,
+        SESSION_GENERATION.load(Ordering::SeqCst),
+    ) {
         let mut response = next.run(req).await;
 
         let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as usize;
         if token_data.claims.exp.saturating_sub(now) < DEFAULT_EXPIRE_TIME / 2
-            && let Ok(new_token) = create_jwt(&token_data.claims.sub, DEFAULT_EXPIRE_TIME)
+            && let Ok(new_token) = create_jwt(
+                &token_data.claims.sub,
+                DEFAULT_EXPIRE_TIME,
+                token_data.claims.generation,
+            )
             && let Ok(value) = axum::http::HeaderValue::from_str(&new_token)
         {
             response.headers_mut().insert("X-Refresh-Token", value);
@@ -228,7 +292,11 @@ pub async fn auth_handler_from_query(
         return Err(AuthError::InvalidToken)?;
     };
 
-    if token_data.claims.sub == auth.load().admin_user {
+    if claims_are_current(
+        &token_data.claims,
+        &auth.load().admin_user,
+        SESSION_GENERATION.load(Ordering::SeqCst),
+    ) {
         Ok(next.run(req).await)
     } else {
         Err(AuthError::UnauthorizedUser)?
@@ -259,7 +327,11 @@ pub async fn auth_handler_from_cookie(
     )
     .map_err(|_| AuthError::InvalidToken)?;
 
-    if token_data.claims.sub == auth.load().admin_user {
+    if claims_are_current(
+        &token_data.claims,
+        &auth.load().admin_user,
+        SESSION_GENERATION.load(Ordering::SeqCst),
+    ) {
         Ok(next.run(req).await)
     } else {
         Err(AuthError::UnauthorizedUser.into())
@@ -300,13 +372,14 @@ async fn login_handler(
         return Err(AuthError::TooManyAttempts.into());
     }
 
+    let generation = SESSION_GENERATION.load(Ordering::SeqCst);
     let auth_config = auth.load();
     let user_ok = username.as_bytes().ct_eq(auth_config.admin_user.as_bytes());
     let pass_ok = password.as_bytes().ct_eq(auth_config.admin_pass.as_bytes());
 
     if bool::from(user_ok & pass_ok) {
         LOGIN_LIMITER.record_success(client_ip);
-        let token = create_jwt(&username, DEFAULT_EXPIRE_TIME)?;
+        let token = create_jwt(&username, DEFAULT_EXPIRE_TIME, generation)?;
         LandscapeApiResp::success(LoginResult { success: true, token })
     } else {
         LOGIN_LIMITER.record_failure(client_ip, now);

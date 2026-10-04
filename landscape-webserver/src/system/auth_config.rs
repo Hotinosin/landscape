@@ -30,6 +30,9 @@ pub async fn update_auth_config(
     State(state): State<LandscapeApp>,
     JsonBody(req): JsonBody<ChangePasswordRequest>,
 ) -> LandscapeApiResult<()> {
+    // Keep verification and persistence in one transaction for concurrent requests.
+    static PASSWORD_CHANGE: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    let _change = PASSWORD_CHANGE.lock().await;
     // 1. Verify current password
     if req.current_password.is_empty() {
         return Err(AuthError::CurrentPasswordIncorrect.into());
@@ -65,5 +68,9 @@ pub async fn update_auth_config(
         new_auth
     });
 
+    crate::auth::revoke_sessions();
+    crate::auth::output_sys_token(&state.auth.load())
+        .await
+        .map_err(|error| AuthError::PasswordChangedTokenRotationFailed(error.to_string()))?;
     LandscapeApiResp::success(())
 }

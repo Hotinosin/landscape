@@ -30,6 +30,16 @@ pub enum AuthError {
     #[api_error(id = "auth.token_creation_failed", status = 500)]
     JwtCreationFailed(#[from] jsonwebtoken::errors::Error),
 
+    #[error("System token file update failed: {0}")]
+    #[api_error(id = "auth.system_token_write_failed", status = 500)]
+    SystemTokenWriteFailed(#[from] std::io::Error),
+
+    #[error(
+        "Password changed and sessions revoked, but system token rotation failed: {0}. Sign in with the new password."
+    )]
+    #[api_error(id = "auth.password_changed_token_rotation_failed", status = 500)]
+    PasswordChangedTokenRotationFailed(String),
+
     #[error("Current password is incorrect")]
     #[api_error(id = "auth.current_password_incorrect", status = 400)]
     CurrentPasswordIncorrect,

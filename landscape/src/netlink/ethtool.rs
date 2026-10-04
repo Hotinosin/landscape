@@ -283,7 +283,7 @@ unsafe fn ethtool_ioctl(ifname: &str, cmd: u32, data: u32) -> Result<u32, io::Er
     unsafe {
         std::ptr::copy_nonoverlapping(
             name_bytes.as_ptr(),
-            ifr.ifr_name.as_mut_ptr() as *mut u8,
+            ifr.ifr_name.as_mut_ptr().cast(),
             copy_len,
         );
     }

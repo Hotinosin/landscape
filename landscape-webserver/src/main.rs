@@ -611,7 +611,9 @@ async fn run_system(
 
     let serve_dir = ServeDir::new(&config.web.web_root).not_found_service(service);
 
-    auth::output_sys_token(&config.auth).await;
+    if let Err(error) = auth::output_sys_token(&config.auth).await {
+        tracing::error!(%error, "Failed to write system token; password login remains available");
+    }
     // Build OpenApiRouter for each domain, then split into plain Router + discard local spec
     let (interfaces_router, _) = openapi::build_interfaces_openapi_router().split_for_parts();
     let (system_router, _) = openapi::build_system_openapi_router().split_for_parts();

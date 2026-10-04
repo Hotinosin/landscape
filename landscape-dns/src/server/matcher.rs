@@ -419,6 +419,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "manual memory profiling requires an installed geo cache under /root/.landscape-router"]
     pub fn mem_useage() {
         for _ in 0..3 {
             epoch::advance().unwrap(); // 预热几次

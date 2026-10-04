@@ -63,7 +63,7 @@ async fn net_dev() -> LandscapeApiResult<Vec<LandscapeInterface>> {
 
 /// Capabilities supported by this backend build, gated by compile-time features.
 fn enabled_capabilities() -> Vec<Capability> {
-    let mut capabilities = Vec::new();
+    let mut capabilities = vec![Capability::Plugins, Capability::DnsQuicDiagnostics];
     if cfg!(feature = "gateway") {
         capabilities.push(Capability::Gateway);
     }
